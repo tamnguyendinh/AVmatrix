@@ -43,6 +43,10 @@ const getNativeCodexExecutable = (): string =>
   process.env.GITNEXUS_CODEX_EXECUTABLE ||
   (process.platform === 'win32' ? 'codex.cmd' : 'codex');
 
+const getWindowsCommandShell = (): string =>
+  process.env.ComSpec ||
+  path.join(process.env.SystemRoot || process.env.windir || 'C:\\Windows', 'System32', 'cmd.exe');
+
 const getConfiguredWindowsSessionEnv = (): 'wsl2' | 'native' | 'auto' => {
   const configured = process.env[WINDOWS_SESSION_ENV]?.toLowerCase();
   if (configured === 'wsl2' || configured === 'native') return configured;
@@ -73,7 +77,10 @@ const spawnCommand = (
 ) =>
   spawn(target.executablePath, target.args, {
     ...options,
-    shell: target.runtimeEnvironment === 'native' && process.platform === 'win32',
+    shell:
+      target.runtimeEnvironment === 'native' && process.platform === 'win32'
+        ? getWindowsCommandShell()
+        : false,
     windowsHide: true,
   });
 
@@ -304,18 +311,18 @@ const resolveWindowsTarget = async (): Promise<CodexStatusProbe> => {
     return wslStatus;
   }
 
-  const nativeStatus = await probeTargetStatus(nativeTarget);
-  if (nativeStatus.available) {
-    return {
-      ...nativeStatus,
-      message: wslStatus.message
-        ? `WSL2 Codex unavailable; using native fallback. ${wslStatus.message}`
-        : 'WSL2 Codex unavailable; using native fallback.',
-      nativeFallback: true,
-    };
-  }
-
-  return wslStatus;
+  return {
+    target: wslTarget,
+    available: false,
+    authenticated: false,
+    message: [
+      'WSL2 Codex is required by default on Windows for the local session runtime.',
+      `Install Codex CLI inside WSL2 or set ${WINDOWS_SESSION_ENV}=native to opt into unsupported Windows-native execution.`,
+      wslStatus.message,
+    ]
+      .filter(Boolean)
+      .join(' '),
+  };
 };
 
 const resolveLaunchTarget = async (): Promise<CodexStatusProbe> => {
