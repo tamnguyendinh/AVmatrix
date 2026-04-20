@@ -408,7 +408,7 @@
 - [x] Cho `mcp` reuse cùng runtime/core contracts
 - [x] Cho direct tool commands reuse cùng runtime/core contracts
 - [x] Không thêm interactive chat command vào CLI v1 nếu không bắt buộc
-- [ ] Thêm runtime management commands tối thiểu nếu cần
+- [x] Không cần thêm runtime management commands mới ở v1; `serve`, `mcp`, và `wiki-mode` đã đủ cho local runtime surface
 - [x] Viết behavioral tests cho CLI/MCP runtime alignment
 
 ## Pha 3 — Local path only
@@ -426,7 +426,7 @@
 - [x] Bỏ fallback `npx -y gitnexus@latest`
 - [x] Siết CORS còn localhost/no-origin
 - [x] Backend client chỉ chấp nhận local backend
-- [ ] Bỏ toàn bộ wording remote/API key/cloud
+- [x] Bỏ wording remote/API key/cloud khỏi các active surfaces; wording còn sót trong legacy compatibility files sẽ được dọn ở Pha 6
 - [x] Cập nhật `serve` help/copy theo local-only model
 - [x] Viết behavioral tests cho hardening/local-only surface
 
