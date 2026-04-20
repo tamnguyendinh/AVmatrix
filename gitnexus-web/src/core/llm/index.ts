@@ -29,21 +29,5 @@ export {
   toAgentStreamChunk,
 } from './session-client';
 
-// Legacy compatibility exports
-export { createGraphRAGTools } from './tools';
-export {
-  buildCodebaseContext,
-  formatContextForPrompt,
-  buildDynamicSystemPrompt,
-  type CodebaseContext,
-  type CodebaseStats,
-  type Hotspot,
-} from './context-builder';
-export {
-  createChatModel,
-  createGraphRAGAgent,
-  streamAgentResponse,
-  invokeAgent,
-  BASE_SYSTEM_PROMPT,
-  type AgentMessage,
-} from './agent';
+// Legacy provider-based agent exports were retired from the active build path in
+// Phase 6. The local session runtime bridge is the only supported web flow.

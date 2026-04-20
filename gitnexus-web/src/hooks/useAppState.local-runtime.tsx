@@ -540,8 +540,7 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
       (typeof navigator !== 'undefined' && navigator.webdriver) ||
       (typeof import.meta !== 'undefined' &&
         typeof import.meta.env !== 'undefined' &&
-        import.meta.env.VITE_PLAYWRIGHT_TEST) ||
-      (typeof process !== 'undefined' && process.env.PLAYWRIGHT_TEST);
+        import.meta.env.VITE_PLAYWRIGHT_TEST);
     if (isPlaywright) {
       setEmbeddingStatus('idle');
       return;

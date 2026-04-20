@@ -442,9 +442,10 @@
 
 ## Pha 6 — Cleanup provider/API-key path cũ
 
-- [ ] Chỉ cleanup sau khi session path đạt parity
+- [x] Chỉ cleanup sau khi session path đạt parity
 - [ ] Xóa provider branches cũ không còn dùng
-- [ ] Dọn dependency packages chỉ còn phục vụ provider/API-key flow
+- [x] Retire provider-based modules khỏi active web build path bằng compatibility wrappers/excludes
+- [x] Dọn dependency packages chỉ còn phục vụ provider/API-key flow khỏi active web build
 - [ ] Dọn copy/provider language còn sót
 - [x] Cập nhật test theo runtime/session model mới
 - [ ] Dọn hoặc retire legacy tests không còn phản ánh kiến trúc mới

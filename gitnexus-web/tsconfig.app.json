@@ -20,5 +20,11 @@
     "types": ["vite/client"]
   },
   "include": ["src"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/core/llm/agent.ts",
+    "src/core/llm/context-builder.ts",
+    "src/core/llm/tools.ts"
+  ]
 }
