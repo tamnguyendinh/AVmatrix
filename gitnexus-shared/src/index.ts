@@ -16,6 +16,30 @@ export {
 } from './lbug/schema-constants.js';
 export type { NodeTableName, RelType } from './lbug/schema-constants.js';
 
+// Session/runtime bridge
+export type {
+  LocalSessionProvider,
+  SessionAvailability,
+  SessionExecutionMode,
+  SessionErrorCode,
+  SessionRepoBinding,
+  ResolvedSessionRepo,
+  SessionRepoResolution,
+  SessionStatus,
+  SessionStatusResponse,
+  SessionChatRequest,
+  SessionToolCall,
+  SessionStartedEvent,
+  SessionReasoningEvent,
+  SessionContentEvent,
+  SessionToolCallEvent,
+  SessionToolResultEvent,
+  SessionErrorEvent,
+  SessionCancelledEvent,
+  SessionDoneEvent,
+  SessionStreamEvent,
+} from './session.js';
+
 // Language support
 export { SupportedLanguages } from './languages.js';
 export { getLanguageFromFilename, getSyntaxLanguageFromFilename } from './language-detection.js';

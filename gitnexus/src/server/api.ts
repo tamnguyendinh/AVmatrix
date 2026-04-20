@@ -34,6 +34,9 @@ import { fork } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { JobManager } from './analyze-job.js';
 import { extractRepoName, getCloneDir, cloneOrPull } from './git-clone.js';
+import { RuntimeController } from '../runtime/runtime-controller.js';
+import { CodexSessionAdapter } from '../runtime/session-adapters/codex.js';
+import { mountSessionBridge } from './session-bridge.js';
 
 const _require = createRequire(import.meta.url);
 const pkg = _require('../../package.json');
@@ -463,6 +466,9 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
   await backend.init();
   const cleanupMcp = mountMCPEndpoints(app, backend);
   const jobManager = new JobManager();
+  const sessionRuntime = new RuntimeController(new CodexSessionAdapter());
+
+  mountSessionBridge(app, sessionRuntime);
 
   // Shared repo lock — prevents concurrent analyze + embed on the same repo path,
   // which would corrupt LadybugDB (analyze calls closeLbug + initLbug while embed has queries in flight).
@@ -1575,6 +1581,7 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
       server.close();
       jobManager.dispose();
       embedJobManager.dispose();
+      sessionRuntime.dispose();
       await cleanupMcp();
       await closeLbug();
       await backend.disconnect();
