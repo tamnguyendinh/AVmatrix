@@ -1,13 +1,15 @@
- # Mục đích plan này
+# Mục đích plan này
 
   - Plan này dùng để chuyển GitNexus sang chế độ local-only theo đúng mong muốn ban đầu:
+  - Giữ nguyên toàn bộ feature surface quan trọng của sản phẩm trên web UI, CLI, và MCP; không cắt tính năng chỉ để đơn giản hóa migration
+  - Cái cần thay là đường đi auth/model execution: thay vì API key hoặc server/proxy bên thứ ba thì dùng session local đã đăng nhập của Codex hoặc Claude Code
   - Dùng tài khoản Codex hoặc Claude đã đăng nhập sẵn trên máy thay cho luồng API key và provider settings kiểu cloud
   - Chỉ cho phép phân tích repo từ đường dẫn local trên máy, không clone/pull từ GitHub hay URL bên ngoài
   - Không được đưa dữ liệu qua server của GitNexus hay proxy trung gian do GitNexus vận hành
   - Tool sau khi chuyển phải dùng hiệu quả ở cả giao diện web trong trình duyệt và ở CLI/MCP, vì cả hai đều quan trọng cho workflow agent viết code
   - Trình duyệt/web UI chỉ là lớp hiển thị local; mọi xử lý repo, tool, session, và orchestration phải chạy trong local runtime trên localhost
   - Xóa mọi gợi ý, copy, config, fallback, và dependency kéo tư duy API key/provider-setup để tránh đi nhầm luồng
-  - Tắt wiki hiện tại để giảm surface không cần thiết; sau này có thể làm một wiki local riêng
+  - Không cắt feature nào theo mặc định; riêng các surface gây tranh cãi như wiki sẽ được chốt rõ ở pha scope tương ứng thay vì tự động loại bỏ
   - Toàn bộ thay đổi sẽ được chia pha, có gate kỹ thuật và validation rõ ràng để triển khai rất cẩn thận, giảm rủi ro vỡ code
 
  # Ranh giới dữ liệu cần giữ
@@ -17,10 +19,12 @@
   - Được phép: chạy process local trên máy người dùng như localhost bridge, daemon, CLI, hoặc native helper
   - Không được phép: biến kiến trúc thành mô hình “browser -> GitNexus-hosted backend -> model provider”
 
- # Nguyên tắc sản phẩm sau khi chuyển
+# Nguyên tắc sản phẩm sau khi chuyển
 
   - Local runtime là first-class product, không phải adapter tạm cho web
   - Web UI và CLI/MCP là hai client khác nhau của cùng một local runtime
+  - Migration này là transport/auth replacement, không phải product reduction
+  - Feature parity là yêu cầu cứng: search, graph, chat, multi-repo, MCP, CLI tools, và các capability hiện có phải còn dùng được sau migration, trừ khi có ngoại lệ được chốt rõ
   - Session model phải là session-based, không còn provider-based
   - Tool execution phải dùng chung runtime/tool contracts, không duplicate logic giữa web và CLI
   - Session state nếu cần giữ lâu phải nằm ở local runtime, không nằm riêng trong browser
@@ -42,7 +46,9 @@
   - Browser/web UI chỉ là local presentation layer; không giữ API key, không tự làm auth với model provider.
   - Kiến trúc mục tiêu là: web UI + CLI/MCP -> shared local runtime trên máy người dùng -> Codex/Claude local session + GitNexus local tools/index.
   - Shared local runtime ở đây là process local trên máy người dùng, có thể là daemon hoặc helper on-demand; không phải server cloud hay GitNexus-hosted backend.
+  - Shared local runtime core phải tách khỏi HTTP adapter: runtime/core sống ở lớp riêng; `api.ts`, CLI, và MCP chỉ là các adapter/client vào cùng lõi này.
   - Web UI, direct CLI commands, và MCP surface phải hoặc gọi cùng runtime contracts, hoặc dùng cùng core modules; không duy trì hai hệ auth/session/tool riêng.
+  - Hướng triển khai là compatibility-first: ưu tiên giữ nguyên contract UI/stream/tool hiện có, chỉ thay implementation phía sau bằng local session adapter.
   - Lý do: chat hiện tại đang là browser-side LangGraph + API-key providers trong /F:/GitNexus-main/
     gitnexus-web/src/core/llm/agent.ts:1, /F:/GitNexus-main/gitnexus-web/src/core/llm/types.ts:1, /F:/
     GitNexus-main/gitnexus-web/src/core/llm/settings-service.ts:1. Session account của Codex/Claude theo docs và thực tế công cụ
@@ -85,6 +91,11 @@
   - Stream protocol là gì
   - Repo binding được truyền theo repoName hay repoPath
   - CLI/MCP attach vào runtime kiểu nào
+  - Rollout order của session adapters là gì: Codex-first rồi Claude Code sau, hay dual-adapter ngay từ v1
+  - Ghi rõ feature parity strategy:
+  - Những feature nào sẽ được giữ nguyên contract
+  - Những feature nào cần compatibility shim tạm thời
+  - Không được xóa surface nào trước khi local-session path đạt parity với surface đó
   - Nếu Codex CLI không ổn định trên Windows native, phải chốt ngay một trong hai hướng:
   - Dùng WSL2 bridge như execution environment chính
   - Hoặc dừng plan, không tự phát sinh workaround nửa vời trong các pha sau
@@ -95,11 +106,14 @@
   - Mục tiêu:
   - Tạo shared local runtime làm lõi dùng chung cho web UI, CLI, và MCP surface
   - Tách session bridge ra khỏi web/browser để auth và tool execution nằm hoàn toàn local
+  - Tạo abstraction đủ trung tính để hỗ trợ cả Codex và Claude Code session adapters, không hard-code toàn bộ runtime vào một vendor duy nhất
   - Tạo mới:
   - gitnexus/src/runtime/runtime-controller.ts hoặc tên tương đương để quản lý lifecycle của local runtime
+  - gitnexus/src/runtime/session-adapter.ts hoặc tên tương đương cho contract session chung
   - gitnexus/src/server/codex-bridge.ts
   - gitnexus/src/server/codex-session.ts hoặc codex-job.ts
-  - shared types trong gitnexus-shared cho CodexStatus, CodexChatRequest, CodexStreamEvent
+  - Có thể thêm gitnexus/src/server/claude-code-bridge.ts hoặc claude-code-session.ts nếu cần adapter riêng
+  - shared types trong gitnexus-shared cho SessionStatus, SessionChatRequest, SessionStreamEvent
   - Sửa:
   - /F:/GitNexus-main/gitnexus/src/server/api.ts:1 để thêm local bridge endpoints như /api/codex/status
   - /F:/GitNexus-main/gitnexus/src/server/api.ts:1 để thêm /api/codex/chat stream SSE hoặc NDJSON
@@ -111,7 +125,7 @@
   - Web UI và CLI/MCP nếu đụng cùng một session hoặc repo phải có semantics rõ ràng: attach, isolate, hoặc steal session
   - Quy tắc bridge:
   - Chỉ cho phép chạy trong repo local đã index hoặc repo path hợp lệ
-  - Không nhận path tùy ý ngoài workspace repo
+  - Không giới hạn vào workspace của GitNexus; được phép dùng repo local bất kỳ do người dùng chỉ định, miễn qua local-only path policy
   - Log stderr nội bộ, trả lỗi an toàn kiểu “Codex not installed” hoặc “Codex not signed in”
   - Ưu tiên map event stream về gần shape AgentStreamChunk hiện có để giảm sửa UI
   - Bridge local không được forward dữ liệu qua bất kỳ GitNexus-hosted service nào
@@ -136,11 +150,10 @@
   - Sửa:
   - /F:/GitNexus-main/gitnexus-web/src/hooks/useAppState.tsx:1 để dùng backend Codex stream thay cho
     createGraphRAGAgent()
-  - /F:/GitNexus-main/gitnexus-web/src/core/llm/types.ts:1 để đưa active provider mặc định sang codex-
-    account hoặc rút còn một mode
+  - /F:/GitNexus-main/gitnexus-web/src/core/llm/types.ts:1 để chuyển từ provider model sang session/backends model, hoặc thêm compatibility shim có thời hạn rõ ràng nếu cần giữ app ổn trong giai đoạn chuyển đổi
   - /F:/GitNexus-main/gitnexus-web/src/core/llm/settings-service.ts:1 để migrate settings cũ và bỏ logic
-    API-key/provider setup
-  - /F:/GitNexus-main/gitnexus-web/src/components/SettingsPanel.tsx:1 để chỉ còn local session bridge settings như “Codex Account”
+    API-key/provider setup, nhưng vẫn giữ được các capability UI vốn phụ thuộc vào settings
+  - /F:/GitNexus-main/gitnexus-web/src/components/SettingsPanel.tsx:1 để chuyển từ provider form sang local session management UI như “Codex Account” / “Claude Code”
   - /F:/GitNexus-main/gitnexus-web/src/components/RightPanel.tsx:1 để bỏ message “Configure an LLM provider”
   - /F:/GitNexus-main/gitnexus-web/src/hooks/useAppState.tsx:1 để đổi error/init flow từ “provider” sang “local session bridge”
   - /F:/GitNexus-main/gitnexus-web/src/components/OnboardingGuide.tsx:1 để bỏ gợi ý npx gitnexus@latest serve
@@ -156,6 +169,7 @@
   - Nếu sessionStorage/localStorage đang chứa provider cũ, hoặc migrate sang local session bridge mode, hoặc clear one-shot có kiểm soát
   - Nếu clear, phải có fallback UX rõ ràng thay vì app boot vào trạng thái lỗi mơ hồ
   - Khi switch repo, chat mới phải bind đúng repo đang active; chat cũ phải bị hủy hoặc tách session rõ ràng
+  - Nếu có feature nào đang dựa nặng vào provider-specific config, phải chỉ ra compatibility shim tương ứng thay vì xóa feature đó khỏi web
   - Test cần thêm/sửa:
   - gitnexus-web/test/unit/settings-service.test.ts
   - test stream client/backend-client mới cho Codex
@@ -176,6 +190,7 @@
   - Quy tắc:
   - Không tạo một session/auth stack riêng cho CLI
   - Không tạo một tool execution path riêng cho web nếu CLI/MCP có thể dùng cùng core/runtime
+  - Giữ nguyên toàn bộ direct tool commands và MCP capability hiện có; chỉ thay session/model execution path bên dưới khi có đụng tới LLM-backed capability
   - Nếu cần thêm runtime management commands, chỉ thêm những lệnh local như status/doctor/restart
   - Test cần thêm/sửa:
   - gitnexus/test/unit/setup-codex.test.ts
@@ -209,8 +224,7 @@
   - Sửa:
   - /F:/GitNexus-main/gitnexus/src/cli/setup.ts:1 bỏ fallback npx -y gitnexus@latest
   - /F:/GitNexus-main/gitnexus/src/server/api.ts:1 siết CORS còn localhost, 127.0.0.1, ::1, và no-origin
-  - gitnexus-web/src/services/backend-client.ts và useBackend chỉ chấp nhận backend local nếu muốn khóa
-    chặt hoàn toàn
+  - gitnexus-web/src/services/backend-client.ts và useBackend chỉ chấp nhận backend local như mặc định bắt buộc của chế độ local-only
   - /F:/GitNexus-main/gitnexus/src/cli/serve.ts:1 update help/comment/copy để không còn assumption về hosted frontend
   - Xóa mọi copy “remote provider”, “API key”, “hosted UI”, “GitHub URL”, “cloud” trong onboarding/settings/help
   - Acceptance:
@@ -219,26 +233,27 @@
   - Không còn đường dữ liệu nào đi qua GitNexus-hosted/proxy backend
   - Backend local không còn mở cho Vercel/LAN nếu bạn muốn khóa tuyệt đối
 
- # Pha 5: Tắt wiki an toàn
+# Pha 5: Xử lý wiki theo quyết định scope cuối cùng
 
   - Repo đụng: gitnexus.
-  - Khuyến nghị 2 bước để giảm rủi ro.
-  - Bước 1, hard-disable public surface:
-  - Bỏ wiki command trong /F:/GitNexus-main/gitnexus/src/cli/index.ts:1
-  - Bỏ mention wiki trong src/cli/ai-context.ts
-  - Update help/docs/tests để wiki không còn xuất hiện
-  - Bước 2, cleanup sau khi app ổn:
-  - Xóa src/cli/wiki.ts
-  - Xóa src/core/wiki/*
-  - Xóa/điều chỉnh các kiểu config chỉ còn phục vụ wiki trong /F:/GitNexus-main/gitnexus/src/storage/repo-manager.ts:468 nếu không còn ai dùng
-  - Xóa wiki tests liên quan
-  - Lý do tách 2 bước: đỡ tạo một diff xóa rất lớn cùng lúc với migration Codex/local-only
+  - Theo nguyên tắc feature parity, mặc định không xóa wiki chỉ để đơn giản hóa migration.
+  - Có 2 khả năng, phải chốt rõ trước khi code:
+  - Giữ wiki: chuyển mọi chỗ wiki đang dùng provider/API key sang local session path giống phần chat
+  - Hoặc coi wiki là ngoại lệ bị loại khỏi scope do user xác nhận rõ
+  - Nếu giữ wiki:
+  - Giữ nguyên wiki command surface trong /F:/GitNexus-main/gitnexus/src/cli/index.ts:1
+  - Chuyển config/help/runtime của wiki sang session-based flow
+  - Cập nhật docs/tests tương ứng
+  - Nếu loại wiki khỏi scope:
+  - Chỉ hard-disable sau khi user xác nhận lại ngoại lệ này
+  - Khi đó mới xóa src/cli/wiki.ts, src/core/wiki/*, config liên quan, và tests liên quan
 
- # Pha 6: Dọn provider cũ sau khi bridge xanh
+# Pha 6: Dọn provider/API-key path cũ sau khi bridge đạt parity
 
   - Repo đụng: gitnexus-web.
-  - Sau khi Codex bridge ổn định end-to-end:
-  - Xóa nhánh openai, azure-openai, gemini, anthropic, ollama, openrouter, minimax, glm
+  - Chỉ dọn sau khi local-session path đã đạt feature parity cho các surface tương ứng.
+  - Sau khi local session bridge ổn định end-to-end:
+  - Xóa nhánh openai, azure-openai, gemini, anthropic, ollama, openrouter, minimax, glm nếu và chỉ nếu không còn feature nào phụ thuộc chúng
   - Dọn helper OpenRouter/Ollama trong /F:/GitNexus-main/gitnexus-web/src/components/SettingsPanel.tsx:1
   - Dọn builder cũ trong /F:/GitNexus-main/gitnexus-web/src/core/llm/settings-service.ts:1
   - Dọn model branches cũ trong /F:/GitNexus-main/gitnexus-web/src/core/llm/agent.ts:1 nếu file này còn
@@ -247,15 +262,16 @@
   - Dọn language/copy “provider-based” còn sót trong cả web và CLI surfaces
   - Cập nhật toàn bộ test còn hard-code gemini hoặc provider cũ
 
- # Checklist hoàn thành
+# Checklist hoàn thành
 
   - Chat chạy bằng tài khoản Codex đã login, không cần API key
+  - Hoặc Claude Code local session nếu user chọn flow đó
+  - Feature surface quan trọng trên web UI, CLI, và MCP vẫn còn dùng được; không có regression do cắt feature
   - UI không còn picker provider remote
   - UI không còn GitHub URL input
   - Backend không clone/pull từ URL
   - Backend chỉ nhận absolute local paths
   - setup không còn kéo gitnexus@latest
-  - wiki không còn trong public CLI surface
   - CORS/backend flow không còn remote suggestion
   - Track A hoặc Track B đã được chốt sau spike, không giữ hai hướng song song
   - Chat request luôn bind đúng repo đang active
@@ -266,6 +282,7 @@
   - Web UI và CLI/MCP cùng dựa trên shared local runtime, không còn hai luồng session/tool khác nhau
   - Cancel chat và cancel analyze vẫn hoạt động
   - Graph browsing/search/query hiện có không bị regress
+  - Nếu wiki còn trong scope thì wiki cũng phải chuyển xong sang local-session path; nếu không thì phải có xác nhận ngoại lệ rõ ràng
 
  # Test matrix cần chạy khi triển khai
 
@@ -273,7 +290,7 @@
   - npx tsc --noEmit
   - npm test
   - unit trọng điểm: analyze-api.test.ts, analyze-job.test.ts, codex-bridge.test.ts, cli-index-help.test.ts, setup-codex.test.ts, tools.test.ts
-  - integration/e2e trọng điểm: cli-e2e.test.ts cho help surface bị ảnh hưởng bởi việc tắt wiki
+  - integration/e2e trọng điểm: cli-e2e.test.ts cho help/runtime surface bị ảnh hưởng bởi local-session migration và quyết định scope wiki
   - gitnexus-web:
   - npx tsc -b --noEmit
   - npm test
