@@ -1,13 +1,15 @@
 /**
  * LLM Module Exports
  *
- * Provides Graph RAG agent capabilities for code analysis.
+ * The active product path is the local session runtime bridge.
+ * Legacy agent/context/tool exports remain available here as compatibility
+ * surfaces while provider-based modules are retired behind the scenes.
  */
 
 // Types
 export * from './types';
 
-// Settings management
+// Active local-runtime settings + session bridge
 export {
   loadSettings,
   saveSettings,
@@ -19,8 +21,6 @@ export {
   getProviderDisplayName,
   getAvailableModels,
 } from './settings-service';
-
-// Local session runtime bridge
 export {
   SessionClientError,
   fetchSessionStatus,
@@ -29,10 +29,8 @@ export {
   toAgentStreamChunk,
 } from './session-client';
 
-// Tools
+// Legacy compatibility exports
 export { createGraphRAGTools } from './tools';
-
-// Context Builder
 export {
   buildCodebaseContext,
   formatContextForPrompt,
@@ -41,8 +39,6 @@ export {
   type CodebaseStats,
   type Hotspot,
 } from './context-builder';
-
-// Agent
 export {
   createChatModel,
   createGraphRAGAgent,

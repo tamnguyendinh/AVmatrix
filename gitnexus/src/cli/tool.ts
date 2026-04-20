@@ -2,7 +2,8 @@
  * Direct CLI Tool Commands
  *
  * Exposes GitNexus tools (query, context, impact, cypher) as direct CLI commands.
- * Bypasses MCP entirely — invokes LocalBackend directly for minimal overhead.
+ * Bypasses MCP transport overhead, but still reuses the same LocalBackend/runtime
+ * core modules as the other local surfaces.
  *
  * Usage:
  *   gitnexus query "authentication flow"

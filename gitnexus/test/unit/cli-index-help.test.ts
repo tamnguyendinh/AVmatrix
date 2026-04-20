@@ -57,15 +57,15 @@ describe('CLI help surface', () => {
     expect(result.stdout).toContain('--repo <name>');
   });
 
-  it('wiki help shows provider, review, and verbose flags', () => {
+  it('wiki help only exposes the local capability gate surface', () => {
     const result = runHelp('wiki');
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain('--provider <provider>');
-    expect(result.stdout).toContain('--review');
-    expect(result.stdout).toContain('-v, --verbose');
-    expect(result.stdout).toContain('--model <model>');
-    expect(result.stdout).toContain('--gist');
+    expect(result.stdout).toContain('remote wiki is disabled in local-only mode');
+    expect(result.stdout).not.toContain('--provider <provider>');
+    expect(result.stdout).not.toContain('--api-key <key>');
+    expect(result.stdout).not.toContain('--model <model>');
+    expect(result.stdout).not.toContain('--gist');
   });
 
   it('root help describes serve and mcp as local runtime surfaces', () => {

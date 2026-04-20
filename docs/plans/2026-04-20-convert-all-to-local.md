@@ -405,11 +405,11 @@
 ## Pha 2B — CLI/MCP alignment
 
 - [x] Cập nhật help/copy của CLI theo shared runtime model
-- [ ] Cho `mcp` reuse cùng runtime/core contracts
-- [ ] Cho direct tool commands reuse cùng runtime/core contracts
-- [ ] Không thêm interactive chat command vào CLI v1 nếu không bắt buộc
+- [x] Cho `mcp` reuse cùng runtime/core contracts
+- [x] Cho direct tool commands reuse cùng runtime/core contracts
+- [x] Không thêm interactive chat command vào CLI v1 nếu không bắt buộc
 - [ ] Thêm runtime management commands tối thiểu nếu cần
-- [ ] Viết behavioral tests cho CLI/MCP runtime alignment
+- [x] Viết behavioral tests cho CLI/MCP runtime alignment
 
 ## Pha 3 — Local path only
 
@@ -446,5 +446,5 @@
 - [ ] Xóa provider branches cũ không còn dùng
 - [ ] Dọn dependency packages chỉ còn phục vụ provider/API-key flow
 - [ ] Dọn copy/provider language còn sót
-- [ ] Cập nhật test theo runtime/session model mới
+- [x] Cập nhật test theo runtime/session model mới
 - [ ] Dọn hoặc retire legacy tests không còn phản ánh kiến trúc mới

@@ -1,4 +1,6 @@
-// Centralized UI and provider defaults to reduce magic numbers and duplicated URLs.
+// Centralized UI defaults for the local runtime path plus a few legacy
+// compatibility constants that still exist while older provider-based modules
+// are being retired.
 export const ERROR_RESET_DELAY_MS = 3000;
 export const BACKEND_URL_DEBOUNCE_MS = 500;
 
