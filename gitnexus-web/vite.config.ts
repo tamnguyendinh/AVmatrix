@@ -15,7 +15,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      '@shared': path.resolve(__dirname, '../shared'),
       'gitnexus-shared': path.resolve(__dirname, '../gitnexus-shared/src/index.ts'),
       // Fix for Rollup failing to resolve this deep import from @langchain/anthropic
       '@anthropic-ai/sdk/lib/transform-json-schema': path.resolve(
