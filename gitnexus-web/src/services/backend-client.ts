@@ -192,32 +192,54 @@ export function streamSSE<T = unknown>(url: string, handlers: SSEHandlers<T>): A
 
 let _backendUrl = 'http://localhost:4747';
 
+const LOCAL_BACKEND_ERROR =
+  'GitNexus local-only mode only supports backend URLs on localhost, 127.0.0.1, or [::1].';
+
+const isLoopbackHostname = (hostname: string): boolean => {
+  const normalized = hostname.replace(/^\[|\]$/g, '');
+  return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1';
+};
+
 export const setBackendUrl = (url: string): void => {
-  _backendUrl = url.replace(/\/$/, '');
+  _backendUrl = normalizeServerUrl(url);
 };
 
 export const getBackendUrl = (): string => _backendUrl;
 
 /**
- * Normalize a user-entered server URL into a base URL suitable for setBackendUrl().
- * Adds protocol if missing, strips trailing slashes, and strips a trailing /api suffix
- * (since all API methods append their own /api/... paths to _backendUrl).
+ * Normalize a user-entered server URL into a loopback-only base URL suitable for
+ * setBackendUrl(). Adds protocol if missing, strips trailing slashes, and strips a
+ * trailing /api suffix (since all API methods append their own /api/... paths to
+ * _backendUrl). Remote hosts are rejected in local-only mode.
  */
 export function normalizeServerUrl(input: string): string {
   let url = input.trim().replace(/\/+$/, '');
 
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    if (url.startsWith('localhost') || url.startsWith('127.0.0.1')) {
+    if (
+      url.startsWith('localhost') ||
+      url.startsWith('127.0.0.1') ||
+      url.startsWith('[::1]')
+    ) {
       url = `http://${url}`;
     } else {
-      url = `https://${url}`;
+      throw new Error(LOCAL_BACKEND_ERROR);
     }
   }
 
-  // Strip /api suffix if present — _backendUrl stores the base, not the /api path
-  url = url.replace(/\/api$/, '');
+  const parsed = new URL(url);
+  if (!isLoopbackHostname(parsed.hostname)) {
+    throw new Error(LOCAL_BACKEND_ERROR);
+  }
 
-  return url;
+  const normalizedPath = parsed.pathname.replace(/\/+$/, '');
+  if (normalizedPath !== '' && normalizedPath !== '/' && normalizedPath !== '/api') {
+    throw new Error(
+      'GitNexus local-only mode expects the backend URL to point at the local server root or /api.',
+    );
+  }
+
+  return `${parsed.protocol}//${parsed.host}`;
 }
 
 // ── Internal Helpers ───────────────────────────────────────────────────────

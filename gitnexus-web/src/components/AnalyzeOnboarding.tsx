@@ -3,7 +3,7 @@
  *
  * The "empty state" card rendered inside DropZone's Crossfade when the server
  * is connected but zero repos are indexed. Replaces the generic error message
- * with a first-class GitHub URL input flow.
+ * with a first-class local path analysis flow.
  *
  * Rendering context:
  *   DropZone (Crossfade, phase="analyze")
@@ -15,7 +15,7 @@
  * the app to the graph explorer.
  */
 
-import { Sparkles, Github } from '@/lib/lucide-icons';
+import { Sparkles, FolderOpen } from '@/lib/lucide-icons';
 import { RepoAnalyzer } from './RepoAnalyzer';
 
 interface AnalyzeOnboardingProps {
@@ -43,15 +43,15 @@ export const AnalyzeOnboarding = ({ onComplete }: AnalyzeOnboardingProps) => {
 
           {/* Icon */}
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-accent/30 bg-gradient-to-br from-accent/20 to-accent-dim/10 shadow-glow-soft">
-            <Github className="h-7 w-7 text-accent" />
+            <FolderOpen className="h-7 w-7 text-accent" />
           </div>
 
           <h2 className="text-lg leading-snug font-semibold text-text-primary">
             Analyze your first repository
           </h2>
           <p className="mx-auto mt-1.5 max-w-xs text-sm leading-relaxed text-text-secondary">
-            Paste a GitHub URL and GitNexus will clone it, parse the code, and build a live
-            knowledge graph — right in your browser.
+            Paste an absolute local repository path and GitNexus will parse the code and build a
+            live knowledge graph — entirely on this machine.
           </p>
         </div>
       </div>
@@ -63,7 +63,8 @@ export const AnalyzeOnboarding = ({ onComplete }: AnalyzeOnboardingProps) => {
 
       {/* Footer hint */}
       <p className="mt-5 text-center text-[11px] leading-relaxed text-text-muted">
-        Public repos only &middot; Cloned locally by the server &middot; No data leaves your machine
+        Local repositories only &middot; Parsed by the local runtime &middot; No data leaves your
+        machine
       </p>
     </div>
   );

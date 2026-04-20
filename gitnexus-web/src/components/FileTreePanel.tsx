@@ -18,7 +18,7 @@ import {
   AtSign,
   Type,
 } from '@/lib/lucide-icons';
-import { useAppState } from '../hooks/useAppState';
+import { useAppState } from '../hooks/useAppState.local-runtime';
 import { FILTERABLE_LABELS, NODE_COLORS, ALL_EDGE_TYPES, EDGE_INFO } from '../lib/constants';
 import type { GraphNode, NodeLabel } from 'gitnexus-shared';
 

@@ -9,6 +9,7 @@ import {
   LLMSettings,
   DEFAULT_LLM_SETTINGS,
   LLMProvider,
+  CodexConfig,
   OpenAIConfig,
   AzureOpenAIConfig,
   GeminiConfig,
@@ -266,6 +267,14 @@ export const setActiveProvider = (provider: LLMProvider): LLMSettings => {
 type ProviderBuilder = (settings: LLMSettings) => ProviderConfig | null;
 
 const providerBuilders: Record<LLMProvider, ProviderBuilder> = {
+  codex: (settings) => {
+    return {
+      provider: 'codex',
+      model: settings.codex?.model || 'codex-account',
+      temperature: settings.codex?.temperature,
+      maxTokens: settings.codex?.maxTokens,
+    } as CodexConfig;
+  },
   openai: (settings) => {
     if (!settings.openai?.apiKey) return null;
     return { provider: 'openai', ...settings.openai } as OpenAIConfig;
@@ -351,6 +360,8 @@ export const clearSettings = (): void => {
  */
 export const getProviderDisplayName = (provider: LLMProvider): string => {
   switch (provider) {
+    case 'codex':
+      return 'Codex Account';
     case 'openai':
       return 'OpenAI';
     case 'azure-openai':
@@ -377,6 +388,8 @@ export const getProviderDisplayName = (provider: LLMProvider): string => {
  */
 export const getAvailableModels = (provider: LLMProvider): string[] => {
   switch (provider) {
+    case 'codex':
+      return ['codex-account'];
     case 'openai':
       return ['gpt-4.5-preview', 'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo'];
     case 'azure-openai':

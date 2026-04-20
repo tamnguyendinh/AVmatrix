@@ -11,7 +11,7 @@ const execFileMock = vi.fn((...args: any[]) => {
 });
 
 // By default, execFileSync throws (simulating `which gitnexus` not found)
-// so getMcpEntry() falls back to the npx path.
+// so getMcpEntry() writes a PATH-based `gitnexus mcp` entry.
 const execFileSyncMock = vi.fn(() => {
   throw new Error('not found');
 });
@@ -74,12 +74,12 @@ describe('setupClaudeCode', () => {
     const config = JSON.parse(raw);
 
     expect(config.mcpServers.gitnexus).toEqual({
-      command: 'cmd',
-      args: ['/c', 'npx', '-y', 'gitnexus@latest', 'mcp'],
+      command: 'gitnexus',
+      args: ['mcp'],
     });
   });
 
-  it('writes non-win32 MCP entry with npx directly', async () => {
+  it('writes non-win32 MCP entry with PATH-based gitnexus command', async () => {
     setPlatform('darwin');
 
     const { setupCommand } = await import('../../src/cli/setup.js');
@@ -89,8 +89,8 @@ describe('setupClaudeCode', () => {
     const config = JSON.parse(raw);
 
     expect(config.mcpServers.gitnexus).toEqual({
-      command: 'npx',
-      args: ['-y', 'gitnexus@latest', 'mcp'],
+      command: 'gitnexus',
+      args: ['mcp'],
     });
   });
 
@@ -174,7 +174,7 @@ describe('setupClaudeCode', () => {
     });
   });
 
-  it('falls back to npx when gitnexus is not on PATH', async () => {
+  it('falls back to PATH-based gitnexus when binary resolution fails', async () => {
     setPlatform('darwin');
     execFileSyncMock.mockImplementationOnce(() => {
       throw new Error('not found');
@@ -187,8 +187,8 @@ describe('setupClaudeCode', () => {
     const config = JSON.parse(raw);
 
     expect(config.mcpServers.gitnexus).toEqual({
-      command: 'npx',
-      args: ['-y', 'gitnexus@latest', 'mcp'],
+      command: 'gitnexus',
+      args: ['mcp'],
     });
   });
 });

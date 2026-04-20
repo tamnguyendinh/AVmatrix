@@ -10,6 +10,7 @@
  */
 import { DEFAULT_OLLAMA_BASE_URL, DEFAULT_OPENROUTER_BASE_URL } from '../../config/ui-constants';
 export type LLMProvider =
+  | 'codex'
   | 'openai'
   | 'azure-openai'
   | 'gemini'
@@ -27,6 +28,14 @@ export interface BaseProviderConfig {
   model: string;
   temperature?: number;
   maxTokens?: number;
+}
+
+/**
+ * Codex local-session configuration
+ */
+export interface CodexConfig extends BaseProviderConfig {
+  provider: 'codex';
+  model: string;
 }
 
 /**
@@ -110,6 +119,7 @@ export interface GLMConfig extends BaseProviderConfig {
  * Union type for all provider configurations
  */
 export type ProviderConfig =
+  | CodexConfig
   | OpenAIConfig
   | AzureOpenAIConfig
   | GeminiConfig
@@ -124,6 +134,7 @@ export type ProviderConfig =
  */
 export interface LLMSettings {
   activeProvider: LLMProvider;
+  codex?: Partial<Omit<CodexConfig, 'provider'>>;
   /**
    * Provider settings are persisted to localStorage and may be partially configured.
    * We validate required fields at runtime before creating a ProviderConfig.
@@ -152,6 +163,10 @@ export const DEFAULT_LLM_SETTINGS: LLMSettings = {
   intelligentClustering: false,
   hasSeenClusteringPrompt: false,
   useSameModelForClustering: true,
+  codex: {
+    model: 'codex-account',
+    temperature: 0,
+  },
   openai: {
     apiKey: '',
     model: 'gpt-4o',

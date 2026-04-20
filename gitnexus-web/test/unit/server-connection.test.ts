@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fetchGraph, normalizeServerUrl, setBackendUrl } from '../../src/services/backend-client';
+import {
+  connectToServer,
+  fetchGraph,
+  normalizeServerUrl,
+  setBackendUrl,
+} from '../../src/services/backend-client';
 
 describe('normalizeServerUrl', () => {
   it('adds http:// to localhost', () => {
@@ -10,8 +15,10 @@ describe('normalizeServerUrl', () => {
     expect(normalizeServerUrl('127.0.0.1:4747')).toBe('http://127.0.0.1:4747');
   });
 
-  it('adds https:// to non-local hosts', () => {
-    expect(normalizeServerUrl('example.com')).toBe('https://example.com');
+  it('rejects non-local hosts', () => {
+    expect(() => normalizeServerUrl('example.com')).toThrow(
+      /local-only mode only supports backend URLs on localhost, 127.0.0.1, or \[::1\]/i,
+    );
   });
 
   it('strips trailing slashes', () => {
@@ -27,8 +34,43 @@ describe('normalizeServerUrl', () => {
     expect(normalizeServerUrl('  localhost:4747  ')).toBe('http://localhost:4747');
   });
 
-  it('preserves existing https://', () => {
-    expect(normalizeServerUrl('https://gitnexus.example.com')).toBe('https://gitnexus.example.com');
+  it('supports IPv6 loopback', () => {
+    expect(normalizeServerUrl('[::1]:4747')).toBe('http://[::1]:4747');
+  });
+
+  it('rejects non-root local paths', () => {
+    expect(() => normalizeServerUrl('http://localhost:4747/gitnexus')).toThrow(
+      /expects the backend URL to point at the local server root or \/api/i,
+    );
+  });
+
+  it('rejects remote hosts with explicit protocols', () => {
+    expect(() => normalizeServerUrl('https://gitnexus.example.com')).toThrow(
+      /local-only mode only supports backend URLs on localhost, 127.0.0.1, or \[::1\]/i,
+    );
+  });
+
+  it('normalizes backend URLs when set directly', () => {
+    setBackendUrl('http://localhost:4747/api');
+    expect(normalizeServerUrl('http://localhost:4747/api')).toBe('http://localhost:4747');
+  });
+
+  it('rejects remote URLs when set directly', () => {
+    expect(() => setBackendUrl('https://gitnexus.example.com')).toThrow(
+      /local-only mode only supports backend URLs on localhost, 127.0.0.1, or \[::1\]/i,
+    );
+  });
+});
+
+describe('connectToServer', () => {
+  it('rejects remote backend URLs before issuing requests', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(connectToServer('https://gitnexus.example.com')).rejects.toThrow(
+      /local-only mode only supports backend URLs on localhost, 127.0.0.1, or \[::1\]/i,
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 

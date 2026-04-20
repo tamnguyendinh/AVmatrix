@@ -1,61 +1,46 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { JobManager } from '../../src/server/analyze-job.js';
+import fs from 'fs/promises';
+import os from 'os';
+import path from 'path';
+import { afterEach, describe, expect, it } from 'vitest';
+import { resolveAnalyzeRepoPath } from '../../src/server/local-path-policy.js';
 
-describe('analyze API logic', () => {
-  let manager: JobManager;
+const tempDirs: string[] = [];
 
-  beforeEach(() => {
-    manager = new JobManager();
+async function createTempRepo(name: string): Promise<string> {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), `${name}-`));
+  tempDirs.push(dir);
+  return dir;
+}
+
+afterEach(async () => {
+  await Promise.all(tempDirs.splice(0).map((dir) => fs.rm(dir, { recursive: true, force: true })));
+});
+
+describe('analyze API local path policy', () => {
+  it('resolves an existing absolute local repo path to its canonical path', async () => {
+    const repoPath = await createTempRepo('gitnexus-analyze');
+
+    await expect(resolveAnalyzeRepoPath(repoPath)).resolves.toBe(await fs.realpath(repoPath));
   });
 
-  afterEach(() => {
-    manager.dispose();
-  });
-
-  it('creates a job and returns 202 shape', () => {
-    const job = manager.createJob({ repoUrl: 'https://github.com/user/repo' });
-    const response = { jobId: job.id, status: job.status };
-    expect(response.jobId).toBeTruthy();
-    expect(response.status).toBe('queued');
-  });
-
-  it('rejects when job already active for different repo', () => {
-    const job1 = manager.createJob({ repoUrl: 'https://github.com/user/repo1' });
-    manager.updateJob(job1.id, { status: 'analyzing' });
-    expect(() => manager.createJob({ repoUrl: 'https://github.com/user/repo2' })).toThrow(
-      /already in progress/,
+  it('rejects remote URLs', async () => {
+    await expect(resolveAnalyzeRepoPath('https://github.com/user/repo')).rejects.toThrow(
+      /local filesystem path/,
     );
   });
 
-  it('returns existing job for same repo URL', () => {
-    const job1 = manager.createJob({ repoUrl: 'https://github.com/user/repo' });
-    manager.updateJob(job1.id, { status: 'analyzing' });
-    const job2 = manager.createJob({ repoUrl: 'https://github.com/user/repo' });
-    expect(job2.id).toBe(job1.id);
+  it('rejects relative paths', async () => {
+    await expect(resolveAnalyzeRepoPath('repos/GitNexus')).rejects.toThrow(/absolute path/);
   });
 
-  it('SSE progress listener receives all events including terminal', () => {
-    const job = manager.createJob({ repoUrl: 'https://github.com/user/sse-test' });
-    const events: any[] = [];
-    const unsub = manager.onProgress(job.id, (progress) => {
-      events.push(progress);
-    });
+  it('rejects UNC paths', async () => {
+    await expect(resolveAnalyzeRepoPath('\\\\server\\share\\repo')).rejects.toThrow(
+      /UNC and network-share paths/,
+    );
+  });
 
-    manager.updateJob(job.id, {
-      status: 'analyzing',
-      progress: { phase: 'parsing', percent: 30, message: 'Parsing' },
-    });
-    manager.updateJob(job.id, {
-      progress: { phase: 'calls', percent: 50, message: 'Tracing calls' },
-    });
-    manager.updateJob(job.id, { status: 'complete', repoName: 'sse-test' });
-
-    unsub();
-
-    expect(events.length).toBe(3);
-    expect(events[0].phase).toBe('parsing');
-    expect(events[1].phase).toBe('calls');
-    expect(events[2].phase).toBe('complete');
-    expect(events[2].percent).toBe(100);
+  it('rejects missing folders', async () => {
+    const missingPath = path.join(os.tmpdir(), 'gitnexus-missing-repo');
+    await expect(resolveAnalyzeRepoPath(missingPath)).rejects.toThrow(/does not exist/);
   });
 });

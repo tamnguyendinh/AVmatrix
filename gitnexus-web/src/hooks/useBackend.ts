@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { probeBackend, setBackendUrl as setServiceUrl } from '../services/backend-client';
+import {
+  normalizeServerUrl,
+  probeBackend,
+  setBackendUrl as setServiceUrl,
+} from '../services/backend-client';
 import { DEFAULT_BACKEND_URL } from '../config/ui-constants';
 
 // ── localStorage keys ────────────────────────────────────────────────────────
@@ -28,8 +32,19 @@ export interface UseBackendResult {
 export function useBackend(): UseBackendResult {
   const [backendUrl] = useState<string>(() => {
     try {
-      return localStorage.getItem(LS_URL_KEY) ?? DEFAULT_BACKEND_URL;
+      const saved = localStorage.getItem(LS_URL_KEY);
+      if (!saved) {
+        return DEFAULT_BACKEND_URL;
+      }
+      const normalized = normalizeServerUrl(saved);
+      localStorage.setItem(LS_URL_KEY, normalized);
+      return normalized;
     } catch {
+      try {
+        localStorage.removeItem(LS_URL_KEY);
+      } catch {
+        // ignore cleanup failure
+      }
       return DEFAULT_BACKEND_URL;
     }
   });

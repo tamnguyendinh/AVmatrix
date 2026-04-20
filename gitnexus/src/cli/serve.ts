@@ -1,5 +1,7 @@
 import { createServer } from '../server/api.js';
 
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
+
 // Catch anything that would cause a silent exit
 process.on('uncaughtException', (err) => {
   console.error('\n[gitnexus serve] Uncaught exception:', err.message);
@@ -15,9 +17,17 @@ process.on('unhandledRejection', (reason: any) => {
 export const serveCommand = async (options?: { port?: string; host?: string }) => {
   const port = Number(options?.port ?? 4747);
   // Default to 'localhost' so the OS decides whether to bind to 127.0.0.1 or
-  // ::1 based on system configuration, avoiding spurious CORS errors when the
-  // hosted frontend at gitnexus.vercel.app connects to localhost.
+  // ::1 based on system configuration. Local-only mode keeps the shared runtime
+  // on loopback so the browser UI and CLI stay on this machine.
   const host = options?.host ?? 'localhost';
+
+  if (!LOOPBACK_HOSTS.has(host)) {
+    console.error('\nFailed to start GitNexus server:\n');
+    console.error(
+      '  Local-only mode only allows loopback hosts: localhost, 127.0.0.1, or ::1.\n',
+    );
+    process.exit(1);
+  }
 
   try {
     await createServer(port, host);

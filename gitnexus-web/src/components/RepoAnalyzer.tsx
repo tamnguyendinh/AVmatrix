@@ -1,14 +1,12 @@
 /**
  * RepoAnalyzer
  *
- * Two input modes:
- *   - "github"  → GitHub URL (https://github.com/owner/repo)
- *   - "local"   → Select a local folder via the browser's native directory picker
+ * Local-only input:
+ *   - "local" → Paste an absolute local folder path for analysis
  */
 
 import { useState, useRef, useEffect, useId } from 'react';
 import {
-  Github,
   FolderOpen,
   Loader2,
   Check,
@@ -26,48 +24,16 @@ import { AnalyzeProgress } from './AnalyzeProgress';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-type InputMode = 'github' | 'local';
-
-const GITHUB_RE = /^https?:\/\/(www\.)?github\.com\/[^/\s]+\/[^/\s]+/i;
 const IS_WINDOWS = navigator.userAgent.toLowerCase().includes('win');
 
-function isValidGithubUrl(value: string): boolean {
-  return GITHUB_RE.test(value.trim());
-}
-
-// ── Mode tabs ────────────────────────────────────────────────────────────────
-
-function ModeTabs({ mode, onChange }: { mode: InputMode; onChange: (m: InputMode) => void }) {
-  return (
-    <div className="flex gap-1 rounded-lg bg-elevated p-1" role="tablist" aria-label="Input type">
-      <button
-        role="tab"
-        aria-selected={mode === 'github'}
-        onClick={() => onChange('github')}
-        className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-150 ${
-          mode === 'github'
-            ? 'bg-accent text-white shadow-sm'
-            : 'text-text-muted hover:text-text-secondary'
-        } `}
-      >
-        <Github className="h-3 w-3" />
-        GitHub URL
-      </button>
-      <button
-        role="tab"
-        aria-selected={mode === 'local'}
-        onClick={() => onChange('local')}
-        className={`flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-150 ${
-          mode === 'local'
-            ? 'bg-accent text-white shadow-sm'
-            : 'text-text-muted hover:text-text-secondary'
-        } `}
-      >
-        <FolderOpen className="h-3 w-3" />
-        Local Folder
-      </button>
-    </div>
-  );
+function isLikelyAbsoluteLocalPath(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  if (trimmed.startsWith('\\\\') || trimmed.startsWith('//')) return false;
+  if (IS_WINDOWS) {
+    return /^[a-zA-Z]:[\\/]/.test(trimmed);
+  }
+  return trimmed.startsWith('/');
 }
 
 // ── Analyze button ───────────────────────────────────────────────────────────
@@ -136,8 +102,6 @@ export interface RepoAnalyzerProps {
 export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProps) => {
   const inputId = useId();
   const folderInputRef = useRef<HTMLInputElement>(null);
-  const [mode, setMode] = useState<InputMode>('github');
-  const [githubUrl, setGithubUrl] = useState('');
   const [localPath, setLocalPath] = useState('');
   const [phase, setPhase] = useState<InternalPhase>('input');
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -159,13 +123,6 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
     };
   }, []);
 
-  const handleModeChange = (m: InputMode) => {
-    setMode(m);
-    setGithubUrl('');
-    setLocalPath('');
-    setValidationError(null);
-  };
-
   // Use the browser's native directory picker (webkitdirectory doesn't give paths,
   // so we use a text input + a "Browse" button that opens a standard file input
   // to let users pick files from the folder — the path is typed manually since
@@ -173,17 +130,11 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
   // For local paths, the user types or pastes the absolute path.
 
   const canSubmit =
-    mode === 'github'
-      ? isValidGithubUrl(githubUrl) && (phase === 'input' || phase === 'error')
-      : localPath.trim().length > 1 && (phase === 'input' || phase === 'error');
+    isLikelyAbsoluteLocalPath(localPath) && (phase === 'input' || phase === 'error');
 
   const handleAnalyze = async () => {
-    if (mode === 'github' && !isValidGithubUrl(githubUrl)) {
-      setValidationError('Please enter a valid GitHub repository URL.');
-      return;
-    }
-    if (mode === 'local' && localPath.trim().length < 2) {
-      setValidationError('Please enter a folder path.');
+    if (!isLikelyAbsoluteLocalPath(localPath)) {
+      setValidationError('Please enter an absolute local folder path.');
       return;
     }
 
@@ -191,12 +142,12 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
     setPhase('starting');
 
     try {
-      const request = mode === 'github' ? { url: githubUrl.trim() } : { path: localPath.trim() };
+      const request = { path: localPath.trim() };
       const { jobId } = await startAnalyze(request);
       jobIdRef.current = jobId;
       setPhase('analyzing');
 
-      const nameSource = mode === 'github' ? githubUrl.trim() : localPath.trim();
+      const nameSource = localPath.trim();
       const controller = streamAnalyzeProgress(
         jobId,
         (p) => setProgress(p),
@@ -242,63 +193,8 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
 
   return (
     <div className="space-y-4">
-      {/* Mode tabs */}
-      {showInput && <ModeTabs mode={mode} onChange={handleModeChange} />}
-
-      {/* GitHub URL input */}
-      {showInput && mode === 'github' && (
-        <div className="space-y-2">
-          <label
-            htmlFor={inputId}
-            className="block text-xs font-medium tracking-wider text-text-secondary uppercase"
-          >
-            GitHub Repository URL
-          </label>
-          <div
-            className={`flex items-center gap-3 rounded-xl border bg-void px-4 py-3.5 transition-all duration-200 ${
-              validationError && phase === 'error'
-                ? 'border-red-500/50'
-                : isValidGithubUrl(githubUrl)
-                  ? 'border-accent/50 shadow-[0_0_0_3px_rgba(124,58,237,0.08)]'
-                  : 'border-border-default focus-within:border-accent/40'
-            } `}
-          >
-            <Github className="h-4 w-4 shrink-0 text-text-muted" />
-            <input
-              id={inputId}
-              type="url"
-              value={githubUrl}
-              onChange={(e) => {
-                setGithubUrl(e.target.value);
-                if (validationError) setValidationError(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && canSubmit && !isLoading) {
-                  e.preventDefault();
-                  handleAnalyze();
-                }
-              }}
-              disabled={isLoading}
-              placeholder="https://github.com/owner/repo"
-              autoComplete="url"
-              spellCheck={false}
-              className="flex-1 border-none bg-transparent font-mono text-sm text-text-primary outline-none placeholder:text-text-muted disabled:opacity-50"
-            />
-            {githubUrl.length > 10 && (
-              <div className="shrink-0">
-                {isValidGithubUrl(githubUrl) ? (
-                  <Check className="h-3.5 w-3.5 text-emerald-400" />
-                ) : (
-                  <AlertCircle className="h-3.5 w-3.5 text-text-muted" />
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Local folder input */}
-      {showInput && mode === 'local' && (
+      {showInput && (
         <div className="space-y-2">
           <label
             htmlFor={`${inputId}-local`}
@@ -310,7 +206,7 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
             className={`flex items-center gap-3 rounded-xl border bg-void px-4 py-3.5 transition-all duration-200 ${
               validationError && phase === 'error'
                 ? 'border-red-500/50'
-                : localPath.trim().length > 1
+                : isLikelyAbsoluteLocalPath(localPath)
                   ? 'border-accent/50 shadow-[0_0_0_3px_rgba(124,58,237,0.08)]'
                   : 'border-border-default focus-within:border-accent/40'
             } `}
@@ -336,7 +232,7 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
               spellCheck={false}
               className="flex-1 border-none bg-transparent font-mono text-sm text-text-primary outline-none placeholder:text-text-muted disabled:opacity-50"
             />
-            {localPath.trim().length > 1 && (
+            {isLikelyAbsoluteLocalPath(localPath) && (
               <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
             )}
           </div>
@@ -350,12 +246,9 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
             onChange={(e) => {
               const files = e.target.files;
               if (files && files.length > 0) {
-                const rel = files[0].webkitRelativePath;
-                const folderName = rel.split('/')[0];
-                if (folderName) {
-                  setLocalPath(folderName);
-                  setValidationError(null);
-                }
+                setValidationError(
+                  'Browsers do not expose absolute folder paths here. Paste the full local path manually.',
+                );
               }
               e.target.value = '';
             }}
@@ -367,8 +260,12 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
             className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-border-subtle bg-elevated px-3 py-2 text-xs font-medium text-text-secondary transition-all duration-150 hover:bg-hover hover:text-text-primary disabled:opacity-50"
           >
             <FolderOpen className="h-3.5 w-3.5" />
-            Browse for folder
+            Folder picker hint
           </button>
+          <p className="text-xs text-text-muted">
+            Paste an absolute local path. Browser folder pickers cannot reveal the full path, so the
+            picker only helps confirm the folder name.
+          </p>
         </div>
       )}
 

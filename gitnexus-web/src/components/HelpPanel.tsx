@@ -370,8 +370,9 @@ function TabContent({
             ✓ Semantic Ready
           </p>
           <p style={{ fontSize: 12, color: '#9ca3af', margin: 0, lineHeight: 1.6 }}>
-            Your repo is indexed and ready for semantic queries. Nexus AI understands code structure
-            and relationships, not just file names.
+            Your repo is indexed and ready for semantic queries. Nexus AI runs through your local
+            session runtime, so it understands code structure and relationships, not just file
+            names.
           </p>
         </div>
 
@@ -700,16 +701,11 @@ export const HelpPanel = ({ isOpen, onClose, nodeCount, edgeCount }: HelpPanelPr
           }}
         >
           <span style={{ fontSize: 11, color: '#4b5563' }}>
-            GitNexus — open source codebase graph explorer
+            GitNexus — local-first codebase graph explorer
           </span>
-          <a
-            href="https://github.com/abhigyanpatwari/GitNexus"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ fontSize: 11, color: '#a78bfa', textDecoration: 'none' }}
-          >
-            Docs & GitHub ↗
-          </a>
+          <span style={{ fontSize: 11, color: '#a78bfa' }}>
+            Browser UI + local runtime
+          </span>
         </div>
       </div>
     </div>

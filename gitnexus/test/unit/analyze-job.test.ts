@@ -13,14 +13,14 @@ describe('JobManager', () => {
   });
 
   it('creates a job with queued status', () => {
-    const job = manager.createJob({ repoUrl: 'https://github.com/user/repo' });
+    const job = manager.createJob({ repoPath: '/repos/repo' });
     expect(job.id).toBeTruthy();
     expect(job.status).toBe('queued');
-    expect(job.repoUrl).toBe('https://github.com/user/repo');
+    expect(job.repoPath).toBe('/repos/repo');
   });
 
   it('retrieves a job by id', () => {
-    const created = manager.createJob({ repoUrl: 'https://github.com/user/repo' });
+    const created = manager.createJob({ repoPath: '/repos/repo' });
     const retrieved = manager.getJob(created.id);
     expect(retrieved).toEqual(created);
   });
@@ -30,30 +30,30 @@ describe('JobManager', () => {
   });
 
   it('enforces single-slot concurrency', () => {
-    const job1 = manager.createJob({ repoUrl: 'https://github.com/user/repo1' });
+    const job1 = manager.createJob({ repoPath: '/repos/repo1' });
     manager.updateJob(job1.id, { status: 'analyzing' });
-    expect(() => manager.createJob({ repoUrl: 'https://github.com/user/repo2' })).toThrow(
+    expect(() => manager.createJob({ repoPath: '/repos/repo2' })).toThrow(
       /already in progress/,
     );
   });
 
   it('allows new job after previous completes', () => {
-    const job1 = manager.createJob({ repoUrl: 'https://github.com/user/repo1' });
+    const job1 = manager.createJob({ repoPath: '/repos/repo1' });
     manager.updateJob(job1.id, { status: 'analyzing' });
     manager.updateJob(job1.id, { status: 'complete' });
-    const job2 = manager.createJob({ repoUrl: 'https://github.com/user/repo2' });
+    const job2 = manager.createJob({ repoPath: '/repos/repo2' });
     expect(job2.status).toBe('queued');
   });
 
-  it('returns existing job for same repoUrl when active', () => {
-    const job1 = manager.createJob({ repoUrl: 'https://github.com/user/repo' });
+  it('returns existing job for same repoPath when active', () => {
+    const job1 = manager.createJob({ repoPath: '/repos/repo' });
     manager.updateJob(job1.id, { status: 'analyzing' });
-    const job2 = manager.createJob({ repoUrl: 'https://github.com/user/repo' });
+    const job2 = manager.createJob({ repoPath: '/repos/repo' });
     expect(job2.id).toBe(job1.id);
   });
 
   it('updates job progress', () => {
-    const job = manager.createJob({ repoUrl: 'https://github.com/user/repo' });
+    const job = manager.createJob({ repoPath: '/repos/repo' });
     manager.updateJob(job.id, {
       status: 'analyzing',
       progress: { phase: 'parsing', percent: 30, message: 'Parsing code' },
@@ -64,7 +64,7 @@ describe('JobManager', () => {
   });
 
   it('emits progress events', () => {
-    const job = manager.createJob({ repoUrl: 'https://github.com/user/repo' });
+    const job = manager.createJob({ repoPath: '/repos/repo' });
     const events: any[] = [];
     manager.onProgress(job.id, (data) => events.push(data));
 
@@ -77,7 +77,7 @@ describe('JobManager', () => {
   });
 
   it('emits terminal event on complete', () => {
-    const job = manager.createJob({ repoUrl: 'https://github.com/user/repo' });
+    const job = manager.createJob({ repoPath: '/repos/repo' });
     const events: any[] = [];
     manager.onProgress(job.id, (data) => events.push(data));
 
@@ -89,13 +89,13 @@ describe('JobManager', () => {
   });
 
   it('sets completedAt on terminal status', () => {
-    const job = manager.createJob({ repoUrl: 'https://github.com/user/repo' });
+    const job = manager.createJob({ repoPath: '/repos/repo' });
     manager.updateJob(job.id, { status: 'complete' });
     expect(manager.getJob(job.id)!.completedAt).toBeDefined();
   });
 
   it('unsubscribe stops events', () => {
-    const job = manager.createJob({ repoUrl: 'https://github.com/user/repo' });
+    const job = manager.createJob({ repoPath: '/repos/repo' });
     const events: any[] = [];
     const unsub = manager.onProgress(job.id, (data) => events.push(data));
 
@@ -111,7 +111,7 @@ describe('JobManager', () => {
   });
 
   it('cancelJob sets status to failed with reason', () => {
-    const job = manager.createJob({ repoUrl: 'https://github.com/user/repo' });
+    const job = manager.createJob({ repoPath: '/repos/repo' });
     manager.updateJob(job.id, { status: 'analyzing' });
     const cancelled = manager.cancelJob(job.id, 'Cancelled by user');
     expect(cancelled).toBe(true);
@@ -120,7 +120,7 @@ describe('JobManager', () => {
   });
 
   it('cancelJob returns false for terminal jobs', () => {
-    const job = manager.createJob({ repoUrl: 'https://github.com/user/repo' });
+    const job = manager.createJob({ repoPath: '/repos/repo' });
     manager.updateJob(job.id, { status: 'complete' });
     expect(manager.cancelJob(job.id)).toBe(false);
   });

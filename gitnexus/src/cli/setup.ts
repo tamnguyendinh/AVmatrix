@@ -48,12 +48,9 @@ function resolveGitnexusBin(): string | null {
 /**
  * The MCP server entry for all editors.
  *
- * Prefers the globally-installed `gitnexus` binary (starts in ~1 s) over
- * `npx -y gitnexus@latest` (cold-cache install of native deps can take
- * >60 s, exceeding Claude Code's 30 s MCP connection timeout).
- *
- * Falls back to npx when the binary isn't on PATH — e.g. first-time
- * users who ran `npx gitnexus analyze` but haven't done `npm i -g`.
+ * Prefers the resolved `gitnexus` binary when it's already on PATH.
+ * If resolution fails during setup, writes a plain `gitnexus mcp` entry
+ * so the MCP client still uses the local CLI from PATH at runtime.
  */
 function getMcpEntry() {
   const bin = resolveGitnexusBin();
@@ -62,17 +59,7 @@ function getMcpEntry() {
     return { command: bin, args: ['mcp'] };
   }
 
-  // Fallback: npx (works without a global install, but slow cold-start)
-  if (process.platform === 'win32') {
-    return {
-      command: 'cmd',
-      args: ['/c', 'npx', '-y', 'gitnexus@latest', 'mcp'],
-    };
-  }
-  return {
-    command: 'npx',
-    args: ['-y', 'gitnexus@latest', 'mcp'],
-  };
+  return { command: 'gitnexus', args: ['mcp'] };
 }
 
 /**

@@ -22,7 +22,6 @@ export interface AnalyzeJobProgress {
 export interface AnalyzeJob {
   id: string;
   status: 'queued' | 'cloning' | 'analyzing' | 'loading' | 'complete' | 'failed';
-  repoUrl?: string;
   repoPath?: string;
   repoName?: string;
   progress: AnalyzeJobProgress;
@@ -49,14 +48,11 @@ export class JobManager {
   }
 
   /** Create a new job, or return existing active job for the same repo. */
-  createJob(params: { repoUrl?: string; repoPath?: string }): AnalyzeJob {
-    // Dedup: return existing active job for the same repo (by URL or path)
+  createJob(params: { repoPath: string }): AnalyzeJob {
+    // Dedup: return existing active job for the same repo path
     for (const job of this.jobs.values()) {
       if (!this.isTerminal(job.status)) {
-        const isSameRepo =
-          (params.repoUrl && job.repoUrl === params.repoUrl) ||
-          (params.repoPath && job.repoPath === params.repoPath);
-        if (isSameRepo) {
+        if (job.repoPath === params.repoPath) {
           return job;
         }
       }
@@ -72,7 +68,6 @@ export class JobManager {
     const job: AnalyzeJob = {
       id: randomUUID(),
       status: 'queued',
-      repoUrl: params.repoUrl,
       repoPath: params.repoPath,
       progress: { phase: 'queued', percent: 0, message: 'Waiting to start...' },
       startedAt: Date.now(),

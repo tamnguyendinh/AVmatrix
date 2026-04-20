@@ -9,7 +9,7 @@ import {
   Sparkles,
   Table,
 } from '@/lib/lucide-icons';
-import { useAppState } from '../hooks/useAppState';
+import { useAppState } from '../hooks/useAppState.local-runtime';
 
 const EXAMPLE_QUERIES = [
   {

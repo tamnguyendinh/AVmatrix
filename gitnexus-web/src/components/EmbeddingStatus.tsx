@@ -1,5 +1,5 @@
 import { Brain, Loader2, Check, AlertCircle, Zap } from '@/lib/lucide-icons';
-import { useAppState } from '../hooks/useAppState';
+import { useAppState } from '../hooks/useAppState.local-runtime';
 import { useState } from 'react';
 import { WebGPUFallbackDialog } from './WebGPUFallbackDialog';
 

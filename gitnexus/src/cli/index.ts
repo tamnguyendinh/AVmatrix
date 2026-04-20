@@ -16,7 +16,7 @@ program.name('gitnexus').description('GitNexus local CLI and MCP server').versio
 
 program
   .command('setup')
-  .description('One-time setup: configure MCP for Cursor, Claude Code, OpenCode, Codex')
+  .description('One-time setup: configure local MCP/runtime access for Cursor, Claude Code, OpenCode, Codex')
   .action(createLazyAction(() => import('./setup.js'), 'setupCommand'));
 
 program
@@ -56,14 +56,14 @@ program
 
 program
   .command('serve')
-  .description('Start local HTTP server for web UI connection')
+  .description('Start local HTTP bridge for the web UI and shared session runtime')
   .option('-p, --port <port>', 'Port number', '4747')
-  .option('--host <host>', 'Bind address (default: 127.0.0.1, use 0.0.0.0 for remote access)')
+  .option('--host <host>', 'Bind address (loopback only: localhost, 127.0.0.1, or ::1)')
   .action(createLazyAction(() => import('./serve.js'), 'serveCommand'));
 
 program
   .command('mcp')
-  .description('Start MCP server (stdio) — serves all indexed repos')
+  .description('Start MCP server (stdio) backed by the same local runtime core')
   .action(createLazyAction(() => import('./mcp.js'), 'mcpCommand'));
 
 program
@@ -85,7 +85,7 @@ program
 
 program
   .command('wiki [path]')
-  .description('Generate repository wiki from knowledge graph')
+  .description('Wiki capability entry point (guarded by local-only wiki mode)')
   .option('-f, --force', 'Force full regeneration even if up to date')
   .option('--provider <provider>', 'LLM provider: openai or cursor (default: openai)')
   .option('--model <model>', 'LLM model or Azure deployment name (default: minimax/minimax-m2.5)')
@@ -107,7 +107,12 @@ program
   .option('--gist', 'Publish wiki as a public GitHub Gist after generation')
   .option('-v, --verbose', 'Enable verbose output (show LLM commands and responses)')
   .option('--review', 'Stop after grouping to review module structure before generating pages')
-  .action(createLazyAction(() => import('./wiki.js'), 'wikiCommand'));
+  .action(createLazyAction(() => import('./wiki-gated.js'), 'wikiGatedCommand'));
+
+program
+  .command('wiki-mode [mode]')
+  .description('Show or set wiki capability mode (off or local)')
+  .action(createLazyAction(() => import('./wiki-gated.js'), 'wikiModeCommand'));
 
 program
   .command('augment <pattern>')

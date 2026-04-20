@@ -193,11 +193,16 @@
   - Chừa chỗ trong UI/state cho Claude Code adapter follow-up mà không phải đổi model dữ liệu
   - Có nút Check connection
   - Nếu chat nhận `INDEX_REQUIRED`, hiển thị CTA `Analyze now` hoặc điều hướng thẳng sang flow analyze local path; không tự khởi chạy analyze âm thầm
+  - Ở v1, CTA `Analyze now` sẽ reuse `RepoAnalyzer` sheet hiện có thay vì tạo flow phân tích mới riêng cho chat panel
   - Migration strategy cần chốt:
   - Nếu sessionStorage/localStorage đang chứa provider cũ, hoặc migrate sang local session bridge mode, hoặc clear one-shot có kiểm soát
   - Nếu clear, phải có fallback UX rõ ràng thay vì app boot vào trạng thái lỗi mơ hồ
   - Khi switch repo, chat mới phải bind đúng repo đang active; chat cũ phải bị hủy hoặc tách session rõ ràng
   - Nếu có feature nào đang dựa nặng vào provider-specific config, phải chỉ ra compatibility shim tương ứng thay vì xóa feature đó khỏi web
+  - Với các surface UI/state nhiều trạng thái và nhiều tính năng như `SettingsPanel`, `useAppState`, và các panel onboarding/help:
+  - Ưu tiên tạo file companion mới song song trước, đạt parity giao diện + tính năng với file cũ
+  - Chỉ thay file cũ sau khi file mới đã đạt parity và có behavioral tests đi kèm
+  - Không delete/rewrite rút gọn file cũ giữa chừng trong lúc parity chưa đạt
   - Test cần thêm/sửa:
   - gitnexus-web/test/unit/settings-service.test.ts
   - test stream client/backend-client mới cho session bridge
@@ -255,6 +260,8 @@
   - /F:/GitNexus-main/gitnexus/src/cli/setup.ts:1 bỏ fallback npx -y gitnexus@latest
   - /F:/GitNexus-main/gitnexus/src/server/api.ts:1 siết CORS còn localhost, 127.0.0.1, ::1, và no-origin
   - gitnexus-web/src/services/backend-client.ts và useBackend chỉ chấp nhận backend local như mặc định bắt buộc của chế độ local-only
+  - Backend URL cũ trong localStorage nếu trỏ remote host phải bị reset an toàn về localhost mặc định, không được âm thầm tiếp tục dùng remote endpoint
+  - Auto-connect bằng `?project=` phải mặc định về local backend URL chuẩn, không dùng `window.location.origin` kiểu hosted UI cũ
   - /F:/GitNexus-main/gitnexus/src/cli/serve.ts:1 update help/comment/copy để không còn assumption về hosted frontend
   - Xóa mọi copy “remote provider”, “API key”, “hosted UI”, “GitHub URL”, “cloud” trong onboarding/settings/help
   - Acceptance:
@@ -386,18 +393,18 @@
 
 ## Pha 2 — Web UI migrate sang session runtime
 
-- [ ] Tạo `session-client` cho web
-- [ ] Đổi `useAppState` sang session stream
-- [ ] Chuyển settings từ provider-based sang session-based
-- [ ] Đổi `SettingsPanel` sang local session management
-- [ ] Xử lý CTA `Analyze now` khi nhận `INDEX_REQUIRED`
-- [ ] Giữ nguyên chat steps/content UI
-- [ ] Migrate hoặc reset settings cũ an toàn
-- [ ] Viết behavioral tests cho web session flow
+- [x] Tạo `session-client` cho web
+- [x] Đổi `useAppState` sang session stream
+- [x] Chuyển settings từ provider-based sang session-based
+- [x] Đổi `SettingsPanel` sang local session management
+- [x] Xử lý CTA `Analyze now` khi nhận `INDEX_REQUIRED`
+- [x] Giữ nguyên chat steps/content UI
+- [x] Migrate hoặc reset settings cũ an toàn
+- [x] Viết behavioral tests cho web session flow
 
 ## Pha 2B — CLI/MCP alignment
 
-- [ ] Cập nhật help/copy của CLI theo shared runtime model
+- [x] Cập nhật help/copy của CLI theo shared runtime model
 - [ ] Cho `mcp` reuse cùng runtime/core contracts
 - [ ] Cho direct tool commands reuse cùng runtime/core contracts
 - [ ] Không thêm interactive chat command vào CLI v1 nếu không bắt buộc
@@ -406,32 +413,32 @@
 
 ## Pha 3 — Local path only
 
-- [ ] API analyze chỉ nhận local path
-- [ ] Bỏ `repoUrl` khỏi analyze flow
-- [ ] Gỡ clone/pull từ URL
-- [ ] Canonicalize path bằng `realpath`
-- [ ] Reject UNC/network share
-- [ ] Web chỉ còn local path analyze flow
-- [ ] Viết behavioral tests cho local path policy
+- [x] API analyze chỉ nhận local path
+- [x] Bỏ `repoUrl` khỏi analyze flow
+- [x] Gỡ clone/pull từ URL
+- [x] Canonicalize path bằng `realpath`
+- [x] Reject UNC/network share
+- [x] Web chỉ còn local path analyze flow
+- [x] Viết behavioral tests cho local path policy
 
 ## Pha 4 — Hardening local-only
 
-- [ ] Bỏ fallback `npx -y gitnexus@latest`
-- [ ] Siết CORS còn localhost/no-origin
-- [ ] Backend client chỉ chấp nhận local backend
+- [x] Bỏ fallback `npx -y gitnexus@latest`
+- [x] Siết CORS còn localhost/no-origin
+- [x] Backend client chỉ chấp nhận local backend
 - [ ] Bỏ toàn bộ wording remote/API key/cloud
-- [ ] Cập nhật `serve` help/copy theo local-only model
-- [ ] Viết behavioral tests cho hardening/local-only surface
+- [x] Cập nhật `serve` help/copy theo local-only model
+- [x] Viết behavioral tests cho hardening/local-only surface
 
 ## Pha 5 — Wiki capability gate
 
-- [ ] Tắt hoàn toàn remote wiki path
-- [ ] Thêm capability gate `wiki off | local`
-- [ ] Hệ chạy ổn khi `wiki off`
-- [ ] UI/CLI ẩn hoặc disable wiki dead paths đúng cách
-- [ ] Chừa contract/runtime/settings cho `wiki local`
-- [ ] `wiki local` fail-safe, không fallback remote
-- [ ] Viết behavioral tests cho wiki capability gate
+- [x] Tắt hoàn toàn remote wiki path
+- [x] Thêm capability gate `wiki off | local`
+- [x] Hệ chạy ổn khi `wiki off`
+- [x] UI/CLI ẩn hoặc disable wiki dead paths đúng cách
+- [x] Chừa contract/runtime/settings cho `wiki local`
+- [x] `wiki local` fail-safe, không fallback remote
+- [x] Viết behavioral tests cho wiki capability gate
 
 ## Pha 6 — Cleanup provider/API-key path cũ
 

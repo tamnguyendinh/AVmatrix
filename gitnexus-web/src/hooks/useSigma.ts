@@ -6,7 +6,7 @@ import forceAtlas2 from 'graphology-layout-forceatlas2';
 import noverlap from 'graphology-layout-noverlap';
 import EdgeCurveProgram from '@sigma/edge-curve';
 import { SigmaNodeAttributes, SigmaEdgeAttributes } from '../lib/graph-adapter';
-import type { NodeAnimation } from './useAppState';
+import type { NodeAnimation } from './useAppState.local-runtime';
 import type { EdgeType } from '../lib/constants';
 // Helper: Parse hex color to RGB
 const hexToRgb = (hex: string): { r: number; g: number; b: number } => {

@@ -1,4 +1,4 @@
-import { useAppState } from './useAppState';
+import { useAppState } from './useAppState.local-runtime';
 
 export const useSettings = () => {
   const { llmSettings, updateLLMSettings } = useAppState();

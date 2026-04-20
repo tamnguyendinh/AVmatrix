@@ -63,7 +63,7 @@ describe('setupCommand codex execution', () => {
 
     expect(execFileMock).toHaveBeenCalledWith(
       'codex',
-      ['mcp', 'add', 'gitnexus', '--', 'cmd', '/c', 'npx', '-y', 'gitnexus@latest', 'mcp'],
+      ['mcp', 'add', 'gitnexus', '--', 'gitnexus', 'mcp'],
       { shell: true },
       expect.any(Function),
     );
@@ -78,7 +78,7 @@ describe('setupCommand codex execution', () => {
 
     expect(execFileMock).toHaveBeenCalledWith(
       'codex',
-      ['mcp', 'add', 'gitnexus', '--', 'npx', '-y', 'gitnexus@latest', 'mcp'],
+      ['mcp', 'add', 'gitnexus', '--', 'gitnexus', 'mcp'],
       { shell: false },
       expect.any(Function),
     );

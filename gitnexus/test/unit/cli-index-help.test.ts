@@ -14,6 +14,20 @@ function runHelp(command: string) {
   });
 }
 
+function runRootHelp() {
+  return spawnSync(process.execPath, ['--import', 'tsx', cliEntry, '--help'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+  });
+}
+
+function runServeHelp() {
+  return spawnSync(process.execPath, ['--import', 'tsx', cliEntry, 'serve', '--help'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+  });
+}
+
 describe('CLI help surface', () => {
   it('query help keeps advanced search options without importing analyze deps', () => {
     const result = runHelp('query');
@@ -52,5 +66,26 @@ describe('CLI help surface', () => {
     expect(result.stdout).toContain('-v, --verbose');
     expect(result.stdout).toContain('--model <model>');
     expect(result.stdout).toContain('--gist');
+  });
+
+  it('root help describes serve and mcp as local runtime surfaces', () => {
+    const result = runRootHelp();
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('serve [options]');
+    expect(result.stdout).toContain('local HTTP bridge for the web UI');
+    expect(result.stdout).toContain('shared session runtime');
+    expect(result.stdout).toContain('mcp');
+    expect(result.stdout).toContain('backed by the same');
+    expect(result.stdout).toContain('local runtime core');
+    expect(result.stdout).toContain('wiki-mode [mode]');
+  });
+
+  it('serve help enforces loopback-only host wording', () => {
+    const result = runServeHelp();
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('loopback only');
+    expect(result.stdout).not.toContain('remote access');
   });
 });

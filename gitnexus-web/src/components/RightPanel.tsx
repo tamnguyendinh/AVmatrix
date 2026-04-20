@@ -10,10 +10,10 @@ import {
   GitBranch,
   ArrowDown,
 } from '@/lib/lucide-icons';
-import { useAppState } from '../hooks/useAppState';
+import { useAppState } from '../hooks/useAppState.local-runtime';
 import { useAutoScroll } from '../hooks/useAutoScroll';
 import { ToolCallCard } from './ToolCallCard';
-import { isProviderConfigured } from '../core/llm/settings-service';
+import { isLocalRuntimeConfigured } from '../core/llm/settings-service-local-runtime';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { ProcessesPanel } from './ProcessesPanel';
 export const RightPanel = () => {
@@ -32,7 +32,10 @@ export const RightPanel = () => {
     sendChatMessage,
     stopChatResponse,
     clearChat,
+    requestRepoAnalyzeDialog,
   } = useAppState();
+
+  const requiresAnalyze = agentError?.toLowerCase().includes('indexed') ?? false;
 
   const [chatInput, setChatInput] = useState('');
   const [activeTab, setActiveTab] = useState<'chat' | 'processes'>('chat');
@@ -270,7 +273,7 @@ export const RightPanel = () => {
             <div className="ml-auto flex items-center gap-2">
               {!isAgentReady && (
                 <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-1 text-[11px] text-amber-300">
-                  Configure AI
+                  Session offline
                 </span>
               )}
               {isAgentInitializing && (
@@ -448,10 +451,20 @@ export const RightPanel = () => {
               <div className="mt-2 flex items-center gap-2 text-xs text-amber-200">
                 <AlertTriangle className="h-3.5 w-3.5" />
                 <span>
-                  {isProviderConfigured()
-                    ? 'Initializing AI agent...'
-                    : 'Configure an LLM provider to enable chat.'}
+                  {requiresAnalyze
+                    ? 'This repository needs analysis before chat can start.'
+                    : isLocalRuntimeConfigured()
+                      ? 'Local session runtime is not ready yet.'
+                      : 'Local session runtime is unavailable.'}
                 </span>
+                {requiresAnalyze && (
+                  <button
+                    onClick={requestRepoAnalyzeDialog}
+                    className="rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-100 transition-colors hover:bg-amber-500/20"
+                  >
+                    Analyze now
+                  </button>
+                )}
               </div>
             )}
           </div>

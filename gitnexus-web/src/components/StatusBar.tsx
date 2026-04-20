@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Heart } from '@/lib/lucide-icons';
-import { useAppState } from '../hooks/useAppState';
+import { useAppState } from '../hooks/useAppState.local-runtime';
 
 export const StatusBar = () => {
   const { graph, progress } = useAppState();

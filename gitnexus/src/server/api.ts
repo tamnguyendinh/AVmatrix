@@ -2,10 +2,10 @@
  * HTTP API Server
  *
  * REST API for browser-based clients to query the local .gitnexus/ index.
- * Also hosts the MCP server over StreamableHTTP for remote AI tool access.
+ * Also hosts the MCP server over StreamableHTTP for local AI tool access.
  *
  * Security: binds to localhost by default (use --host to override).
- * CORS is restricted to localhost, private/LAN networks, and the deployed site.
+ * CORS is restricted to localhost and loopback origins.
  */
 
 import express from 'express';
@@ -33,7 +33,8 @@ import { mountMCPEndpoints } from './mcp-http.js';
 import { fork } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { JobManager } from './analyze-job.js';
-import { extractRepoName, getCloneDir, cloneOrPull } from './git-clone.js';
+import { getCloneDir } from './git-clone.js';
+import { resolveAnalyzeRepoPath } from './local-path-policy.js';
 import { RuntimeController } from '../runtime/runtime-controller.js';
 import { CodexSessionAdapter } from '../runtime/session-adapters/codex.js';
 import { mountSessionBridge } from './session-bridge.js';
@@ -48,12 +49,6 @@ const pkg = _require('../../package.json');
  * - No origin (non-browser requests such as curl or server-to-server calls)
  * - http://localhost:<port> — local development
  * - http://127.0.0.1:<port> — loopback alias
- * - RFC 1918 private/LAN networks (any port):
- *     10.0.0.0/8      → 10.x.x.x
- *     172.16.0.0/12   → 172.16.x.x – 172.31.x.x
- *     192.168.0.0/16  → 192.168.x.x
- * - https://gitnexus.vercel.app — the deployed GitNexus web UI
- *
  * @param origin - The value of the HTTP `Origin` request header, or `undefined`
  *                 when the header is absent (non-browser request).
  * @returns `true` if the origin is allowed, `false` otherwise.
@@ -70,41 +65,16 @@ export const isAllowedOrigin = (origin: string | undefined): boolean => {
     origin.startsWith('http://127.0.0.1:') ||
     origin === 'http://127.0.0.1' ||
     origin.startsWith('http://[::1]:') ||
+    origin.startsWith('https://localhost:') ||
+    origin === 'https://localhost' ||
+    origin.startsWith('https://127.0.0.1:') ||
+    origin === 'https://127.0.0.1' ||
+    origin.startsWith('https://[::1]:') ||
     origin === 'http://[::1]' ||
-    origin === 'https://gitnexus.vercel.app'
+    origin === 'https://[::1]'
   ) {
     return true;
   }
-
-  // RFC 1918 private network ranges — allow any port on these hosts.
-  // We parse the hostname out of the origin URL and check against each range.
-  let hostname: string;
-  let protocol: string;
-  try {
-    const parsed = new URL(origin);
-    hostname = parsed.hostname;
-    protocol = parsed.protocol;
-  } catch {
-    // Malformed origin — reject
-    return false;
-  }
-
-  // Only allow HTTP(S) origins — reject ftp://, file://, etc.
-  if (protocol !== 'http:' && protocol !== 'https:') return false;
-
-  const octets = hostname.split('.').map(Number);
-  if (octets.length !== 4 || octets.some((o) => !Number.isInteger(o) || o < 0 || o > 255)) {
-    return false;
-  }
-
-  const [a, b] = octets;
-
-  // 10.0.0.0/8
-  if (a === 10) return true;
-  // 172.16.0.0/12  →  172.16.x.x – 172.31.x.x
-  if (a === 172 && b >= 16 && b <= 31) return true;
-  // 192.168.0.0/16
-  if (a === 192 && b === 168) return true;
 
   return false;
 };
@@ -431,7 +401,7 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
   const app = express();
   app.disable('x-powered-by');
 
-  // CORS: allow localhost, private/LAN networks, and the deployed site.
+  // CORS: allow localhost/loopback origins only.
   // Non-browser requests (curl, server-to-server) have no origin and are allowed.
   // Disallowed origins get the response without Access-Control-Allow-Origin,
   // so the browser blocks it. We pass `false` instead of throwing an Error to
@@ -527,7 +497,6 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
       for (const job of jobManager.listJobs()) {
         const isMatch =
           job.repoName?.toLowerCase() === lower ||
-          (job.repoUrl && path.basename(job.repoUrl).replace('.git', '').toLowerCase() === lower) ||
           (job.repoPath && path.basename(job.repoPath).toLowerCase() === lower);
 
         if (isMatch && ['queued', 'cloning', 'analyzing'].includes(job.status)) {
@@ -1163,24 +1132,18 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
         return;
       }
 
-      if (!repoUrl && !repoLocalPath) {
-        res.status(400).json({ error: 'Provide "url" (git URL) or "path" (local path)' });
+      if (repoUrl) {
+        res.status(400).json({ error: 'Remote repository URLs are no longer supported; provide "path" only' });
+        return;
+      }
+      if (!repoLocalPath) {
+        res.status(400).json({ error: 'Provide "path" (local path)' });
         return;
       }
 
-      // Path validation: require absolute path, reject traversal (e.g. /tmp/../etc/passwd)
-      if (repoLocalPath) {
-        if (!path.isAbsolute(repoLocalPath)) {
-          res.status(400).json({ error: '"path" must be an absolute path' });
-          return;
-        }
-        if (path.normalize(repoLocalPath) !== path.resolve(repoLocalPath)) {
-          res.status(400).json({ error: '"path" must not contain traversal sequences' });
-          return;
-        }
-      }
+      const resolvedRepoPath = await resolveAnalyzeRepoPath(repoLocalPath);
 
-      const job = jobManager.createJob({ repoUrl, repoPath: repoLocalPath });
+      const job = jobManager.createJob({ repoPath: resolvedRepoPath });
 
       // If job was already running (dedup), just return its id
       if (job.status !== 'queued') {
@@ -1193,30 +1156,8 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
 
       // Start async work — don't await
       (async () => {
-        let targetPath = repoLocalPath;
+        const targetPath = resolvedRepoPath;
         try {
-          // Clone if URL provided
-          if (repoUrl && !repoLocalPath) {
-            const repoName = extractRepoName(repoUrl);
-            targetPath = getCloneDir(repoName);
-
-            jobManager.updateJob(job.id, {
-              status: 'cloning',
-              repoName,
-              progress: { phase: 'cloning', percent: 0, message: `Cloning ${repoUrl}...` },
-            });
-
-            await cloneOrPull(repoUrl, targetPath, (progress) => {
-              jobManager.updateJob(job.id, {
-                progress: { phase: progress.phase, percent: 5, message: progress.message },
-              });
-            });
-          }
-
-          if (!targetPath) {
-            throw new Error('No target path resolved');
-          }
-
           // Acquire shared repo lock (keyed on storagePath to match embed handler)
           const analyzeLockKey = getStoragePath(targetPath);
           const lockErr = acquireRepoLock(analyzeLockKey);
@@ -1379,7 +1320,6 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
     res.json({
       id: job.id,
       status: job.status,
-      repoUrl: job.repoUrl,
       repoPath: job.repoPath,
       repoName: job.repoName,
       progress: job.progress,

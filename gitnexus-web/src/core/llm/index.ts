@@ -20,6 +20,15 @@ export {
   getAvailableModels,
 } from './settings-service';
 
+// Local session runtime bridge
+export {
+  SessionClientError,
+  fetchSessionStatus,
+  cancelSession,
+  streamSessionChat,
+  toAgentStreamChunk,
+} from './session-client';
+
 // Tools
 export { createGraphRAGTools } from './tools';
 

@@ -31,11 +31,11 @@ export const mcpCommand = async () => {
   const repos = await backend.listRepos();
   if (repos.length === 0) {
     console.error(
-      'GitNexus: No indexed repos yet. Run `gitnexus analyze` in a git repo — the server will pick it up automatically.',
+      'GitNexus: No indexed repos yet. Run `gitnexus analyze` in a local repo — the MCP/runtime layer will pick it up automatically.',
     );
   } else {
     console.error(
-      `GitNexus: MCP server starting with ${repos.length} repo(s): ${repos.map((r) => r.name).join(', ')}`,
+      `GitNexus: MCP server starting with ${repos.length} repo(s) on the shared local runtime core: ${repos.map((r) => r.name).join(', ')}`,
     );
   }
 

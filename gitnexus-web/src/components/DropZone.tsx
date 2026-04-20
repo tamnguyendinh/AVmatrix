@@ -150,7 +150,7 @@ export const DropZone = ({ onServerConnect }: DropZoneProps) => {
   const autoConnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Connection state
-  // 'analyze'  = server up but zero repos indexed — show URL input
+  // 'analyze'  = server up but zero repos indexed — show local-path analyze input
   // 'landing'  = server up with indexed repos — show repo picker + analyze
   const [phase, setPhase] = useState<'onboarding' | 'analyze' | 'landing' | 'success' | 'loading'>(
     'onboarding',

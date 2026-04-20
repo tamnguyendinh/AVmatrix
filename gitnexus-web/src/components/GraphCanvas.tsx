@@ -11,7 +11,7 @@ import {
   LightbulbOff,
 } from '@/lib/lucide-icons';
 import { useSigma } from '../hooks/useSigma';
-import { useAppState } from '../hooks/useAppState';
+import { useAppState } from '../hooks/useAppState.local-runtime';
 import {
   knowledgeGraphToGraphology,
   filterGraphByDepth,

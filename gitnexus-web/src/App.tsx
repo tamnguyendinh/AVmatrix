@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppStateProvider, useAppState } from './hooks/useAppState';
+import { AppStateProvider, useAppState } from './hooks/useAppState.local-runtime';
 import { DropZone } from './components/DropZone';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import { Header } from './components/Header';
 import { GraphCanvas, GraphCanvasHandle } from './components/GraphCanvas';
 import { RightPanel } from './components/RightPanel';
-import { SettingsPanel } from './components/SettingsPanel';
+import { SettingsPanel } from './components/SettingsPanel.local-runtime';
 import { StatusBar } from './components/StatusBar';
 import { FileTreePanel } from './components/FileTreePanel';
 import { CodeReferencesPanel } from './components/CodeReferencesPanel';
-import { getActiveProviderConfig } from './core/llm/settings-service';
 import { createKnowledgeGraph } from './core/graph/graph';
 import {
   connectToServer,
@@ -20,7 +19,7 @@ import {
   type ConnectResult,
   type BackendRepo,
 } from './services/backend-client';
-import { ERROR_RESET_DELAY_MS } from './config/ui-constants';
+import { DEFAULT_BACKEND_URL, ERROR_RESET_DELAY_MS } from './config/ui-constants';
 
 const AppContent = () => {
   const {
@@ -28,6 +27,7 @@ const AppContent = () => {
     setViewMode,
     setGraph,
     setProgress,
+    projectName,
     setProjectName,
     progress,
     isRightPanelOpen,
@@ -43,6 +43,7 @@ const AppContent = () => {
     setServerBaseUrl,
     availableRepos,
     setAvailableRepos,
+    repoAnalyzerRequestId,
     switchRepo,
     setCurrentRepo,
   } = useAppState();
@@ -84,9 +85,7 @@ const AppContent = () => {
 
       // Initialize agent with backend queries, then start embeddings
       try {
-        if (getActiveProviderConfig()) {
-          await initializeAgent(projectName);
-        }
+        await initializeAgent(projectName);
         startEmbeddingsWithFallback();
       } catch (err) {
         console.warn('Failed to initialize agent:', err);
@@ -113,6 +112,24 @@ const AppContent = () => {
     if (!serverUrlParam && !projectParam) return;
     autoConnectRan.current = true;
 
+    const serverUrl = serverUrlParam || DEFAULT_BACKEND_URL;
+    let baseUrl: string;
+    try {
+      baseUrl = normalizeServerUrl(serverUrl);
+    } catch (err) {
+      setProgress({
+        phase: 'error',
+        percent: 0,
+        message: 'Failed to connect to server',
+        detail: err instanceof Error ? err.message : 'Invalid local backend URL',
+      });
+      setTimeout(() => {
+        setViewMode('onboarding');
+        setProgress(null);
+      }, ERROR_RESET_DELAY_MS);
+      return;
+    }
+
     setProgress({
       phase: 'extracting',
       percent: 0,
@@ -121,12 +138,9 @@ const AppContent = () => {
     });
     setViewMode('loading');
 
-    const serverUrl = serverUrlParam || window.location.origin;
-    const baseUrl = normalizeServerUrl(serverUrl);
-
     const tryConnect = async () => {
       return await connectToServer(
-        serverUrl,
+        baseUrl,
         (phase, downloaded, total) => {
           if (phase === 'validating') {
             setProgress({
@@ -242,6 +256,7 @@ const AppContent = () => {
       <Header
         onFocusNode={handleFocusNode}
         availableRepos={availableRepos}
+        openRepoAnalyzerRequestId={repoAnalyzerRequestId}
         onSwitchRepo={switchRepo}
         onReposChanged={(repos) => setAvailableRepos(repos)}
         onAnalyzeComplete={async (repoName) => {
@@ -308,6 +323,7 @@ const AppContent = () => {
         isOpen={isSettingsPanelOpen}
         onClose={() => setSettingsPanelOpen(false)}
         onSettingsSaved={handleSettingsSaved}
+        repoName={projectName || undefined}
       />
     </div>
   );

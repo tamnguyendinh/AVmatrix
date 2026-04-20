@@ -11,7 +11,7 @@ import {
   RefreshCw,
   Loader2,
 } from '@/lib/lucide-icons';
-import { useAppState } from '../hooks/useAppState';
+import { useAppState } from '../hooks/useAppState.local-runtime';
 import {
   deleteRepo,
   fetchRepos,
@@ -41,6 +41,7 @@ const NODE_TYPE_COLORS: Record<string, string> = {
 interface HeaderProps {
   onFocusNode?: (nodeId: string) => void;
   availableRepos?: BackendRepo[];
+  openRepoAnalyzerRequestId?: number;
   onSwitchRepo?: (repoName: string) => void;
   /** Called when a newly-analyzed repo is ready; triggers connectToServer. */
   onAnalyzeComplete?: (repoName: string) => void;
@@ -51,6 +52,7 @@ interface HeaderProps {
 export const Header = ({
   onFocusNode,
   availableRepos = [],
+  openRepoAnalyzerRequestId = 0,
   onSwitchRepo,
   onAnalyzeComplete,
   onReposChanged,
@@ -110,6 +112,12 @@ export const Header = ({
       reanalyzeSseRef.current?.abort();
     };
   }, []);
+
+  useEffect(() => {
+    if (openRepoAnalyzerRequestId === 0) return;
+    setIsRepoDropdownOpen(true);
+    setShowAnalyzer(true);
+  }, [openRepoAnalyzerRequestId]);
 
   // Keyboard shortcut (Cmd+K / Ctrl+K)
   useEffect(() => {
@@ -461,7 +469,7 @@ export const Header = ({
         <button
           onClick={() => setSettingsPanelOpen(true)}
           className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-hover hover:text-text-primary"
-          title="AI Settings"
+          title="Session Settings"
         >
           <Settings className="h-4.5 w-4.5" />
         </button>
