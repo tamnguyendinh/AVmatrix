@@ -9,7 +9,7 @@
   - Tool sau khi chuyển phải dùng hiệu quả ở cả giao diện web trong trình duyệt và ở CLI/MCP, vì cả hai đều quan trọng cho workflow agent viết code
   - Trình duyệt/web UI chỉ là lớp hiển thị local; mọi xử lý repo, tool, session, và orchestration phải chạy trong local runtime trên localhost
   - Xóa mọi gợi ý, copy, config, fallback, và dependency kéo tư duy API key/provider-setup để tránh đi nhầm luồng
-  - Không cắt feature nào theo mặc định; riêng các surface gây tranh cãi như wiki sẽ được chốt rõ ở pha scope tương ứng thay vì tự động loại bỏ
+  - Không cắt feature nào theo mặc định; riêng `wiki` sẽ được chuyển thành capability tùy chọn có thể bật/tắt, để hệ chạy ổn cả khi không có wiki và khi sau này có local wiki
   - Toàn bộ thay đổi sẽ được chia pha, có gate kỹ thuật và validation rõ ràng để triển khai rất cẩn thận, giảm rủi ro vỡ code
 
  # Ranh giới dữ liệu cần giữ
@@ -29,6 +29,7 @@
   - Tool execution phải dùng chung runtime/tool contracts, không duplicate logic giữa web và CLI
   - Session state nếu cần giữ lâu phải nằm ở local runtime, không nằm riêng trong browser
   - Browser không được giữ quyền đặc biệt nào về auth, repo access, hay tool execution mà CLI không có
+  - Các capability tùy chọn như `wiki` phải có feature flag rõ ràng; tắt capability không được làm vỡ các phần còn lại của sản phẩm
 
  # Khung làm việc
 
@@ -61,6 +62,7 @@
   - Luồng API key cho OpenAI/Gemini/Anthropic/OpenRouter/Ollama
   - GitNexus-hosted backend hoặc proxy cloud
   - Browser-only auth flow cho Codex/Claude
+  - Wiki chạy qua server bên thứ 3
 
  # Pha 0: Spike/Gate
 
@@ -96,6 +98,11 @@
   - Những feature nào sẽ được giữ nguyên contract
   - Những feature nào cần compatibility shim tạm thời
   - Không được xóa surface nào trước khi local-session path đạt parity với surface đó
+  - Quyết định mặc định của plan này, trừ khi spike bác bỏ:
+  - V1 là Codex-first trên một session abstraction trung tính; Claude Code là adapter follow-up ngay sau khi runtime core ổn định
+  - V1 ưu tiên Track A để tận dụng agent/runtime đã có của Codex/Claude CLI và giảm số lớp orchestration phải viết lại
+  - CLI v1 giữ nguyên surface hiện có: direct tool commands, MCP, serve/runtime management; không mở thêm interactive chat command mới nếu không thật sự cần
+  - Wiki remote bên thứ 3 bị đóng trong v1; thay vào đó tạo capability gate `wiki off / wiki local` để hệ chạy được cả khi không có wiki và khi sau này thêm local wiki
   - Nếu Codex CLI không ổn định trên Windows native, phải chốt ngay một trong hai hướng:
   - Dùng WSL2 bridge như execution environment chính
   - Hoặc dừng plan, không tự phát sinh workaround nửa vời trong các pha sau
@@ -110,14 +117,16 @@
   - Tạo mới:
   - gitnexus/src/runtime/runtime-controller.ts hoặc tên tương đương để quản lý lifecycle của local runtime
   - gitnexus/src/runtime/session-adapter.ts hoặc tên tương đương cho contract session chung
-  - gitnexus/src/server/codex-bridge.ts
-  - gitnexus/src/server/codex-session.ts hoặc codex-job.ts
-  - Có thể thêm gitnexus/src/server/claude-code-bridge.ts hoặc claude-code-session.ts nếu cần adapter riêng
+  - gitnexus/src/server/session-bridge.ts hoặc tên tương đương làm HTTP/localhost adapter chung
+  - gitnexus/src/runtime/session-adapters/codex.ts hoặc tên tương đương cho Codex adapter đầu tiên
+  - gitnexus/src/runtime/session-jobs/session-job.ts hoặc tên tương đương cho lifecycle/cancel/stream
+  - Có thể thêm gitnexus/src/runtime/session-adapters/claude-code.ts sau khi core ổn định
   - shared types trong gitnexus-shared cho SessionStatus, SessionChatRequest, SessionStreamEvent
   - Sửa:
-  - /F:/GitNexus-main/gitnexus/src/server/api.ts:1 để thêm local bridge endpoints như /api/codex/status
-  - /F:/GitNexus-main/gitnexus/src/server/api.ts:1 để thêm /api/codex/chat stream SSE hoặc NDJSON
+  - /F:/GitNexus-main/gitnexus/src/server/api.ts:1 để thêm local bridge endpoints trung tính như /api/session/status
+  - /F:/GitNexus-main/gitnexus/src/server/api.ts:1 để thêm /api/session/chat stream SSE hoặc NDJSON
   - /F:/GitNexus-main/gitnexus/src/server/api.ts:1 để thêm cancel endpoint cho chat session
+  - V1 implementation đi qua Codex adapter trước, nhưng route/type/core naming giữ trung tính để không phải rename lớn khi thêm Claude Code
   - Contract tối thiểu cần chốt trước khi code:
   - Request chat phải mang repo binding rõ ràng: repoName hoặc repoPath; không ngầm dùng repo cuối cùng trên server
   - Response stream phải map được sang step/content/tool-call shape hiện tại hoặc có adapter rõ ràng ở web
@@ -126,7 +135,7 @@
   - Quy tắc bridge:
   - Chỉ cho phép chạy trong repo local đã index hoặc repo path hợp lệ
   - Không giới hạn vào workspace của GitNexus; được phép dùng repo local bất kỳ do người dùng chỉ định, miễn qua local-only path policy
-  - Log stderr nội bộ, trả lỗi an toàn kiểu “Codex not installed” hoặc “Codex not signed in”
+  - Log stderr nội bộ, trả lỗi an toàn kiểu “Session runtime not installed” hoặc “Session not signed in”; adapter có thể chi tiết hóa thành Codex/Claude Code
   - Ưu tiên map event stream về gần shape AgentStreamChunk hiện có để giảm sửa UI
   - Bridge local không được forward dữ liệu qua bất kỳ GitNexus-hosted service nào
   - Chính sách local-only cho path ở backend:
@@ -136,8 +145,9 @@
   - Chỉ chấp nhận thư mục local tồn tại thật trên máy
   - Nếu path resolve sang network mount hoặc outside policy thì reject sớm với lỗi rõ ràng
   - Test cần thêm/sửa:
-  - gitnexus/test/unit/codex-bridge.test.ts
-  - test API contract mới cho /api/codex/status và /api/codex/chat
+  - gitnexus/test/unit/session-bridge.test.ts
+  - test API contract mới cho /api/session/status và /api/session/chat
+  - codex-adapter tests cho session lifecycle đầu tiên
   - test local-path policy: absolute path, traversal, UNC path, missing folder, repo binding mismatch
 
  # Pha 2: Di chuyển web UI sang shared local runtime
@@ -145,10 +155,10 @@
   - Repo đụng: gitnexus-web.
   - Khuyến nghị an toàn: tạo file mới trước, không đập ngay agent.ts.
   - Tạo mới:
-  - gitnexus-web/src/core/llm/codex-client.ts
-  - Có thể thêm gitnexus-web/src/core/llm/codex-types.ts nếu chưa đưa vào gitnexus-shared
+  - gitnexus-web/src/core/llm/session-client.ts
+  - Có thể thêm gitnexus-web/src/core/llm/session-types.ts nếu chưa đưa vào gitnexus-shared
   - Sửa:
-  - /F:/GitNexus-main/gitnexus-web/src/hooks/useAppState.tsx:1 để dùng backend Codex stream thay cho
+  - /F:/GitNexus-main/gitnexus-web/src/hooks/useAppState.tsx:1 để dùng backend session stream thay cho
     createGraphRAGAgent()
   - /F:/GitNexus-main/gitnexus-web/src/core/llm/types.ts:1 để chuyển từ provider model sang session/backends model, hoặc thêm compatibility shim có thời hạn rõ ràng nếu cần giữ app ổn trong giai đoạn chuyển đổi
   - /F:/GitNexus-main/gitnexus-web/src/core/llm/settings-service.ts:1 để migrate settings cũ và bỏ logic
@@ -162,8 +172,8 @@
   - Giữ nguyên UI chat message/step nếu stream mới map được sang AgentStreamChunk
   - UX mục tiêu:
   - Không còn ô API key
-  - Chỉ còn trạng thái Codex found / not found
-  - Chỉ còn trạng thái Signed in / not signed in
+  - V1 chỉ cần bật đầy đủ luồng Codex: Codex found / not found, Signed in / not signed in
+  - Chừa chỗ trong UI/state cho Claude Code adapter follow-up mà không phải đổi model dữ liệu
   - Có nút Check connection
   - Migration strategy cần chốt:
   - Nếu sessionStorage/localStorage đang chứa provider cũ, hoặc migrate sang local session bridge mode, hoặc clear one-shot có kiểm soát
@@ -172,7 +182,7 @@
   - Nếu có feature nào đang dựa nặng vào provider-specific config, phải chỉ ra compatibility shim tương ứng thay vì xóa feature đó khỏi web
   - Test cần thêm/sửa:
   - gitnexus-web/test/unit/settings-service.test.ts
-  - test stream client/backend-client mới cho Codex
+  - test stream client/backend-client mới cho session bridge
   - test init/send/cancel chat flow nếu cần
   - test settings migration/reset từ dữ liệu provider cũ
 
@@ -191,9 +201,10 @@
   - Không tạo một session/auth stack riêng cho CLI
   - Không tạo một tool execution path riêng cho web nếu CLI/MCP có thể dùng cùng core/runtime
   - Giữ nguyên toàn bộ direct tool commands và MCP capability hiện có; chỉ thay session/model execution path bên dưới khi có đụng tới LLM-backed capability
+  - V1 không thêm interactive chat/session command mới cho CLI trừ khi spike chứng minh đó là bắt buộc để đạt parity
   - Nếu cần thêm runtime management commands, chỉ thêm những lệnh local như status/doctor/restart
   - Test cần thêm/sửa:
-  - gitnexus/test/unit/setup-codex.test.ts
+  - gitnexus/test/unit/setup-session-runtime.test.ts
   - gitnexus/test/unit/tools.test.ts
   - smoke tests cho MCP/runtime attach path nếu thay đổi contract
 
@@ -233,20 +244,21 @@
   - Không còn đường dữ liệu nào đi qua GitNexus-hosted/proxy backend
   - Backend local không còn mở cho Vercel/LAN nếu bạn muốn khóa tuyệt đối
 
-# Pha 5: Xử lý wiki theo quyết định scope cuối cùng
+# Pha 5: Capability gate cho wiki
 
-  - Repo đụng: gitnexus.
-  - Theo nguyên tắc feature parity, mặc định không xóa wiki chỉ để đơn giản hóa migration.
-  - Có 2 khả năng, phải chốt rõ trước khi code:
-  - Giữ wiki: chuyển mọi chỗ wiki đang dùng provider/API key sang local session path giống phần chat
-  - Hoặc coi wiki là ngoại lệ bị loại khỏi scope do user xác nhận rõ
-  - Nếu giữ wiki:
-  - Giữ nguyên wiki command surface trong /F:/GitNexus-main/gitnexus/src/cli/index.ts:1
-  - Chuyển config/help/runtime của wiki sang session-based flow
-  - Cập nhật docs/tests tương ứng
-  - Nếu loại wiki khỏi scope:
-  - Chỉ hard-disable sau khi user xác nhận lại ngoại lệ này
-  - Khi đó mới xóa src/cli/wiki.ts, src/core/wiki/*, config liên quan, và tests liên quan
+  - Repo đụng: gitnexus, gitnexus-web.
+  - Đóng hoàn toàn đường đi wiki qua server bên thứ 3.
+  - Thêm cơ chế bật/tắt capability wiki, ví dụ `wikiMode: off | local` hoặc feature flag tương đương.
+  - Yêu cầu với `wiki off`:
+  - Web UI, CLI, MCP, analyze, graph, chat vẫn hoạt động bình thường mà không cần wiki
+  - Các menu/command/help text liên quan wiki phải ẩn hoặc disable có kiểm soát, không để dead path gọi nhầm
+  - Không còn bất kỳ call nào ra remote wiki backend
+  - Yêu cầu với `wiki local`:
+  - Contract, routing, và settings phải chừa sẵn để sau này cắm local wiki mà không bẻ lại runtime core
+  - Khi local wiki chưa được triển khai xong, mode này phải fail-safe với thông báo rõ ràng kiểu “local wiki chưa khả dụng”, không được fallback sang server bên thứ 3
+  - Trong milestone hiện tại:
+  - Hoàn thành capability gate và remote shutdown
+  - Chưa cần triển khai local wiki engine đầy đủ; phần đó là follow-up sau khi tool core ổn định
 
 # Pha 6: Dọn provider/API-key path cũ sau khi bridge đạt parity
 
@@ -274,6 +286,7 @@
   - setup không còn kéo gitnexus@latest
   - CORS/backend flow không còn remote suggestion
   - Track A hoặc Track B đã được chốt sau spike, không giữ hai hướng song song
+  - V1 rollout được chốt là Codex-first trên session abstraction trung tính; Claude Code follow-up không đòi rename lớn
   - Chat request luôn bind đúng repo đang active
   - UNC/network-share path bị reject ở analyze và chat bridge
   - settings cũ được migrate hoặc reset có kiểm soát, không để app boot lỗi vì provider state cũ
@@ -282,27 +295,30 @@
   - Web UI và CLI/MCP cùng dựa trên shared local runtime, không còn hai luồng session/tool khác nhau
   - Cancel chat và cancel analyze vẫn hoạt động
   - Graph browsing/search/query hiện có không bị regress
-  - Nếu wiki còn trong scope thì wiki cũng phải chuyển xong sang local-session path; nếu không thì phải có xác nhận ngoại lệ rõ ràng
+  - Remote wiki path đã bị tắt hoàn toàn
+  - Hệ chạy ổn khi `wiki off`
+  - Contract cho `wiki local` đã được chừa sẵn để phát triển tiếp mà không phải bẻ lại lõi
 
  # Test matrix cần chạy khi triển khai
 
   - gitnexus:
   - npx tsc --noEmit
   - npm test
-  - unit trọng điểm: analyze-api.test.ts, analyze-job.test.ts, codex-bridge.test.ts, cli-index-help.test.ts, setup-codex.test.ts, tools.test.ts
-  - integration/e2e trọng điểm: cli-e2e.test.ts cho help/runtime surface bị ảnh hưởng bởi local-session migration và quyết định scope wiki
+  - unit trọng điểm: analyze-api.test.ts, analyze-job.test.ts, session-bridge.test.ts, cli-index-help.test.ts, setup-session-runtime.test.ts, tools.test.ts
+  - integration/e2e trọng điểm: cli-e2e.test.ts cho help/runtime surface bị ảnh hưởng bởi local-session migration và capability gate của wiki
   - gitnexus-web:
   - npx tsc -b --noEmit
   - npm test
-  - unit trọng điểm: settings-service.test.ts, server-connection.test.ts, test mới cho codex stream client, test mới cho RepoAnalyzer local-only
+  - unit trọng điểm: settings-service.test.ts, server-connection.test.ts, test mới cho session stream client, test mới cho RepoAnalyzer local-only, test mới cho wiki off/on capability behavior
 
  # Inventory file dự kiến
 
   - gitnexus: src/server/api.ts, src/server/analyze-job.ts, src/server/git-clone.ts, src/server/
-    *codex*.ts mới, src/runtime/* mới nếu có, src/cli/index.ts, src/cli/mcp.ts, src/cli/tool.ts,
-    src/cli/setup.ts, src/cli/serve.ts, src/cli/ai-context.ts, src/storage/repo-manager.ts, tests liên quan
+    session-bridge.ts mới, src/runtime/* mới nếu có, src/cli/index.ts, src/cli/mcp.ts, src/cli/tool.ts,
+    src/cli/setup.ts, src/cli/serve.ts, src/cli/ai-context.ts, src/cli/wiki.ts, src/core/wiki/*,
+    src/storage/repo-manager.ts, tests liên quan
   - gitnexus-web: src/core/llm/types.ts, src/core/llm/settings-service.ts, src/core/llm/agent.ts hoặc
-    src/core/llm/codex-client.ts mới, src/core/llm/tools.ts, src/core/llm/context-builder.ts, src/core/llm/index.ts,
+    src/core/llm/session-client.ts mới, src/core/llm/tools.ts, src/core/llm/context-builder.ts, src/core/llm/index.ts,
     src/hooks/useAppState.tsx, src/components/SettingsPanel.tsx, src/components/RepoAnalyzer.tsx,
     src/components/AnalyzeOnboarding.tsx, src/components/OnboardingGuide.tsx, src/components/Header.tsx,
     src/components/RepoLanding.tsx, src/components/RightPanel.tsx, src/components/HelpPanel.tsx,
