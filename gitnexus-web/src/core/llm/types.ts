@@ -1,8 +1,9 @@
 /**
- * LLM Provider Types
+ * LLM/runtime types
  *
- * Type definitions for multi-provider LLM support.
- * Supports OpenAI, Azure OpenAI, Gemini, Anthropic, Ollama, OpenRouter, MiniMax, and GLM5.
+ * The active product path is local-session first (`codex` today, with room for
+ * additional local adapters later). Remote provider shapes remain in this file
+ * as compatibility types while the legacy web settings surface is retired.
  */
 
 /**
@@ -159,7 +160,7 @@ export interface LLMSettings {
  * Default LLM settings
  */
 export const DEFAULT_LLM_SETTINGS: LLMSettings = {
-  activeProvider: 'gemini',
+  activeProvider: 'codex',
   intelligentClustering: false,
   hasSeenClusteringPrompt: false,
   useSameModelForClustering: true,
