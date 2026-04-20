@@ -68,6 +68,7 @@ export class RuntimeController {
 
   async startChat(request: SessionChatRequest): Promise<StartChatResult> {
     const repo = await this.resolveRepo(request);
+    const adapterStatus = await this.adapter.getStatus();
     if (!repo.indexed) {
       throw new SessionRuntimeError(
         'INDEX_REQUIRED',
@@ -96,6 +97,7 @@ export class RuntimeController {
       repoPath: job.repoPath,
       timestamp: Date.now(),
       type: 'session_started',
+      runtimeEnvironment: adapterStatus.runtimeEnvironment,
       executionMode: this.adapter.executionMode,
     });
 
@@ -203,8 +205,43 @@ export class RuntimeController {
         );
       }
 
-      const realRepoPath = await fs.realpath(binding.repoPath);
-      const stat = await fs.stat(realRepoPath);
+      let realRepoPath: string;
+      try {
+        realRepoPath = await fs.realpath(binding.repoPath);
+      } catch (error) {
+        const code = typeof error === 'object' && error && 'code' in error ? (error as NodeJS.ErrnoException).code : undefined;
+        if (code === 'ENOENT') {
+          throw new SessionRuntimeError(
+            'REPO_NOT_FOUND',
+            `Repository path "${binding.repoPath}" does not exist`,
+            404,
+          );
+        }
+        throw new SessionRuntimeError(
+          'INVALID_REPO_PATH',
+          `Failed to resolve repository path "${binding.repoPath}"`,
+          400,
+        );
+      }
+
+      let stat: Awaited<ReturnType<typeof fs.stat>>;
+      try {
+        stat = await fs.stat(realRepoPath);
+      } catch (error) {
+        const code = typeof error === 'object' && error && 'code' in error ? (error as NodeJS.ErrnoException).code : undefined;
+        if (code === 'ENOENT') {
+          throw new SessionRuntimeError(
+            'REPO_NOT_FOUND',
+            `Repository path "${binding.repoPath}" does not exist`,
+            404,
+          );
+        }
+        throw new SessionRuntimeError(
+          'INVALID_REPO_PATH',
+          `Failed to inspect repository path "${binding.repoPath}"`,
+          400,
+        );
+      }
       if (!stat.isDirectory()) {
         throw new SessionRuntimeError(
           'INVALID_REPO_PATH',

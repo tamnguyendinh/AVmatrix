@@ -3,6 +3,7 @@ import type {
   SessionChatRequest,
   SessionErrorCode,
   SessionExecutionMode,
+  SessionRuntimeEnvironment,
   SessionStatus,
   SessionStreamEvent,
 } from 'gitnexus-shared';
@@ -28,6 +29,7 @@ export interface SessionChatContext {
 export interface SessionAdapter {
   readonly provider: SessionStatus['provider'];
   readonly executionMode: SessionExecutionMode;
+  readonly runtimeEnvironment: SessionRuntimeEnvironment;
   getStatus(): Promise<SessionStatus>;
   runChat(
     job: SessionJob,

@@ -24,6 +24,7 @@ class FakeRuntimeController {
     executablePath: 'codex.cmd',
     version: 'codex-cli test',
     recommendedEnvironment: 'wsl2',
+    runtimeEnvironment: 'native',
     executionMode: 'bypass',
     supportsSse: true,
     supportsCancel: true,
@@ -39,6 +40,7 @@ class FakeRuntimeController {
       repoPath: 'C:/demo',
       timestamp: Date.now(),
       type: 'session_started',
+      runtimeEnvironment: 'native',
       executionMode: 'bypass',
     });
     setTimeout(() => {

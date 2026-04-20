@@ -7,6 +7,7 @@ export type SessionAvailability =
   | 'error';
 
 export type SessionExecutionMode = 'sandboxed' | 'bypass';
+export type SessionRuntimeEnvironment = 'native' | 'wsl2';
 
 export type SessionErrorCode =
   | 'BAD_REQUEST'
@@ -48,6 +49,7 @@ export interface SessionStatus {
   version?: string;
   message?: string;
   recommendedEnvironment?: 'native' | 'wsl2';
+  runtimeEnvironment: SessionRuntimeEnvironment;
   executionMode: SessionExecutionMode;
   supportsSse: boolean;
   supportsCancel: boolean;
@@ -80,6 +82,7 @@ interface SessionEventBase {
 
 export interface SessionStartedEvent extends SessionEventBase {
   type: 'session_started';
+  runtimeEnvironment: SessionRuntimeEnvironment;
   executionMode: SessionExecutionMode;
 }
 

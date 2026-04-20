@@ -5,6 +5,8 @@ import { randomUUID } from 'crypto';
 import { spawn } from 'child_process';
 import type {
   SessionChatRequest,
+  SessionExecutionMode,
+  SessionRuntimeEnvironment,
   SessionStatus,
   SessionToolCall,
   SessionStreamEvent,
@@ -14,6 +16,7 @@ import { SessionRuntimeError } from '../session-adapter.js';
 
 const COMMAND_TIMEOUT_MS = 10_000;
 const STDERR_LIMIT = 8_192;
+const WINDOWS_SESSION_ENV = 'GITNEXUS_WINDOWS_SESSION_ENV';
 
 interface ProcessResult {
   code: number;
@@ -21,30 +24,65 @@ interface ProcessResult {
   stderr: string;
 }
 
-const getCodexExecutable = (): string =>
+interface CodexLaunchTarget {
+  runtimeEnvironment: SessionRuntimeEnvironment;
+  executablePath: string;
+  args: string[];
+}
+
+interface CodexStatusProbe {
+  target: CodexLaunchTarget;
+  available: boolean;
+  authenticated: boolean;
+  version?: string;
+  message?: string;
+  nativeFallback?: boolean;
+}
+
+const getNativeCodexExecutable = (): string =>
   process.env.GITNEXUS_CODEX_EXECUTABLE ||
   (process.platform === 'win32' ? 'codex.cmd' : 'codex');
 
-const spawnCodex = (
-  args: string[],
-  options: Parameters<typeof spawn>[2] = {},
-) =>
-  spawn(getCodexExecutable(), args, {
-    ...options,
-    shell: process.platform === 'win32',
-    windowsHide: true,
-  });
+const getConfiguredWindowsSessionEnv = (): 'wsl2' | 'native' | 'auto' => {
+  const configured = process.env[WINDOWS_SESSION_ENV]?.toLowerCase();
+  if (configured === 'wsl2' || configured === 'native') return configured;
+  return 'auto';
+};
 
-const getCodexExecutionMode = (): SessionStatus['executionMode'] => {
+const getConfiguredExecutionMode = (): SessionExecutionMode => {
   const configured = process.env.GITNEXUS_SESSION_EXECUTION_MODE;
   if (configured === 'sandbox' || configured === 'sandboxed') return 'sandboxed';
   if (configured === 'bypass') return 'bypass';
   return process.platform === 'win32' ? 'bypass' : 'sandboxed';
 };
 
-const runCodexCommand = async (args: string[], timeoutMs = COMMAND_TIMEOUT_MS): Promise<ProcessResult> =>
+const shellQuotePosix = (value: string): string => `'${value.replace(/'/g, `'\\''`)}'`;
+
+const toWslPath = (value: string): string => {
+  if (/^[a-z]:\\/i.test(value)) {
+    const drive = value[0].toLowerCase();
+    const rest = value.slice(2).replace(/\\/g, '/');
+    return `/mnt/${drive}${rest}`;
+  }
+  return value.replace(/\\/g, '/');
+};
+
+const spawnCommand = (
+  target: CodexLaunchTarget,
+  options: Parameters<typeof spawn>[2] = {},
+) =>
+  spawn(target.executablePath, target.args, {
+    ...options,
+    shell: target.runtimeEnvironment === 'native' && process.platform === 'win32',
+    windowsHide: true,
+  });
+
+const runCommand = async (
+  target: CodexLaunchTarget,
+  timeoutMs = COMMAND_TIMEOUT_MS,
+): Promise<ProcessResult> =>
   new Promise((resolve, reject) => {
-    const child = spawnCodex(args, {
+    const child = spawnCommand(target, {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 
@@ -72,6 +110,18 @@ const runCodexCommand = async (args: string[], timeoutMs = COMMAND_TIMEOUT_MS): 
       resolve({ code: code ?? 1, stdout, stderr });
     });
   });
+
+const buildNativeTarget = (...args: string[]): CodexLaunchTarget => ({
+  runtimeEnvironment: 'native',
+  executablePath: getNativeCodexExecutable(),
+  args,
+});
+
+const buildWslTarget = (...args: string[]): CodexLaunchTarget => ({
+  runtimeEnvironment: 'wsl2',
+  executablePath: 'wsl.exe',
+  args: ['-e', 'bash', '-lc', args.map(shellQuotePosix).join(' ')],
+});
 
 const createBaseEvent = (
   job: SessionJob,
@@ -105,6 +155,7 @@ const coerceToolCall = (
       : command || String(item.name || 'command_execution');
 
   const resultParts = [
+    typeof item.aggregated_output === 'string' ? item.aggregated_output : '',
     typeof item.stdout === 'string' ? item.stdout : '',
     typeof item.stderr === 'string' ? item.stderr : '',
     typeof item.output === 'string' ? item.output : '',
@@ -120,13 +171,21 @@ const coerceToolCall = (
   };
 };
 
-const emitCodexEvent = (job: SessionJob, payload: Record<string, unknown>, lastMessage: { value: string }) => {
+const emitCodexEvent = (
+  job: SessionJob,
+  payload: Record<string, unknown>,
+  lastReasoning: { value: string },
+  completionUsage: { value?: Record<string, number> },
+) => {
   const eventType = typeof payload.type === 'string' ? payload.type : '';
 
   if (eventType === 'item.started' || eventType === 'item.completed') {
     const item = payload.item;
     if (item && typeof item === 'object') {
-      const toolCall = coerceToolCall(item as Record<string, unknown>, eventType === 'item.started' ? 'running' : 'completed');
+      const toolCall = coerceToolCall(
+        item as Record<string, unknown>,
+        eventType === 'item.started' ? 'running' : 'completed',
+      );
       if (toolCall) {
         job.emit({
           ...createBaseEvent(job),
@@ -136,19 +195,21 @@ const emitCodexEvent = (job: SessionJob, payload: Record<string, unknown>, lastM
         return;
       }
 
-      const itemType = typeof (item as Record<string, unknown>).type === 'string'
-        ? String((item as Record<string, unknown>).type)
-        : '';
-      if (itemType === 'agent_message') {
-        const text = typeof (item as Record<string, unknown>).text === 'string'
-          ? String((item as Record<string, unknown>).text)
+      const itemType =
+        typeof (item as Record<string, unknown>).type === 'string'
+          ? String((item as Record<string, unknown>).type)
           : '';
+      if (itemType === 'agent_message') {
+        const text =
+          typeof (item as Record<string, unknown>).text === 'string'
+            ? String((item as Record<string, unknown>).text)
+            : '';
         if (text) {
-          lastMessage.value = text;
+          lastReasoning.value = text;
           job.emit({
             ...createBaseEvent(job),
-            type: 'content',
-            content: text,
+            type: 'reasoning',
+            reasoning: text,
           });
         }
       }
@@ -160,82 +221,141 @@ const emitCodexEvent = (job: SessionJob, payload: Record<string, unknown>, lastM
     const text =
       typeof payload.text === 'string'
         ? payload.text
-        : payload.message && typeof payload.message === 'object' && typeof (payload.message as any).text === 'string'
-          ? (payload.message as any).text
+        : payload.message &&
+            typeof payload.message === 'object' &&
+            typeof (payload.message as Record<string, unknown>).text === 'string'
+          ? String((payload.message as Record<string, unknown>).text)
           : '';
     if (text) {
-      lastMessage.value = text;
+      lastReasoning.value = text;
       job.emit({
         ...createBaseEvent(job),
-        type: 'content',
-        content: text,
+        type: 'reasoning',
+        reasoning: text,
       });
     }
     return;
   }
 
   if (eventType === 'turn.completed') {
-    job.emit({
-      ...createBaseEvent(job),
-      type: 'done',
-      usage: payload.usage && typeof payload.usage === 'object'
+    completionUsage.value =
+      payload.usage && typeof payload.usage === 'object'
         ? Object.fromEntries(
             Object.entries(payload.usage as Record<string, unknown>).filter(([, value]) =>
               typeof value === 'number',
             ) as [string, number][],
           )
-        : undefined,
-    });
+        : undefined;
   }
+};
+
+const probeTargetStatus = async (target: CodexLaunchTarget): Promise<CodexStatusProbe> => {
+  try {
+    const versionResult = await runCommand(
+      target.runtimeEnvironment === 'wsl2'
+        ? buildWslTarget('codex', '--version')
+        : buildNativeTarget('--version'),
+    );
+    if (versionResult.code !== 0) {
+      return {
+        target,
+        available: false,
+        authenticated: false,
+        message: versionResult.stderr || versionResult.stdout || 'codex --version failed',
+      };
+    }
+
+    const loginResult = await runCommand(
+      target.runtimeEnvironment === 'wsl2'
+        ? buildWslTarget('codex', 'login', 'status')
+        : buildNativeTarget('login', 'status'),
+    );
+    const loginOutput = `${loginResult.stdout}\n${loginResult.stderr}`.trim();
+    const authenticated = /logged in/i.test(loginOutput) && !/not logged in/i.test(loginOutput);
+
+    return {
+      target,
+      available: true,
+      authenticated,
+      version: versionResult.stdout.trim() || versionResult.stderr.trim() || undefined,
+      message: authenticated ? undefined : loginOutput || 'Codex CLI is installed but not signed in',
+    };
+  } catch (error) {
+    return {
+      target,
+      available: false,
+      authenticated: false,
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
+};
+
+const resolveWindowsTarget = async (): Promise<CodexStatusProbe> => {
+  const strategy = getConfiguredWindowsSessionEnv();
+  const nativeTarget = buildNativeTarget();
+  const wslTarget = buildWslTarget();
+
+  if (strategy === 'native') {
+    return probeTargetStatus(nativeTarget);
+  }
+
+  const wslStatus = await probeTargetStatus(wslTarget);
+  if (wslStatus.available) {
+    return wslStatus;
+  }
+
+  const nativeStatus = await probeTargetStatus(nativeTarget);
+  if (nativeStatus.available) {
+    return {
+      ...nativeStatus,
+      message: wslStatus.message
+        ? `WSL2 Codex unavailable; using native fallback. ${wslStatus.message}`
+        : 'WSL2 Codex unavailable; using native fallback.',
+      nativeFallback: true,
+    };
+  }
+
+  return wslStatus;
+};
+
+const resolveLaunchTarget = async (): Promise<CodexStatusProbe> => {
+  if (process.platform === 'win32') {
+    return resolveWindowsTarget();
+  }
+  const nativeStatus = await probeTargetStatus(buildNativeTarget());
+  return nativeStatus;
 };
 
 export class CodexSessionAdapter implements SessionAdapter {
   readonly provider = 'codex' as const;
-  readonly executionMode = getCodexExecutionMode();
+  readonly executionMode = getConfiguredExecutionMode();
+  runtimeEnvironment: SessionRuntimeEnvironment =
+    process.platform === 'win32' && getConfiguredWindowsSessionEnv() !== 'native'
+      ? 'wsl2'
+      : 'native';
 
   async getStatus(): Promise<SessionStatus> {
-    const executablePath = getCodexExecutable();
+    const probe = await resolveLaunchTarget();
+    this.runtimeEnvironment = probe.target.runtimeEnvironment;
 
-    try {
-      const versionResult = await runCodexCommand(['--version']);
-      if (versionResult.code !== 0) {
-        throw new Error(versionResult.stderr || versionResult.stdout || 'codex --version failed');
-      }
-
-      const loginResult = await runCodexCommand(['login', 'status']);
-      const loginOutput = `${loginResult.stdout}\n${loginResult.stderr}`.trim();
-      const authenticated = /logged in/i.test(loginOutput) && !/not logged in/i.test(loginOutput);
-
-      return {
-        provider: this.provider,
-        availability: authenticated ? 'ready' : 'not_signed_in',
-        available: true,
-        authenticated,
-        executablePath,
-        version: versionResult.stdout.trim() || versionResult.stderr.trim() || undefined,
-        message: authenticated ? undefined : loginOutput || 'Codex CLI is installed but not signed in',
-        recommendedEnvironment: process.platform === 'win32' ? 'wsl2' : 'native',
-        executionMode: this.executionMode,
-        supportsSse: true,
-        supportsCancel: true,
-        supportsMcp: true,
-      };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      return {
-        provider: this.provider,
-        availability: 'not_installed',
-        available: false,
-        authenticated: false,
-        executablePath,
-        message,
-        recommendedEnvironment: process.platform === 'win32' ? 'wsl2' : 'native',
-        executionMode: this.executionMode,
-        supportsSse: true,
-        supportsCancel: true,
-        supportsMcp: true,
-      };
-    }
+    return {
+      provider: this.provider,
+      availability: probe.available ? (probe.authenticated ? 'ready' : 'not_signed_in') : 'not_installed',
+      available: probe.available,
+      authenticated: probe.authenticated,
+      executablePath:
+        probe.target.runtimeEnvironment === 'wsl2'
+          ? 'wsl.exe -> codex'
+          : probe.target.executablePath,
+      version: probe.version,
+      message: probe.message,
+      recommendedEnvironment: process.platform === 'win32' ? 'wsl2' : 'native',
+      runtimeEnvironment: probe.target.runtimeEnvironment,
+      executionMode: this.executionMode,
+      supportsSse: true,
+      supportsCancel: true,
+      supportsMcp: true,
+    };
   }
 
   async runChat(
@@ -261,25 +381,35 @@ export class CodexSessionAdapter implements SessionAdapter {
     }
 
     const outputFile = path.join(os.tmpdir(), `gitnexus-codex-${job.id}.txt`);
-    const args = [
+    const runtimeRepoPath =
+      status.runtimeEnvironment === 'wsl2' ? toWslPath(context.repo.repoPath) : context.repo.repoPath;
+    const runtimeOutputPath =
+      status.runtimeEnvironment === 'wsl2' ? toWslPath(outputFile) : outputFile;
+
+    const baseArgs = [
       'exec',
       '--json',
       '--skip-git-repo-check',
       '--output-last-message',
-      outputFile,
+      runtimeOutputPath,
       '--cd',
-      context.repo.repoPath,
+      runtimeRepoPath,
     ];
 
     if (this.executionMode === 'bypass') {
-      args.push('--dangerously-bypass-approvals-and-sandbox');
+      baseArgs.push('--dangerously-bypass-approvals-and-sandbox');
     } else {
-      args.push('--full-auto');
+      baseArgs.push('--full-auto');
     }
 
-    args.push(request.message);
+    baseArgs.push(request.message);
 
-    const child = spawnCodex(args, {
+    const target =
+      status.runtimeEnvironment === 'wsl2'
+        ? buildWslTarget('codex', ...baseArgs)
+        : buildNativeTarget(...baseArgs);
+
+    const child = spawnCommand(target, {
       cwd: context.repo.repoPath,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -287,7 +417,8 @@ export class CodexSessionAdapter implements SessionAdapter {
     let stdoutBuffer = '';
     let stderrTail = '';
     let terminalEmitted = false;
-    const lastMessage = { value: '' };
+    const lastReasoning = { value: '' };
+    const completionUsage: { value?: Record<string, number> } = {};
 
     const cleanup = async () => {
       signal.removeEventListener('abort', onAbort);
@@ -312,10 +443,7 @@ export class CodexSessionAdapter implements SessionAdapter {
         if (!line) continue;
         try {
           const payload = JSON.parse(line) as Record<string, unknown>;
-          emitCodexEvent(job, payload, lastMessage);
-          if (payload.type === 'turn.completed') {
-            terminalEmitted = true;
-          }
+          emitCodexEvent(job, payload, lastReasoning, completionUsage);
         } catch {
           // Ignore non-JSON lines from Codex CLI.
         }
@@ -351,21 +479,24 @@ export class CodexSessionAdapter implements SessionAdapter {
             reason: typeof signal.reason === 'string' ? signal.reason : 'Session cancelled',
           });
         } else if (code === 0) {
-          if (!lastMessage.value) {
-            try {
-              lastMessage.value = (await fs.readFile(outputFile, 'utf-8')).trim();
-            } catch {}
+          let finalContent = '';
+          try {
+            finalContent = (await fs.readFile(outputFile, 'utf-8')).trim();
+          } catch {}
+          if (!finalContent && lastReasoning.value) {
+            finalContent = lastReasoning.value;
           }
-          if (lastMessage.value) {
+          if (finalContent) {
             job.emit({
               ...createBaseEvent(job),
               type: 'content',
-              content: lastMessage.value,
+              content: finalContent,
             });
           }
           job.emit({
             ...createBaseEvent(job),
             type: 'done',
+            usage: completionUsage.value,
           });
         } else {
           job.emit({

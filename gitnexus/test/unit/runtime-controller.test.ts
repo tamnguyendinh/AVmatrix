@@ -19,6 +19,7 @@ vi.mock('../../src/storage/repo-manager.js', () => repoManagerMocks);
 class FakeSessionAdapter implements SessionAdapter {
   readonly provider = 'codex' as const;
   readonly executionMode = 'bypass' as const;
+  readonly runtimeEnvironment = 'native' as const;
   readonly status: SessionStatus = {
     provider: 'codex',
     availability: 'ready',
@@ -27,6 +28,7 @@ class FakeSessionAdapter implements SessionAdapter {
     executablePath: 'codex.cmd',
     version: 'codex-cli test',
     recommendedEnvironment: 'wsl2',
+    runtimeEnvironment: 'native',
     executionMode: 'bypass',
     supportsSse: true,
     supportsCancel: true,
@@ -162,6 +164,29 @@ describe('RuntimeController', () => {
       name: 'SessionRuntimeError',
       code: 'INDEX_REQUIRED',
       status: 409,
+    });
+  });
+
+  it('maps missing local folders to structured not_found status', async () => {
+    const missingPath = path.join(os.tmpdir(), `gitnexus-missing-${Date.now()}-${Math.random()}`);
+    const { runtime } = createRuntime();
+
+    const status = await runtime.getStatus({ repoPath: missingPath });
+
+    expect(status.repo).toMatchObject({
+      state: 'not_found',
+      message: `Repository path "${missingPath}" does not exist`,
+    });
+  });
+
+  it('rejects chat starts for missing local folders with REPO_NOT_FOUND', async () => {
+    const missingPath = path.join(os.tmpdir(), `gitnexus-missing-${Date.now()}-${Math.random()}`);
+    const { runtime } = createRuntime();
+
+    await expect(runtime.startChat({ repoPath: missingPath, message: 'hello' })).rejects.toMatchObject({
+      name: 'SessionRuntimeError',
+      code: 'REPO_NOT_FOUND',
+      status: 404,
     });
   });
 

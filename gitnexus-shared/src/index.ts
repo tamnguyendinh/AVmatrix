@@ -21,6 +21,7 @@ export type {
   LocalSessionProvider,
   SessionAvailability,
   SessionExecutionMode,
+  SessionRuntimeEnvironment,
   SessionErrorCode,
   SessionRepoBinding,
   ResolvedSessionRepo,
