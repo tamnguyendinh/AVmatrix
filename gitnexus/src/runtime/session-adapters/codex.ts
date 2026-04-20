@@ -16,7 +16,6 @@ import { SessionRuntimeError } from '../session-adapter.js';
 
 const COMMAND_TIMEOUT_MS = 10_000;
 const STDERR_LIMIT = 8_192;
-const WINDOWS_SESSION_ENV = 'GITNEXUS_WINDOWS_SESSION_ENV';
 
 interface ProcessResult {
   code: number;
@@ -36,22 +35,11 @@ interface CodexStatusProbe {
   authenticated: boolean;
   version?: string;
   message?: string;
-  nativeFallback?: boolean;
 }
 
 const getNativeCodexExecutable = (): string =>
   process.env.GITNEXUS_CODEX_EXECUTABLE ||
   (process.platform === 'win32' ? 'codex.cmd' : 'codex');
-
-const getWindowsCommandShell = (): string =>
-  process.env.ComSpec ||
-  path.join(process.env.SystemRoot || process.env.windir || 'C:\\Windows', 'System32', 'cmd.exe');
-
-const getConfiguredWindowsSessionEnv = (): 'wsl2' | 'native' | 'auto' => {
-  const configured = process.env[WINDOWS_SESSION_ENV]?.toLowerCase();
-  if (configured === 'wsl2' || configured === 'native') return configured;
-  return 'auto';
-};
 
 const getConfiguredExecutionMode = (): SessionExecutionMode => {
   const configured = process.env.GITNEXUS_SESSION_EXECUTION_MODE;
@@ -77,10 +65,7 @@ const spawnCommand = (
 ) =>
   spawn(target.executablePath, target.args, {
     ...options,
-    shell:
-      target.runtimeEnvironment === 'native' && process.platform === 'win32'
-        ? getWindowsCommandShell()
-        : false,
+    shell: false,
     windowsHide: true,
   });
 
@@ -298,13 +283,7 @@ const probeTargetStatus = async (target: CodexLaunchTarget): Promise<CodexStatus
 };
 
 const resolveWindowsTarget = async (): Promise<CodexStatusProbe> => {
-  const strategy = getConfiguredWindowsSessionEnv();
-  const nativeTarget = buildNativeTarget();
   const wslTarget = buildWslTarget();
-
-  if (strategy === 'native') {
-    return probeTargetStatus(nativeTarget);
-  }
 
   const wslStatus = await probeTargetStatus(wslTarget);
   if (wslStatus.available) {
@@ -316,8 +295,9 @@ const resolveWindowsTarget = async (): Promise<CodexStatusProbe> => {
     available: false,
     authenticated: false,
     message: [
-      'WSL2 Codex is required by default on Windows for the local session runtime.',
-      `Install Codex CLI inside WSL2 or set ${WINDOWS_SESSION_ENV}=native to opt into unsupported Windows-native execution.`,
+      'WSL2 Codex is required on Windows for the local session runtime.',
+      'Windows-native Codex execution is not supported in Phase 1.',
+      'Install Codex CLI inside WSL2.',
       wslStatus.message,
     ]
       .filter(Boolean)
@@ -336,10 +316,7 @@ const resolveLaunchTarget = async (): Promise<CodexStatusProbe> => {
 export class CodexSessionAdapter implements SessionAdapter {
   readonly provider = 'codex' as const;
   readonly executionMode = getConfiguredExecutionMode();
-  runtimeEnvironment: SessionRuntimeEnvironment =
-    process.platform === 'win32' && getConfiguredWindowsSessionEnv() !== 'native'
-      ? 'wsl2'
-      : 'native';
+  runtimeEnvironment: SessionRuntimeEnvironment = process.platform === 'win32' ? 'wsl2' : 'native';
 
   async getStatus(): Promise<SessionStatus> {
     const probe = await resolveLaunchTarget();

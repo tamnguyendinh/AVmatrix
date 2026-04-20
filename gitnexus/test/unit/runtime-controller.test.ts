@@ -118,6 +118,7 @@ describe('RuntimeController', () => {
 
   it('reports indexed repo binding in session status', async () => {
     const repoPath = await createTempRepo('indexed-status');
+    const canonicalRepoPath = await fs.realpath(repoPath);
     repoManagerMocks.listRegisteredRepos.mockResolvedValue([
       {
         name: 'demo',
@@ -127,6 +128,7 @@ describe('RuntimeController', () => {
         lastCommit: 'abc123',
       },
     ]);
+    repoManagerMocks.hasIndex.mockResolvedValue(true);
 
     const { runtime } = createRuntime();
     const status = await runtime.getStatus({ repoName: 'demo' });
@@ -135,7 +137,28 @@ describe('RuntimeController', () => {
     expect(status.repo).toMatchObject({
       state: 'indexed',
       resolvedRepoName: 'demo',
-      resolvedRepoPath: repoPath,
+      resolvedRepoPath: canonicalRepoPath,
+    });
+  });
+
+  it('reports not_found for repoName bindings whose registered path no longer exists', async () => {
+    const missingPath = path.join(os.tmpdir(), `gitnexus-missing-${Date.now()}-${Math.random()}`);
+    repoManagerMocks.listRegisteredRepos.mockResolvedValue([
+      {
+        name: 'demo',
+        path: missingPath,
+        storagePath: `${missingPath}/.gitnexus`,
+        indexedAt: '2026-04-20T00:00:00.000Z',
+        lastCommit: 'abc123',
+      },
+    ]);
+
+    const { runtime } = createRuntime();
+    const status = await runtime.getStatus({ repoName: 'demo' });
+
+    expect(status.repo).toMatchObject({
+      state: 'not_found',
+      message: `Indexed repository "demo" no longer exists at "${missingPath}"`,
     });
   });
 
@@ -184,6 +207,27 @@ describe('RuntimeController', () => {
     const { runtime } = createRuntime();
 
     await expect(runtime.startChat({ repoPath: missingPath, message: 'hello' })).rejects.toMatchObject({
+      name: 'SessionRuntimeError',
+      code: 'REPO_NOT_FOUND',
+      status: 404,
+    });
+  });
+
+  it('rejects chat starts for repoName bindings whose registered path no longer exists', async () => {
+    const missingPath = path.join(os.tmpdir(), `gitnexus-missing-${Date.now()}-${Math.random()}`);
+    repoManagerMocks.listRegisteredRepos.mockResolvedValue([
+      {
+        name: 'demo',
+        path: missingPath,
+        storagePath: `${missingPath}/.gitnexus`,
+        indexedAt: '2026-04-20T00:00:00.000Z',
+        lastCommit: 'abc123',
+      },
+    ]);
+
+    const { runtime } = createRuntime();
+
+    await expect(runtime.startChat({ repoName: 'demo', message: 'hello' })).rejects.toMatchObject({
       name: 'SessionRuntimeError',
       code: 'REPO_NOT_FOUND',
       status: 404,

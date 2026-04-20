@@ -173,11 +173,79 @@ export class RuntimeController {
           404,
         );
       }
+
+      const entryPath = path.resolve(entry.path);
+      let realRepoPath: string;
+      try {
+        realRepoPath = await fs.realpath(entryPath);
+      } catch (error) {
+        const code = typeof error === 'object' && error && 'code' in error ? (error as NodeJS.ErrnoException).code : undefined;
+        if (code === 'ENOENT') {
+          throw new SessionRuntimeError(
+            'REPO_NOT_FOUND',
+            `Indexed repository "${entry.name}" no longer exists at "${entry.path}"`,
+            404,
+            {
+              repoName: entry.name,
+              repoPath: entry.path,
+            },
+          );
+        }
+        throw new SessionRuntimeError(
+          'INVALID_REPO_PATH',
+          `Failed to resolve repository path "${entry.path}" for "${entry.name}"`,
+          400,
+          {
+            repoName: entry.name,
+            repoPath: entry.path,
+          },
+        );
+      }
+
+      let stat: Awaited<ReturnType<typeof fs.stat>>;
+      try {
+        stat = await fs.stat(realRepoPath);
+      } catch (error) {
+        const code = typeof error === 'object' && error && 'code' in error ? (error as NodeJS.ErrnoException).code : undefined;
+        if (code === 'ENOENT') {
+          throw new SessionRuntimeError(
+            'REPO_NOT_FOUND',
+            `Indexed repository "${entry.name}" no longer exists at "${entry.path}"`,
+            404,
+            {
+              repoName: entry.name,
+              repoPath: entry.path,
+            },
+          );
+        }
+        throw new SessionRuntimeError(
+          'INVALID_REPO_PATH',
+          `Failed to inspect repository path "${entry.path}" for "${entry.name}"`,
+          400,
+          {
+            repoName: entry.name,
+            repoPath: entry.path,
+          },
+        );
+      }
+      if (!stat.isDirectory()) {
+        throw new SessionRuntimeError(
+          'INVALID_REPO_PATH',
+          `Indexed repository "${entry.name}" does not point to a directory`,
+          400,
+          {
+            repoName: entry.name,
+            repoPath: entry.path,
+          },
+        );
+      }
+
+      const indexed = await hasIndex(realRepoPath);
       resolvedFromName = {
         repoName: entry.name,
-        repoPath: path.resolve(entry.path),
-        indexed: true,
-        storagePath: entry.storagePath,
+        repoPath: realRepoPath,
+        indexed,
+        storagePath: indexed ? (entry.storagePath || getStoragePath(realRepoPath)) : undefined,
       };
     }
 
