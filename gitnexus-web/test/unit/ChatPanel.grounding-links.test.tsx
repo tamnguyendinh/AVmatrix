@@ -3,8 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GraphNode } from 'gitnexus-shared';
 import { createKnowledgeGraph } from '../../src/core/graph/graph';
 import { AppStateProvider, useAppState } from '../../src/hooks/useAppState.local-runtime';
+import type { ChatRuntimeState } from '../../src/hooks/chat-runtime/types';
 
-const mockChatRuntime = {
+let transcriptLinkHandler: (href: string) => void = vi.fn();
+
+const mockChatRuntime: ChatRuntimeState = {
   llmSettings: {
     activeProvider: 'codex',
     intelligentClustering: false,
@@ -29,7 +32,7 @@ const mockChatRuntime = {
   sendChatMessage: vi.fn(),
   stopChatResponse: vi.fn(),
   clearChat: vi.fn(),
-  handleTranscriptLinkClick: vi.fn(),
+  handleTranscriptLinkClick: (href: string) => transcriptLinkHandler(href),
 };
 
 vi.mock('../../src/hooks/chat-runtime/ChatRuntimeContext', () => ({
@@ -86,13 +89,14 @@ function createFunctionNode(
 function ChatPanelHarness() {
   const state = useAppState();
   appState = state;
-  mockChatRuntime.handleTranscriptLinkClick = state.chatRuntimeBridge.handleTranscriptLinkClick;
+  transcriptLinkHandler = state.chatRuntimeBridge.handleTranscriptLinkClick;
   return <ChatPanel onRequestAnalyze={vi.fn()} />;
 }
 
 describe('ChatPanel grounding links', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    transcriptLinkHandler = vi.fn();
     appState = null;
     mockChatRuntime.isAgentReady = true;
     mockChatRuntime.isAgentInitializing = false;
