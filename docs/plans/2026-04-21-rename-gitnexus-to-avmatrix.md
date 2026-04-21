@@ -23,21 +23,23 @@
 - Không được đổi hành vi sản phẩm ngoài phạm vi rename/namespace migration trừ khi cần để tương thích namespace mới.
 - Có migration path rõ ràng để dữ liệu/index cũ từ `.gitnexus` và `~/.gitnexus` được chuyển sang namespace mới, nhưng runtime sau migration chỉ dùng namespace mới.
 
-# Scope V1 được chốt
+# Scope được chốt cho rollout triệt để
 
-- **V1 chỉ đổi:**
+- Rollout này **không dừng ở surface user-facing**.
+- Tất cả những gì còn mang namespace `GitNexus` / `gitnexus` đều phải được đổi sang `AVmatrix` / `avmatrix`, gồm:
   - surface user-facing
-  - command alias / CLI entrypoint
+  - command CLI
   - MCP server name / setup output
   - storage namespace
   - resource scheme
-  - docs / tests / setup helpers liên quan
-- **V1 không đổi ngay:**
-  - tên thư mục package `gitnexus/`, `gitnexus-web/`, `gitnexus-shared`
-  - package npm names công bố ra ngoài
-  - import paths nội bộ hàng loạt
-  - full monorepo repo/folder rename
-- Mục tiêu của V1 là giải quyết **nhầm lẫn ngữ cảnh vận hành local**, không phải làm full internal rename.
+  - package names nội bộ
+  - tên file và tên thư mục
+  - import paths nội bộ
+  - generated files và generated skill paths
+  - env vars
+  - comments còn sống trong code
+  - docs, tests, fixtures, snapshots
+- Rollout này chỉ được coi là xong khi codebase active path đã sạch namespace cũ.
 
 # Kết quả mong muốn sau cùng
 
@@ -49,9 +51,8 @@
   - `avmatrix://...`
 - Cái tên `GitNexus` chỉ còn được giữ ở những nơi thật sự cần thiết:
   - lịch sử git
-  - tên repo tạm thời nếu chưa đổi tên thư mục
-  - tài liệu migration/compatibility
-  - package compatibility shim nếu cần giữ một thời gian
+  - tài liệu migration/historical note có chủ đích
+  - tham chiếu upstream/GitHub/npm cũ khi cần nói về dự án upstream như một external reference
 
 # Nguyên tắc cứng
 
@@ -105,17 +106,24 @@
 
 - package names
 - bin names
+- tên file và tên thư mục
+- import paths nội bộ
 - exported constants/types có brand name
+- comments còn sống trong code
 - docs/examples/tests/fixtures
 - runtime config and registry loaders
 - MCP setup templates
 
-## 4. Những thứ có thể tạm giữ trong giai đoạn chuyển tiếp
+## 4. Những thứ chỉ được giữ trong giai đoạn chuyển tiếp ngắn
 
-- tên thư mục repo trên disk
-- GitHub remote upstream
-- import paths nội bộ nếu đổi ngay gây rủi ro quá lớn
-- package names công bố ra ngoài nếu chưa chốt publish strategy
+- migration notes nói về tên cũ
+- shim command tạm thời nếu thật sự cần để bootstrap migration
+- parser/chuyển đổi đọc namespace cũ trong migration step
+
+Sau khi hoàn thành plan:
+- không giữ `gitnexus` trong file names/thư mục/package/import/comment active path
+- không giữ `gitnexus` là command canonical
+- không giữ `gitnexus` trong generated outputs
 
 # Quyết định kiến trúc nên chốt trước
 
@@ -130,9 +138,10 @@
 
 ## Migration philosophy
 
-- V1 của migration nên là:
+- Migration phải theo kiểu:
   - **AVmatrix-first**
-  - **không đọc fallback namespace cũ trong runtime sau khi migration đã chạy**
+  - **migrate một lần**
+  - **cutover sạch**
 - Nghĩa là:
   - runtime primary chỉ dùng `.avmatrix` / `~/.avmatrix`
   - dữ liệu cũ từ `.gitnexus` / `~/.gitnexus` chỉ được dùng làm **migration source**
@@ -140,17 +149,17 @@
 - Sau migration:
   - source of truth duy nhất là `.avmatrix` / `~/.avmatrix`
   - `GITNEXUS_HOME` không còn là env runtime chính
+  - `.gitnexus` / `~/.gitnexus` không còn là namespace active path
 
 ## Alias philosophy
 
-- `avmatrix` là **canonical command mới** cho local usage.
-- `gitnexus` được giữ làm **compatibility alias** trong giai đoạn đầu.
-- Docs/setup/onboarding mới chỉ hướng dẫn `avmatrix`, không hướng dẫn `gitnexus` như đường chính.
-- Resource parsing nên chấp nhận cả:
-  - `gitnexus://...`
-  - `avmatrix://...`
-- Nhưng generator/output mới chỉ sinh:
-  - `avmatrix://...`
+- `avmatrix` là command canonical duy nhất sau khi rollout hoàn thành.
+- Nếu cần giữ `gitnexus` làm shim tạm để bootstrap migration:
+  - phải ghi rõ phase tồn tại của shim
+  - phải có bước xóa shim ở cuối plan
+- Docs/setup/onboarding chỉ hướng dẫn `avmatrix`.
+- Generator/output mới chỉ sinh `avmatrix://...`.
+- Runtime steady state không được còn alias `gitnexus` trên active path.
 
 ## Rollout philosophy
 
@@ -159,22 +168,22 @@
   2. user-facing brand
   3. command/MCP/config namespace
   4. storage namespace
-  5. docs/tests/setup cleanup
-  6. package/import internals nếu thật sự cần
-- Không đổi package/import quá sớm nếu chỉ rename surface là đủ để giải quyết nhầm lẫn context.
+  5. generated surfaces
+  6. package/folder/file rename
+  7. import path rename
+  8. comment/docs/tests/final scrub
+- Không dừng ở “surface sạch”.
+- Chỉ được coi là hoàn thành khi codebase active path đã sạch namespace cũ.
 
 ## Install story phải chốt ngay
 
-- V1 không yêu cầu đổi package name để có command mới.
-- Cách triển khai nên là:
-  - package hiện tại vẫn có thể giữ tên `gitnexus`
-  - `bin` expose đồng thời:
-    - `gitnexus`
-    - `avmatrix`
-- Sau `npm link` hoặc local install, cả hai command phải cùng hoạt động.
-- Docs local mới chỉ hướng dẫn:
-  - `avmatrix`
-- Nhưng alias `gitnexus` vẫn phải chạy được để không làm gãy config/script cũ.
+- Command người dùng cuối phải là `avmatrix`.
+- Nếu cần shim `gitnexus` trong migration window:
+  - shim chỉ tồn tại tạm thời
+  - cuối plan phải có bước loại bỏ hoặc đánh dấu legacy không còn dùng trong active docs/tests
+- Sau `npm link` hoặc local install:
+  - command chính phải là `avmatrix`
+  - generated setup/config phải chỉ ghi `avmatrix`
 
 # Rủi ro chính cần kiểm soát
 
@@ -211,10 +220,10 @@
 ## Giai đoạn A: Command/MCP alias transition
 
 - `avmatrix` trở thành đường chính cho local usage
-- `gitnexus` vẫn còn tồn tại như compatibility shim
+- `gitnexus` chỉ tồn tại như migration shim nếu thật sự cần
 - MCP config mới dùng `avmatrix mcp`
 - docs mới chỉ nói `avmatrix`
-- code vẫn có thể giữ alias command cũ trong giai đoạn đầu
+- code chỉ được giữ alias command cũ trong giai đoạn migration có kiểm soát
 
 ## Giai đoạn B: AVmatrix-first storage/config
 
@@ -225,9 +234,9 @@
 ## Giai đoạn C: Alias cleanup
 
 - sau khi xác nhận toàn bộ flow local dùng ổn:
-  - giảm dần docs cũ
-  - đánh dấu `gitnexus` là legacy alias
-  - về sau mới quyết định bỏ hẳn alias cũ hay không
+  - xóa docs cũ khỏi active path
+  - loại bỏ `gitnexus` khỏi command/MCP active path
+  - giữ tên cũ chỉ trong migration/historical note có chủ đích
 
 # Pha 0: Audit rename surface
 
@@ -286,7 +295,7 @@
 - Có bảng mapping canonical từ brand cũ sang brand mới
 - Docs phải nói rõ phase đầu tiên là rename ở docs/spec, code chỉ được đổi sau khi mapping docs đã khóa
 - Docs local usage / setup / migration giải thích rõ command canonical mới
-- Docs nêu rõ chỗ nào còn là compatibility alias, chỗ nào là canonical mới
+- Docs nêu rõ nếu có shim migration tạm thời thì shim đó sống ở phase nào và bị loại bỏ ở phase nào
 - Không để code rename đi trước docs rename
 
 ## Acceptance
@@ -305,7 +314,7 @@
 ## Mục tiêu
 
 - Người dùng nhìn thấy `AVmatrix` thay vì `GitNexus`
-- Chưa động sâu vào storage namespace nếu chưa cần
+- Đồng thời tạo spec/copy chuẩn để các pha rename nội bộ bám theo
 
 ## Những nơi phải đổi
 
@@ -323,42 +332,34 @@
 - Mọi surface người dùng hay nhìn thấy đều nói `AVmatrix`
 - Không còn text `GitNexus` trên active local-only UI/CLI trừ chỗ giải thích migration
 
-# Pha 2: Command rename và CLI alias strategy
+# Pha 2: Command rename, package metadata, và cutover CLI
 
 - Repo đụng:
   - package metadata
   - CLI bootstrap
   - setup docs
   - scripts liên quan
+  - package bins / package names
 
 ## Mục tiêu
 
 - Người dùng local gọi `avmatrix`
-- `gitnexus` vẫn có thể tồn tại như alias/compatibility trong giai đoạn chuyển tiếp
-
-## Quyết định cần chốt
-
-- Có đổi package npm name ngay hay không
-- Có đổi thư mục `gitnexus/` ngay hay không
-- Có publish package mới hay chỉ dùng local bin alias
-
-## Đề xuất tốt nhất cho giai đoạn đầu
-
-- Chưa đổi tên thư mục package nội bộ ngay
-- Thêm/localize bin name `avmatrix`
-- Giữ `gitnexus` như alias tạm thời
-- Docs/setup chỉ hướng dẫn `avmatrix`
+- package metadata và generated setup đều canonical theo `avmatrix`
+- nếu có shim `gitnexus` thì chỉ là bước migration tạm thời, không phải steady state
 
 ## Checklist
 
 - `package.json` bin có `avmatrix`
+- package metadata không còn coi `gitnexus` là brand canonical
 - local install/link tạo được command `avmatrix`
-- `avmatrix --help` tương đương `gitnexus --help`
+- `avmatrix --help` hoạt động và phản ánh brand mới
 - `avmatrix mcp`, `avmatrix analyze`, `avmatrix query`, `avmatrix impact`, `avmatrix detect-changes` đều hoạt động
+- nếu còn shim `gitnexus`, plan phải có bước xóa shim ở phase cuối
 
 ## Acceptance
 
-- Local user có thể bỏ hẳn `gitnexus` và chỉ dùng `avmatrix`
+- Local user chỉ cần `avmatrix`
+- `gitnexus` không còn là đường canonical trong docs, setup, package metadata, hoặc active CLI branding
 
 # Pha 3: MCP rename và Codex/Claude integration
 
@@ -381,13 +382,14 @@
   - `command = "avmatrix"`
   - `args = ["mcp"]`
 - docs local-only đổi sang `avmatrix mcp`
-- bỏ `gitnexus mcp` khỏi docs chính, chỉ giữ nếu ghi rõ là alias cũ
+- bỏ `gitnexus mcp` khỏi docs chính; nếu còn shim thì phải nằm trong migration note riêng
 - test end-to-end với Codex/Claude local config
 
 ## Acceptance
 
 - Codex CLI và Claude Code CLI đều nhận MCP dưới tên `avmatrix`
 - agent không còn bị lẫn giữa local `AVmatrix` và upstream `GitNexus`
+- setup/generated config không còn emit `gitnexus` trên active path
 
 # Pha 4: Storage namespace migration
 
@@ -425,6 +427,7 @@
 - Sau rename, repo đã index trước đó vẫn hiện trong UI/MCP/CLI
 - Không bắt người dùng phải re-analyze toàn bộ chỉ vì đổi tên brand
 - Runtime sau migration không còn đọc `.gitnexus` / `~/.gitnexus` như fallback
+- migration xong thì namespace cũ chỉ còn là historical source đã tiêu thụ xong
 
 # Pha 5: Resource scheme và protocol namespace
 
@@ -493,6 +496,7 @@
 ## Acceptance
 
 - Người mới đọc docs sẽ cài và dùng bằng `AVmatrix`, không đi theo `GitNexus` nữa
+- generated skills / AI context cũng không còn file names và headings mang `gitnexus`
 
 # Pha 8: Test matrix và compatibility lock
 
@@ -504,7 +508,7 @@
 ## Mục tiêu
 
 - rename không làm đứt behavior
-- alias command/MCP và migration path được khóa bằng tests
+- migration path và active namespace mới được khóa bằng tests
 
 ## Behavioral tests bắt buộc
 
@@ -539,25 +543,45 @@
 
 - examples không còn hard-code `gitnexus` như đường chính
 
-# Pha 9: Optional internal package/import rename
+# Pha 9: Rename nội bộ triệt để package, folder, file, import
 
-- Chỉ làm nếu thật sự cần.
-- Đây là phần rủi ro cao nhất.
+- Đây là phase bắt buộc để kết thúc rollout.
+- Đây cũng là phase rủi ro cao nhất nên phải chia batch nhỏ, có test sau mỗi batch.
 
-## Những thứ có thể đổi ở pha này
+## Những thứ phải đổi ở pha này
 
 - tên package `gitnexus`
-- `gitnexus-web`
-- `gitnexus-shared`
+- tên package `gitnexus-web`
+- tên package `gitnexus-shared`
 - thư mục source/package
 - import paths nội bộ
+- file names và directory names còn mang `gitnexus`
+- generated skill source names còn mang `gitnexus`
 
-## Khuyến nghị
+## Acceptance
 
-- Không làm pha này trong đợt đầu nếu mục tiêu chính chỉ là:
-  - tránh nhầm lẫn context
-  - đổi mặt dùng local sang `AVmatrix`
-- Có thể giữ package/internal folder cũ thêm một thời gian nếu surface đã sạch
+- Không còn package/file/folder/import active nào mang `gitnexus`
+- Generated outputs và source skills đều mang `avmatrix`
+- Alias/shim tạm thời, nếu có, đã được loại bỏ hoặc tách hẳn sang migration note không nằm trên active path
+
+# Pha 10: Final scrub cho comments, docs, fixtures, tests, snapshots
+
+- Đây là phase dọn sạch cuối cùng.
+
+## Những thứ phải đổi ở pha này
+
+- comments còn sống trong code
+- fixture names
+- test titles và snapshot text
+- plan references / internal docs còn sót
+- hidden paths / examples / help text còn lộ `gitnexus`
+
+## Acceptance
+
+- Không còn `gitnexus` trong active codebase trừ:
+  - lịch sử git
+  - migration/historical notes có chủ đích
+  - external upstream references có chủ đích
 
 # Inventory sơ bộ cần audit/đụng
 
@@ -654,52 +678,44 @@
 - Nếu namespace storage migration gây mất repo/index:
   - rollback phase migration
   - restore lại code/runtime của phase trước, không duy trì fallback song song trong steady state
-- Nếu command `avmatrix` chưa ổn:
-  - giữ `gitnexus` làm canonical tạm thời
-  - nhưng vẫn để brand UI là `AVmatrix` nếu cần
+- Nếu command `avmatrix` chưa ổn trong một batch:
+  - rollback đúng batch đó
+  - không quay lại triết lý giữ `gitnexus` làm canonical lâu dài
 
-# Open questions cần chốt trước khi code
+# Quyết định đã chốt cho rollout triệt để
 
-- Có muốn đổi luôn:
-  - tên package npm
-  - tên thư mục `gitnexus/`, `gitnexus-web/`, `gitnexus-shared`
-  hay chỉ đổi surface user-facing + command + namespace?
-
-# Quyết định đã chốt cho V1
-
-- `V1` chỉ đổi surface user-facing + command + MCP + storage namespace + resource scheme.
-- `V1` **không** đổi package/folder/import nội bộ hàng loạt.
 - `avmatrix` là canonical command mới.
-- `gitnexus` được giữ làm compatibility alias cho command/MCP trong giai đoạn đầu.
+- Nếu có shim `gitnexus`, shim chỉ được tồn tại trong migration window và phải bị loại bỏ trước khi plan kết thúc.
 - `AVMATRIX_HOME` là env var primary mới.
 - Không giữ fallback runtime cho `.gitnexus` / `~/.gitnexus` / `GITNEXUS_HOME`.
 - Docs/spec là phase đầu tiên; code chỉ được đổi sau khi docs đã khóa canonical names.
 - Dữ liệu namespace cũ chỉ được dùng làm migration source một lần.
 - Generator của `AGENTS.md` / `CLAUDE.md` / skills local phải được đổi cùng rollout đầu.
+- Package names, folder names, import paths, file names, comments, generated outputs đều nằm trong scope bắt buộc của rollout.
 
 # Đề xuất triển khai tốt nhất
 
-- V1 nên làm theo thứ tự:
+- Rollout nên làm theo thứ tự:
   1. Pha 0 audit
   2. Pha 0.5 docs/spec canonical
   3. Pha 1 brand rename
-  4. Pha 2 + Pha 3 trong cùng rollout đầu để command/MCP/docs không lệch nhau
+  4. Pha 2 + Pha 3 trong cùng rollout để command/MCP/docs không lệch nhau
   5. Pha 4 storage/config migration một lần
   6. Pha 5 resource scheme rename
   7. Pha 6 web active path cleanup
   8. Pha 7 docs/setup cleanup cuối
   9. Pha 8 tests/compatibility lock
-- Pha 9 chỉ làm khi thật sự cần.
+  10. Pha 9 rename nội bộ triệt để
+  11. Pha 10 final scrub
 
 # Checklist tổng
 
 - [x] Audit đầy đủ mọi surface `GitNexus` / `gitnexus` / `.gitnexus` / `gitnexus://`
 - [x] Tạo inventory audit thực tế: `docs/avmatrix-rename-audit.md`
-- [x] Chốt scope V1: surface user-facing + command/MCP + storage/resource scheme, chưa đổi package/internal hàng loạt
+- [x] Chốt scope rollout triệt để: package/folder/import/file/comment đều nằm trong scope
 - [x] Chốt docs/spec canonical trước khi đổi code
 - [x] Đổi brand hiển thị sang `AVmatrix`
 - [x] Thêm command `avmatrix`
-- [x] Giữ alias `gitnexus` cho command/MCP trong giai đoạn đầu
 - [x] Đổi MCP canonical command sang `avmatrix mcp`
 - [x] Đổi MCP server name trong config/setup sang `avmatrix`
 - [x] Đổi docs/setup sang `AVmatrix`
@@ -709,14 +725,18 @@
 - [x] Web UI active path không còn lộ `GitNexus`
 - [x] Behavioral tests cho command/MCP/storage/web pass
 - [x] Typecheck pass cho `gitnexus` và `gitnexus-web`
+- [ ] Rename triệt để package names, folder names, file names, import paths
+- [ ] Dọn sạch comments, fixtures, test titles, snapshots, generated skill source names còn `gitnexus`
+- [ ] Loại bỏ shim/alias `gitnexus` khỏi active path khi phase rename nội bộ hoàn tất
+- [ ] Rà lần cuối để `gitnexus` chỉ còn trong lịch sử git, migration notes, hoặc external upstream references có chủ đích
 
 # Kết luận
 
 - Rename này là hợp lý và có giá trị thật vì nó giải quyết **nhầm lẫn ngữ cảnh làm việc** giữa local toolchain của bạn và upstream `GitNexus`.
 - Cách đúng không phải là find/replace toàn repo một phát.
 - Cách đúng là:
-  - đổi surface người dùng trước
-  - đổi command/MCP namespace
+  - đổi docs/spec trước
+  - đổi surface người dùng và command/MCP namespace
   - migrate storage/config an toàn
   - khóa lại bằng behavioral tests
-  - chỉ sau đó mới cân nhắc rename package/import nội bộ nếu cần.
+  - rồi rename triệt để package/folder/import/file/comment cho đến khi codebase active path sạch namespace cũ.
