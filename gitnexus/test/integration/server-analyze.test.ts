@@ -1,6 +1,6 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import { JobManager } from '../../src/server/analyze-job.js';
-import { extractRepoName, getCloneDir } from '../../src/server/git-clone.js';
+import { getLegacyRepoCacheDir } from '../../src/server/legacy-repo-cache.js';
 
 describe('server-side analyze integration', () => {
   const manager = new JobManager();
@@ -73,20 +73,18 @@ describe('server-side analyze integration', () => {
 
     manager.updateJob(job.id, {
       status: 'failed',
-      error: 'Clone failed: repository not found',
+      error: 'Local analysis failed: repository not found',
     });
 
     unsubscribe();
 
     expect(events.length).toBe(1);
     expect(events[0].phase).toBe('failed');
-    expect(events[0].message).toBe('Clone failed: repository not found');
+    expect(events[0].message).toBe('Local analysis failed: repository not found');
   });
 
-  it('git URL name extraction for clone paths', () => {
-    expect(extractRepoName('https://github.com/facebook/react.git')).toBe('react');
-    expect(extractRepoName('git@github.com:microsoft/vscode.git')).toBe('vscode');
-    const dir = getCloneDir('react');
+  it('legacy cache directory helper points at ~/.gitnexus/repos', () => {
+    const dir = getLegacyRepoCacheDir('react');
     expect(dir).toMatch(/\.gitnexus/);
     expect(dir).toMatch(/repos/);
     expect(dir).toContain('react');

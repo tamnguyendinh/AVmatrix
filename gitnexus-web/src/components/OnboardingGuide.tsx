@@ -183,7 +183,7 @@ function PollingBar() {
 
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium text-text-secondary">
-          Listening for server
+          Listening for local bridge
           <span className="ml-0.5 inline-flex text-text-muted">
             <span className="animate-pulse">...</span>
           </span>
@@ -201,8 +201,8 @@ interface OnboardingGuideProps {
 }
 
 export const OnboardingGuide = ({ isPolling }: OnboardingGuideProps) => {
-  const primary = isDev ? 'npm run --prefix gitnexus serve' : 'npx gitnexus serve';
-  const termLabel = isDev ? 'Start backend' : 'Terminal';
+  const primary = isDev ? 'cd gitnexus && npm run serve' : 'gitnexus serve';
+  const termLabel = 'Start local bridge';
 
   // Step states: step 1 = copy command, step 2 = run/wait, step 3 = auto-connect
   // Once polling starts the user has presumably run the command — mark step 1 done.
@@ -226,12 +226,12 @@ export const OnboardingGuide = ({ isPolling }: OnboardingGuideProps) => {
             </span>
           </div>
           <h2 className="text-lg leading-snug font-semibold text-text-primary">
-            Start your local server
+            Start GitNexus locally
           </h2>
           <p className="mx-auto mt-1 max-w-xs text-sm leading-relaxed text-text-secondary">
             {isDev
-              ? 'Fire up the Express backend in a separate terminal to unlock the full graph.'
-              : 'One command is all it takes. The browser connects automatically.'}
+              ? 'Start the local bridge in a separate terminal. The browser stays local and auto-connects when it is ready.'
+              : 'One local command is all it takes. The browser connects automatically.'}
           </p>
         </div>
       </div>
@@ -276,7 +276,7 @@ export const OnboardingGuide = ({ isPolling }: OnboardingGuideProps) => {
         <StepRow
           state={step2State}
           number={2}
-          title={isPolling ? 'Waiting for server to start' : 'Paste and run in your terminal'}
+          title={isPolling ? 'Waiting for local bridge to start' : 'Paste and run in your terminal'}
           description={
             isPolling ? undefined : 'Open a terminal at the project root, paste, and hit Enter.'
           }

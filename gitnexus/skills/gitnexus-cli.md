@@ -45,22 +45,28 @@ Deletes the `.gitnexus/` directory and unregisters the repo from the global regi
 | `--force` | Skip confirmation prompt                          |
 | `--all`   | Clean all indexed repos, not just the current one |
 
-### wiki — Generate documentation from the graph
+### wiki — Show wiki capability status
 
 ```bash
 npx gitnexus wiki
 ```
 
-Generates repository documentation from the knowledge graph using an LLM. Requires an API key (saved to `~/.gitnexus/config.json` on first use).
+Shows whether the optional wiki capability is `off` or `local`. Remote wiki generation is disabled in local-only mode.
 
-| Flag                | Effect                                    |
-| ------------------- | ----------------------------------------- |
-| `--force`           | Force full regeneration                   |
-| `--model <model>`   | LLM model (default: minimax/minimax-m2.5) |
-| `--base-url <url>`  | LLM API base URL                          |
-| `--api-key <key>`   | LLM API key                               |
-| `--concurrency <n>` | Parallel LLM calls (default: 3)           |
-| `--gist`            | Publish wiki as a public GitHub Gist      |
+### wiki-mode — Show or set wiki capability mode
+
+```bash
+npx gitnexus wiki-mode
+npx gitnexus wiki-mode off
+npx gitnexus wiki-mode local
+```
+
+Controls the optional wiki capability:
+
+| Mode    | Effect |
+| ------- | ------ |
+| `off`   | Wiki generation is disabled |
+| `local` | Reserved for a future local wiki engine; GitNexus will not fall back to any remote wiki service |
 
 ### list — Show all indexed repos
 

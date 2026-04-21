@@ -33,7 +33,7 @@ import { mountMCPEndpoints } from './mcp-http.js';
 import { fork } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { JobManager, type AnalyzeJob, type AnalyzeJobProgress } from './analyze-job.js';
-import { getCloneDir } from './git-clone.js';
+import { getLegacyRepoCacheDir } from './legacy-repo-cache.js';
 import { resolveAnalyzeRepoPath } from './local-path-policy.js';
 import { RuntimeController } from '../runtime/runtime-controller.js';
 import { CodexSessionAdapter } from '../runtime/session-adapters/codex.js';
@@ -47,6 +47,12 @@ export const LOCAL_ANALYZE_PREPARING_PROGRESS: AnalyzeJobProgress = {
   percent: 0,
   message: 'Preparing local analysis...',
 };
+
+/**
+ * Maximum time the /api/repo hold-queue will wait for an active analysis job to finish.
+ * Must stay in sync with the frontend repo-info timeout.
+ */
+export const HOLD_QUEUE_TIMEOUT_SECS = 600; // 10 minutes
 
 export const isActiveAnalyzeJobStatus = (status: AnalyzeJob['status']): boolean =>
   status === 'queued' || status === 'analyzing';
@@ -465,12 +471,6 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
     activeRepoPaths.delete(repoPath);
   };
 
-  /**
-   * Maximum time the hold-queue will wait for an active analysis job to complete.
-   * Must stay in sync with the frontend's `fetchRepoInfo({ awaitAnalysis: true })` timeout.
-   */
-  const HOLD_QUEUE_TIMEOUT_SECS = 300; // 5 minutes
-
   // Helper: resolve a repo by name from the global registry, or default to first.
   // Pass `req` to enable early exit if the client disconnects during the hold-queue wait.
   const resolveRepo = async (repoName?: string, isRetry = false, req?: any): Promise<any> => {
@@ -532,7 +532,7 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
     }
 
     // Emergency fallback: re-sync the registry to handle Windows file-system race conditions
-    // (e.g. registry file not yet flushed after clone completes).
+    // (e.g. registry file not yet flushed after analysis completes).
     if (!found && normalizedName && !isRetry) {
       if (process.env.DEBUG) {
         console.log(`[debug] resolveRepo 404 for "${normalizedName}". Triggering deep init...`);
@@ -628,7 +628,7 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
     }
   });
 
-  // Delete a repo — removes index, clone dir (if any), and unregisters it
+  // Delete a repo — removes index, any legacy cache dir, and unregisters it
   app.delete('/api/repo', async (req, res) => {
     try {
       const repoName = requestedRepo(req);
@@ -660,15 +660,15 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
         const storagePath = getStoragePath(entry.path);
         await fs.rm(storagePath, { recursive: true, force: true }).catch(() => {});
 
-        // 2. Delete the cloned repo dir if it lives under ~/.gitnexus/repos/
-        const cloneDir = getCloneDir(entry.name);
+        // 2. Delete any legacy repo cache dir from pre-local-only builds
+        const legacyCacheDir = getLegacyRepoCacheDir(entry.name);
         try {
-          const stat = await fs.stat(cloneDir);
+          const stat = await fs.stat(legacyCacheDir);
           if (stat.isDirectory()) {
-            await fs.rm(cloneDir, { recursive: true, force: true });
+            await fs.rm(legacyCacheDir, { recursive: true, force: true });
           }
         } catch {
-          /* clone dir may not exist (local repos) */
+          /* legacy cache dir may not exist */
         }
 
         // 3. Unregister from the global registry
@@ -1161,7 +1161,7 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
       }
 
       // Mark as active synchronously to prevent race with concurrent requests.
-      // Local-only analysis has no clone/pull phase; the job enters analyze preparation immediately.
+      // Local-only analysis enters analyze preparation immediately.
       jobManager.updateJob(job.id, {
         status: 'analyzing',
         progress: LOCAL_ANALYZE_PREPARING_PROGRESS,

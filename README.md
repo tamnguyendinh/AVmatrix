@@ -138,17 +138,15 @@ If you prefer manual configuration:
 **Claude Code** (full support — MCP + skills + hooks):
 
 ```bash
-# macOS / Linux
-claude mcp add gitnexus -- npx -y gitnexus@latest mcp
-
-# Windows
-claude mcp add gitnexus -- cmd /c npx -y gitnexus@latest mcp
+# First install the local CLI onto PATH (for example: `cd gitnexus && npm link`)
+claude mcp add gitnexus -- gitnexus mcp
 ```
 
 **Codex** (full support — MCP + skills):
 
 ```bash
-codex mcp add gitnexus -- npx -y gitnexus@latest mcp
+# First install the local CLI onto PATH (for example: `cd gitnexus && npm link`)
+codex mcp add gitnexus -- gitnexus mcp
 ```
 
 **Cursor** (`~/.cursor/mcp.json` — global, works for all projects):
@@ -157,8 +155,8 @@ codex mcp add gitnexus -- npx -y gitnexus@latest mcp
 {
   "mcpServers": {
     "gitnexus": {
-      "command": "npx",
-      "args": ["-y", "gitnexus@latest", "mcp"]
+      "command": "gitnexus",
+      "args": ["mcp"]
     }
   }
 }
@@ -181,8 +179,8 @@ codex mcp add gitnexus -- npx -y gitnexus@latest mcp
 
 ```toml
 [mcp_servers.gitnexus]
-command = "npx"
-args = ["-y", "gitnexus@latest", "mcp"]
+command = "gitnexus"
+args = ["mcp"]
 ```
 
 ### CLI Commands

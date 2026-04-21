@@ -3,22 +3,13 @@ import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
 
-const execFileMock = vi.fn((...args: any[]) => {
-  const callback = args.at(-1);
-  if (typeof callback === 'function') {
-    callback(null, '', '');
-  }
-});
-
-// By default, execFileSync throws (simulating `which gitnexus` not found)
-// so getMcpEntry() writes a PATH-based `gitnexus mcp` entry.
-const execFileSyncMock = vi.fn(() => {
-  throw new Error('not found');
-});
-
 vi.mock('child_process', () => ({
-  execFile: execFileMock,
-  execFileSync: execFileSyncMock,
+  execFile: vi.fn((...args: any[]) => {
+    const callback = args.at(-1);
+    if (typeof callback === 'function') {
+      callback(null, '', '');
+    }
+  }),
 }));
 
 describe('setupClaudeCode', () => {
@@ -64,7 +55,12 @@ describe('setupClaudeCode', () => {
     await fs.rm(tempHome, { recursive: true, force: true });
   });
 
-  it('writes win32 MCP entry with cmd wrapper', async () => {
+  const expectedEntry = () => ({
+    command: 'gitnexus',
+    args: ['mcp'],
+  });
+
+  it('writes win32 MCP entry using portable gitnexus command', async () => {
     setPlatform('win32');
 
     const { setupCommand } = await import('../../src/cli/setup.js');
@@ -73,13 +69,10 @@ describe('setupClaudeCode', () => {
     const raw = await fs.readFile(path.join(tempHome, '.claude.json'), 'utf-8');
     const config = JSON.parse(raw);
 
-    expect(config.mcpServers.gitnexus).toEqual({
-      command: 'gitnexus',
-      args: ['mcp'],
-    });
+    expect(config.mcpServers.gitnexus).toEqual(expectedEntry());
   });
 
-  it('writes non-win32 MCP entry with PATH-based gitnexus command', async () => {
+  it('writes non-win32 MCP entry using portable gitnexus command', async () => {
     setPlatform('darwin');
 
     const { setupCommand } = await import('../../src/cli/setup.js');
@@ -88,10 +81,7 @@ describe('setupClaudeCode', () => {
     const raw = await fs.readFile(path.join(tempHome, '.claude.json'), 'utf-8');
     const config = JSON.parse(raw);
 
-    expect(config.mcpServers.gitnexus).toEqual({
-      command: 'gitnexus',
-      args: ['mcp'],
-    });
+    expect(config.mcpServers.gitnexus).toEqual(expectedEntry());
   });
 
   it('skips when ~/.claude directory does not exist', async () => {
@@ -158,37 +148,4 @@ describe('setupClaudeCode', () => {
     expect(config.mcpServers.gitnexus).toBeDefined();
   });
 
-  it('uses global binary path when gitnexus is on PATH', async () => {
-    setPlatform('darwin');
-    execFileSyncMock.mockReturnValueOnce('/usr/local/bin/gitnexus\n');
-
-    const { setupCommand } = await import('../../src/cli/setup.js');
-    await setupCommand();
-
-    const raw = await fs.readFile(path.join(tempHome, '.claude.json'), 'utf-8');
-    const config = JSON.parse(raw);
-
-    expect(config.mcpServers.gitnexus).toEqual({
-      command: '/usr/local/bin/gitnexus',
-      args: ['mcp'],
-    });
-  });
-
-  it('falls back to PATH-based gitnexus when binary resolution fails', async () => {
-    setPlatform('darwin');
-    execFileSyncMock.mockImplementationOnce(() => {
-      throw new Error('not found');
-    });
-
-    const { setupCommand } = await import('../../src/cli/setup.js');
-    await setupCommand();
-
-    const raw = await fs.readFile(path.join(tempHome, '.claude.json'), 'utf-8');
-    const config = JSON.parse(raw);
-
-    expect(config.mcpServers.gitnexus).toEqual({
-      command: 'gitnexus',
-      args: ['mcp'],
-    });
-  });
 });

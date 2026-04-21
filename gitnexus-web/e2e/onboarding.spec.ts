@@ -14,6 +14,7 @@ import { test, expect } from '@playwright/test';
  */
 
 const BACKEND_URL = 'http://localhost:4747';
+const ABSOLUTE_LOCAL_PATH = process.platform === 'win32' ? 'C:\\repos\\demo' : '/tmp/demo';
 
 async function enterExploringView(page: import('@playwright/test').Page) {
   await page.goto('/');
@@ -42,7 +43,7 @@ test.describe('Flow 1: Onboarding — no server', () => {
     await page.goto('/');
 
     // Wait for initial probe to complete and onboarding to appear
-    await expect(page.getByText('Start your local server')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Start GitNexus locally')).toBeVisible({ timeout: 10_000 });
     await page.screenshot({ path: testInfo.outputPath('onboarding-visible.png') });
   });
 
@@ -53,7 +54,7 @@ test.describe('Flow 1: Onboarding — no server', () => {
     // Step 1 is active (done once polling starts)
     await expect(page.getByText('Copy the command')).toBeAttached({ timeout: 10_000 });
     // Step 2 title changes to "Waiting for server to start" once polling begins
-    await expect(page.getByText('Waiting for server to start')).toBeAttached({ timeout: 10_000 });
+    await expect(page.getByText('Waiting for local bridge to start')).toBeAttached({ timeout: 10_000 });
     // Step 3 is always rendered
     await expect(page.getByText('Auto-connects and opens the graph')).toBeAttached({
       timeout: 5_000,
@@ -77,7 +78,7 @@ test.describe('Flow 1: Onboarding — no server', () => {
     await page.goto('/');
 
     // Polling starts after initial probe fails
-    await expect(page.getByText('Listening for server')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Listening for local bridge')).toBeVisible({ timeout: 10_000 });
   });
 
   test('shows Node.js version requirement', async ({ page }) => {
@@ -138,7 +139,7 @@ test.describe('Flow 2: Server detected — auto-connect', () => {
     await page.goto('/');
 
     // Verify onboarding is shown first
-    await expect(page.getByText('Start your local server')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Start GitNexus locally')).toBeVisible({ timeout: 10_000 });
     await page.screenshot({ path: testInfo.outputPath('before-server-start.png') });
 
     // "Start" the server by unblocking requests
@@ -166,9 +167,8 @@ test.describe('Flow 2: Server detected — auto-connect', () => {
     await page.goto('/');
 
     // Should transition: onboarding → success → analyze (zero repos)
-    // The analyze form tabs should be visible
-    await expect(page.getByRole('tab', { name: 'GitHub URL' })).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByRole('tab', { name: 'Local Folder' })).toBeVisible();
+    await expect(page.getByText('Local Folder Path')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('Folder picker hint')).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('analyze-empty-state.png') });
   });
 });
@@ -191,54 +191,47 @@ test.describe('Flow 3: Analyze form', () => {
     );
   });
 
-  test('GitHub URL tab validates input', async ({ page }, testInfo) => {
+  test('local path input validates absolute paths', async ({ page }, testInfo) => {
     await page.goto('/');
 
     // Wait for analyze form (transition: onboarding → success → analyze)
-    await expect(page.getByRole('tab', { name: 'GitHub URL' })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('Local Folder Path')).toBeVisible({ timeout: 20_000 });
 
-    // Type an invalid URL
-    const input = page.locator('input[type="url"]');
-    await input.fill('not-a-url');
+    // Type an invalid relative path
+    const input = page.locator('input[type="text"]').first();
+    await input.fill('not-a-path');
 
     // Analyze button should be visible but disabled
     const analyzeBtn = page.getByRole('button', { name: /Analyze Repository/ });
     await expect(analyzeBtn).toBeVisible();
+    await expect(analyzeBtn).toBeDisabled();
 
-    // Type a valid GitHub URL
-    await input.fill('https://github.com/anthropics/courses');
-    await page.screenshot({ path: testInfo.outputPath('valid-github-url.png') });
+    // Type a valid absolute local path
+    await input.fill(ABSOLUTE_LOCAL_PATH);
+    await expect(analyzeBtn).toBeEnabled();
+    await page.screenshot({ path: testInfo.outputPath('valid-local-path.png') });
   });
 
-  test('Local Folder tab shows browse button', async ({ page }, testInfo) => {
+  test('local-only analyze form shows folder picker hint', async ({ page }, testInfo) => {
     await page.goto('/');
 
-    await expect(page.getByRole('tab', { name: 'Local Folder' })).toBeVisible({ timeout: 20_000 });
-
-    // Switch to Local Folder tab
-    await page.getByRole('tab', { name: 'Local Folder' }).click();
-
-    // Browse button should be visible
-    await expect(page.getByText('Browse for folder')).toBeVisible();
-    await page.screenshot({ path: testInfo.outputPath('local-folder-tab.png') });
+    await expect(page.getByText('Local Folder Path')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('Folder picker hint')).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath('local-folder-input.png') });
   });
 
-  test('switching tabs clears input', async ({ page }) => {
+  test('invalid path keeps analyze disabled until corrected', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.getByRole('tab', { name: 'GitHub URL' })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('Local Folder Path')).toBeVisible({ timeout: 20_000 });
 
-    // Type in GitHub URL
-    const urlInput = page.locator('input[type="url"]');
-    await urlInput.fill('https://github.com/test/repo');
+    const pathInput = page.locator('input[type="text"]').first();
+    await pathInput.fill('relative-folder');
+    const analyzeButton = page.getByRole('button', { name: /Analyze Repository/i });
+    await expect(analyzeButton).toBeDisabled();
 
-    // Switch to Local Folder
-    await page.getByRole('tab', { name: 'Local Folder' }).click();
-
-    // Switch back to GitHub URL — input should be empty
-    await page.getByRole('tab', { name: 'GitHub URL' }).click();
-    const newUrlInput = page.locator('input[type="url"]');
-    await expect(newUrlInput).toHaveValue('');
+    await pathInput.fill(ABSOLUTE_LOCAL_PATH);
+    await expect(analyzeButton).toBeEnabled();
   });
 });
 
@@ -299,9 +292,9 @@ test.describe('Flow 4: Repo dropdown in exploring view', () => {
     // Click "Analyze a new repository..."
     await page.getByText('Analyze a new repository').click();
 
-    // Should show the analyze form inline
-    await expect(page.getByText('GitHub URL')).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByText('Local Folder')).toBeVisible();
+    // Should show the local-only analyze form inline
+    await expect(page.getByText('Local Folder Path')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Folder picker hint')).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('inline-analyze-form.png') });
   });
 });

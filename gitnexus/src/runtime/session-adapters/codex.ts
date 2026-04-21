@@ -2,7 +2,8 @@ import path from 'path';
 import fs from 'fs/promises';
 import os from 'os';
 import { randomUUID } from 'crypto';
-import { spawn } from 'child_process';
+import { execFile, spawn } from 'child_process';
+import { promisify } from 'util';
 import type {
   SessionChatRequest,
   SessionExecutionMode,
@@ -27,6 +28,8 @@ interface CodexLaunchTarget {
   runtimeEnvironment: SessionRuntimeEnvironment;
   executablePath: string;
   args: string[];
+  displayPath?: string;
+  shell?: string | boolean;
 }
 
 interface CodexStatusProbe {
@@ -37,9 +40,16 @@ interface CodexStatusProbe {
   message?: string;
 }
 
+const isWslMountedWindowsPath = (value: string): boolean => /^\/mnt\/[a-z]\//i.test(value.trim());
+const execFileAsync = promisify(execFile);
+
 const getNativeCodexExecutable = (): string =>
   process.env.GITNEXUS_CODEX_EXECUTABLE ||
   (process.platform === 'win32' ? 'codex.cmd' : 'codex');
+
+const getWindowsCommandShell = (): string =>
+  process.env.ComSpec ||
+  path.join(process.env.SystemRoot || process.env.windir || 'C:\\Windows', 'System32', 'cmd.exe');
 
 const getConfiguredExecutionMode = (): SessionExecutionMode => {
   const configured = process.env.GITNEXUS_SESSION_EXECUTION_MODE;
@@ -65,7 +75,7 @@ const spawnCommand = (
 ) =>
   spawn(target.executablePath, target.args, {
     ...options,
-    shell: false,
+    shell: target.shell ?? false,
     windowsHide: true,
   });
 
@@ -107,12 +117,24 @@ const buildNativeTarget = (...args: string[]): CodexLaunchTarget => ({
   runtimeEnvironment: 'native',
   executablePath: getNativeCodexExecutable(),
   args,
+  shell: process.platform === 'win32' ? getWindowsCommandShell() : false,
 });
 
 const buildWslTarget = (...args: string[]): CodexLaunchTarget => ({
   runtimeEnvironment: 'wsl2',
   executablePath: 'wsl.exe',
   args: ['-e', 'bash', '-lc', args.map(shellQuotePosix).join(' ')],
+});
+
+const buildWslShellTarget = (script: string): CodexLaunchTarget => ({
+  runtimeEnvironment: 'wsl2',
+  executablePath: 'wsl.exe',
+  args: ['-e', 'bash', '-lc', script],
+});
+
+const withTargetArgs = (target: CodexLaunchTarget, ...args: string[]): CodexLaunchTarget => ({
+  ...target,
+  args: [...target.args, ...args],
 });
 
 const createBaseEvent = (
@@ -282,23 +304,187 @@ const probeTargetStatus = async (target: CodexLaunchTarget): Promise<CodexStatus
   }
 };
 
-const resolveWindowsTarget = async (): Promise<CodexStatusProbe> => {
-  const wslTarget = buildWslTarget();
+const resolveWindowsNativeBaseTarget = async (): Promise<CodexLaunchTarget> => {
+  const configured = process.env.GITNEXUS_CODEX_EXECUTABLE;
+  if (configured && configured.endsWith('.js')) {
+    return {
+      runtimeEnvironment: 'native',
+      executablePath: process.execPath,
+      args: [configured],
+      displayPath: configured,
+      shell: false,
+    };
+  }
 
-  const wslStatus = await probeTargetStatus(wslTarget);
+  try {
+    const { stdout } = await execFileAsync('where.exe', ['codex']);
+    const shimPath = stdout
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .find((entry) => entry.toLowerCase().endsWith('codex.cmd') || entry.toLowerCase().endsWith('\\codex'));
+
+    if (shimPath) {
+      const codexJsPath = path.join(path.dirname(shimPath), 'node_modules', '@openai', 'codex', 'bin', 'codex.js');
+      try {
+        await fs.access(codexJsPath);
+        return {
+          runtimeEnvironment: 'native',
+          executablePath: process.execPath,
+          args: [codexJsPath],
+          displayPath: shimPath,
+          shell: false,
+        };
+      } catch {
+        // Fall through to raw executable target below.
+      }
+    }
+  } catch {
+    // Fall through to raw executable target below.
+  }
+
+  return buildNativeTarget();
+};
+
+const probeNativeStatus = async (): Promise<CodexStatusProbe> => {
+  const baseTarget =
+    process.platform === 'win32' ? await resolveWindowsNativeBaseTarget() : buildNativeTarget();
+  const versionTarget = withTargetArgs(baseTarget, '--version');
+  const loginTarget = withTargetArgs(baseTarget, 'login', 'status');
+
+  try {
+    const versionResult = await runCommand(versionTarget);
+    if (versionResult.code !== 0) {
+      return {
+        target: baseTarget,
+        available: false,
+        authenticated: false,
+        message: versionResult.stderr || versionResult.stdout || 'codex --version failed',
+      };
+    }
+
+    const loginResult = await runCommand(loginTarget);
+    const loginOutput = `${loginResult.stdout}\n${loginResult.stderr}`.trim();
+    const authenticated = /logged in/i.test(loginOutput) && !/not logged in/i.test(loginOutput);
+
+    return {
+      target: baseTarget,
+      available: true,
+      authenticated,
+      version: versionResult.stdout.trim() || versionResult.stderr.trim() || undefined,
+      message: authenticated ? undefined : loginOutput || 'Codex CLI is installed but not signed in',
+    };
+  } catch (error) {
+    return {
+      target: baseTarget,
+      available: false,
+      authenticated: false,
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
+};
+
+const resolveWslCodexPath = async (): Promise<{ executablePath?: string; message?: string }> => {
+  try {
+    const whichResult = await runCommand(buildWslShellTarget('command -v codex || true'));
+    const resolvedPath = whichResult.stdout
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .at(-1);
+
+    if (!resolvedPath) {
+      return {
+        message: 'Codex CLI is not installed inside WSL2 or not available on the WSL PATH.',
+      };
+    }
+
+    if (isWslMountedWindowsPath(resolvedPath)) {
+      return {
+        message: `WSL2 is resolving Codex to a Windows-mounted shim at "${resolvedPath}". Install Codex CLI inside WSL2 or fix the WSL PATH order.`,
+      };
+    }
+
+    return { executablePath: resolvedPath };
+  } catch (error) {
+    return {
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
+};
+
+const probeWslStatus = async (): Promise<CodexStatusProbe> => {
+  const resolved = await resolveWslCodexPath();
+  if (!resolved.executablePath) {
+    return {
+      target: buildWslTarget(),
+      available: false,
+      authenticated: false,
+      message: resolved.message,
+    };
+  }
+
+  const quotedExecutable = shellQuotePosix(resolved.executablePath);
+  try {
+    const versionResult = await runCommand(
+      buildWslShellTarget(`${quotedExecutable} --version`),
+    );
+    if (versionResult.code !== 0) {
+      return {
+        target: buildWslTarget(),
+        available: false,
+        authenticated: false,
+        message: versionResult.stderr || versionResult.stdout || 'codex --version failed inside WSL2',
+      };
+    }
+
+    const loginResult = await runCommand(
+      buildWslShellTarget(`${quotedExecutable} login status`),
+    );
+    const loginOutput = `${loginResult.stdout}\n${loginResult.stderr}`.trim();
+    const authenticated = /logged in/i.test(loginOutput) && !/not logged in/i.test(loginOutput);
+
+    return {
+      target: buildWslTarget(resolved.executablePath),
+      available: true,
+      authenticated,
+      version: versionResult.stdout.trim() || versionResult.stderr.trim() || undefined,
+      message: authenticated ? undefined : loginOutput || 'Codex CLI is installed in WSL2 but not signed in',
+    };
+  } catch (error) {
+    return {
+      target: buildWslTarget(resolved.executablePath),
+      available: false,
+      authenticated: false,
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
+};
+
+const resolveWindowsTarget = async (): Promise<CodexStatusProbe> => {
+  const wslStatus = await probeWslStatus();
   if (wslStatus.available) {
     return wslStatus;
   }
 
+  const nativeStatus = await probeTargetStatus(buildNativeTarget());
+  if (nativeStatus.available) {
+    return {
+      ...nativeStatus,
+      message: nativeStatus.authenticated ? undefined : nativeStatus.message,
+    };
+  }
+
   return {
-    target: wslTarget,
+    target: nativeStatus.target,
     available: false,
-    authenticated: false,
+    authenticated: nativeStatus.authenticated,
     message: [
-      'WSL2 Codex is required on Windows for the local session runtime.',
-      'Windows-native Codex execution is not supported in Phase 1.',
-      'Install Codex CLI inside WSL2.',
+      'No usable local Codex runtime was found on Windows.',
+      'Preferred: install Codex CLI inside WSL2.',
+      'Fallback: ensure native Codex CLI is installed and signed in on Windows.',
       wslStatus.message,
+      nativeStatus.message,
     ]
       .filter(Boolean)
       .join(' '),
@@ -309,7 +495,7 @@ const resolveLaunchTarget = async (): Promise<CodexStatusProbe> => {
   if (process.platform === 'win32') {
     return resolveWindowsTarget();
   }
-  const nativeStatus = await probeTargetStatus(buildNativeTarget());
+  const nativeStatus = await probeNativeStatus();
   return nativeStatus;
 };
 
@@ -330,7 +516,7 @@ export class CodexSessionAdapter implements SessionAdapter {
       executablePath:
         probe.target.runtimeEnvironment === 'wsl2'
           ? 'wsl.exe -> codex'
-          : probe.target.executablePath,
+          : probe.target.displayPath || probe.target.executablePath,
       version: probe.version,
       message: probe.message,
       recommendedEnvironment: process.platform === 'win32' ? 'wsl2' : 'native',
@@ -391,7 +577,7 @@ export class CodexSessionAdapter implements SessionAdapter {
     const target =
       status.runtimeEnvironment === 'wsl2'
         ? buildWslTarget('codex', ...baseArgs)
-        : buildNativeTarget(...baseArgs);
+        : withTargetArgs(await resolveWindowsNativeBaseTarget(), ...baseArgs);
 
     const child = spawnCommand(target, {
       cwd: context.repo.repoPath,

@@ -409,21 +409,21 @@ export const fetchRepos = async (): Promise<BackendRepo[]> => {
   return response.json() as Promise<BackendRepo[]>;
 };
 
-/** Fetch repo metadata.
- * Pass `awaitAnalysis: true` when connecting to a repo that may still be queued/analyzing —
- * this enables the backend's hold-queue and uses a 5-minute timeout to match.
- * Normal calls (e.g. repo switching between already-indexed repos) use the default 10s timeout.
+/**
+ * Repo hydration can legitimately take much longer than the generic 30s fetch timeout,
+ * especially when the backend is still draining an analyze hold-queue for a large repo.
  *
  * Must stay in sync with HOLD_QUEUE_TIMEOUT_SECS in gitnexus/src/server/api.ts.
  */
-const HOLD_QUEUE_TIMEOUT_MS = 300_000; // 5 minutes — matches backend HOLD_QUEUE_TIMEOUT_SECS
+export const REPO_INFO_TIMEOUT_MS = 600_000; // 10 minutes
+export const HOLD_QUEUE_TIMEOUT_MS = REPO_INFO_TIMEOUT_MS;
 
 export const fetchRepoInfo = async (
   repo?: string,
   opts?: { awaitAnalysis?: boolean },
 ): Promise<BackendRepo> => {
   const url = `${_backendUrl}/api/repo${repo ? `?${repoParam(repo)}` : ''}`;
-  const timeout = opts?.awaitAnalysis ? HOLD_QUEUE_TIMEOUT_MS : undefined;
+  const timeout = opts?.awaitAnalysis ? HOLD_QUEUE_TIMEOUT_MS : REPO_INFO_TIMEOUT_MS;
   const response = await fetchWithTimeout(url, {}, timeout);
   await assertOk(response);
   const data = await response.json();

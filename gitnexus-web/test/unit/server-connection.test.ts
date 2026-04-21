@@ -2,7 +2,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   connectToServer,
   fetchGraph,
+  fetchRepoInfo,
   normalizeServerUrl,
+  REPO_INFO_TIMEOUT_MS,
   setBackendUrl,
 } from '../../src/services/backend-client';
 
@@ -76,6 +78,7 @@ describe('connectToServer', () => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 describe('fetchGraph', () => {
@@ -205,5 +208,42 @@ describe('fetchGraph', () => {
     await expect(fetchGraph('big-repo')).rejects.toMatchObject({
       message: 'stream failed',
     });
+  });
+});
+
+describe('fetchRepoInfo', () => {
+  it('waits up to 10 minutes before timing out normal repo-info requests', async () => {
+    vi.useFakeTimers();
+    setBackendUrl('http://localhost:4747');
+
+    const fetchMock = vi.fn((_url: string, init?: RequestInit) => {
+      return new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => {
+          reject(new DOMException('The operation was aborted', 'AbortError'));
+        });
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    let settled = false;
+    const request = fetchRepoInfo('big-repo');
+    void request.then(
+      () => {
+        settled = true;
+      },
+      () => {
+        settled = true;
+      },
+    );
+
+    await vi.advanceTimersByTimeAsync(REPO_INFO_TIMEOUT_MS - 1);
+    expect(settled).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(request).rejects.toMatchObject({
+      code: 'timeout',
+      message: expect.stringContaining(`${REPO_INFO_TIMEOUT_MS}ms`),
+    });
+
   });
 });

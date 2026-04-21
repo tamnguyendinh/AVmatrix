@@ -48,11 +48,13 @@
   - Kiến trúc mục tiêu là: web UI + CLI/MCP -> shared local runtime trên máy người dùng -> Codex/Claude local session + GitNexus local tools/index.
   - Shared local runtime ở đây là process local trên máy người dùng, có thể là daemon hoặc helper on-demand; không phải server cloud hay GitNexus-hosted backend.
   - Shared local runtime core phải tách khỏi HTTP adapter: runtime/core sống ở lớp riêng; `api.ts`, CLI, và MCP chỉ là các adapter/client vào cùng lõi này.
+  - MCP của v1 là MCP local của chính GitNexus; không tạo MCP bên thứ 3 và không dùng MCP cloud/proxy.
+  - Luồng agent-first đúng là: Codex CLI hoặc Claude Code CLI -> GitNexus MCP local -> GitNexus local index/tools.
+  - Không lái người dùng sang direct `gitnexus query/context/impact` như mặt dùng chính nếu mục tiêu là workflow qua Codex/Claude Code; direct CLI chỉ là tooling phụ.
   - Web UI, direct CLI commands, và MCP surface phải hoặc gọi cùng runtime contracts, hoặc dùng cùng core modules; không duy trì hai hệ auth/session/tool riêng.
   - Hướng triển khai là compatibility-first: ưu tiên giữ nguyên contract UI/stream/tool hiện có, chỉ thay implementation phía sau bằng local session adapter.
-  - Lý do: chat hiện tại đang là browser-side LangGraph + API-key providers trong /F:/GitNexus-main/
-    gitnexus-web/src/core/llm/agent.ts:1, /F:/GitNexus-main/gitnexus-web/src/core/llm/types.ts:1, /F:/
-    GitNexus-main/gitnexus-web/src/core/llm/settings-service.ts:1. Session account của Codex/Claude theo docs và thực tế công cụ
+  - Lý do: chat hiện tại đang là browser-side LangGraph + API-key providers trong `gitnexus-web/src/core/llm/agent.ts`,
+    `gitnexus-web/src/core/llm/types.ts`, và `gitnexus-web/src/core/llm/settings-service.ts`. Session account của Codex/Claude theo docs và thực tế công cụ
     kiểu desktop/CLI hiện nằm ở local app hoặc local CLI, không phải public browser auth flow cho web app này.
   - Tính đến ngày 2026-04-20, docs chính thức xác nhận Codex CLI hỗ trợ sign-in bằng ChatGPT account và
     có mode non-interactive codex exec; đồng thời Windows vẫn là experimental.
@@ -74,6 +76,7 @@
   - Xác minh codex exec --json có stream/event shape đủ ổn định để map sang UI hiện tại.
   - Xác minh cancel được, timeout được, và chạy đúng theo cwd của repo local.
   - Xác minh Codex CLI có nối được GitNexus MCP local hay không.
+  - Xác minh GitNexus MCP local tự chạy được standalone, không cần Codex/Claude bọc bên ngoài.
   - Nếu MCP hookup tốt: dùng Codex CLI làm agent, GitNexus giữ vai trò tool server.
   - Nếu MCP hookup không ổn: fallback sang backend bridge gọi Codex CLI theo prompt orchestration hẹp
     hơn.
@@ -94,6 +97,7 @@
   - Repo binding được truyền theo repoName hay repoPath
   - CLI/MCP attach vào runtime kiểu nào
   - Rollout order của session adapters là gì: Codex-first rồi Claude Code sau, hay dual-adapter ngay từ v1
+  - Canonical local MCP command là gì và command đó có chạy được không cần `npx`
   - Ghi rõ feature parity strategy:
   - Những feature nào sẽ được giữ nguyên contract
   - Những feature nào cần compatibility shim tạm thời
@@ -118,6 +122,20 @@
   - Repo local hợp lệ nhưng chưa index => explicit analyze gate, không auto-analyze ngầm trong chat path
   - `serve` và `mcp` host cùng runtime core theo kiểu in-process; v1 không dựng daemon riêng để attach chéo process
   - `wikiMode` nằm trong global runtime config file và runtime là source of truth
+  - Canonical local MCP command cho v1 là `gitnexus mcp` sau khi local GitNexus CLI đã được cài vào `PATH` từ source local (ví dụ `cd gitnexus && npm link`)
+
+ # MCP-first rollout order
+
+  - Thứ tự đúng để đưa tool này vào Codex/Claude Code là:
+  - 1. Xác nhận GitNexus MCP local chạy standalone bằng canonical local MCP command
+  - 2. Sửa setup/docs để bỏ hoàn toàn `npx -y gitnexus@latest mcp`
+  - 3. Đảm bảo local GitNexus CLI có trên `PATH` từ source local (ví dụ `npm link`)
+  - 4. Ghi config MCP cho Codex (`~/.codex/config.toml`) và Claude Code (`~/.claude.json` nếu dùng) bằng `gitnexus mcp`
+  - 5. Chỉ sau đó mới test end-to-end với repo local đã index, ví dụ repo alias `website`
+  - Mục tiêu của rollout này là:
+  - Codex/Claude Code CLI là mặt dùng chính
+  - GitNexus MCP local là tool server local
+  - direct CLI commands chỉ còn vai trò phụ trợ/diagnostic
 
  # Pha 1: Shared Local Runtime + Session Bridge
 
@@ -135,9 +153,9 @@
   - Có thể thêm gitnexus/src/runtime/session-adapters/claude-code.ts sau khi core ổn định
   - shared types trong gitnexus-shared cho SessionStatus, SessionChatRequest, SessionStreamEvent
   - Sửa:
-  - /F:/GitNexus-main/gitnexus/src/server/api.ts:1 để thêm local bridge endpoints trung tính như /api/session/status
-  - /F:/GitNexus-main/gitnexus/src/server/api.ts:1 để thêm /api/session/chat stream SSE
-  - /F:/GitNexus-main/gitnexus/src/server/api.ts:1 để thêm cancel endpoint cho chat session
+  - `gitnexus/src/server/api.ts` để thêm local bridge endpoints trung tính như `/api/session/status`
+  - `gitnexus/src/server/api.ts` để thêm `/api/session/chat` stream SSE
+  - `gitnexus/src/server/api.ts` để thêm cancel endpoint cho chat session
   - V1 implementation đi qua Codex adapter trước, nhưng route/type/core naming giữ trung tính để không phải rename lớn khi thêm Claude Code
   - Contract tối thiểu cần chốt trước khi code:
   - Request chat phải mang repo binding rõ ràng: repoName hoặc repoPath; không ngầm dùng repo cuối cùng trên server
@@ -175,17 +193,15 @@
   - gitnexus-web/src/core/llm/session-client.ts
   - Có thể thêm gitnexus-web/src/core/llm/session-types.ts nếu chưa đưa vào gitnexus-shared
   - Sửa:
-  - /F:/GitNexus-main/gitnexus-web/src/hooks/useAppState.tsx:1 để dùng backend session stream thay cho
-    createGraphRAGAgent()
-  - /F:/GitNexus-main/gitnexus-web/src/core/llm/types.ts:1 để chuyển từ provider model sang session/backends model, hoặc thêm compatibility shim có thời hạn rõ ràng nếu cần giữ app ổn trong giai đoạn chuyển đổi
-  - /F:/GitNexus-main/gitnexus-web/src/core/llm/settings-service.ts:1 để migrate settings cũ và bỏ logic
-    API-key/provider setup, nhưng vẫn giữ được các capability UI vốn phụ thuộc vào settings
-  - /F:/GitNexus-main/gitnexus-web/src/components/SettingsPanel.tsx:1 để chuyển từ provider form sang local session management UI như “Codex Account” / “Claude Code”
-  - /F:/GitNexus-main/gitnexus-web/src/components/RightPanel.tsx:1 để bỏ message “Configure an LLM provider”
-  - /F:/GitNexus-main/gitnexus-web/src/hooks/useAppState.tsx:1 để đổi error/init flow từ “provider” sang “local session bridge”
-  - /F:/GitNexus-main/gitnexus-web/src/components/OnboardingGuide.tsx:1 để bỏ gợi ý npx gitnexus@latest serve
-  - /F:/GitNexus-main/gitnexus-web/src/components/HelpPanel.tsx:1 để bỏ remote/provider copy không còn đúng
-  - /F:/GitNexus-main/gitnexus-web/src/config/ui-constants.ts:1 để dọn constants provider cũ nếu không còn dùng
+  - `gitnexus-web/src/hooks/useAppState.tsx` để dùng backend session stream thay cho `createGraphRAGAgent()`
+  - `gitnexus-web/src/core/llm/types.ts` để chuyển từ provider model sang session/backends model, hoặc thêm compatibility shim có thời hạn rõ ràng nếu cần giữ app ổn trong giai đoạn chuyển đổi
+  - `gitnexus-web/src/core/llm/settings-service.ts` để migrate settings cũ và bỏ logic API-key/provider setup, nhưng vẫn giữ được các capability UI vốn phụ thuộc vào settings
+  - `gitnexus-web/src/components/SettingsPanel.tsx` để chuyển từ provider form sang local session management UI như “Codex Account” / “Claude Code”
+  - `gitnexus-web/src/components/RightPanel.tsx` để bỏ message “Configure an LLM provider”
+  - `gitnexus-web/src/hooks/useAppState.tsx` để đổi error/init flow từ “provider” sang “local session bridge”
+  - `gitnexus-web/src/components/OnboardingGuide.tsx` để bỏ gợi ý `npx gitnexus@latest serve`
+  - `gitnexus-web/src/components/HelpPanel.tsx` để bỏ remote/provider copy không còn đúng
+  - `gitnexus-web/src/config/ui-constants.ts` để dọn constants provider cũ nếu không còn dùng
   - Giữ nguyên UI chat message/step nếu stream mới map được sang AgentStreamChunk
   - UX mục tiêu:
   - Không còn ô API key
@@ -209,24 +225,30 @@
   - test init/send/cancel chat flow nếu cần
   - test settings migration/reset từ dữ liệu provider cũ
 
- # Pha 2B: Căn CLI/MCP vào shared local runtime
+# Pha 2B: Căn CLI/MCP vào shared local runtime
 
   - Repo đụng: gitnexus.
   - Mục tiêu:
   - Đảm bảo CLI và MCP vẫn là surface quan trọng cho agent coding, nhưng dùng cùng mô hình runtime/session local như web
   - Tránh việc web chạy một kiểu, CLI chạy một kiểu khác
   - Sửa:
-  - /F:/GitNexus-main/gitnexus/src/cli/index.ts:1 để thêm hoặc chỉnh help/copy theo shared local runtime model
-  - /F:/GitNexus-main/gitnexus/src/cli/mcp.ts:1 để chốt cách MCP attach vào runtime hoặc dùng cùng core modules
-  - /F:/GitNexus-main/gitnexus/src/cli/tool.ts:1 để chốt cách direct tool commands reuse runtime/core contracts
-  - /F:/GitNexus-main/gitnexus/src/cli/setup.ts:1 để wording không còn gợi ý provider/API-key flow
+  - `gitnexus/src/cli/index.ts` để thêm hoặc chỉnh help/copy theo shared local runtime model
+  - `gitnexus/src/cli/mcp.ts` để chốt cách MCP attach vào runtime hoặc dùng cùng core modules
+  - `gitnexus/src/cli/tool.ts` để chốt cách direct tool commands reuse runtime/core contracts
+  - `gitnexus/src/cli/setup.ts` để wording không còn gợi ý provider/API-key flow
+  - README.md, gitnexus/README.md, skills, onboarding docs để không còn gợi ý `npx -y gitnexus@latest mcp`
   - Quy tắc:
   - Không tạo một session/auth stack riêng cho CLI
   - Không tạo một tool execution path riêng cho web nếu CLI/MCP có thể dùng cùng core/runtime
+  - Không tạo MCP server mới bên thứ 3; chỉ dùng `gitnexus mcp`/local built CLI của chính repo
+  - `setup` phải chuẩn hóa về canonical local MCP command `gitnexus mcp`, không được ngầm đẩy người dùng sang remote/npm-latest path hay găm absolute repo path vào config editor
   - Giữ nguyên toàn bộ direct tool commands và MCP capability hiện có; chỉ thay session/model execution path bên dưới khi có đụng tới LLM-backed capability
   - V1 không thêm interactive chat/session command mới cho CLI trừ khi spike chứng minh đó là bắt buộc để đạt parity
   - Nếu cần thêm runtime management commands, chỉ thêm những lệnh local như status/doctor/restart
   - `serve` và `mcp` không attach vào một daemon runtime riêng ở v1; mỗi surface host runtime core của chính nó và chia sẻ contract/module thay vì chia sẻ OS process
+  - MCP smoke path bắt buộc phải pass độc lập trước khi cấu hình Codex/Claude:
+  - `gitnexus mcp`
+  - Sau khi smoke pass, Codex/Claude config mới được viết để trỏ vào command local đó
   - Test cần thêm/sửa:
   - gitnexus/test/unit/setup-session-runtime.test.ts
   - gitnexus/test/unit/tools.test.ts
@@ -236,18 +258,17 @@
 
   - Repo đụng: gitnexus, gitnexus-web.
   - Sửa backend:
-  - /F:/GitNexus-main/gitnexus/src/server/api.ts:1145 chỉ nhận path, reject url
-  - /F:/GitNexus-main/gitnexus/src/server/analyze-job.ts:1 bỏ repoUrl, dedupe theo repoPath
-  - Gỡ runtime use của /F:/GitNexus-main/gitnexus/src/server/git-clone.ts:1
+  - `gitnexus/src/server/api.ts` chỉ nhận path, reject url
+  - `gitnexus/src/server/analyze-job.ts` bỏ repoUrl, dedupe theo repoPath
+  - Gỡ runtime use của `gitnexus/src/server/git-clone.ts`
   - Chốt path policy ở API/analyze:
   - Chỉ nhận absolute local paths
   - Reject UNC/network share
   - Resolve realpath trước khi enqueue job
   - Chỉ dedupe theo canonical repoPath sau normalize/realpath
   - Sửa web:
-  - /F:/GitNexus-main/gitnexus-web/src/components/RepoAnalyzer.tsx:1 bỏ mode GitHub, bỏ URL validation,
-    chỉ còn local path
-  - /F:/GitNexus-main/gitnexus-web/src/components/AnalyzeOnboarding.tsx:1 sửa copy local-only
+  - `gitnexus-web/src/components/RepoAnalyzer.tsx` bỏ mode GitHub, bỏ URL validation, chỉ còn local path
+  - `gitnexus-web/src/components/AnalyzeOnboarding.tsx` sửa copy local-only
   - RepoLanding.tsx, Header.tsx, backend-client.ts cập nhật theo contract mới
   - Test cần thêm/sửa:
   - gitnexus/test/unit/analyze-api.test.ts
@@ -257,12 +278,12 @@
 
   - Repo đụng: gitnexus, gitnexus-web.
   - Sửa:
-  - /F:/GitNexus-main/gitnexus/src/cli/setup.ts:1 bỏ fallback npx -y gitnexus@latest
-  - /F:/GitNexus-main/gitnexus/src/server/api.ts:1 siết CORS còn localhost, 127.0.0.1, ::1, và no-origin
+  - `gitnexus/src/cli/setup.ts` bỏ fallback `npx -y gitnexus@latest`
+  - `gitnexus/src/server/api.ts` siết CORS còn localhost, 127.0.0.1, ::1, và no-origin
   - gitnexus-web/src/services/backend-client.ts và useBackend chỉ chấp nhận backend local như mặc định bắt buộc của chế độ local-only
   - Backend URL cũ trong localStorage nếu trỏ remote host phải bị reset an toàn về localhost mặc định, không được âm thầm tiếp tục dùng remote endpoint
   - Auto-connect bằng `?project=` phải mặc định về local backend URL chuẩn, không dùng `window.location.origin` kiểu hosted UI cũ
-  - /F:/GitNexus-main/gitnexus/src/cli/serve.ts:1 update help/comment/copy để không còn assumption về hosted frontend
+  - `gitnexus/src/cli/serve.ts` update help/comment/copy để không còn assumption về hosted frontend
   - Xóa mọi copy “remote provider”, “API key”, “hosted UI”, “GitHub URL”, “cloud” trong onboarding/settings/help
   - Acceptance:
   - UI không còn gợi ý remote
@@ -293,9 +314,9 @@
   - Chỉ dọn sau khi local-session path đã đạt feature parity cho các surface tương ứng.
   - Sau khi local session bridge ổn định end-to-end:
   - Xóa nhánh openai, azure-openai, gemini, anthropic, ollama, openrouter, minimax, glm nếu và chỉ nếu không còn feature nào phụ thuộc chúng
-  - Dọn helper OpenRouter/Ollama trong /F:/GitNexus-main/gitnexus-web/src/components/SettingsPanel.tsx:1
-  - Dọn builder cũ trong /F:/GitNexus-main/gitnexus-web/src/core/llm/settings-service.ts:1
-  - Dọn model branches cũ trong /F:/GitNexus-main/gitnexus-web/src/core/llm/agent.ts:1 nếu file này còn
+  - Dọn helper OpenRouter/Ollama trong `gitnexus-web/src/components/SettingsPanel.tsx`
+  - Dọn builder cũ trong `gitnexus-web/src/core/llm/settings-service.ts`
+  - Dọn model branches cũ trong `gitnexus-web/src/core/llm/agent.ts` nếu file này còn
     tồn tại
   - Dọn dependency packages chỉ còn phục vụ provider/API-key flow trong gitnexus-web/package.json và lockfile
   - Dọn language/copy “provider-based” còn sót trong cả web và CLI surfaces
@@ -410,6 +431,11 @@
 - [x] Không thêm interactive chat command vào CLI v1 nếu không bắt buộc
 - [x] Không cần thêm runtime management commands mới ở v1; `serve`, `mcp`, và `wiki-mode` đã đủ cho local runtime surface
 - [x] Viết behavioral tests cho CLI/MCP runtime alignment
+- [ ] Xác nhận canonical local MCP command chạy standalone
+- [ ] Bỏ hoàn toàn `npx -y gitnexus@latest mcp` khỏi setup/docs/config writers
+- [ ] Đảm bảo local GitNexus CLI có trên `PATH`
+- [ ] Cấu hình Codex dùng canonical local MCP command
+- [ ] Test end-to-end qua Codex với repo local đã index, ví dụ `website`
 
 ## Pha 3 — Local path only
 

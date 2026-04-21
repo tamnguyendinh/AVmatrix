@@ -9,7 +9,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { execFile, execFileSync } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { fileURLToPath } from 'url';
 import { glob } from 'glob';
@@ -26,40 +26,20 @@ interface SetupResult {
 }
 
 /**
- * Resolve the absolute path to the `gitnexus` binary if it's installed
- * globally (or via npm -g / yarn global). Returns null when not found.
- */
-function resolveGitnexusBin(): string | null {
-  try {
-    const cmd = process.platform === 'win32' ? 'where' : 'which';
-    const resolved = execFileSync(cmd, ['gitnexus'], {
-      encoding: 'utf-8',
-      timeout: 5000,
-      stdio: ['ignore', 'pipe', 'ignore'],
-    })
-      .split('\n')[0]
-      .trim();
-    return resolved || null;
-  } catch {
-    return null;
-  }
-}
-
-/**
  * The MCP server entry for all editors.
  *
- * Prefers the resolved `gitnexus` binary when it's already on PATH.
- * If resolution fails during setup, writes a plain `gitnexus mcp` entry
- * so the MCP client still uses the local CLI from PATH at runtime.
+ * Uses the portable local CLI command:
+ *   gitnexus mcp
+ *
+ * This keeps MCP local-only without pinning absolute repo paths into editor config.
+ * Requirement: the local GitNexus CLI must be installed on PATH (for example via `npm link`
+ * from the local repo or a local global install built from this source tree).
  */
 function getMcpEntry() {
-  const bin = resolveGitnexusBin();
-
-  if (bin) {
-    return { command: bin, args: ['mcp'] };
-  }
-
-  return { command: 'gitnexus', args: ['mcp'] };
+  return {
+    command: 'gitnexus',
+    args: ['mcp'],
+  };
 }
 
 /**
