@@ -35,7 +35,7 @@ function runGroup(args: string[]) {
     encoding: 'utf8',
     timeout: 20000,
     stdio: ['pipe', 'pipe', 'pipe'],
-    env: { ...process.env, GITNEXUS_HOME: tmpHome },
+    env: { ...process.env, AVMATRIX_HOME: tmpHome },
   });
 }
 

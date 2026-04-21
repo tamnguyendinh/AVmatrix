@@ -270,7 +270,7 @@ const IGNORED_FILES = new Set([
   '.env.example',
 ]);
 
-// NOTE: Negation patterns in .gitnexusignore (e.g. `!vendor/`) cannot override
+// NOTE: Negation patterns in .avmatrixignore (e.g. `!vendor/`) cannot override
 // entries in DEFAULT_IGNORE_LIST — this is intentional. The hardcoded list protects
 // against indexing directories that are almost never source code (node_modules, .git, etc.).
 // Users who need to include such directories should remove them from the hardcoded list.
@@ -334,11 +334,11 @@ export const isHardcodedIgnoredDirectory = (name: string): boolean => {
 };
 
 /**
- * Load .gitignore and .gitnexusignore rules from the repo root.
+ * Load .gitignore and .avmatrixignore rules from the repo root.
  * Returns an `ignore` instance with all patterns, or null if no files found.
  */
 export interface IgnoreOptions {
-  /** Skip .gitignore parsing, only read .gitnexusignore. Defaults to GITNEXUS_NO_GITIGNORE env var. */
+  /** Skip .gitignore parsing, only read .avmatrixignore. Defaults to AVMATRIX_NO_GITIGNORE env var. */
   noGitignore?: boolean;
 }
 
@@ -350,8 +350,8 @@ export const loadIgnoreRules = async (
   let hasRules = false;
 
   // Allow users to bypass .gitignore parsing (e.g. when .gitignore accidentally excludes source files)
-  const skipGitignore = options?.noGitignore ?? !!process.env.GITNEXUS_NO_GITIGNORE;
-  const filenames = skipGitignore ? ['.gitnexusignore'] : ['.gitignore', '.gitnexusignore'];
+  const skipGitignore = options?.noGitignore ?? !!process.env.AVMATRIX_NO_GITIGNORE;
+  const filenames = skipGitignore ? ['.avmatrixignore'] : ['.gitignore', '.avmatrixignore'];
 
   for (const filename of filenames) {
     try {
@@ -371,7 +371,7 @@ export const loadIgnoreRules = async (
 
 /**
  * Create a glob-compatible ignore filter combining:
- * - .gitignore / .gitnexusignore patterns (via `ignore` package)
+ * - .gitignore / .avmatrixignore patterns (via `ignore` package)
  * - Hardcoded DEFAULT_IGNORE_LIST, IGNORED_EXTENSIONS, IGNORED_FILES
  *
  * Returns an IgnoreLike object for glob's `ignore` option,
@@ -386,7 +386,7 @@ export const createIgnoreFilter = async (repoPath: string, options?: IgnoreOptio
       // which is what the `ignore` package expects. No explicit normalization needed.
       const rel = p.relative();
       if (!rel) return false;
-      // Check .gitignore / .gitnexusignore patterns
+      // Check .gitignore / .avmatrixignore patterns
       if (ig && ig.ignores(rel)) return true;
       // Fall back to hardcoded rules
       return shouldIgnorePath(rel);
@@ -397,7 +397,7 @@ export const createIgnoreFilter = async (repoPath: string, options?: IgnoreOptio
       // glob's `dot: false` option in filesystem-walker.ts. This check is
       // defense-in-depth — do not remove `dot: false` assuming this covers it.
       if (DEFAULT_IGNORE_LIST.has(p.name)) return true;
-      // Check against .gitignore / .gitnexusignore patterns.
+      // Check against .gitignore / .avmatrixignore patterns.
       // Since childrenIgnored is only called for directories, always test with
       // a trailing slash. This ensures directory-only negation patterns (e.g.
       // `!iOS/`) are applied correctly — without the slash, `ig.ignores('iOS')`

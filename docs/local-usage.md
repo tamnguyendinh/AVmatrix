@@ -1,18 +1,23 @@
-# GitNexus Local Usage Guide
+# AVmatrix Local Usage Guide
 
-Tai lieu nay dung de nhac nhanh cach chay GitNexus theo kieu local-only tren may cua ban.
+> Canonical rename spec cho local fork nay da duoc khoa tai [docs/avmatrix-canonical-spec.md](./avmatrix-canonical-spec.md).
+>
+> Canonical brand/command moi la `AVmatrix` / `avmatrix`.
+> Trong repo dev nay, thu muc package van la `gitnexus/`, nen cac lenh local theo source tree van chay ben trong thu muc do.
+
+Tai lieu nay dung de nhac nhanh cach chay AVmatrix theo kieu local-only tren may cua ban.
 
 ## 1. Muc tieu
 
-GitNexus trong repo nay duoc dung theo 3 phan:
+AVmatrix trong repo nay duoc dung theo 3 phan:
 
-- `gitnexus`: local bridge + CLI
+- `avmatrix`: local bridge + CLI (package hien tai van nam trong `gitnexus/`)
 - `gitnexus-web`: giao dien web local
 - trinh duyet: hien thi graph, search, impact, chat, file navigation
 
 Luong dung dung:
 
-- terminal 1: chay `gitnexus serve`
+- terminal 1: chay local bridge
 - terminal 2: chay `gitnexus-web`
 - browser: mo giao dien de dung
 - terminal 3 tuy chon: goi CLI truc tiep
@@ -65,7 +70,7 @@ npm run --prefix .\gitnexus serve
 Khi thanh cong, ban se thay:
 
 ```text
-GitNexus server running on http://localhost:4747
+AVmatrix server running on http://localhost:4747
 ```
 
 ## 4. Chay web UI
@@ -198,10 +203,10 @@ npm run serve
 - khong tu keo `gitnexus` tu GitHub
 - khong tu `git clone`
 
-### `npx gitnexus serve`
+### `avmatrix serve`
 
-- co the goi package global hoac package tu npm
-- neu may chua co, no co the tai package
+- sau khi CLI local da nam tren `PATH`, day la lenh canonical moi
+- trong repo dev hien tai, van co the thay bang `cd gitnexus && npm run serve`
 
 ### `node dist/cli/index.js ...`
 
@@ -212,7 +217,7 @@ npm run serve
 Neu muon chac chan dang chay code local trong repo hien tai, uu tien:
 
 ```powershell
-cd F:\GitNexus-main\gitnexus
+cd <repo-root>\gitnexus
 npm run serve
 ```
 
@@ -243,4 +248,4 @@ Nhap local repo path, analyze, roi dung graph/impact/chat/query.
 - `serve` la local bridge, khong phai server ben thu ba
 - web UI chi la giao dien local de thao tac
 - CLI dung khi can query/analyze/impact nhanh
-- neu ban muon chac chan 100% dang chay code local, dung `cd gitnexus && npm run serve`
+- neu ban muon chac chan 100% dang chay code local, dung `cd <repo-root>\gitnexus && npm run serve`

@@ -4,12 +4,12 @@ const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 
 // Catch anything that would cause a silent exit
 process.on('uncaughtException', (err) => {
-  console.error('\n[gitnexus serve] Uncaught exception:', err.message);
+  console.error('\n[avmatrix serve] Uncaught exception:', err.message);
   if (process.env.DEBUG) console.error(err.stack);
   process.exit(1);
 });
 process.on('unhandledRejection', (reason: any) => {
-  console.error('\n[gitnexus serve] Unhandled rejection:', reason?.message || reason);
+  console.error('\n[avmatrix serve] Unhandled rejection:', reason?.message || reason);
   if (process.env.DEBUG) console.error(reason?.stack);
   process.exit(1);
 });
@@ -22,7 +22,7 @@ export const serveCommand = async (options?: { port?: string; host?: string }) =
   const host = options?.host ?? 'localhost';
 
   if (!LOOPBACK_HOSTS.has(host)) {
-    console.error('\nFailed to start GitNexus server:\n');
+    console.error('\nFailed to start AVmatrix server:\n');
     console.error(
       '  Local-only mode only allows loopback hosts: localhost, 127.0.0.1, or ::1.\n',
     );
@@ -32,12 +32,12 @@ export const serveCommand = async (options?: { port?: string; host?: string }) =
   try {
     await createServer(port, host);
   } catch (err: any) {
-    console.error(`\nFailed to start GitNexus server:\n`);
+    console.error(`\nFailed to start AVmatrix server:\n`);
     console.error(`  ${err.message || err}\n`);
     if (err.code === 'EADDRINUSE') {
       console.error(`  Port ${port} is already in use. Either:`);
       console.error(`    1. Stop the other process using port ${port}`);
-      console.error(`    2. Use a different port: gitnexus serve --port 4748\n`);
+      console.error(`    2. Use a different port: avmatrix serve --port 4748\n`);
     }
     if (err.stack && process.env.DEBUG) {
       console.error(err.stack);

@@ -219,7 +219,7 @@ const initPromises = new Map<string, Promise<void>>();
 
 /**
  * Initialize (or reuse) a Database + connection pool for a specific repo.
- * Retries on lock errors (e.g., when `gitnexus analyze` is running).
+ * Retries on lock errors (e.g., when `avmatrix analyze` is running).
  *
  * Concurrent calls for the same repoId are deduplicated — the second caller
  * awaits the first's in-progress init rather than starting a redundant one.
@@ -256,7 +256,7 @@ async function doInitLbug(repoId: string, dbPath: string): Promise<void> {
   try {
     await fs.stat(dbPath);
   } catch {
-    throw new Error(`LadybugDB not found at ${dbPath}. Run: gitnexus analyze`);
+    throw new Error(`LadybugDB not found at ${dbPath}. Run: avmatrix analyze`);
   }
 
   evictLRU();
@@ -267,7 +267,7 @@ async function doInitLbug(repoId: string, dbPath: string): Promise<void> {
   if (!shared) {
     // Open in read-only mode — MCP server never writes to the database.
     // This allows multiple MCP server instances to read concurrently, and
-    // avoids lock conflicts when `gitnexus analyze` is writing.
+    // avoids lock conflicts when `avmatrix analyze` is writing.
     let lastError: Error | null = null;
     for (let attempt = 1; attempt <= LOCK_RETRY_ATTEMPTS; attempt++) {
       silenceStdout();

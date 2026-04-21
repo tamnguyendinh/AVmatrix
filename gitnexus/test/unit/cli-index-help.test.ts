@@ -83,6 +83,7 @@ describe('CLI help surface', () => {
     const result = runRootHelp();
 
     expect(result.status).toBe(0);
+    expect(result.stdout).toContain('AVmatrix local CLI and MCP server');
     expect(result.stdout).toContain('serve [options]');
     expect(result.stdout).toContain('local HTTP bridge for the web UI');
     expect(result.stdout).toContain('shared session runtime');

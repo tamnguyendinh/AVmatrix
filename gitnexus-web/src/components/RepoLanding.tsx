@@ -104,7 +104,7 @@ export const RepoLanding = ({ repos, onSelectRepo, onAnalyzeComplete }: RepoLand
           <div className="mb-2 inline-flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5 text-accent/70" />
             <span className="text-[11px] font-medium tracking-widest text-accent/80 uppercase">
-              GitNexus
+              AVmatrix
             </span>
           </div>
 
@@ -140,7 +140,7 @@ export const RepoLanding = ({ repos, onSelectRepo, onAnalyzeComplete }: RepoLand
 
       {/* Footer hint */}
       <p className="mt-5 text-center text-[11px] leading-relaxed text-text-muted">
-        Public &amp; private repos &middot; Cloned locally by the server &middot; No data leaves
+        Public &amp; private repos &middot; Indexed locally by AVmatrix &middot; No data leaves
         your machine
       </p>
     </div>

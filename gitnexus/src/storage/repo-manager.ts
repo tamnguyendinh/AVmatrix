@@ -1,12 +1,13 @@
 /**
  * Repository Manager
  *
- * Manages GitNexus index storage in .gitnexus/ at repo root.
- * Also maintains a global registry at ~/.gitnexus/registry.json
+ * Manages AVmatrix index storage in .avmatrix/ at repo root.
+ * Also maintains a global registry at ~/.avmatrix/registry.json
  * so the MCP server can discover indexed repos from any cwd.
  */
 
 import fs from 'fs/promises';
+import fsSync from 'fs';
 import path from 'path';
 import os from 'os';
 import { getInferredRepoName } from './git.js';
@@ -34,7 +35,7 @@ export interface IndexedRepo {
 }
 
 /**
- * Shape of an entry in the global registry (~/.gitnexus/registry.json)
+ * Shape of an entry in the global registry (~/.avmatrix/registry.json)
  */
 export interface RegistryEntry {
   name: string;
@@ -45,15 +46,33 @@ export interface RegistryEntry {
   stats?: RepoMeta['stats'];
 }
 
-const GITNEXUS_DIR = '.gitnexus';
+const AVMATRIX_DIR = '.avmatrix';
+const LEGACY_GITNEXUS_DIR = '.gitnexus';
+const AVMATRIX_HOME_ENV = 'AVMATRIX_HOME';
+
+const getLegacyStoragePath = (repoPath: string): string => {
+  return path.join(path.resolve(repoPath), LEGACY_GITNEXUS_DIR);
+};
+
+const migrateDirSync = (legacyDir: string, nextDir: string): void => {
+  if (legacyDir === nextDir) return;
+  if (fsSync.existsSync(nextDir)) return;
+  if (!fsSync.existsSync(legacyDir)) return;
+  fsSync.mkdirSync(path.dirname(nextDir), { recursive: true });
+  fsSync.renameSync(legacyDir, nextDir);
+};
 
 // ─── Local Storage Helpers ─────────────────────────────────────────────
 
 /**
- * Get the .gitnexus storage path for a repository
+ * Get the .avmatrix storage path for a repository.
+ * Migrates a legacy .gitnexus directory in-place the first time it is seen.
  */
 export const getStoragePath = (repoPath: string): string => {
-  return path.join(path.resolve(repoPath), GITNEXUS_DIR);
+  const resolvedRepoPath = path.resolve(repoPath);
+  const storagePath = path.join(resolvedRepoPath, AVMATRIX_DIR);
+  migrateDirSync(getLegacyStoragePath(resolvedRepoPath), storagePath);
+  return storagePath;
 };
 
 /**
@@ -85,7 +104,7 @@ export const hasKuzuIndex = async (storagePath: string): Promise<boolean> => {
  * Clean up stale KuzuDB files after migration to LadybugDB.
  *
  * Returns:
- *   found        — true if .gitnexus/kuzu existed and was deleted
+ *   found        — true if the legacy kuzu path existed and was deleted
  *   needsReindex — true if kuzu existed but lbug does not (re-analyze required)
  *
  * Callers own the user-facing messaging; this function only deletes files.
@@ -144,7 +163,7 @@ export const saveMeta = async (storagePath: string, meta: RepoMeta): Promise<voi
 };
 
 /**
- * Check if a path has a GitNexus index
+ * Check if a path has an AVmatrix index
  */
 export const hasIndex = async (repoPath: string): Promise<boolean> => {
   const { metaPath } = getStoragePaths(repoPath);
@@ -172,7 +191,7 @@ export const loadRepo = async (repoPath: string): Promise<IndexedRepo | null> =>
 };
 
 /**
- * Find .gitnexus by walking up from a starting path
+ * Find .avmatrix by walking up from a starting path
  */
 export const findRepo = async (startPath: string): Promise<IndexedRepo | null> => {
   let current = path.resolve(startPath);
@@ -188,32 +207,37 @@ export const findRepo = async (startPath: string): Promise<IndexedRepo | null> =
 };
 
 /**
- * Add .gitnexus to .gitignore if not already present
+ * Add .avmatrix to .gitignore if not already present
  */
 export const addToGitignore = async (repoPath: string): Promise<void> => {
   const gitignorePath = path.join(repoPath, '.gitignore');
 
   try {
     const content = await fs.readFile(gitignorePath, 'utf-8');
-    if (content.includes(GITNEXUS_DIR)) return;
+    if (content.includes(AVMATRIX_DIR)) return;
 
     const newContent = content.endsWith('\n')
-      ? `${content}${GITNEXUS_DIR}\n`
-      : `${content}\n${GITNEXUS_DIR}\n`;
+      ? `${content}${AVMATRIX_DIR}\n`
+      : `${content}\n${AVMATRIX_DIR}\n`;
     await fs.writeFile(gitignorePath, newContent, 'utf-8');
   } catch {
     // .gitignore doesn't exist, create it
-    await fs.writeFile(gitignorePath, `${GITNEXUS_DIR}\n`, 'utf-8');
+    await fs.writeFile(gitignorePath, `${AVMATRIX_DIR}\n`, 'utf-8');
   }
 };
 
-// ─── Global Registry (~/.gitnexus/registry.json) ───────────────────────
+// ─── Global Registry (~/.avmatrix/registry.json) ───────────────────────
 
 /**
- * Get the path to the global GitNexus directory
+ * Get the path to the global AVmatrix directory.
+ * Migrates the default legacy ~/.gitnexus directory once when needed.
  */
 export const getGlobalDir = (): string => {
-  return process.env.GITNEXUS_HOME || path.join(os.homedir(), '.gitnexus');
+  const nextDir = process.env[AVMATRIX_HOME_ENV] || path.join(os.homedir(), AVMATRIX_DIR);
+  if (!process.env[AVMATRIX_HOME_ENV]) {
+    migrateDirSync(path.join(os.homedir(), LEGACY_GITNEXUS_DIR), nextDir);
+  }
+  return nextDir;
 };
 
 /**
@@ -230,7 +254,21 @@ export const readRegistry = async (): Promise<RegistryEntry[]> => {
   try {
     const raw = await fs.readFile(getGlobalRegistryPath(), 'utf-8');
     const data = JSON.parse(raw);
-    return Array.isArray(data) ? data : [];
+    if (!Array.isArray(data)) return [];
+
+    const normalized = data.map((entry) => {
+      const expectedStoragePath = getStoragePath(entry.path);
+      return expectedStoragePath === entry.storagePath
+        ? entry
+        : { ...entry, storagePath: expectedStoragePath };
+    }) as RegistryEntry[];
+
+    const changed = normalized.some((entry, index) => entry.storagePath !== data[index]?.storagePath);
+    if (changed) {
+      await writeRegistry(normalized);
+    }
+
+    return normalized;
   } catch {
     return [];
   }
@@ -322,7 +360,7 @@ const hasCustomAlias = (entry: RegistryEntry, inferredName: string | null): bool
 
 /**
  * Register (add or update) a repo in the global registry.
- * Called after `gitnexus analyze` completes.
+ * Called after `avmatrix analyze` completes.
  *
  * Name resolution precedence (#829, #979):
  *   1. explicit `opts.name` (from `analyze --name <alias>`)
@@ -432,7 +470,7 @@ export const unregisterRepo = async (repoPath: string): Promise<void> => {
 
 /**
  * List all registered repos from the global registry.
- * Optionally validates that each entry's .gitnexus/ still exists.
+ * Optionally validates that each entry's local storage path still exists.
  */
 export const listRegisteredRepos = async (opts?: {
   validate?: boolean;
@@ -440,7 +478,7 @@ export const listRegisteredRepos = async (opts?: {
   const entries = await readRegistry();
   if (!opts?.validate) return entries;
 
-  // Validate each entry still has a .gitnexus/ directory
+  // Validate each entry still has a local storage directory
   const valid: RegistryEntry[] = [];
   for (const entry of entries) {
     try {
@@ -459,7 +497,7 @@ export const listRegisteredRepos = async (opts?: {
   return valid;
 };
 
-// ─── Global CLI Config (~/.gitnexus/config.json) ─────────────────────────
+// ─── Global CLI Config (~/.avmatrix/config.json) ─────────────────────────
 
 export interface CLIConfig {
   apiKey?: string;
@@ -481,7 +519,7 @@ export const getGlobalConfigPath = (): string => {
 };
 
 /**
- * Load CLI config from ~/.gitnexus/config.json
+ * Load CLI config from ~/.avmatrix/config.json
  */
 export const loadCLIConfig = async (): Promise<CLIConfig> => {
   try {
@@ -493,7 +531,7 @@ export const loadCLIConfig = async (): Promise<CLIConfig> => {
 };
 
 /**
- * Save CLI config to ~/.gitnexus/config.json
+ * Save CLI config to ~/.avmatrix/config.json
  */
 export const saveCLIConfig = async (config: CLIConfig): Promise<void> => {
   const dir = getGlobalDir();

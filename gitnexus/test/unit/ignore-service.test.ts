@@ -245,26 +245,26 @@ describe('loadIgnoreRules', () => {
     await fs.unlink(path.join(tmpDir, '.gitignore'));
   });
 
-  it('parses .gitnexusignore file', async () => {
-    await fs.writeFile(path.join(tmpDir, '.gitnexusignore'), 'vendor/\n*.test.ts\n');
+  it('parses .avmatrixignore file', async () => {
+    await fs.writeFile(path.join(tmpDir, '.avmatrixignore'), 'vendor/\n*.test.ts\n');
     const ig = await loadIgnoreRules(tmpDir);
     expect(ig).not.toBeNull();
     expect(ig!.ignores('vendor/lib.js')).toBe(true);
     expect(ig!.ignores('src/app.test.ts')).toBe(true);
     expect(ig!.ignores('src/app.ts')).toBe(false);
-    await fs.unlink(path.join(tmpDir, '.gitnexusignore'));
+    await fs.unlink(path.join(tmpDir, '.avmatrixignore'));
   });
 
   it('combines both files', async () => {
     await fs.writeFile(path.join(tmpDir, '.gitignore'), 'data/\n');
-    await fs.writeFile(path.join(tmpDir, '.gitnexusignore'), 'vendor/\n');
+    await fs.writeFile(path.join(tmpDir, '.avmatrixignore'), 'vendor/\n');
     const ig = await loadIgnoreRules(tmpDir);
     expect(ig).not.toBeNull();
     expect(ig!.ignores('data/file.txt')).toBe(true);
     expect(ig!.ignores('vendor/lib.js')).toBe(true);
     expect(ig!.ignores('src/index.ts')).toBe(false);
     await fs.unlink(path.join(tmpDir, '.gitignore'));
-    await fs.unlink(path.join(tmpDir, '.gitnexusignore'));
+    await fs.unlink(path.join(tmpDir, '.avmatrixignore'));
   });
 
   it('handles comments and blank lines', async () => {
@@ -337,7 +337,7 @@ describe('createIgnoreFilter', () => {
     // Reproduces https://github.com/abhigyanpatwari/GitNexus/issues/596
     // Pattern: `*` (exclude all) + `!iOS/` + `!iOS/**` (whitelist iOS)
     await fs.writeFile(
-      path.join(tmpDir, '.gitnexusignore'),
+      path.join(tmpDir, '.avmatrixignore'),
       '*\n!iOS/\n!iOS/**\n!backend/\n!backend/living_plan/\n!backend/living_plan/**\n',
     );
     const filter = await createIgnoreFilter(tmpDir);
@@ -359,7 +359,7 @@ describe('createIgnoreFilter', () => {
     const libPath = { name: 'lib', relative: () => 'lib' } as any;
     expect(filter.childrenIgnored(libPath)).toBe(true);
 
-    await fs.unlink(path.join(tmpDir, '.gitnexusignore'));
+    await fs.unlink(path.join(tmpDir, '.avmatrixignore'));
   });
 
   it('childrenIgnored respects negation patterns without trailing slash (!dir vs !dir/)', async () => {
@@ -367,7 +367,7 @@ describe('createIgnoreFilter', () => {
     // named `iOS`, while `!iOS/` is directory-only. The `ignore` package
     // normalizes both forms so that `ig.ignores('iOS/')` returns false in either case.
     // Ref: https://github.com/kaelzhang/node-ignore#2-filenames-and-dirnames (see #596)
-    await fs.writeFile(path.join(tmpDir, '.gitnexusignore'), '*\n!iOS\n!iOS/**\n');
+    await fs.writeFile(path.join(tmpDir, '.avmatrixignore'), '*\n!iOS\n!iOS/**\n');
     const filter = await createIgnoreFilter(tmpDir);
 
     // Bare negation `!iOS` must also un-ignore the iOS/ directory
@@ -378,11 +378,11 @@ describe('createIgnoreFilter', () => {
     const srcPath = { name: 'src', relative: () => 'src' } as any;
     expect(filter.childrenIgnored(srcPath)).toBe(true);
 
-    await fs.unlink(path.join(tmpDir, '.gitnexusignore'));
+    await fs.unlink(path.join(tmpDir, '.avmatrixignore'));
   });
 
   it('ignored respects negation patterns for files under whitelisted directories', async () => {
-    await fs.writeFile(path.join(tmpDir, '.gitnexusignore'), '*\n!iOS/\n!iOS/**\n');
+    await fs.writeFile(path.join(tmpDir, '.avmatrixignore'), '*\n!iOS/\n!iOS/**\n');
     const filter = await createIgnoreFilter(tmpDir);
 
     // Files under whitelisted directory should NOT be ignored
@@ -393,7 +393,7 @@ describe('createIgnoreFilter', () => {
     const pyFile = { name: 'main.py', relative: () => 'scripts/main.py' } as any;
     expect(filter.ignored(pyFile)).toBe(true);
 
-    await fs.unlink(path.join(tmpDir, '.gitnexusignore'));
+    await fs.unlink(path.join(tmpDir, '.avmatrixignore'));
   });
 
   it('ignored returns true for file-glob patterns like *.log', async () => {
@@ -438,7 +438,7 @@ describe('loadIgnoreRules — error handling', () => {
   });
 });
 
-describe('loadIgnoreRules — GITNEXUS_NO_GITIGNORE env var', () => {
+describe('loadIgnoreRules — AVMATRIX_NO_GITIGNORE env var', () => {
   let tmpDir: string;
 
   beforeAll(async () => {
@@ -449,41 +449,41 @@ describe('loadIgnoreRules — GITNEXUS_NO_GITIGNORE env var', () => {
     await fs.rm(tmpDir, { recursive: true, force: true });
   });
 
-  it('skips .gitignore when GITNEXUS_NO_GITIGNORE is set', async () => {
+  it('skips .gitignore when AVMATRIX_NO_GITIGNORE is set', async () => {
     await fs.writeFile(path.join(tmpDir, '.gitignore'), 'data/\n');
 
-    const original = process.env.GITNEXUS_NO_GITIGNORE;
-    process.env.GITNEXUS_NO_GITIGNORE = '1';
+    const original = process.env.AVMATRIX_NO_GITIGNORE;
+    process.env.AVMATRIX_NO_GITIGNORE = '1';
     try {
       const ig = await loadIgnoreRules(tmpDir);
       // .gitignore should be skipped — no rules loaded
       expect(ig).toBeNull();
     } finally {
       if (original === undefined) {
-        delete process.env.GITNEXUS_NO_GITIGNORE;
+        delete process.env.AVMATRIX_NO_GITIGNORE;
       } else {
-        process.env.GITNEXUS_NO_GITIGNORE = original;
+        process.env.AVMATRIX_NO_GITIGNORE = original;
       }
       await fs.unlink(path.join(tmpDir, '.gitignore'));
     }
   });
 
-  it('still reads .gitnexusignore when GITNEXUS_NO_GITIGNORE is set', async () => {
-    await fs.writeFile(path.join(tmpDir, '.gitnexusignore'), 'vendor/\n');
+  it('still reads .avmatrixignore when AVMATRIX_NO_GITIGNORE is set', async () => {
+    await fs.writeFile(path.join(tmpDir, '.avmatrixignore'), 'vendor/\n');
 
-    const original = process.env.GITNEXUS_NO_GITIGNORE;
-    process.env.GITNEXUS_NO_GITIGNORE = '1';
+    const original = process.env.AVMATRIX_NO_GITIGNORE;
+    process.env.AVMATRIX_NO_GITIGNORE = '1';
     try {
       const ig = await loadIgnoreRules(tmpDir);
       expect(ig).not.toBeNull();
       expect(ig!.ignores('vendor/lib.js')).toBe(true);
     } finally {
       if (original === undefined) {
-        delete process.env.GITNEXUS_NO_GITIGNORE;
+        delete process.env.AVMATRIX_NO_GITIGNORE;
       } else {
-        process.env.GITNEXUS_NO_GITIGNORE = original;
+        process.env.AVMATRIX_NO_GITIGNORE = original;
       }
-      await fs.unlink(path.join(tmpDir, '.gitnexusignore'));
+      await fs.unlink(path.join(tmpDir, '.avmatrixignore'));
     }
   });
 });

@@ -1,16 +1,16 @@
 /**
  * Direct CLI Tool Commands
  *
- * Exposes GitNexus tools (query, context, impact, cypher) as direct CLI commands.
+ * Exposes AVmatrix tools (query, context, impact, cypher) as direct CLI commands.
  * Bypasses MCP transport overhead, but still reuses the same LocalBackend/runtime
  * core modules as the other local surfaces.
  *
  * Usage:
- *   gitnexus query "authentication flow"
- *   gitnexus context --name "validateUser"
- *   gitnexus impact --target "AuthService" --direction upstream
- *   gitnexus cypher "MATCH (n:Function) RETURN n.name LIMIT 10"
- *   gitnexus detect-changes --scope staged
+ *   avmatrix query "authentication flow"
+ *   avmatrix context --name "validateUser"
+ *   avmatrix impact --target "AuthService" --direction upstream
+ *   avmatrix cypher "MATCH (n:Function) RETURN n.name LIMIT 10"
+ *   avmatrix detect-changes --scope staged
  *
  * Note: Output goes to stdout via fs.writeSync(fd 1), bypassing LadybugDB's
  * native module which captures the Node.js process.stdout stream during init.
@@ -27,7 +27,7 @@ async function getBackend(): Promise<LocalBackend> {
   _backend = new LocalBackend();
   const ok = await _backend.init();
   if (!ok) {
-    console.error('GitNexus: No indexed repositories found. Run: gitnexus analyze');
+    console.error('AVmatrix: No indexed repositories found. Run: avmatrix analyze');
     process.exit(1);
   }
   return _backend;
@@ -49,7 +49,7 @@ function output(data: any): void {
     writeSync(1, text + '\n');
   } catch (err: any) {
     if (err?.code === 'EPIPE') {
-      // Consumer closed the pipe (e.g., `gitnexus cypher ... | head -1`)
+      // Consumer closed the pipe (e.g., `avmatrix cypher ... | head -1`)
       // Exit cleanly per Unix convention
       process.exit(0);
     }
@@ -69,7 +69,7 @@ export async function queryCommand(
   },
 ): Promise<void> {
   if (!queryText?.trim()) {
-    console.error('Usage: gitnexus query <search_query>');
+    console.error('Usage: avmatrix query <search_query>');
     process.exit(1);
   }
 
@@ -95,7 +95,7 @@ export async function contextCommand(
   },
 ): Promise<void> {
   if (!name?.trim() && !options?.uid) {
-    console.error('Usage: gitnexus context <symbol_name> [--uid <uid>] [--file <path>]');
+    console.error('Usage: avmatrix context <symbol_name> [--uid <uid>] [--file <path>]');
     process.exit(1);
   }
 
@@ -120,7 +120,7 @@ export async function impactCommand(
   },
 ): Promise<void> {
   if (!target?.trim()) {
-    console.error('Usage: gitnexus impact <symbol_name> [--direction upstream|downstream]');
+    console.error('Usage: avmatrix impact <symbol_name> [--direction upstream|downstream]');
     process.exit(1);
   }
 
@@ -142,7 +142,7 @@ export async function impactCommand(
         (err instanceof Error ? err.message : String(err)) || 'Impact analysis failed unexpectedly',
       target: { name: target },
       direction: options?.direction || 'upstream',
-      suggestion: 'Try reducing --depth or using gitnexus context <symbol> as a fallback',
+      suggestion: 'Try reducing --depth or using avmatrix context <symbol> as a fallback',
     });
     process.exit(1);
   }
@@ -155,7 +155,7 @@ export async function cypherCommand(
   },
 ): Promise<void> {
   if (!query?.trim()) {
-    console.error('Usage: gitnexus cypher <cypher_query>');
+    console.error('Usage: avmatrix cypher <cypher_query>');
     process.exit(1);
   }
 

@@ -3,7 +3,7 @@
  *
  * One-time global MCP configuration writer.
  * Detects installed AI editors and writes the appropriate MCP config
- * so the GitNexus MCP server is available in all projects.
+ * so the AVmatrix MCP server is available in all projects.
  */
 
 import fs from 'fs/promises';
@@ -25,25 +25,46 @@ interface SetupResult {
   errors: string[];
 }
 
+const CANONICAL_BRAND = 'AVmatrix';
+const CANONICAL_COMMAND = 'avmatrix';
+const CANONICAL_MCP_SERVER = 'avmatrix';
+const LEGACY_MCP_SERVER = 'gitnexus';
+const CANONICAL_SKILLS_NAMESPACE = 'avmatrix';
+const CANONICAL_HOOK_NAMESPACE = 'avmatrix';
+
+function rewriteSkillContent(content: string): string {
+  return content
+    .replaceAll('GitNexus', 'AVmatrix')
+    .replaceAll('gitnexus://', 'avmatrix://')
+    .replaceAll('.claude/skills/gitnexus/', '.claude/skills/avmatrix/')
+    .replaceAll('npx gitnexus ', 'avmatrix ')
+    .replaceAll('gitnexus ', 'avmatrix ')
+    .replaceAll('gitnexus_detect_changes', 'detect_changes')
+    .replaceAll('gitnexus_impact', 'impact')
+    .replaceAll('gitnexus_query', 'query')
+    .replaceAll('gitnexus_context', 'context')
+    .replaceAll('gitnexus_rename', 'rename');
+}
+
 /**
  * The MCP server entry for all editors.
  *
  * Uses the portable local CLI command:
- *   gitnexus mcp
+ *   avmatrix mcp
  *
  * This keeps MCP local-only without pinning absolute repo paths into editor config.
- * Requirement: the local GitNexus CLI must be installed on PATH (for example via `npm link`
+ * Requirement: the local AVmatrix CLI must be installed on PATH (for example via `npm link`
  * from the local repo or a local global install built from this source tree).
  */
 function getMcpEntry() {
   return {
-    command: 'gitnexus',
+    command: CANONICAL_COMMAND,
     args: ['mcp'],
   };
 }
 
 /**
- * Merge gitnexus entry into an existing MCP config JSON object.
+ * Merge AVmatrix entry into an existing MCP config JSON object.
  * Returns the updated config.
  */
 function mergeMcpConfig(existing: any): any {
@@ -53,7 +74,8 @@ function mergeMcpConfig(existing: any): any {
   if (!existing.mcpServers || typeof existing.mcpServers !== 'object') {
     existing.mcpServers = {};
   }
-  existing.mcpServers.gitnexus = getMcpEntry();
+  delete existing.mcpServers[LEGACY_MCP_SERVER];
+  existing.mcpServers[CANONICAL_MCP_SERVER] = getMcpEntry();
   return existing;
 }
 
@@ -129,7 +151,7 @@ async function setupClaudeCode(result: SetupResult): Promise<void> {
 }
 
 /**
- * Install GitNexus skills to ~/.claude/skills/ for Claude Code.
+ * Install AVmatrix skills to ~/.claude/skills/ for Claude Code.
  */
 async function installClaudeCodeSkills(result: SetupResult): Promise<void> {
   const claudeDir = path.join(os.homedir(), '.claude');
@@ -147,7 +169,7 @@ async function installClaudeCodeSkills(result: SetupResult): Promise<void> {
 }
 
 /**
- * Install GitNexus hooks to ~/.claude/settings.json for Claude Code.
+ * Install AVmatrix hooks to ~/.claude/settings.json for Claude Code.
  * Merges hook config without overwriting existing hooks.
  */
 async function installClaudeCodeHooks(result: SetupResult): Promise<void> {
@@ -156,17 +178,17 @@ async function installClaudeCodeHooks(result: SetupResult): Promise<void> {
 
   const settingsPath = path.join(claudeDir, 'settings.json');
 
-  // Source hooks bundled within the gitnexus package (hooks/claude/)
+  // Source hooks bundled within the local package (hooks/claude/)
   const pluginHooksPath = path.join(__dirname, '..', '..', 'hooks', 'claude');
 
-  // Copy unified hook script to ~/.claude/hooks/gitnexus/
-  const destHooksDir = path.join(claudeDir, 'hooks', 'gitnexus');
+  // Copy unified hook script to ~/.claude/hooks/avmatrix/
+  const destHooksDir = path.join(claudeDir, 'hooks', CANONICAL_HOOK_NAMESPACE);
 
   try {
     await fs.mkdir(destHooksDir, { recursive: true });
 
     const src = path.join(pluginHooksPath, 'gitnexus-hook.cjs');
-    const dest = path.join(destHooksDir, 'gitnexus-hook.cjs');
+    const dest = path.join(destHooksDir, 'avmatrix-hook.cjs');
     try {
       let content = await fs.readFile(src, 'utf-8');
       // Inject resolved CLI path so the copied hook can find the CLI
@@ -183,7 +205,7 @@ async function installClaudeCodeHooks(result: SetupResult): Promise<void> {
       // Script not found in source — skip
     }
 
-    const hookPath = path.join(destHooksDir, 'gitnexus-hook.cjs').replace(/\\/g, '/');
+    const hookPath = path.join(destHooksDir, 'avmatrix-hook.cjs').replace(/\\/g, '/');
     const hookCmd = `node "${hookPath.replace(/"/g, '\\"')}"`;
 
     // Merge hook config into ~/.claude/settings.json
@@ -193,7 +215,7 @@ async function installClaudeCodeHooks(result: SetupResult): Promise<void> {
     // NOTE: SessionStart hooks are broken on Windows (Claude Code bug #23576).
     // Session context is delivered via CLAUDE.md / skills instead.
 
-    // Helper: add a hook entry if one with 'gitnexus-hook' isn't already registered
+    // Helper: add a hook entry if one with 'avmatrix-hook' isn't already registered
     interface HookEntry {
       hooks?: Array<{ command?: string }>;
     }
@@ -204,8 +226,14 @@ async function installClaudeCodeHooks(result: SetupResult): Promise<void> {
       statusMessage: string,
     ) {
       if (!existing.hooks[eventName]) existing.hooks[eventName] = [];
+      existing.hooks[eventName] = existing.hooks[eventName].filter(
+        (h: HookEntry) =>
+          !h.hooks?.some((hh) =>
+            hh.command?.includes('gitnexus-hook') || hh.command?.includes('avmatrix-hook'),
+          ),
+      );
       const hasHook = existing.hooks[eventName].some((h: HookEntry) =>
-        h.hooks?.some((hh) => hh.command?.includes('gitnexus-hook')),
+        h.hooks?.some((hh) => hh.command?.includes('avmatrix-hook')),
       );
       if (!hasHook) {
         existing.hooks[eventName].push({
@@ -215,8 +243,8 @@ async function installClaudeCodeHooks(result: SetupResult): Promise<void> {
       }
     }
 
-    ensureHookEntry('PreToolUse', 'Grep|Glob|Bash', 10, 'Enriching with GitNexus graph context...');
-    ensureHookEntry('PostToolUse', 'Bash', 10, 'Checking GitNexus index freshness...');
+    ensureHookEntry('PreToolUse', 'Grep|Glob|Bash', 10, 'Enriching with AVmatrix graph context...');
+    ensureHookEntry('PostToolUse', 'Bash', 10, 'Checking AVmatrix index freshness...');
 
     await writeJsonFile(settingsPath, existing);
     result.configured.push('Claude Code hooks (PreToolUse, PostToolUse)');
@@ -237,7 +265,8 @@ async function setupOpenCode(result: SetupResult): Promise<void> {
     const existing = await readJsonFile(configPath);
     const config = existing || {};
     if (!config.mcp) config.mcp = {};
-    config.mcp.gitnexus = getMcpEntry();
+    delete config.mcp[LEGACY_MCP_SERVER];
+    config.mcp[CANONICAL_MCP_SERVER] = getMcpEntry();
     await writeJsonFile(configPath, config);
     result.configured.push('OpenCode');
   } catch (err: any) {
@@ -252,11 +281,11 @@ function getCodexMcpTomlSection(): string {
   const entry = getMcpEntry();
   const command = JSON.stringify(entry.command);
   const args = `[${entry.args.map((arg) => JSON.stringify(arg)).join(', ')}]`;
-  return `[mcp_servers.gitnexus]\ncommand = ${command}\nargs = ${args}\n`;
+  return `[mcp_servers.${CANONICAL_MCP_SERVER}]\ncommand = ${command}\nargs = ${args}\n`;
 }
 
 /**
- * Append GitNexus MCP server config to Codex's config.toml if missing.
+ * Append AVmatrix MCP server config to Codex's config.toml if missing.
  */
 async function upsertCodexConfigToml(configPath: string): Promise<void> {
   let existing = '';
@@ -266,12 +295,14 @@ async function upsertCodexConfigToml(configPath: string): Promise<void> {
     existing = '';
   }
 
-  if (existing.includes('[mcp_servers.gitnexus]')) {
+  if (existing.includes(`[mcp_servers.${CANONICAL_MCP_SERVER}]`)) {
     return;
   }
 
+  const legacyPattern = /\[mcp_servers\.gitnexus\][\s\S]*?(?=\n\[mcp_servers\.|\n\[|$)/g;
+  const sanitized = existing.replace(legacyPattern, '').trimEnd();
   const section = getCodexMcpTomlSection();
-  const nextContent = existing.trim().length > 0 ? `${existing.trimEnd()}\n\n${section}` : section;
+  const nextContent = sanitized.trim().length > 0 ? `${sanitized}\n\n${section}` : section;
 
   await fs.mkdir(path.dirname(configPath), { recursive: true });
   await fs.writeFile(configPath, `${nextContent.trimEnd()}\n`, 'utf-8');
@@ -286,9 +317,13 @@ async function setupCodex(result: SetupResult): Promise<void> {
 
   try {
     const entry = getMcpEntry();
-    await execFileAsync('codex', ['mcp', 'add', 'gitnexus', '--', entry.command, ...entry.args], {
+    await execFileAsync(
+      'codex',
+      ['mcp', 'add', CANONICAL_MCP_SERVER, '--', entry.command, ...entry.args],
+      {
       shell: process.platform === 'win32',
-    });
+      },
+    );
     result.configured.push('Codex');
     return;
   } catch {
@@ -307,8 +342,8 @@ async function setupCodex(result: SetupResult): Promise<void> {
 // ─── Skill Installation ───────────────────────────────────────────
 
 /**
- * Install GitNexus skills to a target directory.
- * Each skill is installed as {targetDir}/gitnexus-{skillName}/SKILL.md
+ * Install AVmatrix skills to a target directory.
+ * Each skill is installed under the AVmatrix namespace.
  * following the Agent Skills standard (Cursor, Claude Code, and Codex).
  *
  * Supports two source layouts:
@@ -343,19 +378,32 @@ async function installSkillsTo(targetDir: string): Promise<string[]> {
   }
 
   for (const [skillName, source] of skillSources) {
-    const skillDir = path.join(targetDir, skillName);
+    const targetSkillName = skillName.startsWith('gitnexus-')
+      ? `${CANONICAL_SKILLS_NAMESPACE}-${skillName.slice('gitnexus-'.length)}`
+      : skillName;
+    const skillDir = path.join(targetDir, targetSkillName);
 
     try {
+      if (targetSkillName !== skillName) {
+        await fs.rm(path.join(targetDir, skillName), { recursive: true, force: true });
+      }
       if (source.isDirectory) {
         const dirSource = path.join(skillsRoot, skillName);
         await copyDirRecursive(dirSource, skillDir);
-        installed.push(skillName);
+        const skillDocPath = path.join(skillDir, 'SKILL.md');
+        try {
+          const skillContent = await fs.readFile(skillDocPath, 'utf-8');
+          await fs.writeFile(skillDocPath, rewriteSkillContent(skillContent), 'utf-8');
+        } catch {
+          // SKILL.md should exist, but leave copied content untouched if not.
+        }
+        installed.push(targetSkillName);
       } else {
         const flatSource = path.join(skillsRoot, `${skillName}.md`);
-        const content = await fs.readFile(flatSource, 'utf-8');
+        const content = rewriteSkillContent(await fs.readFile(flatSource, 'utf-8'));
         await fs.mkdir(skillDir, { recursive: true });
         await fs.writeFile(path.join(skillDir, 'SKILL.md'), content, 'utf-8');
-        installed.push(skillName);
+        installed.push(targetSkillName);
       }
     } catch {
       // Source skill not found — skip
@@ -383,7 +431,7 @@ async function copyDirRecursive(src: string, dest: string): Promise<void> {
 }
 
 /**
- * Install global Cursor skills to ~/.cursor/skills/gitnexus/
+ * Install global Cursor skills to ~/.cursor/skills/
  */
 async function installCursorSkills(result: SetupResult): Promise<void> {
   const cursorDir = path.join(os.homedir(), '.cursor');
@@ -401,7 +449,7 @@ async function installCursorSkills(result: SetupResult): Promise<void> {
 }
 
 /**
- * Install global OpenCode skills to ~/.config/opencode/skill/gitnexus/
+ * Install global OpenCode skills to ~/.config/opencode/skill/
  */
 async function installOpenCodeSkills(result: SetupResult): Promise<void> {
   const opencodeDir = path.join(os.homedir(), '.config', 'opencode');
@@ -421,7 +469,7 @@ async function installOpenCodeSkills(result: SetupResult): Promise<void> {
 }
 
 /**
- * Install global Codex skills to ~/.agents/skills/gitnexus/
+ * Install global Codex skills to ~/.agents/skills/
  */
 async function installCodexSkills(result: SetupResult): Promise<void> {
   const codexDir = path.join(os.homedir(), '.codex');
@@ -442,8 +490,8 @@ async function installCodexSkills(result: SetupResult): Promise<void> {
 
 export const setupCommand = async () => {
   console.log('');
-  console.log('  GitNexus Setup');
-  console.log('  ==============');
+  console.log(`  ${CANONICAL_BRAND} Setup`);
+  console.log('  ===============');
   console.log('');
 
   // Ensure global directory exists
@@ -504,7 +552,7 @@ export const setupCommand = async () => {
   console.log('');
   console.log('  Next steps:');
   console.log('    1. cd into any git repo');
-  console.log('    2. Run: gitnexus analyze');
+  console.log(`    2. Run: ${CANONICAL_COMMAND} analyze`);
   console.log('    3. Open the repo in your editor — MCP is ready!');
   console.log('');
 };

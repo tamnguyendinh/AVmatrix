@@ -1,4 +1,4 @@
-# Runbook — GitNexus
+# Runbook — AVmatrix
 
 Short, copy-paste operations for **local development**, **MCP**, and **CI**. Commands assume a Unix shell; on Windows use Git Bash or equivalent paths.
 
@@ -14,7 +14,7 @@ npm install
 npm run build
 ```
 
-Use `npx gitnexus …` from any path after global/published install, or `node dist/cli/index.js …` when developing from `gitnexus/` with a local build.
+Use `avmatrix …` after the local CLI is on `PATH`, or `node dist/cli/index.js …` when developing from `gitnexus/` with a local build.
 
 ---
 
@@ -25,25 +25,25 @@ Use `npx gitnexus …` from any path after global/published install, or `node di
 **Fix (from the target repo root):**
 
 ```bash
-npx gitnexus analyze
+avmatrix analyze
 ```
 
 **Force full rebuild** (same commit but suspect corruption or changed ignore rules):
 
 ```bash
-npx gitnexus analyze --force
+avmatrix analyze --force
 ```
 
 **Check status:**
 
 ```bash
-npx gitnexus status
+avmatrix status
 ```
 
 **List what MCP knows about:**
 
 ```bash
-npx gitnexus list
+avmatrix list
 ```
 
 ---
@@ -53,10 +53,10 @@ npx gitnexus list
 **First time with vectors** (slower, more disk/RAM):
 
 ```bash
-npx gitnexus analyze --embeddings
+avmatrix analyze --embeddings
 ```
 
-**Important:** If you already had embeddings, **always** pass `--embeddings` on later analyzes, or they can be dropped. See `stats.embeddings` in `.gitnexus/meta.json` (0 means none).
+**Important:** If you already had embeddings, **always** pass `--embeddings` on later analyzes, or they can be dropped. The embedding metadata lives under `.avmatrix/meta.json`.
 
 **Large repos:** Analyze may skip or limit embedding work when node counts are very high; watch CLI output.
 
@@ -64,13 +64,13 @@ npx gitnexus analyze --embeddings
 
 ## MCP: no repos / empty tools
 
-**Symptom:** `GitNexus: No indexed repos yet` on stderr when starting MCP.
+**Symptom:** `No indexed repos yet` on stderr when starting MCP.
 
 **Fix:** In each project you want indexed:
 
 ```bash
 cd /path/to/repo
-npx gitnexus analyze
+avmatrix analyze
 ```
 
 Restart the editor MCP session if needed. The server **refreshes the registry lazily**; new analyzes are picked up without necessarily reinstalling MCP.
@@ -79,27 +79,27 @@ Restart the editor MCP session if needed. The server **refreshes the registry la
 
 ---
 
-## Clean slate (corrupt or huge `.gitnexus`)
+## Clean slate (corrupt or huge local index)
 
 **Current repo only** (prompts for confirmation):
 
 ```bash
-npx gitnexus clean
+avmatrix clean
 ```
 
 **Skip confirmation:**
 
 ```bash
-npx gitnexus clean --force
+avmatrix clean --force
 ```
 
 **All registered repos:**
 
 ```bash
-npx gitnexus clean --all --force
+avmatrix clean --all --force
 ```
 
-Then re-run `npx gitnexus analyze` (and `--embeddings` if you need vectors).
+Then re-run `avmatrix analyze` (and `--embeddings` if you need vectors).
 
 ---
 
@@ -107,7 +107,7 @@ Then re-run `npx gitnexus analyze` (and `--embeddings` if you need vectors).
 
 ```bash
 cd gitnexus
-npx gitnexus serve
+node dist/cli/index.js serve
 # default http://127.0.0.1:4747 — see serve --help for port/host
 ```
 
@@ -121,10 +121,10 @@ Useful for debugging without an editor:
 
 ```bash
 cd gitnexus
-npx gitnexus query "authentication flow" --repo MyRepo
-npx gitnexus context SomeSymbol --repo MyRepo
-npx gitnexus impact SomeSymbol --direction upstream --repo MyRepo
-npx gitnexus cypher "MATCH (n) RETURN count(n) LIMIT 1" --repo MyRepo
+node dist/cli/index.js query "authentication flow" --repo MyRepo
+node dist/cli/index.js context SomeSymbol --repo MyRepo
+node dist/cli/index.js impact SomeSymbol --direction upstream --repo MyRepo
+node dist/cli/index.js cypher "MATCH (n) RETURN count(n) LIMIT 1" --repo MyRepo
 ```
 
 ---
@@ -138,7 +138,7 @@ Orchestrator: `.github/workflows/ci.yml`.
 | **quality** | `cd gitnexus && npx tsc --noEmit` |
 | **unit-tests** | `cd gitnexus && npx vitest run test/unit` |
 | **integration** | `cd gitnexus && npx vitest run test/integration` (see workflow matrix for groups) |
-| **e2e** | Triggered when `gitnexus-web/` changes; `cd gitnexus-web && E2E=1 npx playwright test` (requires `gitnexus serve` + `npm run dev`) |
+| **e2e** | Triggered when `gitnexus-web/` changes; `cd gitnexus-web && E2E=1 npx playwright test` (requires `avmatrix serve` or `node dist/cli/index.js serve` + `npm run dev`) |
 
 **Note:** Pushes that touch only certain markdown paths may be skipped by `paths-ignore` in CI — see workflow file for exact patterns.
 
@@ -152,7 +152,7 @@ Analyze re-execs Node with a **large old-space heap** when needed (`analyze.ts`)
 
 ## LadybugDB / lock errors
 
-Only one process should open a repo’s `.gitnexus/lbug` store at a time. If MCP and a second `analyze` run conflict, stop one process, then retry `analyze` or restart MCP.
+Only one process should open a repo’s local LadybugDB store at a time. The active local store lives under `.avmatrix/lbug`. If MCP and a second `analyze` run conflict, stop one process, then retry `analyze` or restart MCP.
 
 ---
 

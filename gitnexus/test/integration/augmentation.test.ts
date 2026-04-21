@@ -66,7 +66,7 @@ withTestLbugDB(
         const result = await augment('login', handle.dbPath);
 
         expect(result.length).toBeGreaterThan(0);
-        expect(result).toContain('[GitNexus]');
+        expect(result).toContain('[AVmatrix]');
         expect(result).toContain('login');
       });
 

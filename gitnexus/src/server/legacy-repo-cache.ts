@@ -1,5 +1,5 @@
-import os from 'os';
 import path from 'path';
+import { getGlobalDir } from '../storage/repo-manager.js';
 
 /**
  * Return the legacy GitNexus cache directory that older remote-clone flows used.
@@ -8,5 +8,5 @@ import path from 'path';
  * still clean it up if a user has leftovers from older versions.
  */
 export function getLegacyRepoCacheDir(repoName: string): string {
-  return path.join(os.homedir(), '.gitnexus', 'repos', repoName);
+  return path.join(getGlobalDir(), 'repos', repoName);
 }

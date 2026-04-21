@@ -3,7 +3,7 @@ name: gitnexus-impact-analysis
 description: "Use when the user wants to know what will break if they change something, or needs safety analysis before editing code. Examples: \"Is it safe to change X?\", \"What depends on this?\", \"What will break?\""
 ---
 
-# Impact Analysis with GitNexus
+# Impact Analysis with AVmatrix
 
 ## When to Use
 
@@ -18,12 +18,12 @@ description: "Use when the user wants to know what will break if they change som
 
 ```
 1. gitnexus_impact({target: "X", direction: "upstream"})  → What depends on this
-2. READ gitnexus://repo/{name}/processes                   → Check affected execution flows
+2. READ avmatrix://repo/{name}/processes                   → Check affected execution flows
 3. gitnexus_detect_changes()                               → Map current git changes to affected flows
 4. Assess risk and report to user
 ```
 
-> If "Index is stale" → run `npx gitnexus analyze` in terminal.
+> If "Index is stale" → run `avmatrix analyze` in terminal.
 
 ## Checklist
 
@@ -90,7 +90,7 @@ gitnexus_detect_changes({scope: "staged"})
    → d=1: loginHandler, apiMiddleware (WILL BREAK)
    → d=2: authRouter, sessionManager (LIKELY AFFECTED)
 
-2. READ gitnexus://repo/my-app/processes
+2. READ avmatrix://repo/my-app/processes
    → LoginFlow and TokenRefresh touch validateUser
 
 3. Risk: 2 direct callers, 2 processes = MEDIUM

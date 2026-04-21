@@ -83,9 +83,9 @@ describe('server-side analyze integration', () => {
     expect(events[0].message).toBe('Local analysis failed: repository not found');
   });
 
-  it('legacy cache directory helper points at ~/.gitnexus/repos', () => {
+  it('legacy cache directory helper points at ~/.avmatrix/repos', () => {
     const dir = getLegacyRepoCacheDir('react');
-    expect(dir).toMatch(/\.gitnexus/);
+    expect(dir).toMatch(/\.avmatrix/);
     expect(dir).toMatch(/repos/);
     expect(dir).toContain('react');
   });

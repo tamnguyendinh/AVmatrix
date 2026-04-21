@@ -44,7 +44,7 @@ const isWslMountedWindowsPath = (value: string): boolean => /^\/mnt\/[a-z]\//i.t
 const execFileAsync = promisify(execFile);
 
 const getNativeCodexExecutable = (): string =>
-  process.env.GITNEXUS_CODEX_EXECUTABLE ||
+  process.env.AVMATRIX_CODEX_EXECUTABLE ||
   (process.platform === 'win32' ? 'codex.cmd' : 'codex');
 
 const getWindowsCommandShell = (): string =>
@@ -52,7 +52,7 @@ const getWindowsCommandShell = (): string =>
   path.join(process.env.SystemRoot || process.env.windir || 'C:\\Windows', 'System32', 'cmd.exe');
 
 const getConfiguredExecutionMode = (): SessionExecutionMode => {
-  const configured = process.env.GITNEXUS_SESSION_EXECUTION_MODE;
+  const configured = process.env.AVMATRIX_SESSION_EXECUTION_MODE;
   if (configured === 'sandbox' || configured === 'sandboxed') return 'sandboxed';
   if (configured === 'bypass') return 'bypass';
   return process.platform === 'win32' ? 'bypass' : 'sandboxed';
@@ -305,7 +305,7 @@ const probeTargetStatus = async (target: CodexLaunchTarget): Promise<CodexStatus
 };
 
 const resolveWindowsNativeBaseTarget = async (): Promise<CodexLaunchTarget> => {
-  const configured = process.env.GITNEXUS_CODEX_EXECUTABLE;
+  const configured = process.env.AVMATRIX_CODEX_EXECUTABLE;
   if (configured && configured.endsWith('.js')) {
     return {
       runtimeEnvironment: 'native',

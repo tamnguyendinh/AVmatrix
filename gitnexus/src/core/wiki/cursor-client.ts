@@ -16,7 +16,7 @@ export interface CursorConfig {
 }
 
 function isVerbose(): boolean {
-  return process.env.GITNEXUS_VERBOSE === '1';
+  return process.env.AVMATRIX_VERBOSE === '1';
 }
 
 function verboseLog(...args: unknown[]): void {

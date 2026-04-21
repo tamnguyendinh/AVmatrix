@@ -11,7 +11,7 @@ export const listCommand = async () => {
 
   if (entries.length === 0) {
     console.log('No indexed repositories found.');
-    console.log('Run `gitnexus analyze` in a git repo to index it.');
+    console.log('Run `avmatrix analyze` in a git repo to index it.');
     return;
   }
 

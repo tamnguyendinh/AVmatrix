@@ -13,7 +13,7 @@ vi.mock('../../src/services/backend-client', () => ({
       return DEFAULT_BACKEND_URL;
     }
     throw new Error(
-      'GitNexus local-only mode only supports backend URLs on localhost, 127.0.0.1, or [::1].',
+      'AVmatrix local-only mode only supports backend URLs on localhost, 127.0.0.1, or [::1].',
     );
   },
   probeBackend: (...args: unknown[]) => probeBackendMock(...args),

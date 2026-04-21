@@ -42,8 +42,8 @@ describe('sequential native parser availability', () => {
 
   it('warns when processImports skips files in verbose mode', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const previous = process.env.GITNEXUS_VERBOSE;
-    process.env.GITNEXUS_VERBOSE = '1';
+    const previous = process.env.AVMATRIX_VERBOSE;
+    process.env.AVMATRIX_VERBOSE = '1';
     vi.mocked(parserLoader.isLanguageAvailable).mockReturnValue(false);
 
     await processImports(
@@ -62,9 +62,9 @@ describe('sequential native parser availability', () => {
 
     warnSpy.mockRestore();
     if (previous === undefined) {
-      delete process.env.GITNEXUS_VERBOSE;
+      delete process.env.AVMATRIX_VERBOSE;
     } else {
-      process.env.GITNEXUS_VERBOSE = previous;
+      process.env.AVMATRIX_VERBOSE = previous;
     }
   });
 
@@ -85,8 +85,8 @@ describe('sequential native parser availability', () => {
 
   it('warns when processCalls skips files in verbose mode', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const previous = process.env.GITNEXUS_VERBOSE;
-    process.env.GITNEXUS_VERBOSE = '1';
+    const previous = process.env.AVMATRIX_VERBOSE;
+    process.env.AVMATRIX_VERBOSE = '1';
     vi.mocked(parserLoader.isLanguageAvailable).mockReturnValue(false);
 
     await processCalls(
@@ -102,9 +102,9 @@ describe('sequential native parser availability', () => {
 
     warnSpy.mockRestore();
     if (previous === undefined) {
-      delete process.env.GITNEXUS_VERBOSE;
+      delete process.env.AVMATRIX_VERBOSE;
     } else {
-      process.env.GITNEXUS_VERBOSE = previous;
+      process.env.AVMATRIX_VERBOSE = previous;
     }
   });
 
@@ -125,8 +125,8 @@ describe('sequential native parser availability', () => {
 
   it('warns when processHeritage skips files in verbose mode', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const previous = process.env.GITNEXUS_VERBOSE;
-    process.env.GITNEXUS_VERBOSE = '1';
+    const previous = process.env.AVMATRIX_VERBOSE;
+    process.env.AVMATRIX_VERBOSE = '1';
     vi.mocked(parserLoader.isLanguageAvailable).mockReturnValue(false);
 
     await processHeritage(
@@ -142,9 +142,9 @@ describe('sequential native parser availability', () => {
 
     warnSpy.mockRestore();
     if (previous === undefined) {
-      delete process.env.GITNEXUS_VERBOSE;
+      delete process.env.AVMATRIX_VERBOSE;
     } else {
-      process.env.GITNEXUS_VERBOSE = previous;
+      process.env.AVMATRIX_VERBOSE = previous;
     }
   });
 });

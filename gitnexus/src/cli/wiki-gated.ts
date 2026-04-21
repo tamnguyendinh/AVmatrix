@@ -9,7 +9,7 @@ export const formatWikiModeStatus = (mode: WikiMode): string => {
       '  Wiki capability mode: local',
       '',
       '  Local wiki mode is reserved, but the local wiki engine is not available yet in this build.',
-      '  GitNexus will not fall back to any remote wiki service.',
+      '  AVmatrix will not fall back to any remote wiki service.',
       '',
     ].join('\n');
   }
@@ -19,7 +19,7 @@ export const formatWikiModeStatus = (mode: WikiMode): string => {
     '  Wiki capability mode: off',
     '',
     '  Wiki generation is disabled in local-only mode.',
-    '  Run `gitnexus wiki-mode local` later when the local wiki engine is ready.',
+    '  Run `avmatrix wiki-mode local` later when the local wiki engine is ready.',
     '',
   ].join('\n');
 };
@@ -48,4 +48,3 @@ export const wikiModeCommand = async (mode?: string): Promise<void> => {
   await saveRuntimeConfig({ wikiMode: nextMode });
   console.log(formatWikiModeStatus(nextMode));
 };
-

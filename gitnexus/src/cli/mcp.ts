@@ -13,13 +13,13 @@ export const mcpCommand = async () => {
   // Prevent unhandled errors from crashing the MCP server process.
   // LadybugDB lock conflicts and transient errors should degrade gracefully.
   process.on('uncaughtException', (err) => {
-    console.error(`GitNexus MCP: uncaught exception — ${err.message}`);
+    console.error(`AVmatrix MCP: uncaught exception — ${err.message}`);
     // Process is in an undefined state after uncaughtException — exit after flushing
     setTimeout(() => process.exit(1), 100);
   });
   process.on('unhandledRejection', (reason) => {
     const msg = reason instanceof Error ? reason.message : String(reason);
-    console.error(`GitNexus MCP: unhandled rejection — ${msg}`);
+    console.error(`AVmatrix MCP: unhandled rejection — ${msg}`);
   });
 
   // Initialize multi-repo backend from registry.
@@ -31,11 +31,11 @@ export const mcpCommand = async () => {
   const repos = await backend.listRepos();
   if (repos.length === 0) {
     console.error(
-      'GitNexus: No indexed repos yet. Run `gitnexus analyze` in a local repo — the MCP/runtime layer will pick it up automatically.',
+      'AVmatrix: No indexed repos yet. Run `avmatrix analyze` in a local repo — the MCP/runtime layer will pick it up automatically.',
     );
   } else {
     console.error(
-      `GitNexus: MCP server starting with ${repos.length} repo(s) on the shared local runtime core: ${repos.map((r) => r.name).join(', ')}`,
+      `AVmatrix: MCP server starting with ${repos.length} repo(s) on the shared local runtime core: ${repos.map((r) => r.name).join(', ')}`,
     );
   }
 

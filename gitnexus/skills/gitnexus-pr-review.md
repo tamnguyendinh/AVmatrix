@@ -3,7 +3,7 @@ name: gitnexus-pr-review
 description: "Use when the user wants to review a pull request, understand what a PR changes, assess risk of merging, or check for missing test coverage. Examples: \"Review this PR\", \"What does PR #42 change?\", \"Is this PR safe to merge?\""
 ---
 
-# PR Review with GitNexus
+# PR Review with AVmatrix
 
 ## When to Use
 
@@ -22,11 +22,11 @@ description: "Use when the user wants to review a pull request, understand what 
 3. For each changed symbol:
    gitnexus_impact({target: "<symbol>", direction: "upstream"})    → Blast radius per change
 4. gitnexus_context({name: "<key symbol>"})               → Understand callers/callees
-5. READ gitnexus://repo/{name}/processes                   → Check affected execution flows
+5. READ avmatrix://repo/{name}/processes                   → Check affected execution flows
 6. Summarize findings with risk assessment
 ```
 
-> If "Index is stale" → run `npx gitnexus analyze` in terminal before reviewing.
+> If "Index is stale" → run `avmatrix analyze` in terminal before reviewing.
 
 ## Checklist
 
@@ -43,7 +43,7 @@ description: "Use when the user wants to review a pull request, understand what 
 
 ## Review Dimensions
 
-| Dimension | How GitNexus Helps |
+| Dimension | How AVmatrix Helps |
 | --- | --- |
 | **Correctness** | `context` shows callers — are they all compatible with the change? |
 | **Blast radius** | `impact` shows d=1/d=2/d=3 dependents — anything missed? |
@@ -151,7 +151,7 @@ Structure your review as:
 
 ### Findings
 1. **[severity]** Description of finding
-   - Evidence from GitNexus tools
+   - Evidence from AVmatrix tools
    - Affected callers/flows
 
 ### Missing Coverage

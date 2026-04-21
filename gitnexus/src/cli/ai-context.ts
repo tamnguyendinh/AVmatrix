@@ -1,7 +1,7 @@
 /**
  * AI Context Generator
  *
- * Creates AGENTS.md and CLAUDE.md with full inline GitNexus context.
+ * Creates AGENTS.md and CLAUDE.md with full inline AVmatrix context.
  * AGENTS.md is the standard read by Cursor, Windsurf, OpenCode, Codex, Cline, etc.
  * CLAUDE.md is for Claude Code which only reads that file.
  */
@@ -29,11 +29,22 @@ export interface AIContextOptions {
   noStats?: boolean;
 }
 
-const GITNEXUS_START_MARKER = '<!-- gitnexus:start -->';
-const GITNEXUS_END_MARKER = '<!-- gitnexus:end -->';
+const AVMATRIX_START_MARKER = '<!-- avmatrix:start -->';
+const AVMATRIX_END_MARKER = '<!-- avmatrix:end -->';
+const LEGACY_GITNEXUS_START_MARKER = '<!-- gitnexus:start -->';
+const LEGACY_GITNEXUS_END_MARKER = '<!-- gitnexus:end -->';
+
+function rewriteMcpToolNames(content: string): string {
+  return content
+    .replaceAll('gitnexus_detect_changes', 'detect_changes')
+    .replaceAll('gitnexus_impact', 'impact')
+    .replaceAll('gitnexus_query', 'query')
+    .replaceAll('gitnexus_context', 'context')
+    .replaceAll('gitnexus_rename', 'rename');
+}
 
 /**
- * Generate the full GitNexus context content.
+ * Generate the full AVmatrix context content.
  *
  * Design principles (learned from real agent behavior and industry research):
  * - Inline critical workflows — skills are skipped 56% of the time (Vercel eval data)
@@ -60,7 +71,7 @@ async function findGroupsContainingRegistryName(registryName: string): Promise<s
   return hits;
 }
 
-function generateGitNexusContent(
+function generateAVmatrixContent(
   projectName: string,
   stats: RepoStats,
   generatedSkills?: GeneratedSkillInfo[],
@@ -79,49 +90,49 @@ function generateGitNexusContent(
 
   const skillsTable = `| Task | Read this skill file |
 |------|---------------------|
-| Understand architecture / "How does X work?" | \`.claude/skills/gitnexus/gitnexus-exploring/SKILL.md\` |
-| Blast radius / "What breaks if I change X?" | \`.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md\` |
-| Trace bugs / "Why is X failing?" | \`.claude/skills/gitnexus/gitnexus-debugging/SKILL.md\` |
-| Rename / extract / split / refactor | \`.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md\` |
-| Tools, resources, schema reference | \`.claude/skills/gitnexus/gitnexus-guide/SKILL.md\` |
-| Index, status, clean, and wiki capability CLI commands | \`.claude/skills/gitnexus/gitnexus-cli/SKILL.md\` |${generatedRows ? '\n' + generatedRows : ''}`;
+| Understand architecture / "How does X work?" | \`.claude/skills/avmatrix/avmatrix-exploring/SKILL.md\` |
+| Blast radius / "What breaks if I change X?" | \`.claude/skills/avmatrix/avmatrix-impact-analysis/SKILL.md\` |
+| Trace bugs / "Why is X failing?" | \`.claude/skills/avmatrix/avmatrix-debugging/SKILL.md\` |
+| Rename / extract / split / refactor | \`.claude/skills/avmatrix/avmatrix-refactoring/SKILL.md\` |
+| Tools, resources, schema reference | \`.claude/skills/avmatrix/avmatrix-guide/SKILL.md\` |
+| Index, status, clean, and wiki capability CLI commands | \`.claude/skills/avmatrix/avmatrix-cli/SKILL.md\` |${generatedRows ? '\n' + generatedRows : ''}`;
 
-  return `${GITNEXUS_START_MARKER}
-# GitNexus — Code Intelligence
+  return `${AVMATRIX_START_MARKER}
+# AVmatrix — Code Intelligence
 
-This project is indexed by GitNexus as **${projectName}**${noStats ? '' : ` (${stats.nodes || 0} symbols, ${stats.edges || 0} relationships, ${stats.processes || 0} execution flows)`}. Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by AVmatrix as **${projectName}**${noStats ? '' : ` (${stats.nodes || 0} symbols, ${stats.edges || 0} relationships, ${stats.processes || 0} execution flows)`}. Use the AVmatrix MCP tools to understand code, assess impact, and navigate safely.
 
-> If any GitNexus tool warns the index is stale, run \`npx gitnexus analyze\` in terminal first.
+> If any AVmatrix tool warns the index is stale, run \`avmatrix analyze\` in terminal first.
 
 ## Always Do
 
-- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run \`gitnexus_impact({target: "symbolName", direction: "upstream"})\` and report the blast radius (direct callers, affected processes, risk level) to the user.
-- **MUST run \`gitnexus_detect_changes()\` before committing** to verify your changes only affect expected symbols and execution flows.
+- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run \`impact({target: "symbolName", direction: "upstream"})\` and report the blast radius (direct callers, affected processes, risk level) to the user.
+- **MUST run \`detect_changes()\` before committing** to verify your changes only affect expected symbols and execution flows.
 - **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
-- When exploring unfamiliar code, use \`gitnexus_query({query: "concept"})\` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
-- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use \`gitnexus_context({name: "symbolName"})\`.
+- When exploring unfamiliar code, use \`query({query: "concept"})\` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
+- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use \`context({name: "symbolName"})\`.
 
 ## Never Do
 
-- NEVER edit a function, class, or method without first running \`gitnexus_impact\` on it.
+- NEVER edit a function, class, or method without first running \`impact\` on it.
 - NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
-- NEVER rename symbols with find-and-replace — use \`gitnexus_rename\` which understands the call graph.
-- NEVER commit changes without running \`gitnexus_detect_changes()\` to check affected scope.
+- NEVER rename symbols with find-and-replace — use \`rename\` which understands the call graph.
+- NEVER commit changes without running \`detect_changes()\` to check affected scope.
 
 ## Resources
 
 | Resource | Use for |
 |----------|---------|
-| \`gitnexus://repo/${projectName}/context\` | Codebase overview, check index freshness |
-| \`gitnexus://repo/${projectName}/clusters\` | All functional areas |
-| \`gitnexus://repo/${projectName}/processes\` | All execution flows |
-| \`gitnexus://repo/${projectName}/process/{name}\` | Step-by-step execution trace |
+| \`avmatrix://repo/${projectName}/context\` | Codebase overview, check index freshness |
+| \`avmatrix://repo/${projectName}/clusters\` | All functional areas |
+| \`avmatrix://repo/${projectName}/processes\` | All execution flows |
+| \`avmatrix://repo/${projectName}/process/{name}\` | Step-by-step execution trace |
 
 ${
   groupNames && groupNames.length > 0
     ? `## Cross-Repo Groups
 
-This repository is listed under GitNexus **group(s): ${groupNames.join(', ')}** (see \`~/.gitnexus/groups/\`). For blast radius across repository boundaries, use MCP tools \`group_impact\`, \`group_sync\`, \`group_query\`, \`group_contracts\`, \`group_status\`, and \`group_list\`. From the terminal: \`npx gitnexus group list\`, \`npx gitnexus group sync <name>\`, \`npx gitnexus group impact <name> --target <symbol> --repo <group-path>\`.
+This repository is listed under AVmatrix **group(s): ${groupNames.join(', ')}**. For blast radius across repository boundaries, use MCP tools \`group_impact\`, \`group_sync\`, \`group_query\`, \`group_contracts\`, \`group_status\`, and \`group_list\`. From the terminal: \`avmatrix group list\`, \`avmatrix group sync <name>\`, \`avmatrix group impact <name> --target <symbol> --repo <group-path>\`.
 
 `
     : ''
@@ -129,7 +140,7 @@ This repository is listed under GitNexus **group(s): ${groupNames.join(', ')}** 
 
 ${skillsTable}
 
-${GITNEXUS_END_MARKER}`;
+${AVMATRIX_END_MARKER}`;
 }
 
 /**
@@ -145,12 +156,12 @@ async function fileExists(filePath: string): Promise<boolean> {
 }
 
 /**
- * Create or update GitNexus section in a file
- * - If file doesn't exist: create with GitNexus content
+ * Create or update AVmatrix section in a file
+ * - If file doesn't exist: create with AVmatrix content
  * - If file exists without GitNexus section: append
  * - If file exists with GitNexus section: replace that section
  */
-async function upsertGitNexusSection(
+async function upsertAVmatrixSection(
   filePath: string,
   content: string,
 ): Promise<'created' | 'updated' | 'appended'> {
@@ -163,14 +174,22 @@ async function upsertGitNexusSection(
 
   const existingContent = await fs.readFile(filePath, 'utf-8');
 
-  // Check if GitNexus section already exists
-  const startIdx = existingContent.indexOf(GITNEXUS_START_MARKER);
-  const endIdx = existingContent.indexOf(GITNEXUS_END_MARKER);
+  // Check if AVmatrix section already exists, or migrate the legacy GitNexus block in-place.
+  const markerPairs = [
+    { start: AVMATRIX_START_MARKER, end: AVMATRIX_END_MARKER },
+    { start: LEGACY_GITNEXUS_START_MARKER, end: LEGACY_GITNEXUS_END_MARKER },
+  ];
 
-  if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+  const pair = markerPairs.find(
+    ({ start, end }) => existingContent.indexOf(start) !== -1 && existingContent.indexOf(end) !== -1,
+  );
+  const startIdx = pair ? existingContent.indexOf(pair.start) : -1;
+  const endIdx = pair ? existingContent.indexOf(pair.end) : -1;
+
+  if (pair && startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
     // Replace existing section
     const before = existingContent.substring(0, startIdx);
-    const after = existingContent.substring(endIdx + GITNEXUS_END_MARKER.length);
+    const after = existingContent.substring(endIdx + pair.end.length);
     const newContent = before + content + after;
     await fs.writeFile(filePath, newContent.trim() + '\n', 'utf-8');
     return 'updated';
@@ -183,49 +202,58 @@ async function upsertGitNexusSection(
 }
 
 /**
- * Install GitNexus skills to .claude/skills/gitnexus/
+ * Install AVmatrix skills to .claude/skills/avmatrix/
  * Works natively with Claude Code, Cursor, and GitHub Copilot
  */
 async function installSkills(repoPath: string): Promise<string[]> {
-  const skillsDir = path.join(repoPath, '.claude', 'skills', 'gitnexus');
+  const skillsDir = path.join(repoPath, '.claude', 'skills', 'avmatrix');
+  const legacySkillsDir = path.join(repoPath, '.claude', 'skills', 'gitnexus');
   const installedSkills: string[] = [];
 
   // Skill definitions bundled with the package
   const skills = [
     {
       name: 'gitnexus-exploring',
+      outputName: 'avmatrix-exploring',
       description:
         'Use when the user asks how code works, wants to understand architecture, trace execution flows, or explore unfamiliar parts of the codebase. Examples: "How does X work?", "What calls this function?", "Show me the auth flow"',
     },
     {
       name: 'gitnexus-debugging',
+      outputName: 'avmatrix-debugging',
       description:
         'Use when the user is debugging a bug, tracing an error, or asking why something fails. Examples: "Why is X failing?", "Where does this error come from?", "Trace this bug"',
     },
     {
       name: 'gitnexus-impact-analysis',
+      outputName: 'avmatrix-impact-analysis',
       description:
         'Use when the user wants to know what will break if they change something, or needs safety analysis before editing code. Examples: "Is it safe to change X?", "What depends on this?", "What will break?"',
     },
     {
       name: 'gitnexus-refactoring',
+      outputName: 'avmatrix-refactoring',
       description:
         'Use when the user wants to rename, extract, split, move, or restructure code safely. Examples: "Rename this function", "Extract this into a module", "Refactor this class", "Move this to a separate file"',
     },
     {
       name: 'gitnexus-guide',
+      outputName: 'avmatrix-guide',
       description:
-        'Use when the user asks about GitNexus itself — available tools, how to query the knowledge graph, MCP resources, graph schema, or workflow reference. Examples: "What GitNexus tools are available?", "How do I use GitNexus?"',
+        'Use when the user asks about AVmatrix itself — available tools, how to query the knowledge graph, MCP resources, graph schema, or workflow reference. Examples: "What AVmatrix tools are available?", "How do I use AVmatrix?"',
     },
     {
       name: 'gitnexus-cli',
+      outputName: 'avmatrix-cli',
       description:
-        'Use when the user needs to run GitNexus CLI commands like analyze/index a repo, check status, clean the index, inspect wiki capability mode, or list indexed repos. Examples: "Index this repo", "Reanalyze the codebase", "Check wiki mode"',
+        'Use when the user needs to run AVmatrix CLI commands like analyze/index a repo, check status, clean the index, inspect wiki capability mode, or list indexed repos. Examples: "Index this repo", "Reanalyze the codebase", "Check wiki mode"',
     },
   ];
 
+  await fs.rm(legacySkillsDir, { recursive: true, force: true });
+
   for (const skill of skills) {
-    const skillDir = path.join(skillsDir, skill.name);
+    const skillDir = path.join(skillsDir, skill.outputName);
     const skillPath = path.join(skillDir, 'SKILL.md');
 
     try {
@@ -241,20 +269,29 @@ async function installSkills(repoPath: string): Promise<string[]> {
       } catch {
         // Fallback: generate minimal skill content
         skillContent = `---
-name: ${skill.name}
+name: ${skill.outputName}
 description: ${skill.description}
 ---
 
-# ${skill.name.charAt(0).toUpperCase() + skill.name.slice(1)}
+# ${skill.outputName.charAt(0).toUpperCase() + skill.outputName.slice(1)}
 
 ${skill.description}
 
-Use GitNexus tools to accomplish this task.
+Use AVmatrix tools to accomplish this task.
 `;
       }
 
+      skillContent = rewriteMcpToolNames(
+        skillContent
+        .replaceAll('GitNexus', 'AVmatrix')
+        .replaceAll('gitnexus://', 'avmatrix://')
+        .replaceAll('.claude/skills/gitnexus/', '.claude/skills/avmatrix/')
+        .replaceAll('npx gitnexus ', 'avmatrix ')
+        .replaceAll('gitnexus ', 'avmatrix '),
+      );
+
       await fs.writeFile(skillPath, skillContent, 'utf-8');
-      installedSkills.push(skill.name);
+      installedSkills.push(skill.outputName);
     } catch (err) {
       // Skip on error, don't fail the whole process
       console.warn(`Warning: Could not install skill ${skill.name}:`, err);
@@ -276,7 +313,7 @@ export async function generateAIContextFiles(
   options?: AIContextOptions,
 ): Promise<{ files: string[] }> {
   const groupNames = await findGroupsContainingRegistryName(projectName);
-  const content = generateGitNexusContent(
+  const content = generateAVmatrixContent(
     projectName,
     stats,
     generatedSkills,
@@ -288,22 +325,22 @@ export async function generateAIContextFiles(
   if (!options?.skipAgentsMd) {
     // Create AGENTS.md (standard for Cursor, Windsurf, OpenCode, Cline, etc.)
     const agentsPath = path.join(repoPath, 'AGENTS.md');
-    const agentsResult = await upsertGitNexusSection(agentsPath, content);
+    const agentsResult = await upsertAVmatrixSection(agentsPath, content);
     createdFiles.push(`AGENTS.md (${agentsResult})`);
 
     // Create CLAUDE.md (for Claude Code)
     const claudePath = path.join(repoPath, 'CLAUDE.md');
-    const claudeResult = await upsertGitNexusSection(claudePath, content);
+    const claudeResult = await upsertAVmatrixSection(claudePath, content);
     createdFiles.push(`CLAUDE.md (${claudeResult})`);
   } else {
     createdFiles.push('AGENTS.md (skipped via --skip-agents-md)');
     createdFiles.push('CLAUDE.md (skipped via --skip-agents-md)');
   }
 
-  // Install skills to .claude/skills/gitnexus/
+  // Install skills to .claude/skills/avmatrix/
   const installedSkills = await installSkills(repoPath);
   if (installedSkills.length > 0) {
-    createdFiles.push(`.claude/skills/gitnexus/ (${installedSkills.length} skills)`);
+    createdFiles.push(`.claude/skills/avmatrix/ (${installedSkills.length} skills)`);
   }
 
   return { files: createdFiles };

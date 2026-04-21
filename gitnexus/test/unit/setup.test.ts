@@ -56,11 +56,11 @@ describe('setupClaudeCode', () => {
   });
 
   const expectedEntry = () => ({
-    command: 'gitnexus',
+    command: 'avmatrix',
     args: ['mcp'],
   });
 
-  it('writes win32 MCP entry using portable gitnexus command', async () => {
+  it('writes win32 MCP entry using portable avmatrix command', async () => {
     setPlatform('win32');
 
     const { setupCommand } = await import('../../src/cli/setup.js');
@@ -69,10 +69,11 @@ describe('setupClaudeCode', () => {
     const raw = await fs.readFile(path.join(tempHome, '.claude.json'), 'utf-8');
     const config = JSON.parse(raw);
 
-    expect(config.mcpServers.gitnexus).toEqual(expectedEntry());
+    expect(config.mcpServers.avmatrix).toEqual(expectedEntry());
+    expect(config.mcpServers.gitnexus).toBeUndefined();
   });
 
-  it('writes non-win32 MCP entry using portable gitnexus command', async () => {
+  it('writes non-win32 MCP entry using portable avmatrix command', async () => {
     setPlatform('darwin');
 
     const { setupCommand } = await import('../../src/cli/setup.js');
@@ -81,7 +82,8 @@ describe('setupClaudeCode', () => {
     const raw = await fs.readFile(path.join(tempHome, '.claude.json'), 'utf-8');
     const config = JSON.parse(raw);
 
-    expect(config.mcpServers.gitnexus).toEqual(expectedEntry());
+    expect(config.mcpServers.avmatrix).toEqual(expectedEntry());
+    expect(config.mcpServers.gitnexus).toBeUndefined();
   });
 
   it('skips when ~/.claude directory does not exist', async () => {
@@ -110,7 +112,8 @@ describe('setupClaudeCode', () => {
 
     expect(config.existingKey).toBe('keep-me');
     expect(config.mcpServers.other).toEqual({ command: 'foo' });
-    expect(config.mcpServers.gitnexus).toBeDefined();
+    expect(config.mcpServers.avmatrix).toBeDefined();
+    expect(config.mcpServers.gitnexus).toBeUndefined();
   });
 
   it('handles missing ~/.claude.json (creates fresh)', async () => {
@@ -125,7 +128,8 @@ describe('setupClaudeCode', () => {
     const raw = await fs.readFile(path.join(tempHome, '.claude.json'), 'utf-8');
     const config = JSON.parse(raw);
 
-    expect(config.mcpServers.gitnexus).toBeDefined();
+    expect(config.mcpServers.avmatrix).toBeDefined();
+    expect(config.mcpServers.gitnexus).toBeUndefined();
   });
 
   it('handles corrupt JSON gracefully', async () => {
@@ -145,7 +149,8 @@ describe('setupClaudeCode', () => {
     const raw = await fs.readFile(path.join(tempHome, '.claude.json'), 'utf-8');
     const config = JSON.parse(raw);
 
-    expect(config.mcpServers.gitnexus).toBeDefined();
+    expect(config.mcpServers.avmatrix).toBeDefined();
+    expect(config.mcpServers.gitnexus).toBeUndefined();
   });
 
 });

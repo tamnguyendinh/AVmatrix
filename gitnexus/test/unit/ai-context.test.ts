@@ -10,7 +10,7 @@ describe('generateAIContextFiles', () => {
 
   beforeAll(async () => {
     tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-ai-ctx-test-'));
-    storagePath = path.join(tmpDir, '.gitnexus');
+    storagePath = path.join(tmpDir, '.avmatrix');
     await fs.mkdir(storagePath, { recursive: true });
   });
 
@@ -34,14 +34,14 @@ describe('generateAIContextFiles', () => {
     expect(result.files.length).toBeGreaterThan(0);
   });
 
-  it('creates or updates CLAUDE.md with GitNexus section', async () => {
+  it('creates or updates CLAUDE.md with AVmatrix section', async () => {
     const stats = { nodes: 50, edges: 100, processes: 5 };
     await generateAIContextFiles(tmpDir, storagePath, 'TestProject', stats);
 
     const claudeMdPath = path.join(tmpDir, 'CLAUDE.md');
     const content = await fs.readFile(claudeMdPath, 'utf-8');
-    expect(content).toContain('gitnexus:start');
-    expect(content).toContain('gitnexus:end');
+    expect(content).toContain('avmatrix:start');
+    expect(content).toContain('avmatrix:end');
     expect(content).toContain('TestProject');
   });
 
@@ -56,15 +56,15 @@ describe('generateAIContextFiles', () => {
 
     const content = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
 
-    expect(content).toContain('If any GitNexus tool warns the index is stale');
+    expect(content).toContain('If any AVmatrix tool warns the index is stale');
     expect(content).toContain('## Always Do');
     expect(content).toContain('## Never Do');
     expect(content).toContain('## Resources');
-    expect(content).toContain('gitnexus://repo/TestProject/context');
-    expect(content).toContain('gitnexus-impact-analysis/SKILL.md');
-    expect(content).toContain('gitnexus-refactoring/SKILL.md');
-    expect(content).toContain('gitnexus-debugging/SKILL.md');
-    expect(content).toContain('gitnexus-cli/SKILL.md');
+    expect(content).toContain('avmatrix://repo/TestProject/context');
+    expect(content).toContain('avmatrix-impact-analysis/SKILL.md');
+    expect(content).toContain('avmatrix-refactoring/SKILL.md');
+    expect(content).toContain('avmatrix-debugging/SKILL.md');
+    expect(content).toContain('avmatrix-cli/SKILL.md');
   });
 
   it('does not duplicate content that already lives in skill files (#856)', async () => {
@@ -86,7 +86,7 @@ describe('generateAIContextFiles', () => {
     expect(content).not.toContain('## Keeping the Index Fresh');
   });
 
-  it('keeps the CLAUDE.md GitNexus block under the token-cost budget (#856)', async () => {
+  it('keeps the CLAUDE.md AVmatrix block under the token-cost budget (#856)', async () => {
     // The pre-trim block was ~5465 chars. After #856 it's ~2580 — about a
     // 52% reduction. 2700 is a soft ceiling that still leaves headroom for
     // legitimate future additions but will fail loudly if the trim is
@@ -96,8 +96,8 @@ describe('generateAIContextFiles', () => {
 
     const content = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
     const block = content.slice(
-      content.indexOf('<!-- gitnexus:start -->'),
-      content.indexOf('<!-- gitnexus:end -->'),
+      content.indexOf('<!-- avmatrix:start -->'),
+      content.indexOf('<!-- avmatrix:end -->'),
     );
     expect(block.length).toBeLessThan(2700);
   });
@@ -118,8 +118,8 @@ describe('generateAIContextFiles', () => {
     const claudeMdPath = path.join(tmpDir, 'CLAUDE.md');
     const content = await fs.readFile(claudeMdPath, 'utf-8');
 
-    // Should only have one gitnexus section
-    const starts = (content.match(/gitnexus:start/g) || []).length;
+    // Should only have one avmatrix section
+    const starts = (content.match(/avmatrix:start/g) || []).length;
     expect(starts).toBe(1);
   });
 
@@ -128,13 +128,28 @@ describe('generateAIContextFiles', () => {
     const result = await generateAIContextFiles(tmpDir, storagePath, 'TestProject', stats);
 
     // Should have installed skill files
-    const skillsDir = path.join(tmpDir, '.claude', 'skills', 'gitnexus');
+    const skillsDir = path.join(tmpDir, '.claude', 'skills', 'avmatrix');
     try {
       const entries = await fs.readdir(skillsDir, { recursive: true });
       expect(entries.length).toBeGreaterThan(0);
     } catch {
       // Skills dir may not be created if skills source doesn't exist in test context
     }
+  });
+
+  it('uses MCP tool names without legacy gitnexus_ prefixes', async () => {
+    const stats = { nodes: 10, edges: 20, processes: 2 };
+    await generateAIContextFiles(tmpDir, storagePath, 'TestProject', stats);
+
+    const content = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
+    expect(content).toContain('`impact({target: "symbolName", direction: "upstream"})`');
+    expect(content).toContain('`detect_changes()`');
+    expect(content).toContain('`query({query: "concept"})`');
+    expect(content).toContain('`context({name: "symbolName"})`');
+    expect(content).not.toContain('gitnexus_impact');
+    expect(content).not.toContain('gitnexus_detect_changes');
+    expect(content).not.toContain('gitnexus_query');
+    expect(content).not.toContain('gitnexus_context');
   });
 
   it('preserves manual AGENTS.md and CLAUDE.md edits when skipAgentsMd is enabled', async () => {

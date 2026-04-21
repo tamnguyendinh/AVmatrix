@@ -11,13 +11,13 @@ import { loadRuntimeConfig } from '../../src/storage/runtime-config.js';
 
 describe('wiki capability gate', () => {
   let tempHome: string;
-  const previousHome = process.env.GITNEXUS_HOME;
+  const previousHome = process.env.AVMATRIX_HOME;
   const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
   beforeEach(async () => {
     tempHome = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-wiki-gate-'));
-    process.env.GITNEXUS_HOME = tempHome;
+    process.env.AVMATRIX_HOME = tempHome;
     process.exitCode = undefined;
     logSpy.mockClear();
     errorSpy.mockClear();
@@ -25,9 +25,9 @@ describe('wiki capability gate', () => {
 
   afterEach(async () => {
     if (previousHome === undefined) {
-      delete process.env.GITNEXUS_HOME;
+      delete process.env.AVMATRIX_HOME;
     } else {
-      process.env.GITNEXUS_HOME = previousHome;
+      process.env.AVMATRIX_HOME = previousHome;
     }
     process.exitCode = undefined;
     await fs.rm(tempHome, { recursive: true, force: true });

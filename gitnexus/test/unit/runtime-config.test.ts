@@ -10,18 +10,18 @@ import {
 
 describe('runtime-config', () => {
   let tempHome: string;
-  const previousHome = process.env.GITNEXUS_HOME;
+  const previousHome = process.env.AVMATRIX_HOME;
 
   beforeEach(async () => {
     tempHome = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-runtime-config-'));
-    process.env.GITNEXUS_HOME = tempHome;
+    process.env.AVMATRIX_HOME = tempHome;
   });
 
   afterEach(async () => {
     if (previousHome === undefined) {
-      delete process.env.GITNEXUS_HOME;
+      delete process.env.AVMATRIX_HOME;
     } else {
-      process.env.GITNEXUS_HOME = previousHome;
+      process.env.AVMATRIX_HOME = previousHome;
     }
     await fs.rm(tempHome, { recursive: true, force: true });
   });

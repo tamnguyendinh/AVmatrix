@@ -4,13 +4,14 @@
  * Tests: getStoragePath, getStoragePaths, readRegistry, registerRepo, unregisterRepo
  * Covers hardening fixes #29 (API key file permissions) and #30 (case-insensitive paths on Windows)
  */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import path from 'path';
 import os from 'os';
 import fs from 'fs/promises';
 import {
   getStoragePath,
   getStoragePaths,
+  getGlobalDir,
   readRegistry,
   loadCLIConfig,
   registerRepo,
@@ -25,16 +26,37 @@ import { createTempDir } from '../helpers/test-db.js';
 // ─── getStoragePath ──────────────────────────────────────────────────
 
 describe('getStoragePath', () => {
-  it('appends .gitnexus to resolved repo path', () => {
+  it('appends .avmatrix to resolved repo path', () => {
     const result = getStoragePath('/home/user/project');
-    expect(result).toContain('.gitnexus');
-    expect(path.basename(result)).toBe('.gitnexus');
+    expect(result).toContain('.avmatrix');
+    expect(path.basename(result)).toBe('.avmatrix');
   });
 
-  it('resolves relative paths', () => {
-    const result = getStoragePath('.');
-    // Should be an absolute path
-    expect(path.isAbsolute(result)).toBe(true);
+  it('migrates a legacy .gitnexus directory to .avmatrix in place', async () => {
+    const tmp = await createTempDir('avmatrix-storage-migrate-');
+    try {
+      const legacyDir = path.join(tmp.dbPath, '.gitnexus');
+      await fs.mkdir(legacyDir, { recursive: true });
+      await fs.writeFile(path.join(legacyDir, 'meta.json'), '{}', 'utf8');
+
+      const result = getStoragePath(tmp.dbPath);
+      expect(result).toBe(path.join(tmp.dbPath, '.avmatrix'));
+      await expect(fs.access(result)).resolves.toBeUndefined();
+      await expect(fs.access(legacyDir)).rejects.toThrow();
+    } finally {
+      await tmp.cleanup();
+    }
+  });
+
+  it('resolves the provided repo path to an absolute .avmatrix path', async () => {
+    const tmp = await createTempDir('avmatrix-storage-relative-');
+    try {
+      const result = getStoragePath(tmp.dbPath);
+      expect(path.isAbsolute(result)).toBe(true);
+      expect(result).toBe(path.join(tmp.dbPath, '.avmatrix'));
+    } finally {
+      await tmp.cleanup();
+    }
   });
 });
 
@@ -43,7 +65,7 @@ describe('getStoragePath', () => {
 describe('getStoragePaths', () => {
   it('returns storagePath, lbugPath, metaPath', () => {
     const paths = getStoragePaths('/home/user/project');
-    expect(paths.storagePath).toContain('.gitnexus');
+    expect(paths.storagePath).toContain('.avmatrix');
     expect(paths.lbugPath).toContain('lbug');
     expect(paths.metaPath).toContain('meta.json');
   });
@@ -59,12 +81,47 @@ describe('getStoragePaths', () => {
 
 describe('readRegistry', () => {
   it('returns empty array when registry does not exist', async () => {
-    // readRegistry reads from ~/.gitnexus/registry.json
+    const tmp = await createTempDir('avmatrix-registry-read-');
+    const previousHome = process.env.AVMATRIX_HOME;
+    process.env.AVMATRIX_HOME = tmp.dbPath;
+    // readRegistry reads from ~/.avmatrix/registry.json
     // If the file doesn't exist, it should return []
     // This test exercises the catch path
-    const result = await readRegistry();
-    // Result is an array (may or may not be empty depending on user's system)
-    expect(Array.isArray(result)).toBe(true);
+    try {
+      const result = await readRegistry();
+      expect(Array.isArray(result)).toBe(true);
+      expect(result).toEqual([]);
+    } finally {
+      if (previousHome === undefined) delete process.env.AVMATRIX_HOME;
+      else process.env.AVMATRIX_HOME = previousHome;
+      await tmp.cleanup();
+    }
+  });
+});
+
+describe('getGlobalDir', () => {
+  it('migrates the default legacy ~/.gitnexus directory to ~/.avmatrix once', async () => {
+    const fakeHome = await createTempDir('avmatrix-global-home-');
+    const homedirSpy = vi.spyOn(os, 'homedir').mockReturnValue(fakeHome.dbPath);
+    const previousHome = process.env.AVMATRIX_HOME;
+    delete process.env.AVMATRIX_HOME;
+
+    try {
+      const legacyDir = path.join(fakeHome.dbPath, '.gitnexus');
+      await fs.mkdir(legacyDir, { recursive: true });
+      await fs.writeFile(path.join(legacyDir, 'registry.json'), '[]', 'utf8');
+
+      const result = getGlobalDir();
+      expect(result).toBe(path.join(fakeHome.dbPath, '.avmatrix'));
+      await expect(fs.access(result)).resolves.toBeUndefined();
+      await expect(fs.access(path.join(result, 'registry.json'))).resolves.toBeUndefined();
+      await expect(fs.access(legacyDir)).rejects.toThrow();
+    } finally {
+      if (previousHome === undefined) delete process.env.AVMATRIX_HOME;
+      else process.env.AVMATRIX_HOME = previousHome;
+      homedirSpy.mockRestore();
+      await fakeHome.cleanup();
+    }
   });
 });
 
@@ -72,18 +129,17 @@ describe('readRegistry', () => {
 
 describe('saveCLIConfig / loadCLIConfig', () => {
   let tmpHandle: Awaited<ReturnType<typeof createTempDir>>;
-  let originalHomedir: typeof os.homedir;
+  let previousHome: string | undefined;
 
   beforeEach(async () => {
     tmpHandle = await createTempDir('gitnexus-config-test-');
-    originalHomedir = os.homedir;
-    // Mock os.homedir to point to our temp dir
-    // Note: This won't fully work because repo-manager uses its own import of os
-    // We'll test what we can.
+    previousHome = process.env.AVMATRIX_HOME;
+    process.env.AVMATRIX_HOME = tmpHandle.dbPath;
   });
 
   afterEach(async () => {
-    os.homedir = originalHomedir;
+    if (previousHome === undefined) delete process.env.AVMATRIX_HOME;
+    else process.env.AVMATRIX_HOME = previousHome;
     await tmpHandle.cleanup();
   });
 
@@ -142,16 +198,16 @@ describe('API key file permissions', () => {
 
 // ─── analyze --name <alias> + duplicate-name guard (#829) ────────────
 //
-// Each test isolates the global registry by pointing GITNEXUS_HOME at a
+// Each test isolates the global registry by pointing AVMATRIX_HOME at a
 // per-test tmpdir. `getGlobalDir()` honors that env var, so registerRepo
 // writes/reads a sandboxed registry.json without touching the user's
-// real ~/.gitnexus.
+// real ~/.avmatrix.
 
 describe('registerRepo name override + collision guard (#829)', () => {
   let tmpHome: Awaited<ReturnType<typeof createTempDir>>;
   let tmpRepoA: Awaited<ReturnType<typeof createTempDir>>;
   let tmpRepoB: Awaited<ReturnType<typeof createTempDir>>;
-  let savedGitnexusHome: string | undefined;
+  let savedAvmatrixHome: string | undefined;
 
   const meta: RepoMeta = {
     repoPath: '',
@@ -164,13 +220,13 @@ describe('registerRepo name override + collision guard (#829)', () => {
     tmpHome = await createTempDir('gitnexus-registry-home-');
     tmpRepoA = await createTempDir('gitnexus-repo-a-');
     tmpRepoB = await createTempDir('gitnexus-repo-b-');
-    savedGitnexusHome = process.env.GITNEXUS_HOME;
-    process.env.GITNEXUS_HOME = tmpHome.dbPath;
+    savedAvmatrixHome = process.env.AVMATRIX_HOME;
+    process.env.AVMATRIX_HOME = tmpHome.dbPath;
   });
 
   afterEach(async () => {
-    if (savedGitnexusHome === undefined) delete process.env.GITNEXUS_HOME;
-    else process.env.GITNEXUS_HOME = savedGitnexusHome;
+    if (savedAvmatrixHome === undefined) delete process.env.AVMATRIX_HOME;
+    else process.env.AVMATRIX_HOME = savedAvmatrixHome;
     await tmpHome.cleanup();
     await tmpRepoA.cleanup();
     await tmpRepoB.cleanup();
@@ -311,7 +367,7 @@ describe('parseRepoNameFromUrl', () => {
 
 describe('getInferredRepoName + registerRepo (#979 — git remote inference)', () => {
   let tmpHome: Awaited<ReturnType<typeof createTempDir>>;
-  let savedGitnexusHome: string | undefined;
+  let savedAvmatrixHome: string | undefined;
 
   const meta: RepoMeta = {
     repoPath: '',
@@ -332,13 +388,13 @@ describe('getInferredRepoName + registerRepo (#979 — git remote inference)', (
 
   beforeEach(async () => {
     tmpHome = await createTempDir('gitnexus-registry-home-979-');
-    savedGitnexusHome = process.env.GITNEXUS_HOME;
-    process.env.GITNEXUS_HOME = tmpHome.dbPath;
+    savedAvmatrixHome = process.env.AVMATRIX_HOME;
+    process.env.AVMATRIX_HOME = tmpHome.dbPath;
   });
 
   afterEach(async () => {
-    if (savedGitnexusHome === undefined) delete process.env.GITNEXUS_HOME;
-    else process.env.GITNEXUS_HOME = savedGitnexusHome;
+    if (savedAvmatrixHome === undefined) delete process.env.AVMATRIX_HOME;
+    else process.env.AVMATRIX_HOME = savedAvmatrixHome;
     await tmpHome.cleanup();
   });
 

@@ -11,7 +11,7 @@ import type { SessionJob } from '../../src/runtime/session-adapter.js';
 const repoManagerMocks = vi.hoisted(() => ({
   listRegisteredRepos: vi.fn(),
   hasIndex: vi.fn(),
-  getStoragePath: vi.fn((repoPath: string) => `${repoPath}/.gitnexus`),
+  getStoragePath: vi.fn((repoPath: string) => `${repoPath}/.avmatrix`),
 }));
 
 vi.mock('../../src/storage/repo-manager.js', () => repoManagerMocks);
@@ -123,7 +123,7 @@ describe('RuntimeController', () => {
       {
         name: 'demo',
         path: repoPath,
-        storagePath: `${repoPath}/.gitnexus`,
+        storagePath: `${repoPath}/.avmatrix`,
         indexedAt: '2026-04-20T00:00:00.000Z',
         lastCommit: 'abc123',
       },
@@ -147,7 +147,7 @@ describe('RuntimeController', () => {
       {
         name: 'demo',
         path: missingPath,
-        storagePath: `${missingPath}/.gitnexus`,
+        storagePath: `${missingPath}/.avmatrix`,
         indexedAt: '2026-04-20T00:00:00.000Z',
         lastCommit: 'abc123',
       },
@@ -219,7 +219,7 @@ describe('RuntimeController', () => {
       {
         name: 'demo',
         path: missingPath,
-        storagePath: `${missingPath}/.gitnexus`,
+        storagePath: `${missingPath}/.avmatrix`,
         indexedAt: '2026-04-20T00:00:00.000Z',
         lastCommit: 'abc123',
       },
@@ -241,7 +241,7 @@ describe('RuntimeController', () => {
       {
         name: 'demo',
         path: indexedRepoPath,
-        storagePath: `${indexedRepoPath}/.gitnexus`,
+        storagePath: `${indexedRepoPath}/.avmatrix`,
         indexedAt: '2026-04-20T00:00:00.000Z',
         lastCommit: 'abc123',
       },

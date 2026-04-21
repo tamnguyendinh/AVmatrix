@@ -1,7 +1,7 @@
 /**
  * Clean Command
  *
- * Removes the .gitnexus index from the current repository.
+ * Removes the .avmatrix index from the current repository.
  * Also unregisters it from the global registry.
  */
 
@@ -17,7 +17,7 @@ export const cleanCommand = async (options?: { force?: boolean; all?: boolean })
         console.log('No indexed repositories found.');
         return;
       }
-      console.log(`This will delete GitNexus indexes for ${entries.length} repo(s):`);
+      console.log(`This will delete AVmatrix indexes for ${entries.length} repo(s):`);
       for (const entry of entries) {
         console.log(`  - ${entry.name} (${entry.path})`);
       }
@@ -50,7 +50,7 @@ export const cleanCommand = async (options?: { force?: boolean; all?: boolean })
   const repoName = repo.repoPath.split(/[/\\]/).pop() || repo.repoPath;
 
   if (!options?.force) {
-    console.log(`This will delete the GitNexus index for: ${repoName}`);
+    console.log(`This will delete the AVmatrix index for: ${repoName}`);
     console.log(`   Path: ${repo.storagePath}`);
     console.log('\nRun with --force to confirm deletion.');
     return;

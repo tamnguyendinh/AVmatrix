@@ -226,7 +226,7 @@ export const SettingsPanel = ({
           </div>
 
           <div className="rounded-xl border border-accent/20 bg-accent/5 p-3 text-xs text-accent/90">
-            No API keys are stored here. GitNexus uses your local session runtime and the account
+            No API keys are stored here. AVmatrix uses your local session runtime and the account
             already signed in on this machine.
           </div>
 
@@ -393,9 +393,9 @@ export const SettingsPanel = ({
                 🔒
               </div>
               <div className="text-xs leading-relaxed text-text-muted">
-                <span className="font-medium text-text-secondary">Privacy:</span> GitNexus keeps
+                <span className="font-medium text-text-secondary">Privacy:</span> AVmatrix keeps
                 only lightweight UI settings in browser storage. Repository data stays on this
-                machine, and no GitNexus-hosted proxy is involved in the session path.
+                machine, and no AVmatrix-hosted proxy is involved in the session path.
               </div>
             </div>
           </div>

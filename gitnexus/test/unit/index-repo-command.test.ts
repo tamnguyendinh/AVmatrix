@@ -37,9 +37,9 @@ describe('indexCommand', () => {
     process.exitCode = undefined;
 
     mockGetStoragePaths.mockImplementation((repoPath: string) => ({
-      storagePath: `${repoPath}/.gitnexus`,
-      lbugPath: `${repoPath}/.gitnexus/lbug`,
-      metaPath: `${repoPath}/.gitnexus/meta.json`,
+      storagePath: `${repoPath}/.avmatrix`,
+      lbugPath: `${repoPath}/.avmatrix/lbug`,
+      metaPath: `${repoPath}/.avmatrix/meta.json`,
     }));
     mockLoadMeta.mockResolvedValue({
       repoPath: resolvedRepo,
@@ -65,9 +65,9 @@ describe('indexCommand', () => {
     expect(logSpy).toHaveBeenCalledWith(`  Not a git repository: ${resolvedOutside}`);
   });
 
-  it('fails when .gitnexus folder does not exist', async () => {
+  it('fails when .avmatrix folder does not exist', async () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    mockAccess.mockRejectedValueOnce(new Error('missing .gitnexus'));
+    mockAccess.mockRejectedValueOnce(new Error('missing .avmatrix'));
 
     const { indexCommand } = await import('../../src/cli/index-repo.js');
     await indexCommand(['/repo']);
@@ -75,7 +75,7 @@ describe('indexCommand', () => {
     expect(mockRegisterRepo).not.toHaveBeenCalled();
     expect(process.exitCode).toBe(1);
     expect(logSpy).toHaveBeenCalledWith(
-      `  No .gitnexus/ folder found at: ${resolvedRepo}/.gitnexus`,
+      `  No .avmatrix/ folder found at: ${resolvedRepo}/.avmatrix`,
     );
   });
 
@@ -89,7 +89,7 @@ describe('indexCommand', () => {
     expect(mockRegisterRepo).not.toHaveBeenCalled();
     expect(process.exitCode).toBe(1);
     expect(logSpy).toHaveBeenCalledWith(
-      '  .gitnexus/ folder exists but contains no LadybugDB index.',
+      '  .avmatrix/ folder exists but contains no LadybugDB index.',
     );
   });
 

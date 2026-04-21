@@ -1,10 +1,10 @@
 /**
  * Index Command
  *
- * Registers an existing .gitnexus/ folder into the global registry so the
- * MCP server can discover the repo without running a full `gitnexus analyze`.
+ * Registers an existing .avmatrix/ folder into the global registry so the
+ * MCP server can discover the repo without running a full `avmatrix analyze`.
  *
- * Useful when a pre-built .gitnexus/ directory is already present (e.g. after
+ * Useful when a pre-built .avmatrix/ directory is already present (e.g. after
  * cloning a repo that ships its index, restoring from backup, or using a
  * shared team index).
  */
@@ -25,7 +25,7 @@ export interface IndexOptions {
 }
 
 export const indexCommand = async (inputPathParts?: string[], options?: IndexOptions) => {
-  console.log('\n  GitNexus Index\n');
+  console.log('\n  AVmatrix Index\n');
 
   const inputPath = inputPathParts?.length ? inputPathParts.join(' ') : undefined;
 
@@ -59,19 +59,19 @@ export const indexCommand = async (inputPathParts?: string[], options?: IndexOpt
   if (!options?.allowNonGit && !isGitRepo(repoPath)) {
     console.log(`  Not a git repository: ${repoPath}`);
     console.log('  Initialize one with `git init` or choose a valid repo path.\n');
-    console.log('  Or use --allow-non-git to register an existing .gitnexus index anyway.\n');
+    console.log('  Or use --allow-non-git to register an existing .avmatrix index anyway.\n');
     process.exitCode = 1;
     return;
   }
 
   const { storagePath, lbugPath } = getStoragePaths(repoPath);
 
-  // ── Verify .gitnexus/ exists ──────────────────────────────────────
+  // ── Verify .avmatrix/ exists ──────────────────────────────────────
   try {
     await fs.access(storagePath);
   } catch {
-    console.log(`  No .gitnexus/ folder found at: ${storagePath}`);
-    console.log('  Run `gitnexus analyze` to build the index first.\n');
+    console.log(`  No .avmatrix/ folder found at: ${storagePath}`);
+    console.log('  Run `avmatrix analyze` to build the index first.\n');
     process.exitCode = 1;
     return;
   }
@@ -80,8 +80,8 @@ export const indexCommand = async (inputPathParts?: string[], options?: IndexOpt
   try {
     await fs.access(lbugPath);
   } catch {
-    console.log(`  .gitnexus/ folder exists but contains no LadybugDB index.`);
-    console.log('  Run `gitnexus analyze` to build the index.\n');
+    console.log(`  .avmatrix/ folder exists but contains no LadybugDB index.`);
+    console.log('  Run `avmatrix analyze` to build the index.\n');
     process.exitCode = 1;
     return;
   }
@@ -91,9 +91,9 @@ export const indexCommand = async (inputPathParts?: string[], options?: IndexOpt
 
   if (!meta) {
     if (!options?.force) {
-      console.log(`  .gitnexus/ exists but meta.json is missing.`);
+      console.log(`  .avmatrix/ exists but meta.json is missing.`);
       console.log('  Use --force to register anyway (stats will be empty),');
-      console.log('  or run `gitnexus analyze` to rebuild properly.\n');
+      console.log('  or run `avmatrix analyze` to rebuild properly.\n');
       process.exitCode = 1;
       return;
     }

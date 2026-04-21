@@ -1201,7 +1201,7 @@ export const loadFTSExtension = async (): Promise<void> => {
       ) {
         ftsLoaded = true;
       } else {
-        console.error('GitNexus: FTS extension load failed:', msg);
+        console.error('AVmatrix: FTS extension load failed:', msg);
       }
     }
   }
@@ -1232,7 +1232,7 @@ export const loadVectorExtension = async (
     } else if (options.throwOnWalCorruption && isWalCorruptionError(err)) {
       throw err;
     } else {
-      console.error('GitNexus: VECTOR extension load failed:', msg);
+      console.error('AVmatrix: VECTOR extension load failed:', msg);
     }
   }
 };

@@ -1,15 +1,15 @@
 /**
  * Server Mapping Configuration
  *
- * Reads ~/.gitnexus/server-mapping.json to map repo names to service names.
+ * Reads the global AVmatrix server-mapping.json to map repo names to service names.
  * Used in embedding text to enrich metadata with microservice context.
  */
 
 import fs from 'fs/promises';
 import path from 'path';
-import os from 'os';
+import { getGlobalDir } from '../../storage/repo-manager.js';
 
-const MAPPING_FILE = path.join(os.homedir(), '.gitnexus', 'server-mapping.json');
+const MAPPING_FILE = path.join(getGlobalDir(), 'server-mapping.json');
 
 let cachedMapping: Record<string, string> | null = null;
 

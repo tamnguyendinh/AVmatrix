@@ -2,15 +2,6 @@
 
 How to propose changes, run checks locally, and open pull requests.
 
-## License
-
-This project uses the [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/). By contributing, you agree your contributions are licensed under the same terms unless stated otherwise.
-
-## Where to discuss
-
-- **Issues & feature ideas:** use [GitHub Issues](https://github.com/abhigyanpatwari/GitNexus/issues) for the upstream repo, or your fork’s tracker if you work from a fork.
-- **Community:** see the Discord link in the root [README.md](README.md).
-
 ## Development setup
 
 1. Clone the repository.

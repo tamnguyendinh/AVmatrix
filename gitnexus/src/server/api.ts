@@ -1,7 +1,7 @@
 /**
  * HTTP API Server
  *
- * REST API for browser-based clients to query the local .gitnexus/ index.
+ * REST API for browser-based clients to query the local .avmatrix/ index.
  * Also hosts the MCP server over StreamableHTTP for local AI tool access.
  *
  * Security: binds to localhost by default (use --host to override).
@@ -478,7 +478,7 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
     let found = null;
 
     // Normalize: if a full path is passed, extract just the basename.
-    // e.g. "C:\Users\LENOVO\.gitnexus\repos\todo.txt-cli" -> "todo.txt-cli"
+    // e.g. "C:\Users\LENOVO\.avmatrix\repos\todo.txt-cli" -> "todo.txt-cli"
     const normalizedName = repoName ? path.basename(repoName) : undefined;
 
     if (normalizedName) {
@@ -606,7 +606,7 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
     try {
       const entry = await resolveRepo(requestedRepo(req), false, req);
       if (!entry) {
-        res.status(404).json({ error: 'Repository not found. Run: gitnexus analyze' });
+        res.status(404).json({ error: 'Repository not found. Run: avmatrix analyze' });
         return;
       }
       // Timed out waiting for an active analysis job
@@ -656,7 +656,7 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
           await closeLbug();
         } catch {}
 
-        // 1. Delete the .gitnexus index/storage directory
+        // 1. Delete the .avmatrix index/storage directory
         const storagePath = getStoragePath(entry.path);
         await fs.rm(storagePath, { recursive: true, force: true }).catch(() => {});
 
@@ -1527,7 +1527,7 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
   await new Promise<void>((resolve, reject) => {
     const server = app.listen(port, host, () => {
       const displayHost = host === '::' || host === '0.0.0.0' ? 'localhost' : host;
-      console.log(`GitNexus server running on http://${displayHost}:${port}`);
+      console.log(`AVmatrix server running on http://${displayHost}:${port}`);
       resolve();
     });
     server.on('error', (err) => reject(err));

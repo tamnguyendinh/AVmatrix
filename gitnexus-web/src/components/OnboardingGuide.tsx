@@ -201,7 +201,7 @@ interface OnboardingGuideProps {
 }
 
 export const OnboardingGuide = ({ isPolling }: OnboardingGuideProps) => {
-  const primary = isDev ? 'cd gitnexus && npm run serve' : 'gitnexus serve';
+  const primary = isDev ? 'cd gitnexus && npm run serve' : 'avmatrix serve';
   const termLabel = 'Start local bridge';
 
   // Step states: step 1 = copy command, step 2 = run/wait, step 3 = auto-connect
@@ -222,11 +222,11 @@ export const OnboardingGuide = ({ isPolling }: OnboardingGuideProps) => {
           <div className="mb-2 inline-flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5 text-accent/70" />
             <span className="text-[11px] font-medium tracking-widest text-accent/80 uppercase">
-              GitNexus
+              AVmatrix
             </span>
           </div>
           <h2 className="text-lg leading-snug font-semibold text-text-primary">
-            Start GitNexus locally
+            Start AVmatrix locally
           </h2>
           <p className="mx-auto mt-1 max-w-xs text-sm leading-relaxed text-text-secondary">
             {isDev
@@ -264,7 +264,7 @@ export const OnboardingGuide = ({ isPolling }: OnboardingGuideProps) => {
                 <div className="h-px flex-1 bg-border-subtle" />
               </div>
               <TerminalWindow
-                command="npm install -g gitnexus && gitnexus serve"
+                command="npm install -g gitnexus && avmatrix serve"
                 label="Global install"
                 isActive={false}
               />

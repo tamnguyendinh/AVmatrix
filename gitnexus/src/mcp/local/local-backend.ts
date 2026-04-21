@@ -1,7 +1,7 @@
 /**
  * Local Backend (Multi-Repo)
  *
- * Provides tool implementations using local .gitnexus/ indexes.
+ * Provides tool implementations using local .avmatrix/ indexes.
  * Supports multiple indexed repositories via a global registry.
  * LadybugDB connections are opened lazily per repo on first query.
  */
@@ -31,7 +31,7 @@ import { GroupService, type GroupToolPort } from '../../core/group/service.js';
 import { collectBestChunks } from '../../core/embeddings/types.js';
 import { EMBEDDING_TABLE_NAME, EMBEDDING_INDEX_NAME } from '../../core/lbug/schema.js';
 import { PhaseTimer } from '../../core/search/phase-timer.js';
-// AI context generation is CLI-only (gitnexus analyze)
+// AI context generation is CLI-only (avmatrix analyze)
 // import { generateAIContextFiles } from '../../cli/ai-context.js';
 
 /**
@@ -154,7 +154,7 @@ const confidenceForRelType = (relType: string | undefined): number =>
 /** Structured error logging for query failures — replaces empty catch blocks */
 function logQueryError(context: string, err: unknown): void {
   const msg = err instanceof Error ? err.message : String(err);
-  console.error(`GitNexus [${context}]: ${msg}`);
+  console.error(`AVmatrix [${context}]: ${msg}`);
 }
 
 /**
@@ -167,7 +167,7 @@ function logQueryError(context: string, err: unknown): void {
  * protocol. Matches the existing `logQueryError` convention above, which
  * uses stderr for the same reason.
  *
- * The `GitNexus [query:timing] …` prefix keeps lines greppable; the
+ * The `AVmatrix [query:timing] …` prefix keeps lines greppable; the
  * `phases` payload is JSON so log-scraping pipelines can parse it
  * without custom format knowledge.
  */
@@ -175,7 +175,7 @@ function logQueryTiming(query: string, phases: Record<string, number>): void {
   const totalMs = phases.wall ?? Object.values(phases).reduce((a, b) => a + b, 0);
   const truncated = query.length > 80 ? `${query.slice(0, 80)}…` : query;
   console.error(
-    `GitNexus [query:timing] query=${JSON.stringify(truncated)} totalMs=${totalMs} phases=${JSON.stringify(phases)}`,
+    `AVmatrix [query:timing] query=${JSON.stringify(truncated)} totalMs=${totalMs} phases=${JSON.stringify(phases)}`,
   );
 }
 
@@ -261,7 +261,7 @@ export class LocalBackend {
       const kuzu = await cleanupOldKuzuFiles(storagePath);
       if (kuzu.found && kuzu.needsReindex) {
         console.error(
-          `GitNexus: "${entry.name}" has a stale KuzuDB index. Run: gitnexus analyze ${entry.path}`,
+          `AVmatrix: "${entry.name}" has a stale KuzuDB index. Run: avmatrix analyze ${entry.path}`,
         );
       }
 
@@ -340,7 +340,7 @@ export class LocalBackend {
 
     // Still no match — throw with helpful message
     if (this.repos.size === 0) {
-      throw new Error('No indexed repositories. Run: gitnexus analyze');
+      throw new Error('No indexed repositories. Run: avmatrix analyze');
     }
 
     // Build a disambiguated "Available: …" list (#829). When two handles
@@ -811,7 +811,7 @@ export class LocalBackend {
       timing,
       ...(!ftsUsed && {
         warning:
-          'FTS extension unavailable - keyword search degraded. Run: gitnexus analyze --force to rebuild indexes.',
+          'FTS extension unavailable - keyword search degraded. Run: avmatrix analyze --force to rebuild indexes.',
       }),
     };
   }
@@ -829,7 +829,7 @@ export class LocalBackend {
     try {
       bm25Results = await searchFTSFromLbug(query, limit, repo.id);
     } catch (err: any) {
-      console.error('GitNexus: BM25/FTS search failed (FTS indexes may not exist) -', err.message);
+      console.error('AVmatrix: BM25/FTS search failed (FTS indexes may not exist) -', err.message);
       return { results: [], ftsUsed: false };
     }
 
@@ -2203,7 +2203,7 @@ export class LocalBackend {
         direction: params.direction,
         impactedCount: 0,
         risk: 'UNKNOWN',
-        suggestion: 'The graph query failed — try gitnexus context <symbol> as a fallback',
+        suggestion: 'The graph query failed — try avmatrix context <symbol> as a fallback',
       };
     }
   }

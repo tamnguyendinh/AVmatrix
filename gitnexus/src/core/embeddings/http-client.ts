@@ -20,20 +20,20 @@ interface HttpConfig {
 
 /**
  * Build config from the current process.env snapshot.
- * Returns null when GITNEXUS_EMBEDDING_URL + GITNEXUS_EMBEDDING_MODEL are unset.
+ * Returns null when AVMATRIX_EMBEDDING_URL + AVMATRIX_EMBEDDING_MODEL are unset.
  * Not cached — env vars are read fresh so late configuration takes effect.
  */
 const readConfig = (): HttpConfig | null => {
-  const baseUrl = process.env.GITNEXUS_EMBEDDING_URL;
-  const model = process.env.GITNEXUS_EMBEDDING_MODEL;
+  const baseUrl = process.env.AVMATRIX_EMBEDDING_URL;
+  const model = process.env.AVMATRIX_EMBEDDING_MODEL;
   if (!baseUrl || !model) return null;
 
-  const rawDims = process.env.GITNEXUS_EMBEDDING_DIMS;
+  const rawDims = process.env.AVMATRIX_EMBEDDING_DIMS;
   let dimensions: number | undefined;
   if (rawDims !== undefined) {
     const parsed = parseInt(rawDims, 10);
     if (Number.isNaN(parsed) || parsed <= 0) {
-      throw new Error(`GITNEXUS_EMBEDDING_DIMS must be a positive integer, got "${rawDims}"`);
+      throw new Error(`AVMATRIX_EMBEDDING_DIMS must be a positive integer, got "${rawDims}"`);
     }
     dimensions = parsed;
   }
@@ -41,7 +41,7 @@ const readConfig = (): HttpConfig | null => {
   return {
     baseUrl: baseUrl.replace(/\/+$/, ''),
     model,
-    apiKey: process.env.GITNEXUS_EMBEDDING_API_KEY ?? 'unused',
+    apiKey: process.env.AVMATRIX_EMBEDDING_API_KEY ?? 'unused',
     dimensions,
   };
 };
@@ -171,8 +171,8 @@ export const httpEmbed = async (texts: string[]): Promise<Float32Array[]> => {
       const expected = config.dimensions ?? DEFAULT_DIMS;
       if (vec.length !== expected) {
         const hint = config.dimensions
-          ? 'Update GITNEXUS_EMBEDDING_DIMS to match your model output.'
-          : `Set GITNEXUS_EMBEDDING_DIMS=${vec.length} to match your model output.`;
+          ? 'Update AVMATRIX_EMBEDDING_DIMS to match your model output.'
+          : `Set AVMATRIX_EMBEDDING_DIMS=${vec.length} to match your model output.`;
         throw new Error(
           `Embedding dimension mismatch: endpoint returned ${vec.length}d vector, ` +
             `but expected ${expected}d. ${hint}`,
@@ -209,8 +209,8 @@ export const httpEmbedQuery = async (text: string): Promise<number[]> => {
   const expected = config.dimensions ?? DEFAULT_DIMS;
   if (embedding.length !== expected) {
     const hint = config.dimensions
-      ? 'Update GITNEXUS_EMBEDDING_DIMS to match your model output.'
-      : `Set GITNEXUS_EMBEDDING_DIMS=${embedding.length} to match your model output.`;
+      ? 'Update AVMATRIX_EMBEDDING_DIMS to match your model output.'
+      : `Set AVMATRIX_EMBEDDING_DIMS=${embedding.length} to match your model output.`;
     throw new Error(
       `Embedding dimension mismatch: endpoint returned ${embedding.length}d vector, ` +
         `but expected ${expected}d. ${hint}`,

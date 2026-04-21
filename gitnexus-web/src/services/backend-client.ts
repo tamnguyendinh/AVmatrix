@@ -192,7 +192,7 @@ export function streamSSE<T = unknown>(url: string, handlers: SSEHandlers<T>): A
 let _backendUrl = 'http://localhost:4747';
 
 const LOCAL_BACKEND_ERROR =
-  'GitNexus local-only mode only supports backend URLs on localhost, 127.0.0.1, or [::1].';
+  'AVmatrix local-only mode only supports backend URLs on localhost, 127.0.0.1, or [::1].';
 
 const isLoopbackHostname = (hostname: string): boolean => {
   const normalized = hostname.replace(/^\[|\]$/g, '');
@@ -234,7 +234,7 @@ export function normalizeServerUrl(input: string): string {
   const normalizedPath = parsed.pathname.replace(/\/+$/, '');
   if (normalizedPath !== '' && normalizedPath !== '/' && normalizedPath !== '/api') {
     throw new Error(
-      'GitNexus local-only mode expects the backend URL to point at the local server root or /api.',
+      'AVmatrix local-only mode expects the backend URL to point at the local server root or /api.',
     );
   }
 
@@ -271,7 +271,7 @@ const fetchWithTimeout = async (
     }
     if (error instanceof TypeError) {
       throw new BackendError(
-        `Network error reaching GitNexus backend at ${_backendUrl}: ${error.message}`,
+        `Network error reaching AVmatrix backend at ${_backendUrl}: ${error.message}`,
         0,
         'network',
       );

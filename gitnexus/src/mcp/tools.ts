@@ -1,7 +1,7 @@
 /**
  * MCP Tool Definitions
  *
- * Defines the tools that GitNexus exposes to external AI agents.
+ * Defines the tools that AVmatrix exposes to external AI agents.
  * All tools support an optional `repo` parameter for multi-repo setups.
  */
 
@@ -24,15 +24,15 @@ export interface ToolDefinition {
   };
 }
 
-export const GITNEXUS_TOOLS: ToolDefinition[] = [
+export const AVMATRIX_TOOLS: ToolDefinition[] = [
   {
     name: 'list_repos',
-    description: `List all indexed repositories available to GitNexus.
+    description: `List all indexed repositories available to AVmatrix.
 
 Returns each repo's name, path, indexed date, last commit, and stats.
 
 WHEN TO USE: First step when multiple repos are indexed, or to discover available repos.
-AFTER THIS: READ gitnexus://repo/{name}/context for the repo you want to work with.
+AFTER THIS: READ avmatrix://repo/{name}/context for the repo you want to work with.
 
 When multiple repos are indexed, you MUST specify the "repo" parameter
 on other tools (query, context, impact, etc.) to target the correct one.`,
@@ -92,7 +92,7 @@ Hybrid ranking: BM25 keyword + semantic vector search, ranked by Reciprocal Rank
     name: 'cypher',
     description: `Execute Cypher query against the code knowledge graph.
 
-WHEN TO USE: Complex structural queries that search/explore can't answer. READ gitnexus://repo/{name}/schema first for the full schema.
+WHEN TO USE: Complex structural queries that search/explore can't answer. READ avmatrix://repo/{name}/schema first for the full schema.
 AFTER THIS: Use context() on result symbols for deeper context.
 
 SCHEMA:
@@ -152,7 +152,7 @@ TIPS:
 Shows categorized incoming/outgoing references (calls, imports, extends, implements, methods, properties, overrides), process participation, and file location.
 
 WHEN TO USE: After query() to understand a specific symbol in depth. When you need to know all callers, callees, and what execution flows a symbol participates in.
-AFTER THIS: Use impact() if planning changes, or READ gitnexus://repo/{name}/process/{processName} for full execution trace.
+AFTER THIS: Use impact() if planning changes, or READ avmatrix://repo/{name}/process/{processName} for full execution trace.
 
 Handles disambiguation: if multiple symbols share the same name, returns ranked candidates (each with a relevance score) for you to pick from. Use uid for zero-ambiguity lookup, or narrow the search with file_path and/or kind hints.
 
@@ -190,7 +190,7 @@ NOTE: ACCESSES edges (field read/write tracking) are included in context results
 Maps git diff hunks to indexed symbols, then traces which processes are impacted.
 
 WHEN TO USE: Before committing — to understand what your changes affect. Pre-commit review, PR preparation.
-AFTER THIS: Review affected processes. Use context() on high-risk symbols. READ gitnexus://repo/{name}/process/{name} for full traces.
+AFTER THIS: Review affected processes. Use context() on high-risk symbols. READ avmatrix://repo/{name}/process/{name} for full traces.
 
 Returns: changed symbols, affected processes, and a risk summary.`,
     inputSchema: {

@@ -101,4 +101,4 @@ export interface AgentStep {
  * agent path.
  */
 export const GRAPH_SCHEMA_DESCRIPTION =
-  'GitNexus web uses the local session runtime bridge; provider-based graph prompt injection is retired.';
+  'AVmatrix web uses the local session runtime bridge; provider-based graph prompt injection is retired.';

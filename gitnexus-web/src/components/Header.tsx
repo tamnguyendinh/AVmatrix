@@ -3,8 +3,6 @@ import {
   Settings,
   HelpCircle,
   Sparkles,
-  Github,
-  Star,
   FolderOpen,
   ChevronDown,
   Trash2,
@@ -172,7 +170,7 @@ export const Header = ({
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-accent to-node-interface text-sm font-bold text-white shadow-glow">
             ◇
           </div>
-          <span className="text-[15px] font-semibold tracking-tight">GitNexus</span>
+          <span className="text-[15px] font-semibold tracking-tight">AVmatrix</span>
         </div>
 
         {/* Project badge + repo dropdown */}
@@ -441,18 +439,18 @@ export const Header = ({
 
       {/* Right section */}
       <div className="flex items-center gap-2">
-        {/* GitHub Star Button */}
-        <a
-          href="https://github.com/abhigyanpatwari/GitNexus"
-          target="_blank"
-          rel="noopener noreferrer"
+        {/* AVmatrix help / about */}
+        <button
+          type="button"
+          onClick={() => setHelpDialogBoxOpen(true)}
           className="group flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 px-3.5 py-2 text-sm font-medium text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:from-purple-500 hover:to-pink-500 hover:shadow-xl"
+          title="About AVmatrix"
         >
-          <Github className="h-4 w-4" />
-          <span className="hidden sm:inline">Star if cool</span>
-          <Star className="h-3.5 w-3.5 transition-all group-hover:fill-yellow-300 group-hover:text-yellow-300" />
+          <Sparkles className="h-4 w-4" />
+          <span className="hidden sm:inline">About AVmatrix</span>
+          <HelpCircle className="h-3.5 w-3.5 transition-all group-hover:text-yellow-300" />
           <span className="hidden sm:inline">✨</span>
-        </a>
+        </button>
 
         {/* Stats */}
         {graph && (

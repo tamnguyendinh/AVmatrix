@@ -14,7 +14,7 @@ import { isLanguageAvailable } from '../../src/core/tree-sitter/parser-loader.js
 import { SupportedLanguages } from '../../src/config/supported-languages.js';
 
 // ============================================================================
-// E2E: .gitignore + .gitnexusignore + unsupported language skip
+// E2E: .gitignore + .avmatrixignore + unsupported language skip
 // ============================================================================
 
 describe('ignore + language-skip E2E', () => {
@@ -31,8 +31,8 @@ describe('ignore + language-skip E2E', () => {
     // .gitignore — excludes data/ and *.log
     await fs.writeFile(path.join(tmpDir, '.gitignore'), 'data/\n*.log\n');
 
-    // .gitnexusignore — excludes vendor/
-    await fs.writeFile(path.join(tmpDir, '.gitnexusignore'), 'vendor/\n');
+    // .avmatrixignore — excludes vendor/
+    await fs.writeFile(path.join(tmpDir, '.avmatrixignore'), 'vendor/\n');
 
     // Source files (should be indexed)
     await fs.writeFile(
@@ -97,7 +97,7 @@ describe('ignore + language-skip E2E', () => {
       expect(paths.every((p) => !p.endsWith('.log'))).toBe(true);
     });
 
-    it('excludes gitnexusignored directories (vendor/)', async () => {
+    it('excludes avmatrixignored directories (vendor/)', async () => {
       const files = await walkRepositoryPaths(tmpDir);
       const paths = files.map((f) => f.path.replace(/\\/g, '/'));
 

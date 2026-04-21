@@ -274,7 +274,7 @@ export async function augment(pattern: string, cwd?: string): Promise<string> {
     // Step 4: Rank by cohesion (internal signal) and format
     enriched.sort((a, b) => b.cohesion - a.cohesion);
 
-    const lines: string[] = [`[GitNexus] ${enriched.length} related symbols found:`, ''];
+    const lines: string[] = [`[AVmatrix] ${enriched.length} related symbols found:`, ''];
 
     for (const item of enriched) {
       lines.push(`${item.name} (${item.filePath})`);

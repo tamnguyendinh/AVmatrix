@@ -3,7 +3,7 @@
  *
  * Tests CLI commands via child process spawn:
  * - statusCommand: verify stdout for unindexed repo
- * - analyzeCommand: verify pipeline runs and creates .gitnexus/ output
+ * - analyzeCommand: verify pipeline runs and creates .avmatrix/ output
  *
  * Uses process.execPath (never 'node' string), no shell: true.
  * Accepts status === null (timeout) as valid on slow CI runners.
@@ -112,8 +112,8 @@ function runCliRaw(extraArgs: string[], cwd: string, timeoutMs = 15000) {
 
 /**
  * Like runCliRaw but accepts extra env vars. Used by tests that need to
- * isolate the global registry via GITNEXUS_HOME so they don't touch the
- * developer / CI agent's real ~/.gitnexus/registry.json (#829).
+ * isolate the global registry via AVMATRIX_HOME so they don't touch the
+ * developer / CI agent's real ~/.avmatrix/registry.json (#829).
  */
 function runCliWithEnv(
   extraArgs: string[],
@@ -187,8 +187,8 @@ describe('CLI end-to-end', () => {
       ].join('\n'),
     ).toBe(0);
 
-    // Successful analyze should create .gitnexus/ output directory
-    const gitnexusDir = path.join(MINI_REPO, '.gitnexus');
+    // Successful analyze should create .avmatrix/ output directory
+    const gitnexusDir = path.join(MINI_REPO, '.avmatrix');
     expect(fs.existsSync(gitnexusDir)).toBe(true);
     expect(fs.statSync(gitnexusDir).isDirectory()).toBe(true);
   });
@@ -196,7 +196,7 @@ describe('CLI end-to-end', () => {
   // ─── analyze --name <alias> + --allow-duplicate-name (#829) ──────
   //
   // End-to-end regression guard for the name-collision feature:
-  //   1. `analyze --name X` persists the alias to ~/.gitnexus/registry.json
+  //   1. `analyze --name X` persists the alias to ~/.avmatrix/registry.json
   //   2. A second `analyze --name X` on a DIFFERENT path is rejected with
   //      a collision error (exit code 1, "already used" in output)
   //   3. `analyze --name X --allow-duplicate-name` bypasses the guard;
@@ -225,7 +225,7 @@ describe('CLI end-to-end', () => {
 
     it('--name alias stores; collision rejects; --allow-duplicate-name bypasses', () => {
       // Isolate the global registry so this test never touches the
-      // developer's real ~/.gitnexus.
+      // developer's real ~/.avmatrix.
       const gnHome = fs.mkdtempSync(path.join(os.tmpdir(), 'gn-home-'));
 
       // Two mini-repo copies whose basenames intentionally collide.
@@ -239,7 +239,7 @@ describe('CLI end-to-end', () => {
         const r1 = runCliWithEnv(
           ['analyze', '--name', 'shared'],
           repoA,
-          { GITNEXUS_HOME: gnHome },
+          { AVMATRIX_HOME: gnHome },
           60000,
         );
         if (r1.status === null) return; // CI timeout tolerance
@@ -261,7 +261,7 @@ describe('CLI end-to-end', () => {
         const r2 = runCliWithEnv(
           ['analyze', '--name', 'shared'],
           repoB,
-          { GITNEXUS_HOME: gnHome },
+          { AVMATRIX_HOME: gnHome },
           60000,
         );
         if (r2.status === null) return;
@@ -284,7 +284,7 @@ describe('CLI end-to-end', () => {
         const r3 = runCliWithEnv(
           ['analyze', '--name', 'shared', '--allow-duplicate-name'],
           repoB,
-          { GITNEXUS_HOME: gnHome },
+          { AVMATRIX_HOME: gnHome },
           60000,
         );
         if (r3.status === null) return;
@@ -321,7 +321,7 @@ describe('CLI end-to-end', () => {
           const r4 = runCliWithEnv(
             ['analyze', '--name', 'shared', '--skills'],
             repoC,
-            { GITNEXUS_HOME: gnHome },
+            { AVMATRIX_HOME: gnHome },
             60000,
           );
           if (r4.status === null) return;
@@ -369,7 +369,7 @@ describe('CLI end-to-end', () => {
       // Commander writes --help output to stdout.
       expect(result.stdout).toMatch(/Usage:/i);
       // The program name and at least one known subcommand should appear.
-      expect(result.stdout).toMatch(/gitnexus/i);
+      expect(result.stdout).toMatch(/avmatrix/i);
       expect(result.stdout).toMatch(/analyze|status|serve/i);
     });
 
@@ -406,8 +406,8 @@ describe('CLI end-to-end', () => {
 
     it('status on non-indexed repo reports not indexed', () => {
       // Even though MINI_REPO is now in an isolated tmpdir, previous tests
-      // in this suite may have created MINI_REPO/.gitnexus via analyze,
-      // and findRepo() walks up so any `.gitnexus` along the path still
+      // in this suite may have created MINI_REPO/.avmatrix via analyze,
+      // and findRepo() walks up so any `.avmatrix` along the path still
       // counts. This test needs a GUARANTEED pristine repo to assert the
       // "not indexed" output, so it mints its own throwaway tmp git repo.
       const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cli-noindex-'));
@@ -485,7 +485,7 @@ describe('CLI end-to-end', () => {
     it('wiki reports local-only off mode without prompting for API keys', () => {
       const gnHome = fs.mkdtempSync(path.join(os.tmpdir(), 'wiki-local-only-home-'));
       try {
-        const result = runCliWithEnv(['wiki'], repoRoot, { GITNEXUS_HOME: gnHome }, 15000);
+        const result = runCliWithEnv(['wiki'], repoRoot, { AVMATRIX_HOME: gnHome }, 15000);
         if (result.status === null) return;
 
         expect(result.status).toBe(1);
@@ -501,11 +501,11 @@ describe('CLI end-to-end', () => {
     it('wiki-mode local persists local mode and wiki reports it without remote fallback', () => {
       const gnHome = fs.mkdtempSync(path.join(os.tmpdir(), 'wiki-local-mode-home-'));
       try {
-        const setMode = runCliWithEnv(['wiki-mode', 'local'], repoRoot, { GITNEXUS_HOME: gnHome }, 15000);
+        const setMode = runCliWithEnv(['wiki-mode', 'local'], repoRoot, { AVMATRIX_HOME: gnHome }, 15000);
         if (setMode.status === null) return;
         expect(setMode.status).toBe(0);
 
-        const result = runCliWithEnv(['wiki'], repoRoot, { GITNEXUS_HOME: gnHome }, 15000);
+        const result = runCliWithEnv(['wiki'], repoRoot, { AVMATRIX_HOME: gnHome }, 15000);
         if (result.status === null) return;
 
         expect(result.status).toBe(1);
@@ -520,7 +520,7 @@ describe('CLI end-to-end', () => {
 
   // ─── stdout fd 1 tests (#324) ───────────────────────────────────────
   // These tests verify that tool output goes to stdout (fd 1), not stderr.
-  // Requires analyze to have run first (the analyze test above populates .gitnexus/).
+  // Requires analyze to have run first (the analyze test above populates .avmatrix/).
 
   // All tool commands pass --repo to disambiguate when the global registry
   // has multiple indexed repos (e.g. the parent project is also indexed).

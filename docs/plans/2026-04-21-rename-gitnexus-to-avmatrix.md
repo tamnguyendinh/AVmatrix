@@ -261,6 +261,7 @@
 ## Deliverable
 
 - Một inventory checklist rõ ràng để không rename sót surface nào
+- File inventory thực tế: `docs/avmatrix-rename-audit.md`
 
 # Pha 0.5: Docs/spec canonical trước khi đổi code
 
@@ -292,6 +293,7 @@
 
 - Khi bắt đầu đổi code, cả bạn và agent đều đã có một spec docs rõ ràng để bám theo
 - Không còn phải “đoán” chỗ nào nên hiện `GitNexus`, chỗ nào nên hiện `AVmatrix`
+- Có file spec canonical riêng: `docs/avmatrix-canonical-spec.md`
 
 # Pha 1: Brand rename ở user-facing surfaces
 
@@ -691,21 +693,22 @@
 
 # Checklist tổng
 
-- [ ] Audit đầy đủ mọi surface `GitNexus` / `gitnexus` / `.gitnexus` / `gitnexus://`
-- [ ] Chốt scope rename: surface-only hay cả package/internal
-- [ ] Chốt docs/spec canonical trước khi đổi code
-- [ ] Đổi brand hiển thị sang `AVmatrix`
-- [ ] Thêm command `avmatrix`
-- [ ] Giữ hoặc chốt alias `gitnexus`
-- [ ] Đổi MCP canonical command sang `avmatrix mcp`
-- [ ] Đổi MCP server name trong config/setup sang `avmatrix`
-- [ ] Đổi docs/setup sang `AVmatrix`
-- [ ] Đổi storage primary sang `.avmatrix` / `~/.avmatrix`
-- [ ] Thêm migration một lần từ namespace cũ
-- [ ] Đổi resource scheme sang `avmatrix://`
-- [ ] Web UI active path không còn lộ `GitNexus`
-- [ ] Behavioral tests cho command/MCP/storage/web pass
-- [ ] Typecheck pass cho `gitnexus` và `gitnexus-web`
+- [x] Audit đầy đủ mọi surface `GitNexus` / `gitnexus` / `.gitnexus` / `gitnexus://`
+- [x] Tạo inventory audit thực tế: `docs/avmatrix-rename-audit.md`
+- [x] Chốt scope V1: surface user-facing + command/MCP + storage/resource scheme, chưa đổi package/internal hàng loạt
+- [x] Chốt docs/spec canonical trước khi đổi code
+- [x] Đổi brand hiển thị sang `AVmatrix`
+- [x] Thêm command `avmatrix`
+- [x] Giữ alias `gitnexus` cho command/MCP trong giai đoạn đầu
+- [x] Đổi MCP canonical command sang `avmatrix mcp`
+- [x] Đổi MCP server name trong config/setup sang `avmatrix`
+- [x] Đổi docs/setup sang `AVmatrix`
+- [x] Đổi storage primary sang `.avmatrix` / `~/.avmatrix`
+- [x] Thêm migration một lần từ namespace cũ
+- [x] Đổi resource scheme sang `avmatrix://`
+- [x] Web UI active path không còn lộ `GitNexus`
+- [x] Behavioral tests cho command/MCP/storage/web pass
+- [x] Typecheck pass cho `gitnexus` và `gitnexus-web`
 
 # Kết luận
 

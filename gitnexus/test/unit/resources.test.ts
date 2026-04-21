@@ -50,14 +50,14 @@ describe('getResourceDefinitions', () => {
 
   it('includes repos resource', () => {
     const defs = getResourceDefinitions();
-    const repos = defs.find((d) => d.uri === 'gitnexus://repos');
+    const repos = defs.find((d) => d.uri === 'avmatrix://repos');
     expect(repos).toBeDefined();
     expect(repos!.mimeType).toBe('text/yaml');
   });
 
   it('includes setup resource', () => {
     const defs = getResourceDefinitions();
-    const setup = defs.find((d) => d.uri === 'gitnexus://setup');
+    const setup = defs.find((d) => d.uri === 'avmatrix://setup');
     expect(setup).toBeDefined();
     expect(setup!.mimeType).toBe('text/markdown');
   });
@@ -81,12 +81,12 @@ describe('getResourceTemplates', () => {
   it('includes context, clusters, processes, schema, cluster detail, process detail', () => {
     const templates = getResourceTemplates();
     const uris = templates.map((t) => t.uriTemplate);
-    expect(uris).toContain('gitnexus://repo/{name}/context');
-    expect(uris).toContain('gitnexus://repo/{name}/clusters');
-    expect(uris).toContain('gitnexus://repo/{name}/processes');
-    expect(uris).toContain('gitnexus://repo/{name}/schema');
-    expect(uris).toContain('gitnexus://repo/{name}/cluster/{clusterName}');
-    expect(uris).toContain('gitnexus://repo/{name}/process/{processName}');
+    expect(uris).toContain('avmatrix://repo/{name}/context');
+    expect(uris).toContain('avmatrix://repo/{name}/clusters');
+    expect(uris).toContain('avmatrix://repo/{name}/processes');
+    expect(uris).toContain('avmatrix://repo/{name}/schema');
+    expect(uris).toContain('avmatrix://repo/{name}/cluster/{clusterName}');
+    expect(uris).toContain('avmatrix://repo/{name}/process/{processName}');
   });
 
   it('each template has uriTemplate, name, description, mimeType', () => {
@@ -102,7 +102,7 @@ describe('getResourceTemplates', () => {
 // ─── readResource URI parsing ────────────────────────────────────────
 
 describe('readResource', () => {
-  it('routes gitnexus://repos to listRepos', async () => {
+  it('routes avmatrix://repos to listRepos', async () => {
     const backend = createMockBackend({
       repos: [
         {
@@ -115,18 +115,18 @@ describe('readResource', () => {
       ],
     });
 
-    const result = await readResource('gitnexus://repos', backend);
+    const result = await readResource('avmatrix://repos', backend);
     expect(backend.listRepos).toHaveBeenCalled();
     expect(result).toContain('my-project');
   });
 
   it('returns empty message when no repos', async () => {
     const backend = createMockBackend({ repos: [] });
-    const result = await readResource('gitnexus://repos', backend);
+    const result = await readResource('avmatrix://repos', backend);
     expect(result).toContain('No repositories indexed');
   });
 
-  it('routes gitnexus://setup to setup resource', async () => {
+  it('routes avmatrix://setup to setup resource', async () => {
     const backend = createMockBackend({
       repos: [
         {
@@ -138,18 +138,18 @@ describe('readResource', () => {
         },
       ],
     });
-    const result = await readResource('gitnexus://setup', backend);
-    expect(result).toContain('GitNexus MCP');
+    const result = await readResource('avmatrix://setup', backend);
+    expect(result).toContain('AVmatrix MCP');
     expect(result).toContain('proj');
   });
 
   it('returns fallback when setup has no repos', async () => {
     const backend = createMockBackend({ repos: [] });
-    const result = await readResource('gitnexus://setup', backend);
+    const result = await readResource('avmatrix://setup', backend);
     expect(result).toContain('No repositories indexed');
   });
 
-  it('routes gitnexus://repo/{name}/context correctly', async () => {
+  it('routes avmatrix://repo/{name}/context correctly', async () => {
     const backend = createMockBackend({
       context: {
         projectName: 'test-project',
@@ -157,7 +157,7 @@ describe('readResource', () => {
       },
     });
 
-    const result = await readResource('gitnexus://repo/test-project/context', backend);
+    const result = await readResource('avmatrix://repo/test-project/context', backend);
     expect(backend.resolveRepo).toHaveBeenCalledWith('test-project');
     expect(result).toContain('test-project');
     expect(result).toContain('files: 10');
@@ -165,49 +165,49 @@ describe('readResource', () => {
 
   it('returns error when context has no codebase loaded', async () => {
     const backend = createMockBackend({ context: null });
-    const result = await readResource('gitnexus://repo/test-project/context', backend);
+    const result = await readResource('avmatrix://repo/test-project/context', backend);
     expect(result).toContain('error');
   });
 
-  it('routes gitnexus://repo/{name}/schema to static schema', async () => {
+  it('routes avmatrix://repo/{name}/schema to static schema', async () => {
     const backend = createMockBackend();
-    const result = await readResource('gitnexus://repo/any/schema', backend);
-    expect(result).toContain('GitNexus Graph Schema');
+    const result = await readResource('avmatrix://repo/any/schema', backend);
+    expect(result).toContain('AVmatrix Graph Schema');
     expect(result).toContain('CALLS');
     expect(result).toContain('IMPORTS');
   });
 
-  it('routes gitnexus://repo/{name}/clusters correctly', async () => {
+  it('routes avmatrix://repo/{name}/clusters correctly', async () => {
     const backend = createMockBackend({
       clusters: {
         clusters: [{ heuristicLabel: 'Auth', symbolCount: 10, cohesion: 0.9 }],
       },
     });
-    const result = await readResource('gitnexus://repo/test/clusters', backend);
+    const result = await readResource('avmatrix://repo/test/clusters', backend);
     expect(backend.queryClusters).toHaveBeenCalledWith('test', 100);
     expect(result).toContain('Auth');
   });
 
   it('returns empty modules when no clusters', async () => {
     const backend = createMockBackend({ clusters: { clusters: [] } });
-    const result = await readResource('gitnexus://repo/test/clusters', backend);
+    const result = await readResource('avmatrix://repo/test/clusters', backend);
     expect(result).toContain('modules: []');
   });
 
   it('handles cluster query error gracefully', async () => {
     const backend = createMockBackend();
     backend.queryClusters = vi.fn().mockRejectedValue(new Error('DB locked'));
-    const result = await readResource('gitnexus://repo/test/clusters', backend);
+    const result = await readResource('avmatrix://repo/test/clusters', backend);
     expect(result).toContain('DB locked');
   });
 
-  it('routes gitnexus://repo/{name}/processes correctly', async () => {
+  it('routes avmatrix://repo/{name}/processes correctly', async () => {
     const backend = createMockBackend({
       processes: {
         processes: [{ heuristicLabel: 'LoginFlow', processType: 'intra_community', stepCount: 3 }],
       },
     });
-    const result = await readResource('gitnexus://repo/test/processes', backend);
+    const result = await readResource('avmatrix://repo/test/processes', backend);
     expect(backend.queryProcesses).toHaveBeenCalledWith('test', 50);
     expect(result).toContain('LoginFlow');
   });
@@ -215,18 +215,18 @@ describe('readResource', () => {
   it('handles process query error gracefully', async () => {
     const backend = createMockBackend();
     backend.queryProcesses = vi.fn().mockRejectedValue(new Error('timeout'));
-    const result = await readResource('gitnexus://repo/test/processes', backend);
+    const result = await readResource('avmatrix://repo/test/processes', backend);
     expect(result).toContain('timeout');
   });
 
-  it('routes gitnexus://repo/{name}/cluster/{clusterName} correctly', async () => {
+  it('routes avmatrix://repo/{name}/cluster/{clusterName} correctly', async () => {
     const backend = createMockBackend({
       clusterDetail: {
         cluster: { heuristicLabel: 'Auth', symbolCount: 5, cohesion: 0.85 },
         members: [{ name: 'login', type: 'Function', filePath: 'src/auth.ts' }],
       },
     });
-    const result = await readResource('gitnexus://repo/test/cluster/Auth', backend);
+    const result = await readResource('avmatrix://repo/test/cluster/Auth', backend);
     expect(backend.queryClusterDetail).toHaveBeenCalledWith('Auth', 'test');
     expect(result).toContain('Auth');
     expect(result).toContain('login');
@@ -236,11 +236,11 @@ describe('readResource', () => {
     const backend = createMockBackend({
       clusterDetail: { error: 'Cluster not found' },
     });
-    const result = await readResource('gitnexus://repo/test/cluster/Missing', backend);
+    const result = await readResource('avmatrix://repo/test/cluster/Missing', backend);
     expect(result).toContain('Cluster not found');
   });
 
-  it('routes gitnexus://repo/{name}/process/{processName} correctly', async () => {
+  it('routes avmatrix://repo/{name}/process/{processName} correctly', async () => {
     const backend = createMockBackend({
       processDetail: {
         process: { heuristicLabel: 'LoginFlow', processType: 'intra_community', stepCount: 3 },
@@ -250,7 +250,7 @@ describe('readResource', () => {
         ],
       },
     });
-    const result = await readResource('gitnexus://repo/test/process/LoginFlow', backend);
+    const result = await readResource('avmatrix://repo/test/process/LoginFlow', backend);
     expect(backend.queryProcessDetail).toHaveBeenCalledWith('LoginFlow', 'test');
     expect(result).toContain('LoginFlow');
     expect(result).toContain('login');
@@ -261,27 +261,27 @@ describe('readResource', () => {
     const backend = createMockBackend({
       processDetail: { error: 'Process not found' },
     });
-    const result = await readResource('gitnexus://repo/test/process/Missing', backend);
+    const result = await readResource('avmatrix://repo/test/process/Missing', backend);
     expect(result).toContain('Process not found');
   });
 
   it('throws for unknown resource URI', async () => {
     const backend = createMockBackend();
-    await expect(readResource('gitnexus://unknown', backend)).rejects.toThrow(
+    await expect(readResource('avmatrix://unknown', backend)).rejects.toThrow(
       'Unknown resource URI',
     );
   });
 
   it('throws for unknown repo-scoped resource type', async () => {
     const backend = createMockBackend();
-    await expect(readResource('gitnexus://repo/test/nonexistent', backend)).rejects.toThrow(
+    await expect(readResource('avmatrix://repo/test/nonexistent', backend)).rejects.toThrow(
       'Unknown resource',
     );
   });
 
   it('decodes URI-encoded repo names', async () => {
     const backend = createMockBackend();
-    await readResource('gitnexus://repo/my%20project/schema', backend);
+    await readResource('avmatrix://repo/my%20project/schema', backend);
     // Should not throw — the schema resource is static
   });
 
@@ -292,8 +292,20 @@ describe('readResource', () => {
         members: [],
       },
     });
-    await readResource('gitnexus://repo/test/cluster/Auth%20Module', backend);
+    await readResource('avmatrix://repo/test/cluster/Auth%20Module', backend);
     expect(backend.queryClusterDetail).toHaveBeenCalledWith('Auth Module', 'test');
+  });
+
+  it('still accepts legacy gitnexus:// URIs while canonical output is avmatrix://', async () => {
+    const backend = createMockBackend({
+      context: {
+        projectName: 'legacy-project',
+        stats: { fileCount: 3, functionCount: 7, communityCount: 1, processCount: 2 },
+      },
+    });
+    const result = await readResource('gitnexus://repo/legacy-project/context', backend);
+    expect(result).toContain('legacy-project');
+    expect(result).toContain('avmatrix://repos');
   });
 
   it('repos resource shows multi-repo hint for multiple repos', async () => {
@@ -303,7 +315,7 @@ describe('readResource', () => {
         { name: 'proj-b', path: '/b', indexedAt: '2024-01-02', lastCommit: 'def' },
       ],
     });
-    const result = await readResource('gitnexus://repos', backend);
+    const result = await readResource('avmatrix://repos', backend);
     expect(result).toContain('Multiple repos indexed');
     expect(result).toContain('repo parameter');
   });

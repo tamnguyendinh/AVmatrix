@@ -1,7 +1,7 @@
 /**
  * Analyze Command
  *
- * Indexes a repository and stores the knowledge graph in .gitnexus/
+ * Indexes a repository and stores the knowledge graph in .avmatrix/
  *
  * Delegates core analysis to the shared runFullAnalysis orchestrator.
  * This CLI wrapper handles: heap management, progress bar, SIGINT,
@@ -84,10 +84,10 @@ export const analyzeCommand = async (inputPath?: string, options?: AnalyzeOption
   if (ensureHeap()) return;
 
   if (options?.verbose) {
-    process.env.GITNEXUS_VERBOSE = '1';
+    process.env.AVMATRIX_VERBOSE = '1';
   }
 
-  console.log('\n  GitNexus Analyzer\n');
+  console.log('\n  AVmatrix Analyzer\n');
 
   let repoPath: string;
   if (inputPath) {
@@ -126,9 +126,9 @@ export const analyzeCommand = async (inputPath?: string, options?: AnalyzeOption
   // KuzuDB migration cleanup is handled by runFullAnalysis internally.
   // Note: --skills is handled after runFullAnalysis using the returned pipelineResult.
 
-  if (process.env.GITNEXUS_NO_GITIGNORE) {
+  if (process.env.AVMATRIX_NO_GITIGNORE) {
     console.log(
-      '  GITNEXUS_NO_GITIGNORE is set — skipping .gitignore (still reading .gitnexusignore)\n',
+      '  AVMATRIX_NO_GITIGNORE is set — skipping .gitignore (still reading .avmatrixignore)\n',
     );
   }
 
@@ -333,9 +333,9 @@ export const analyzeCommand = async (inputPath?: string, options?: AnalyzeOption
       console.error(`\n  Registry name collision:\n`);
       console.error(`    "${err.registryName}" is already used by "${err.existingPath}".\n`);
       console.error(`  Options:`);
-      console.error(`    • Pick a different alias:  gitnexus analyze --name <alias>`);
+      console.error(`    • Pick a different alias:  avmatrix analyze --name <alias>`);
       console.error(
-        `    • Allow the duplicate:     gitnexus analyze --allow-duplicate-name  (leaves "-r ${err.registryName}" ambiguous)`,
+        `    • Allow the duplicate:     avmatrix analyze --allow-duplicate-name  (leaves "-r ${err.registryName}" ambiguous)`,
       );
       console.error('');
       process.exitCode = 1;
@@ -357,7 +357,7 @@ export const analyzeCommand = async (inputPath?: string, options?: AnalyzeOption
     ) {
       console.error('  This error typically occurs on very large repositories.');
       console.error('  Suggestions:');
-      console.error('    1. Add large vendored/generated directories to .gitnexusignore');
+      console.error('    1. Add large vendored/generated directories to .avmatrixignore');
       console.error('    2. Increase Node.js heap: NODE_OPTIONS="--max-old-space-size=16384"');
       console.error('    3. Increase stack size: NODE_OPTIONS="--stack-size=4096"');
       console.error('');

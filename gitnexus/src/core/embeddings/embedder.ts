@@ -255,7 +255,7 @@ export const isEmbedderReady = (): boolean => {
 
 /**
  * Get the effective embedding dimensions.
- * In HTTP mode, uses GITNEXUS_EMBEDDING_DIMS if set, otherwise the default.
+ * In HTTP mode, uses AVMATRIX_EMBEDDING_DIMS if set, otherwise the default.
  */
 export const getEmbeddingDimensions = (): number => {
   if (isHttpMode()) {

@@ -1,4 +1,4 @@
-# Testing — GitNexus
+# Testing — AVmatrix
 
 How we structure tests and which commands to run locally and in CI.
 
@@ -35,7 +35,7 @@ npm install
 npm test                    # unit tests (vitest)
 npx tsc -b --noEmit         # typecheck (matches CI)
 npm run test:coverage
-npm run test:e2e            # Playwright (requires gitnexus serve + npm run dev)
+npm run test:e2e            # Playwright (requires avmatrix serve or node dist/cli/index.js serve + npm run dev)
 ```
 
 ## Pre-commit hook
@@ -55,7 +55,7 @@ Skip with `git commit --no-verify` (use sparingly).
 - **Unit** — Pure logic, parsers, graph/query helpers; fast; no network.
 - **Integration** — Real combinations (filesystem, MCP wiring, larger pipelines) as already organized under `gitnexus/test/integration`.
 - **Eval-style / golden sets** — For agent- or classification-style behavior, keep labeled inputs and expected outputs (JSON or table-driven tests) and run them in CI when relevant.
-- **E2E (web)** — Critical user paths only; prefer `data-testid` attributes for stable selectors. Tests run against real backend (`gitnexus serve`) and Vite dev server.
+- **E2E (web)** — Critical user paths only; prefer `data-testid` attributes for stable selectors. Tests run against the real backend (`avmatrix serve` or `node dist/cli/index.js serve`) and Vite dev server.
 
 ## Performance metrics (targets)
 

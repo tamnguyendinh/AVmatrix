@@ -60,13 +60,17 @@ describe('setupCommand skills integration', () => {
     const skillDirs = entries.filter((e) => e.isDirectory()).map((e) => e.name);
 
     expect(skillDirs.length).toBeGreaterThan(0);
-    expect(skillDirs).toContain('gitnexus-cli');
+    expect(skillDirs).toContain('avmatrix-cli');
 
     const skillContent = await fs.readFile(
-      path.join(cursorSkillsRoot, 'gitnexus-cli', 'SKILL.md'),
+      path.join(cursorSkillsRoot, 'avmatrix-cli', 'SKILL.md'),
       'utf-8',
     );
-    expect(skillContent).toContain('GitNexus CLI Commands');
+    expect(skillContent).toContain('AVmatrix CLI Commands');
+    expect(skillContent).not.toContain('gitnexus_detect_changes');
+    expect(skillContent).not.toContain('gitnexus_impact');
+    expect(skillContent).not.toContain('gitnexus_query');
+    expect(skillContent).not.toContain('gitnexus_context');
 
     // Flat file source should be installed as {name}/SKILL.md.
     const flatInstalled = await fs.readFile(
@@ -95,16 +99,18 @@ describe('setupCommand skills integration', () => {
     await setupCommand();
 
     const codexConfig = await fs.readFile(path.join(tempHome, '.codex', 'config.toml'), 'utf-8');
-    expect(codexConfig).toContain('[mcp_servers.gitnexus]');
-    expect(codexConfig).toContain('command = "gitnexus"');
+    expect(codexConfig).toContain('[mcp_servers.avmatrix]');
+    expect(codexConfig).toContain('command = "avmatrix"');
     expect(codexConfig).toContain('"mcp"');
     expect(codexConfig).not.toContain('gitnexus@latest');
 
     const codexSkill = await fs.readFile(
-      path.join(tempHome, '.agents', 'skills', 'gitnexus-cli', 'SKILL.md'),
+      path.join(tempHome, '.agents', 'skills', 'avmatrix-cli', 'SKILL.md'),
       'utf-8',
     );
-    expect(codexSkill).toContain('GitNexus CLI Commands');
+    expect(codexSkill).toContain('AVmatrix CLI Commands');
+    expect(codexSkill).not.toContain('gitnexus_detect_changes');
+    expect(codexSkill).not.toContain('gitnexus_impact');
   });
 
   it('does not duplicate the Codex MCP section on repeated fallback setup runs', async () => {
@@ -115,7 +121,7 @@ describe('setupCommand skills integration', () => {
     await setupCommand();
 
     const codexConfig = await fs.readFile(path.join(tempHome, '.codex', 'config.toml'), 'utf-8');
-    const sectionMatches = codexConfig.match(/\[mcp_servers\.gitnexus\]/g) ?? [];
+    const sectionMatches = codexConfig.match(/\[mcp_servers\.avmatrix\]/g) ?? [];
 
     expect(sectionMatches).toHaveLength(1);
   });

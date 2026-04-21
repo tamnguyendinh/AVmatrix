@@ -31,7 +31,7 @@ export interface LLMResponse {
 
 /**
  * Resolve LLM configuration from env vars, saved config, and optional overrides.
- * Priority: overrides (CLI flags) > env vars > ~/.gitnexus/config.json > error
+ * Priority: overrides (CLI flags) > env vars > ~/.avmatrix/config.json > error
  *
  * If no API key is found, returns config with empty apiKey (caller should handle).
  */
@@ -41,7 +41,7 @@ export async function resolveLLMConfig(overrides?: Partial<LLMConfig>): Promise<
 
   const apiKey =
     overrides?.apiKey ||
-    process.env.GITNEXUS_API_KEY ||
+    process.env.AVMATRIX_API_KEY ||
     process.env.OPENAI_API_KEY ||
     savedConfig.apiKey ||
     '';
@@ -50,12 +50,12 @@ export async function resolveLLMConfig(overrides?: Partial<LLMConfig>): Promise<
     apiKey,
     baseUrl:
       overrides?.baseUrl ||
-      process.env.GITNEXUS_LLM_BASE_URL ||
+      process.env.AVMATRIX_LLM_BASE_URL ||
       savedConfig.baseUrl ||
       'https://openrouter.ai/api/v1',
     model:
       overrides?.model ||
-      process.env.GITNEXUS_MODEL ||
+      process.env.AVMATRIX_MODEL ||
       (savedConfig.provider === 'cursor' ? savedConfig.cursorModel : undefined) ||
       savedConfig.model ||
       'minimax/minimax-m2.5',
@@ -63,7 +63,7 @@ export async function resolveLLMConfig(overrides?: Partial<LLMConfig>): Promise<
     temperature: overrides?.temperature ?? 0,
     provider: overrides?.provider ?? savedConfig.provider ?? 'openai',
     apiVersion:
-      overrides?.apiVersion || process.env.GITNEXUS_AZURE_API_VERSION || savedConfig.apiVersion,
+      overrides?.apiVersion || process.env.AVMATRIX_AZURE_API_VERSION || savedConfig.apiVersion,
     isReasoningModel: overrides?.isReasoningModel ?? savedConfig.isReasoningModel,
   };
 }

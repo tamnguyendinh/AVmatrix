@@ -38,7 +38,7 @@ function makePort(overrides: Partial<GroupToolPort> = {}): GroupToolPort {
         id: name || 'test',
         name: name || 'test',
         repoPath: '/tmp/repo',
-        storagePath: '/tmp/repo/.gitnexus',
+        storagePath: '/tmp/repo/.avmatrix',
       }),
     ),
     impact: vi.fn(async () => ({ symbols: [] })),
@@ -78,7 +78,7 @@ describe('GroupService', () => {
     it('test_groupList_without_name_returns_group_names', async () => {
       const { groupDir, cleanup, tmpDir } = makeTmpGroup();
       try {
-        vi.stubEnv('GITNEXUS_HOME', tmpDir);
+        vi.stubEnv('AVMATRIX_HOME', tmpDir);
         const svc = new GroupService(makePort());
         const result = (await svc.groupList({})) as { groups: string[] };
         expect(result.groups).toContain('test-group');
@@ -91,7 +91,7 @@ describe('GroupService', () => {
     it('test_groupList_with_name_returns_config_details', async () => {
       const { cleanup, tmpDir } = makeTmpGroup();
       try {
-        vi.stubEnv('GITNEXUS_HOME', tmpDir);
+        vi.stubEnv('AVMATRIX_HOME', tmpDir);
         const svc = new GroupService(makePort());
         const result = (await svc.groupList({ name: 'test-group' })) as {
           name: string;
@@ -116,7 +116,7 @@ describe('GroupService', () => {
     it('test_groupContracts_returns_error_when_no_registry', async () => {
       const { cleanup, tmpDir } = makeTmpGroup();
       try {
-        vi.stubEnv('GITNEXUS_HOME', tmpDir);
+        vi.stubEnv('AVMATRIX_HOME', tmpDir);
         const svc = new GroupService(makePort());
         const result = (await svc.groupContracts({ name: 'test-group' })) as { error: string };
         expect(result.error).toContain('No contracts.json');
@@ -129,7 +129,7 @@ describe('GroupService', () => {
     it('test_groupContracts_returns_all_contracts', async () => {
       const { groupDir, cleanup, tmpDir } = makeTmpGroup();
       try {
-        vi.stubEnv('GITNEXUS_HOME', tmpDir);
+        vi.stubEnv('AVMATRIX_HOME', tmpDir);
         const contracts = [
           makeContract('http::GET::/api/users', 'provider', 'app/backend'),
           makeContract('http::GET::/api/users', 'consumer', 'app/frontend'),
@@ -150,7 +150,7 @@ describe('GroupService', () => {
     it('test_groupContracts_filters_by_type', async () => {
       const { groupDir, cleanup, tmpDir } = makeTmpGroup();
       try {
-        vi.stubEnv('GITNEXUS_HOME', tmpDir);
+        vi.stubEnv('AVMATRIX_HOME', tmpDir);
         const contracts = [
           makeContract('http::GET::/api/users', 'provider', 'app/backend'),
           {
@@ -175,7 +175,7 @@ describe('GroupService', () => {
     it('test_groupContracts_filters_by_repo', async () => {
       const { groupDir, cleanup, tmpDir } = makeTmpGroup();
       try {
-        vi.stubEnv('GITNEXUS_HOME', tmpDir);
+        vi.stubEnv('AVMATRIX_HOME', tmpDir);
         const contracts = [
           makeContract('http::GET::/api/users', 'provider', 'app/backend'),
           makeContract('http::GET::/api/users', 'consumer', 'app/frontend'),
@@ -197,7 +197,7 @@ describe('GroupService', () => {
     it('test_groupContracts_unmatchedOnly_filters_matched', async () => {
       const { groupDir, cleanup, tmpDir } = makeTmpGroup();
       try {
-        vi.stubEnv('GITNEXUS_HOME', tmpDir);
+        vi.stubEnv('AVMATRIX_HOME', tmpDir);
         const provider = makeContract('http::GET::/api/users', 'provider', 'app/backend');
         const consumer = makeContract('http::GET::/api/users', 'consumer', 'app/frontend');
         const orphan = makeContract('http::GET::/api/health', 'provider', 'app/backend');
@@ -253,7 +253,7 @@ describe('GroupService', () => {
     it('test_groupQuery_merges_results_across_repos', async () => {
       const { cleanup, tmpDir } = makeTmpGroup();
       try {
-        vi.stubEnv('GITNEXUS_HOME', tmpDir);
+        vi.stubEnv('AVMATRIX_HOME', tmpDir);
 
         const port = makePort({
           query: vi.fn(async () => ({
@@ -282,12 +282,12 @@ describe('GroupService', () => {
     it('test_groupQuery_handles_failing_repo_gracefully', async () => {
       const { cleanup, tmpDir } = makeTmpGroup();
       try {
-        vi.stubEnv('GITNEXUS_HOME', tmpDir);
+        vi.stubEnv('AVMATRIX_HOME', tmpDir);
 
         const port = makePort({
           resolveRepo: vi.fn(async (name?: string) => {
             if (name === 'test-backend') throw new Error('not indexed');
-            return { id: 'fe', name: 'fe', repoPath: '/tmp', storagePath: '/tmp/.gitnexus' };
+            return { id: 'fe', name: 'fe', repoPath: '/tmp', storagePath: '/tmp/.avmatrix' };
           }),
           query: vi.fn(async () => ({ processes: [{ name: 'p1' }] })),
         });
@@ -308,7 +308,7 @@ describe('GroupService', () => {
     it('test_groupQuery_respects_subgroup_filter', async () => {
       const { cleanup, tmpDir } = makeTmpGroup();
       try {
-        vi.stubEnv('GITNEXUS_HOME', tmpDir);
+        vi.stubEnv('AVMATRIX_HOME', tmpDir);
 
         const port = makePort({
           query: vi.fn(async () => ({ processes: [{ name: 'p1' }] })),
@@ -340,7 +340,7 @@ describe('GroupService', () => {
     it('test_groupStatus_marks_unresolvable_repos_as_missing', async () => {
       const { cleanup, tmpDir } = makeTmpGroup();
       try {
-        vi.stubEnv('GITNEXUS_HOME', tmpDir);
+        vi.stubEnv('AVMATRIX_HOME', tmpDir);
 
         const port = makePort({
           resolveRepo: vi.fn(async () => {

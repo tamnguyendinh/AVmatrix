@@ -6,21 +6,21 @@ import { wikiCommand } from '../../src/cli/wiki.js';
 
 describe('wiki compatibility wrapper', () => {
   let tempHome: string;
-  const previousHome = process.env.GITNEXUS_HOME;
+  const previousHome = process.env.AVMATRIX_HOME;
   const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
   beforeEach(async () => {
     tempHome = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-wiki-compat-'));
-    process.env.GITNEXUS_HOME = tempHome;
+    process.env.AVMATRIX_HOME = tempHome;
     process.exitCode = undefined;
     logSpy.mockClear();
   });
 
   afterEach(async () => {
     if (previousHome === undefined) {
-      delete process.env.GITNEXUS_HOME;
+      delete process.env.AVMATRIX_HOME;
     } else {
-      process.env.GITNEXUS_HOME = previousHome;
+      process.env.AVMATRIX_HOME = previousHome;
     }
     process.exitCode = undefined;
     await fs.rm(tempHome, { recursive: true, force: true });

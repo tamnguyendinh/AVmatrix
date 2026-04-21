@@ -28,7 +28,8 @@
   ],
   "type": "module",
   "bin": {
-    "gitnexus": "dist/cli/index.js"
+    "gitnexus": "dist/cli/index.js",
+    "avmatrix": "dist/cli/index.js"
   },
   "files": [
     "dist",

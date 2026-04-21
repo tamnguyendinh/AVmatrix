@@ -45,7 +45,7 @@ describe('mcpCommand runtime alignment', () => {
 
     expect(startMCPServerMock).toHaveBeenCalledTimes(1);
     expect(errorMock).toHaveBeenCalledWith(
-      expect.stringContaining('Run `gitnexus analyze` in a local repo'),
+      expect.stringContaining('Run `avmatrix analyze` in a local repo'),
     );
   });
 });

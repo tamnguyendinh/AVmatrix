@@ -185,7 +185,7 @@ describe('filesystem-walker', () => {
     });
   });
 
-  describe('.gitnexusignore support', () => {
+  describe('.avmatrixignore support', () => {
     let nexusignoreDir: string;
 
     beforeAll(async () => {
@@ -200,15 +200,15 @@ describe('filesystem-walker', () => {
       );
       await fs.writeFile(path.join(nexusignoreDir, 'local', 'grafana', 'module.js'), 'var x = 1;');
 
-      // Only .gitnexusignore, no .gitignore
-      await fs.writeFile(path.join(nexusignoreDir, '.gitnexusignore'), 'local/\n');
+      // Only .avmatrixignore, no .gitignore
+      await fs.writeFile(path.join(nexusignoreDir, '.avmatrixignore'), 'local/\n');
     });
 
     afterAll(async () => {
       await fs.rm(nexusignoreDir, { recursive: true, force: true });
     });
 
-    it('excludes directories listed in .gitnexusignore', async () => {
+    it('excludes directories listed in .avmatrixignore', async () => {
       const files = await walkRepositoryPaths(nexusignoreDir);
       const paths = files.map((f) => f.path.replace(/\\/g, '/'));
 
@@ -217,7 +217,7 @@ describe('filesystem-walker', () => {
     });
   });
 
-  describe('combined .gitignore + .gitnexusignore', () => {
+  describe('combined .gitignore + .avmatrixignore', () => {
     let combinedDir: string;
 
     beforeAll(async () => {
@@ -232,7 +232,7 @@ describe('filesystem-walker', () => {
       await fs.writeFile(path.join(combinedDir, 'local', 'plugins', 'module.js'), 'var x = 1;');
 
       await fs.writeFile(path.join(combinedDir, '.gitignore'), 'data/\n');
-      await fs.writeFile(path.join(combinedDir, '.gitnexusignore'), 'local/\n');
+      await fs.writeFile(path.join(combinedDir, '.avmatrixignore'), 'local/\n');
     });
 
     afterAll(async () => {
@@ -249,7 +249,7 @@ describe('filesystem-walker', () => {
     });
   });
 
-  describe('GITNEXUS_NO_GITIGNORE env var', () => {
+  describe('AVMATRIX_NO_GITIGNORE env var', () => {
     let envDir: string;
 
     beforeAll(async () => {
@@ -274,18 +274,18 @@ describe('filesystem-walker', () => {
       expect(paths.every((p) => !p.includes('data/'))).toBe(true);
     });
 
-    it('includes gitignored directory when GITNEXUS_NO_GITIGNORE is set', async () => {
-      const original = process.env.GITNEXUS_NO_GITIGNORE;
-      process.env.GITNEXUS_NO_GITIGNORE = '1';
+    it('includes gitignored directory when AVMATRIX_NO_GITIGNORE is set', async () => {
+      const original = process.env.AVMATRIX_NO_GITIGNORE;
+      process.env.AVMATRIX_NO_GITIGNORE = '1';
       try {
         const files = await walkRepositoryPaths(envDir);
         const paths = files.map((f) => f.path.replace(/\\/g, '/'));
         expect(paths.some((p) => p.includes('data/dump.json'))).toBe(true);
       } finally {
         if (original === undefined) {
-          delete process.env.GITNEXUS_NO_GITIGNORE;
+          delete process.env.AVMATRIX_NO_GITIGNORE;
         } else {
-          process.env.GITNEXUS_NO_GITIGNORE = original;
+          process.env.AVMATRIX_NO_GITIGNORE = original;
         }
       }
     });

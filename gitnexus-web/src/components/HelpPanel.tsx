@@ -143,10 +143,10 @@ function TabContent({
           }}
         >
           <p style={{ fontSize: 13, fontWeight: 500, color: '#e2e2e8', margin: '0 0 4px' }}>
-            What is GitNexus?
+            What is AVmatrix?
           </p>
           <p style={{ fontSize: 12, color: '#9ca3af', margin: 0, lineHeight: 1.6 }}>
-            An interactive graph explorer for your codebase. Every file, function, and import
+            A local-first graph explorer for your codebase. Every file, function, and import
             becomes a node you can explore, query, and navigate visually.
           </p>
         </div>
@@ -595,7 +595,7 @@ export const HelpPanel = ({ isOpen, onClose, nodeCount, edgeCount }: HelpPanelPr
               <h2 style={{ fontSize: 16, fontWeight: 600, color: '#e2e2e8', margin: 0 }}>
                 Help & Reference
               </h2>
-              <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>GitNexus — graph explorer</p>
+              <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>AVmatrix — graph explorer</p>
             </div>
           </div>
           <button
@@ -701,7 +701,7 @@ export const HelpPanel = ({ isOpen, onClose, nodeCount, edgeCount }: HelpPanelPr
           }}
         >
           <span style={{ fontSize: 11, color: '#4b5563' }}>
-            GitNexus — local-first codebase graph explorer
+            AVmatrix — local-first codebase graph explorer
           </span>
           <span style={{ fontSize: 11, color: '#a78bfa' }}>
             Browser UI + local runtime

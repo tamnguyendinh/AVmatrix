@@ -22,10 +22,10 @@ export const statusCommand = async () => {
     const { storagePath } = getStoragePaths(repoRoot);
     if (await hasKuzuIndex(storagePath)) {
       console.log('Repository has a stale KuzuDB index from a previous version.');
-      console.log('Run: gitnexus analyze   (rebuilds the index with LadybugDB)');
+      console.log('Run: avmatrix analyze   (rebuilds the index with LadybugDB)');
     } else {
       console.log('Repository not indexed.');
-      console.log('Run: gitnexus analyze');
+      console.log('Run: avmatrix analyze');
     }
     return;
   }
@@ -37,5 +37,5 @@ export const statusCommand = async () => {
   console.log(`Indexed: ${new Date(repo.meta.indexedAt).toLocaleString()}`);
   console.log(`Indexed commit: ${repo.meta.lastCommit?.slice(0, 7)}`);
   console.log(`Current commit: ${currentCommit?.slice(0, 7)}`);
-  console.log(`Status: ${isUpToDate ? '✅ up-to-date' : '⚠️ stale (re-run gitnexus analyze)'}`);
+  console.log(`Status: ${isUpToDate ? '✅ up-to-date' : '⚠️ stale (re-run avmatrix analyze)'}`);
 };

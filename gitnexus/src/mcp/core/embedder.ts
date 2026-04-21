@@ -48,7 +48,7 @@ export const initEmbedder = async (): Promise<FeatureExtractionPipeline> => {
       // Respect HF_HOME if set, otherwise fall back to ~/.cache/huggingface.
       env.cacheDir = process.env.HF_HOME ?? `${process.env.HOME}/.cache/huggingface`;
 
-      console.error('GitNexus: Loading embedding model (first search may take a moment)...');
+      console.error('AVmatrix: Loading embedding model (first search may take a moment)...');
 
       // Try GPU first (DirectML on Windows, CUDA on Linux), fall back to CPU
       const isWindows = process.platform === 'win32';
@@ -73,7 +73,7 @@ export const initEmbedder = async (): Promise<FeatureExtractionPipeline> => {
             restoreStdout();
             process.stderr.write = realStderrWrite;
           }
-          console.error(`GitNexus: Embedding model loaded (${device})`);
+          console.error(`AVmatrix: Embedding model loaded (${device})`);
           return embedderInstance!;
         } catch {
           if (device === 'cpu') throw new Error('Failed to load embedding model');
