@@ -10,7 +10,6 @@ Monorepo: **CLI/MCP** (`gitnexus/`) + **browser UI** (`gitnexus-web/`).
 | `gitnexus-web/` | Vite + React thin client: graph explorer + AI chat. All queries via `gitnexus serve` HTTP API. |
 | `gitnexus-shared/` | Shared TypeScript types and constants (consumed by CLI and Web). |
 | `.claude/`, `gitnexus-claude-plugin/`, `gitnexus-cursor-integration/` | Agent skills and plugin metadata. |
-| `eval/` | Evaluation harnesses for benchmarking tool usage. |
 | `.github/` | CI workflows + composite actions (`setup-gitnexus/`, `setup-gitnexus-web/`). |
 
 ## End-to-end flow: index → graph → tools

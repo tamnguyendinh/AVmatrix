@@ -147,15 +147,6 @@ program
   .option('-r, --repo <name>', 'Target repository')
   .action(createLazyAction(() => import('./tool.js'), 'detectChangesCommand'));
 
-// ─── Eval Server (persistent daemon for SWE-bench) ─────────────────
-
-program
-  .command('eval-server')
-  .description('Start lightweight HTTP server for fast tool calls during evaluation')
-  .option('-p, --port <port>', 'Port number', '4848')
-  .option('--idle-timeout <seconds>', 'Auto-shutdown after N seconds idle (0 = disabled)', '0')
-  .action(createLazyAction(() => import('./eval-server.js'), 'evalServerCommand'));
-
 registerGroupCommands(program);
 
 program.parse(process.argv);

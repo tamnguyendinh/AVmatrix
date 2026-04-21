@@ -13,7 +13,7 @@
 - [ ] `gitnexus/` (CLI / core / MCP server)
 - [ ] `gitnexus-web/` (Vite / React UI)
 - [ ] `.github/` (workflows, actions)
-- [ ] `eval/` or other tooling
+- [ ] Other tooling / repository infrastructure
 - [ ] Docs / agent config only (`AGENTS.md`, `CLAUDE.md`, `.cursor/`, `llms.txt`, etc.)
 
 ## Scope & constraints

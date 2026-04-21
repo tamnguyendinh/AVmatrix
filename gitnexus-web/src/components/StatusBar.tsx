@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { Heart } from '@/lib/lucide-icons';
 import { useAppState } from '../hooks/useAppState.local-runtime';
 
 export const StatusBar = () => {
@@ -47,21 +46,8 @@ export const StatusBar = () => {
         )}
       </div>
 
-      {/* Center - Sponsor */}
-      <a
-        href="https://github.com/sponsors/abhigyanpatwari"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group flex cursor-pointer items-center gap-2 rounded-full border border-pink-500/20 bg-pink-500/10 px-3 py-1 transition-all duration-200 hover:scale-[1.02] hover:border-pink-500/40 hover:bg-pink-500/20"
-      >
-        <Heart className="h-3.5 w-3.5 animate-pulse fill-pink-500/40 text-pink-500 transition-all duration-200 group-hover:scale-110 group-hover:fill-pink-500" />
-        <span className="text-[11px] font-medium text-pink-400 transition-colors group-hover:text-pink-300">
-          Sponsor
-        </span>
-        <span className="hidden text-[10px] text-pink-300/50 italic transition-colors group-hover:text-pink-300/80 md:inline">
-          need to buy some API credits to run SWE-bench 😅
-        </span>
-      </a>
+      {/* Center spacer - keeps footer balance without external CTA */}
+      <div aria-hidden="true" className="h-6 w-[220px] shrink-0" />
 
       {/* Right - Stats */}
       <div className="flex items-center gap-3" data-testid="graph-stats">

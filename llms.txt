@@ -15,6 +15,5 @@ GitNexus monorepo (CLI + web UI)
 # Key directories
 - gitnexus/ (CLI/core, MCP server — TypeScript)
 - gitnexus-web/ (web UI — React/Vite/WASM)
-- eval/ (SWE-bench evaluation harness — Python)
 - gitnexus-claude-plugin/ (Claude marketplace config)
 - gitnexus-cursor-integration/ (Cursor integration config)

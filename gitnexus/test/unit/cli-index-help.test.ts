@@ -91,6 +91,7 @@ describe('CLI help surface', () => {
     expect(result.stdout).toContain('local runtime core');
     expect(result.stdout).toContain('wiki-mode [mode]');
     expect(result.stdout).toContain('detect-changes');
+    expect(result.stdout).not.toContain('eval-server');
   });
 
   it('serve help enforces loopback-only host wording', () => {
