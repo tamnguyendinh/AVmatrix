@@ -21,7 +21,23 @@
   - `~/.avmatrix`
 - Không làm mất bất kỳ feature nào của web UI, CLI, MCP, graph, query, impact, detect-changes, analyze, multi-repo, chat, hoặc local-only flow.
 - Không được đổi hành vi sản phẩm ngoài phạm vi rename/namespace migration trừ khi cần để tương thích namespace mới.
-- Vẫn có compatibility path đủ tốt để dữ liệu/index cũ từ `.gitnexus` và `~/.gitnexus` không bị mất ngay lập tức.
+- Có migration path rõ ràng để dữ liệu/index cũ từ `.gitnexus` và `~/.gitnexus` được chuyển sang namespace mới, nhưng runtime sau migration chỉ dùng namespace mới.
+
+# Scope V1 được chốt
+
+- **V1 chỉ đổi:**
+  - surface user-facing
+  - command alias / CLI entrypoint
+  - MCP server name / setup output
+  - storage namespace
+  - resource scheme
+  - docs / tests / setup helpers liên quan
+- **V1 không đổi ngay:**
+  - tên thư mục package `gitnexus/`, `gitnexus-web/`, `gitnexus-shared`
+  - package npm names công bố ra ngoài
+  - import paths nội bộ hàng loạt
+  - full monorepo repo/folder rename
+- Mục tiêu của V1 là giải quyết **nhầm lẫn ngữ cảnh vận hành local**, không phải làm full internal rename.
 
 # Kết quả mong muốn sau cùng
 
@@ -43,6 +59,14 @@
 - Cấm làm mất tính năng.
 - Cấm làm mất giao diện.
 - Cấm đổi UX theo kiểu rút gọn cho dễ rename.
+- **Docs/spec phải đổi trước code.**
+- Tên, wording, command canonical, namespace canonical phải được chốt trong docs trước, rồi code mới đổi theo đúng spec đó.
+- Không được rename code trước khi docs đã xác định rõ:
+  - brand mới
+  - command canonical
+  - MCP name canonical
+  - storage namespace canonical
+  - resource scheme canonical
 - Cấm xóa trực tiếp surface cũ trước khi surface mới đạt parity.
 - Với mọi surface lớn hoặc có nhiều trạng thái:
   - tạo file mới song song nếu cần
@@ -50,8 +74,9 @@
   - có behavioral tests
   - chỉ sau đó mới thay thế file cũ
 - Với các rename có thể gây đứt dữ liệu local:
-  - phải có migration path hoặc compatibility shim
-  - không đổi một bước kiểu làm mất index/config đang dùng
+  - phải có migration path rõ ràng
+  - không giữ fallback runtime lâu dài cho storage/env
+  - sau migration, namespace cũ không còn là source of truth
 - Với Codex/Claude Code:
   - không để lẫn lộn MCP name `gitnexus` và `avmatrix`
   - không để docs/setup hiển thị đồng thời cả hai tên nếu không có chú thích migration rõ ràng
@@ -74,6 +99,7 @@
 - `gitnexus://` -> `avmatrix://`
 - `gitnexus mcp` -> `avmatrix mcp`
 - `gitnexus analyze` -> `avmatrix analyze`
+- `GITNEXUS_HOME` -> `AVMATRIX_HOME` bằng migration/cutover sạch, không giữ fallback runtime
 
 ## 3. Repo/package/codebase internals
 
@@ -102,32 +128,53 @@
 - Repo-local hidden folder mục tiêu: `.avmatrix`
 - User-global config dir mục tiêu: `~/.avmatrix`
 
-## Compatibility philosophy
+## Migration philosophy
 
 - V1 của migration nên là:
   - **AVmatrix-first**
-  - nhưng vẫn đọc được dữ liệu/config/index từ namespace cũ
+  - **không đọc fallback namespace cũ trong runtime sau khi migration đã chạy**
 - Nghĩa là:
-  - ưu tiên ghi mới vào `.avmatrix` / `~/.avmatrix`
-  - nhưng nếu chưa có dữ liệu mới, có thể đọc fallback từ `.gitnexus` / `~/.gitnexus`
-- Chỉ xóa compatibility path khi đã xác nhận:
-  - CLI
-  - MCP
-  - web UI
-  - setup docs
-  - config migration
-  - repo registry
-  đều ổn định
+  - runtime primary chỉ dùng `.avmatrix` / `~/.avmatrix`
+  - dữ liệu cũ từ `.gitnexus` / `~/.gitnexus` chỉ được dùng làm **migration source**
+  - migration diễn ra một lần, có thể theo command riêng hoặc explicit upgrade step
+- Sau migration:
+  - source of truth duy nhất là `.avmatrix` / `~/.avmatrix`
+  - `GITNEXUS_HOME` không còn là env runtime chính
+
+## Alias philosophy
+
+- `avmatrix` là **canonical command mới** cho local usage.
+- `gitnexus` được giữ làm **compatibility alias** trong giai đoạn đầu.
+- Docs/setup/onboarding mới chỉ hướng dẫn `avmatrix`, không hướng dẫn `gitnexus` như đường chính.
+- Resource parsing nên chấp nhận cả:
+  - `gitnexus://...`
+  - `avmatrix://...`
+- Nhưng generator/output mới chỉ sinh:
+  - `avmatrix://...`
 
 ## Rollout philosophy
 
 - Ưu tiên rename theo thứ tự:
-  1. user-facing brand
-  2. command/MCP/config namespace
-  3. storage namespace
-  4. docs/tests/setup
-  5. package/import internals nếu thật sự cần
+  1. docs/spec canonical
+  2. user-facing brand
+  3. command/MCP/config namespace
+  4. storage namespace
+  5. docs/tests/setup cleanup
+  6. package/import internals nếu thật sự cần
 - Không đổi package/import quá sớm nếu chỉ rename surface là đủ để giải quyết nhầm lẫn context.
+
+## Install story phải chốt ngay
+
+- V1 không yêu cầu đổi package name để có command mới.
+- Cách triển khai nên là:
+  - package hiện tại vẫn có thể giữ tên `gitnexus`
+  - `bin` expose đồng thời:
+    - `gitnexus`
+    - `avmatrix`
+- Sau `npm link` hoặc local install, cả hai command phải cùng hoạt động.
+- Docs local mới chỉ hướng dẫn:
+  - `avmatrix`
+- Nhưng alias `gitnexus` vẫn phải chạy được để không làm gãy config/script cũ.
 
 # Rủi ro chính cần kiểm soát
 
@@ -140,7 +187,7 @@
 
 ## 2. Mất index/config local
 
-- Nếu đổi `.gitnexus` sang `.avmatrix` mà không migrate/fallback:
+- Nếu đổi `.gitnexus` sang `.avmatrix` mà không có migration path rõ ràng:
   - repo đã index sẽ biến mất khỏi UI
   - registry sẽ rỗng
   - MCP sẽ không thấy repo cũ
@@ -161,21 +208,21 @@
 
 # Chiến lược migration được đề xuất
 
-## Giai đoạn A: Dual-brand compatibility
+## Giai đoạn A: Command/MCP alias transition
 
 - `avmatrix` trở thành đường chính cho local usage
 - `gitnexus` vẫn còn tồn tại như compatibility shim
 - MCP config mới dùng `avmatrix mcp`
 - docs mới chỉ nói `avmatrix`
-- code vẫn có khả năng đọc namespace cũ để migrate mềm
+- code vẫn có thể giữ alias command cũ trong giai đoạn đầu
 
 ## Giai đoạn B: AVmatrix-first storage/config
 
 - ghi mới vào `.avmatrix` và `~/.avmatrix`
-- đọc fallback từ `.gitnexus` và `~/.gitnexus`
-- có cơ chế copy/migrate registry/config/index khi cần
+- chạy migration một lần từ `.gitnexus` và `~/.gitnexus`
+- sau migration, runtime chỉ đọc `.avmatrix` và `~/.avmatrix`
 
-## Giai đoạn C: Compatibility cleanup
+## Giai đoạn C: Alias cleanup
 
 - sau khi xác nhận toàn bộ flow local dùng ổn:
   - giảm dần docs cũ
@@ -200,6 +247,8 @@
   - web UI copy
   - MCP config/setup helpers
   - repo-manager storage paths
+  - AI-context generator / skill installer / generated skill paths
+  - env vars and home-dir loaders
   - tests/e2e/fixtures
   - README/skills/Onboarding
 - Phân loại inventory thành:
@@ -212,6 +261,37 @@
 ## Deliverable
 
 - Một inventory checklist rõ ràng để không rename sót surface nào
+
+# Pha 0.5: Docs/spec canonical trước khi đổi code
+
+- Repo đụng:
+  - `docs/`
+  - `README.md`
+  - setup docs / local usage docs / migration notes
+
+## Mục tiêu
+
+- Chốt spec rename bằng docs trước khi đổi code.
+- Sau phase này, mọi quyết định tên gọi phải đã được viết rõ trong docs:
+  - `AVmatrix`
+  - `avmatrix`
+  - `avmatrix mcp`
+  - `.avmatrix`
+  - `~/.avmatrix`
+  - `avmatrix://`
+
+## Checklist
+
+- Có bảng mapping canonical từ brand cũ sang brand mới
+- Docs phải nói rõ phase đầu tiên là rename ở docs/spec, code chỉ được đổi sau khi mapping docs đã khóa
+- Docs local usage / setup / migration giải thích rõ command canonical mới
+- Docs nêu rõ chỗ nào còn là compatibility alias, chỗ nào là canonical mới
+- Không để code rename đi trước docs rename
+
+## Acceptance
+
+- Khi bắt đầu đổi code, cả bạn và agent đều đã có một spec docs rõ ràng để bám theo
+- Không còn phải “đoán” chỗ nào nên hiện `GitNexus`, chỗ nào nên hiện `AVmatrix`
 
 # Pha 1: Brand rename ở user-facing surfaces
 
@@ -234,6 +314,7 @@
 - session status messages
 - setup instructions
 - README / local usage docs / skills docs
+- generated AI context copy (`AGENTS.md`, `CLAUDE.md`) trong cùng rollout đầu
 
 ## Acceptance
 
@@ -323,24 +404,25 @@
 
 - Repo-local storage:
   - `.avmatrix` là primary
-  - fallback đọc `.gitnexus`
 - User-global storage:
   - `~/.avmatrix` là primary
-  - fallback đọc `~/.gitnexus`
+- Env:
+  - `AVMATRIX_HOME` là env var primary duy nhất sau cutover
 - Registry migration:
   - nếu `~/.avmatrix/registry.json` chưa có mà `~/.gitnexus/registry.json` có
-  - copy hoặc migrate sang namespace mới
+  - migrate sang namespace mới
 - Config migration:
   - tương tự cho global config/runtime config
 - Analyze mới:
   - ghi index vào `.avmatrix`
 - Repo cũ đã index:
-  - vẫn đọc được hoặc có migration step rõ ràng
+  - phải có migration step rõ ràng trước khi dùng runtime mới
 
 ## Acceptance
 
 - Sau rename, repo đã index trước đó vẫn hiện trong UI/MCP/CLI
 - Không bắt người dùng phải re-analyze toàn bộ chỉ vì đổi tên brand
+- Runtime sau migration không còn đọc `.gitnexus` / `~/.gitnexus` như fallback
 
 # Pha 5: Resource scheme và protocol namespace
 
@@ -357,9 +439,8 @@
 
 - resources/context/process URIs đổi brand
 - docs/skills/AI context sections đổi theo
-- nếu còn compatibility:
-  - parse cả `gitnexus://` và `avmatrix://` trong giai đoạn đầu
-  - nhưng chỉ generate `avmatrix://`
+- migration tools phải rewrite toàn bộ reference cũ sang `avmatrix://`
+- runtime active path và generator chỉ dùng `avmatrix://`
 
 ## Acceptance
 
@@ -421,7 +502,7 @@
 ## Mục tiêu
 
 - rename không làm đứt behavior
-- compatibility path được khóa bằng tests
+- alias command/MCP và migration path được khóa bằng tests
 
 ## Behavioral tests bắt buộc
 
@@ -443,8 +524,8 @@
 
 ### Storage migration
 
-- repo cũ chỉ có `.gitnexus` vẫn load được
-- user cũ chỉ có `~/.gitnexus/registry.json` vẫn hiện repo
+- migration một lần từ namespace cũ sang `.avmatrix` / `~/.avmatrix` thành công
+- sau migration, runtime chỉ đọc namespace mới
 - analyze mới ghi vào `.avmatrix`
 
 ### Web
@@ -489,6 +570,7 @@
 - `gitnexus/src/cli/ai-context.ts`
 - `gitnexus/src/storage/repo-manager.ts`
 - `gitnexus/src/storage/runtime-config.ts`
+- `gitnexus/src/core/group/storage.ts`
 - `gitnexus/src/server/api.ts`
 - `gitnexus/src/mcp/resources.ts`
 - `gitnexus/src/mcp/tools.ts`
@@ -508,11 +590,22 @@
 
 - root `README.md`
 - `gitnexus/README.md`
+- `RUNBOOK.md`
+- `TESTING.md`
+- `CONTRIBUTING.md`
 - `docs/local-usage.md`
 - `docs/plans/*.md` liên quan
 - `gitnexus/skills/*.md`
 - `AGENTS.md`
 - `CLAUDE.md`
+- `.gitignore`
+- active `.cursor` / plugin metadata / setup artifacts nếu còn lộ `gitnexus`
+
+## Auto-generated local surfaces
+
+- `AGENTS.md` / `CLAUDE.md` GitNexus block generator
+- `.claude/skills/gitnexus/*`
+- `.claude/skills/generated/*` references nếu còn copy brand cũ vào generated content
 
 ## Tests
 
@@ -521,7 +614,7 @@
 - onboarding/local-only tests
 - package dep tests
 - repo-manager migration tests
-- new compatibility tests cho `.gitnexus -> .avmatrix`
+- migration tests cho `.gitnexus -> .avmatrix`
 
 # Migration strategy cho config và data
 
@@ -531,35 +624,34 @@
   - `~/.avmatrix/config.json`
   - `~/.avmatrix/registry.json`
   - `~/.avmatrix/runtime.json`
-- Compatibility:
-  - nếu file mới chưa tồn tại, thử đọc file cũ từ `~/.gitnexus`
+- Env var mới:
+  - `AVMATRIX_HOME`
 - Migration:
-  - lazy migration khi startup hoặc khi lần đầu save config
+  - explicit migration step hoặc one-time startup migration
+  - sau khi migrate xong, runtime chỉ đọc file mới
+  - `GITNEXUS_HOME` không còn được runtime dùng như fallback sau cutover
 
 ## Repo-local
 
 - Primary mới:
   - `<repo>/.avmatrix/`
-- Compatibility:
-  - nếu `.avmatrix` chưa có nhưng `.gitnexus` có, cho phép đọc fallback
 - Migration:
-  - có thể:
-    - copy metadata/index sang `.avmatrix`
-    - hoặc dùng lazy read từ `.gitnexus` và ghi mới vào `.avmatrix` về sau
+  - migrate metadata/index sang `.avmatrix`
+  - sau khi migrate xong, runtime chỉ đọc `.avmatrix`
+  - `.gitnexus/` chỉ còn là source để migrate một lần, không phải fallback runtime
 
 ## Khuyến nghị
 
-- Giai đoạn đầu nên dùng:
-  - **lazy migration + fallback read**
-- Không nên ép rename folder index ngay trên disk trong một bước
+- Dùng **migration một lần + cutover sạch**
+- Không giữ fallback runtime lâu dài cho storage/env
 
 # Rollback strategy
 
 - Nếu rename user-facing surface gây regression:
   - rollback phase đó trước, không rollback toàn bộ repo nếu các phase khác vẫn ổn
 - Nếu namespace storage migration gây mất repo/index:
-  - revert sang read `.gitnexus`
-  - giữ write path tạm ở namespace cũ
+  - rollback phase migration
+  - restore lại code/runtime của phase trước, không duy trì fallback song song trong steady state
 - Nếu command `avmatrix` chưa ổn:
   - giữ `gitnexus` làm canonical tạm thời
   - nhưng vẫn để brand UI là `AVmatrix` nếu cần
@@ -570,23 +662,30 @@
   - tên package npm
   - tên thư mục `gitnexus/`, `gitnexus-web/`, `gitnexus-shared`
   hay chỉ đổi surface user-facing + command + namespace?
-- Có muốn:
-  - `gitnexus` là alias dài hạn
-  - hay chỉ là alias tạm thời trong 1 giai đoạn migration?
-- Có muốn auto-migrate `.gitnexus` -> `.avmatrix` ngay khi startup
-  hay chỉ đọc fallback rồi chờ người dùng re-analyze/save?
+
+# Quyết định đã chốt cho V1
+
+- `V1` chỉ đổi surface user-facing + command + MCP + storage namespace + resource scheme.
+- `V1` **không** đổi package/folder/import nội bộ hàng loạt.
+- `avmatrix` là canonical command mới.
+- `gitnexus` được giữ làm compatibility alias cho command/MCP trong giai đoạn đầu.
+- `AVMATRIX_HOME` là env var primary mới.
+- Không giữ fallback runtime cho `.gitnexus` / `~/.gitnexus` / `GITNEXUS_HOME`.
+- Docs/spec là phase đầu tiên; code chỉ được đổi sau khi docs đã khóa canonical names.
+- Dữ liệu namespace cũ chỉ được dùng làm migration source một lần.
+- Generator của `AGENTS.md` / `CLAUDE.md` / skills local phải được đổi cùng rollout đầu.
 
 # Đề xuất triển khai tốt nhất
 
 - V1 nên làm theo thứ tự:
   1. Pha 0 audit
-  2. Pha 1 brand rename
-  3. Pha 2 command alias `avmatrix`
-  4. Pha 3 MCP rename
-  5. Pha 4 storage/config compatibility migration
+  2. Pha 0.5 docs/spec canonical
+  3. Pha 1 brand rename
+  4. Pha 2 + Pha 3 trong cùng rollout đầu để command/MCP/docs không lệch nhau
+  5. Pha 4 storage/config migration một lần
   6. Pha 5 resource scheme rename
   7. Pha 6 web active path cleanup
-  8. Pha 7 docs/setup
+  8. Pha 7 docs/setup cleanup cuối
   9. Pha 8 tests/compatibility lock
 - Pha 9 chỉ làm khi thật sự cần.
 
@@ -594,6 +693,7 @@
 
 - [ ] Audit đầy đủ mọi surface `GitNexus` / `gitnexus` / `.gitnexus` / `gitnexus://`
 - [ ] Chốt scope rename: surface-only hay cả package/internal
+- [ ] Chốt docs/spec canonical trước khi đổi code
 - [ ] Đổi brand hiển thị sang `AVmatrix`
 - [ ] Thêm command `avmatrix`
 - [ ] Giữ hoặc chốt alias `gitnexus`
@@ -601,7 +701,7 @@
 - [ ] Đổi MCP server name trong config/setup sang `avmatrix`
 - [ ] Đổi docs/setup sang `AVmatrix`
 - [ ] Đổi storage primary sang `.avmatrix` / `~/.avmatrix`
-- [ ] Thêm fallback/migration từ namespace cũ
+- [ ] Thêm migration một lần từ namespace cũ
 - [ ] Đổi resource scheme sang `avmatrix://`
 - [ ] Web UI active path không còn lộ `GitNexus`
 - [ ] Behavioral tests cho command/MCP/storage/web pass
