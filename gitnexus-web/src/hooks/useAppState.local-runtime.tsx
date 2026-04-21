@@ -779,6 +779,7 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
             case 'content':
               // Final answer content - accumulate into contiguous content step
               if (chunk.content) {
+                const normalizedIncoming = chunk.content.trim();
                 // Only append if the LAST step is a content step (contiguous streaming)
                 const lastStep = stepsForMessage[stepsForMessage.length - 1];
                 if (lastStep && lastStep.type === 'content') {
@@ -786,6 +787,19 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
                   stepsForMessage[stepsForMessage.length - 1] = {
                     ...lastStep,
                     content: (lastStep.content || '') + chunk.content,
+                  };
+                } else if (
+                  lastStep &&
+                  lastStep.type === 'reasoning' &&
+                  (lastStep.content || '').trim() === normalizedIncoming
+                ) {
+                  // Codex can emit the final answer once as an agent_message and then again
+                  // as the terminal content payload. Replace the trailing reasoning step
+                  // instead of showing the same answer twice.
+                  stepsForMessage[stepsForMessage.length - 1] = {
+                    ...lastStep,
+                    type: 'content',
+                    content: chunk.content,
                   };
                 } else {
                   // Create new content step (after tool calls or at start)

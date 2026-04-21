@@ -162,6 +162,100 @@ describe('useAppState.local-runtime', () => {
     );
   });
 
+  it('dedupes a final answer repeated as reasoning then content', async () => {
+    const encoder = new TextEncoder();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+
+        if (url.includes('/api/session/status')) {
+          return new Response(JSON.stringify(readyStatus), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+
+        if (url.includes('/api/session/chat')) {
+          const stream = new ReadableStream<Uint8Array>({
+            start(controller) {
+              controller.enqueue(
+                encoder.encode(
+                  [
+                    `event: session_started\ndata: ${JSON.stringify({
+                      type: 'session_started',
+                      sessionId: 'session-dedupe',
+                      provider: 'codex',
+                      repoName: 'GitNexus',
+                      repoPath: 'repos/GitNexus',
+                      timestamp: Date.now(),
+                      runtimeEnvironment: 'wsl2',
+                      executionMode: 'bypass',
+                    })}\n\n`,
+                    `event: reasoning\ndata: ${JSON.stringify({
+                      type: 'reasoning',
+                      sessionId: 'session-dedupe',
+                      provider: 'codex',
+                      repoName: 'GitNexus',
+                      repoPath: 'repos/GitNexus',
+                      timestamp: Date.now(),
+                      reasoning: 'Chào bạn.',
+                    })}\n\n`,
+                    `event: content\ndata: ${JSON.stringify({
+                      type: 'content',
+                      sessionId: 'session-dedupe',
+                      provider: 'codex',
+                      repoName: 'GitNexus',
+                      repoPath: 'repos/GitNexus',
+                      timestamp: Date.now(),
+                      content: 'Chào bạn.',
+                    })}\n\n`,
+                    `event: done\ndata: ${JSON.stringify({
+                      type: 'done',
+                      sessionId: 'session-dedupe',
+                      provider: 'codex',
+                      repoName: 'GitNexus',
+                      repoPath: 'repos/GitNexus',
+                      timestamp: Date.now(),
+                    })}\n\n`,
+                  ].join(''),
+                ),
+              );
+              controller.close();
+            },
+          });
+
+          return new Response(stream, {
+            status: 200,
+            headers: { 'Content-Type': 'text/event-stream' },
+          });
+        }
+
+        throw new Error(`Unexpected fetch: ${url}`);
+      }),
+    );
+
+    renderHarness();
+    await waitFor(() => expect(appState).not.toBeNull());
+
+    await act(async () => {
+      await appState.initializeAgent('GitNexus');
+    });
+
+    await act(async () => {
+      await appState.sendChatMessage('chào');
+    });
+
+    expect(appState.chatMessages).toHaveLength(2);
+    const assistant = appState.chatMessages[1];
+    expect(assistant.content).toBe('Chào bạn.');
+    expect(assistant.steps).toHaveLength(1);
+    expect(assistant.steps[0]).toMatchObject({
+      type: 'content',
+      content: 'Chào bạn.',
+    });
+  });
+
   it('cancels an active local session when stopChatResponse is called', async () => {
     const encoder = new TextEncoder();
     let chatController: ReadableStreamDefaultController<Uint8Array> | null = null;

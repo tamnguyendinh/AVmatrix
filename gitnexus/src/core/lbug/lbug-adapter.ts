@@ -165,6 +165,7 @@ let sessionLock: Promise<void> = Promise.resolve();
 const DB_LOCK_RETRY_ATTEMPTS = 3;
 /** Base back-off in ms between BUSY retries (multiplied by attempt number). */
 const DB_LOCK_RETRY_DELAY_MS = 500;
+const WAL_CORRUPTION_PATTERNS = ['corrupted wal file', 'invalid wal record type'];
 
 /**
  * Return true when the error message indicates that another process holds
@@ -179,6 +180,19 @@ export const isDbBusyError = (err: unknown): boolean => {
     msg.includes('already in use') ||
     msg.includes('could not set lock')
   );
+};
+
+const isWalCorruptionError = (err: unknown): boolean => {
+  const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+  return WAL_CORRUPTION_PATTERNS.some((pattern) => msg.includes(pattern));
+};
+
+const cleanupLbugSidecars = async (dbPath: string): Promise<void> => {
+  for (const suffix of ['.wal', '.lock']) {
+    try {
+      await fs.unlink(`${dbPath}${suffix}`);
+    } catch {}
+  }
 };
 
 const runWithSessionLock = async <T>(operation: () => Promise<T>): Promise<T> => {
@@ -305,26 +319,56 @@ const doInitLbug = async (dbPath: string) => {
   const parentDir = path.dirname(dbPath);
   await fs.mkdir(parentDir, { recursive: true });
 
-  db = new lbug.Database(dbPath);
-  conn = new lbug.Connection(db);
+  let recoveredWal = false;
 
-  for (const schemaQuery of SCHEMA_QUERIES) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    db = new lbug.Database(dbPath);
+    conn = new lbug.Connection(db);
+
     try {
-      await conn.query(schemaQuery);
-    } catch (err) {
-      // Only ignore "already exists" errors - log everything else
-      const msg = err instanceof Error ? err.message : String(err);
-      if (!msg.includes('already exists')) {
-        console.warn(`⚠️ Schema creation warning: ${msg.slice(0, 120)}`);
+      for (const schemaQuery of SCHEMA_QUERIES) {
+        try {
+          await conn.query(schemaQuery);
+        } catch (err) {
+          if (isWalCorruptionError(err)) {
+            throw err;
+          }
+          // Only ignore "already exists" errors - log everything else
+          const msg = err instanceof Error ? err.message : String(err);
+          if (!msg.includes('already exists')) {
+            console.warn(`⚠️ Schema creation warning: ${msg.slice(0, 120)}`);
+          }
+        }
       }
+
+      // Load VECTOR extension for semantic search support
+      await loadVectorExtension({ throwOnWalCorruption: true });
+
+      currentDbPath = dbPath;
+      return { db, conn };
+    } catch (err) {
+      const shouldRecover = !recoveredWal && isWalCorruptionError(err);
+
+      try {
+        await conn?.close();
+      } catch {}
+      try {
+        await db?.close();
+      } catch {}
+      conn = null;
+      db = null;
+
+      if (shouldRecover) {
+        recoveredWal = true;
+        await cleanupLbugSidecars(dbPath);
+        continue;
+      }
+
+      throw err;
     }
   }
 
-  // Load VECTOR extension for semantic search support
-  await loadVectorExtension();
-
-  currentDbPath = dbPath;
-  return { db, conn };
+  throw new Error('LadybugDB initialization retry exhausted');
 };
 
 export type LbugProgressCallback = (message: string) => void;
@@ -1166,7 +1210,9 @@ export const loadFTSExtension = async (): Promise<void> => {
  * Load the VECTOR extension (required before using QUERY_VECTOR_INDEX).
  * Safe to call multiple times -- tracks loaded state via module-level vectorExtensionLoaded.
  */
-export const loadVectorExtension = async (): Promise<void> => {
+export const loadVectorExtension = async (
+  options: { throwOnWalCorruption?: boolean } = {},
+): Promise<void> => {
   if (vectorExtensionLoaded) return;
   if (!conn) {
     throw new Error('LadybugDB not initialized. Call initLbug first.');
@@ -1183,6 +1229,8 @@ export const loadVectorExtension = async (): Promise<void> => {
       msg.includes('already exists')
     ) {
       vectorExtensionLoaded = true;
+    } else if (options.throwOnWalCorruption && isWalCorruptionError(err)) {
+      throw err;
     } else {
       console.error('GitNexus: VECTOR extension load failed:', msg);
     }
