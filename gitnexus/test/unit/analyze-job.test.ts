@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { JobManager } from '../../src/server/analyze-job.js';
+import { JobManager, type AnalyzeJob } from '../../src/server/analyze-job.js';
+
+type AnalyzeStatus = AnalyzeJob['status'];
+type AllowsCloneEraStatus = 'cloning' extends AnalyzeStatus ? true : false;
+const allowsCloneEraStatus: AllowsCloneEraStatus = false;
 
 describe('JobManager', () => {
   let manager: JobManager;
@@ -13,6 +17,7 @@ describe('JobManager', () => {
   });
 
   it('creates a job with queued status', () => {
+    expect(allowsCloneEraStatus).toBe(false);
     const job = manager.createJob({ repoPath: '/repos/repo' });
     expect(job.id).toBeTruthy();
     expect(job.status).toBe('queued');

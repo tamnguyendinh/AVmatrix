@@ -7,16 +7,16 @@ describe('server-side analyze integration', () => {
 
   afterAll(() => manager.dispose());
 
-  it('full job lifecycle: create -> clone -> analyze -> complete', () => {
-    const job = manager.createJob({ repoUrl: 'https://github.com/user/test-repo' });
+  it('full job lifecycle: create -> prepare local analysis -> analyze -> complete', () => {
+    const job = manager.createJob({ repoPath: '/repos/test-repo' });
     expect(job.status).toBe('queued');
 
-    // Simulate clone phase
+    // Simulate local analyze preparation phase
     manager.updateJob(job.id, {
-      status: 'cloning',
-      progress: { phase: 'cloning', percent: 5, message: 'Cloning...' },
+      status: 'analyzing',
+      progress: { phase: 'analyzing', percent: 0, message: 'Preparing local analysis...' },
     });
-    expect(manager.getJob(job.id)!.status).toBe('cloning');
+    expect(manager.getJob(job.id)!.status).toBe('analyzing');
 
     // Simulate analyze phase
     manager.updateJob(job.id, {
@@ -39,7 +39,7 @@ describe('server-side analyze integration', () => {
   });
 
   it('SSE progress listener receives all events in order', () => {
-    const job = manager.createJob({ repoUrl: 'https://github.com/user/sse-test' });
+    const job = manager.createJob({ repoPath: '/repos/sse-test' });
     const events: any[] = [];
 
     const unsubscribe = manager.onProgress(job.id, (progress) => {
@@ -64,7 +64,7 @@ describe('server-side analyze integration', () => {
   });
 
   it('failed job emits failure event', () => {
-    const job = manager.createJob({ repoUrl: 'https://github.com/user/fail-test' });
+    const job = manager.createJob({ repoPath: '/repos/fail-test' });
     const events: any[] = [];
 
     const unsubscribe = manager.onProgress(job.id, (progress) => {
@@ -96,21 +96,21 @@ describe('server-side analyze integration', () => {
     // First job completes from previous test, start fresh
     const freshManager = new JobManager();
 
-    const job1 = freshManager.createJob({ repoUrl: 'https://github.com/user/repo-a' });
+    const job1 = freshManager.createJob({ repoPath: '/repos/repo-a' });
     freshManager.updateJob(job1.id, { status: 'analyzing' });
 
     // Second different repo should be rejected
-    expect(() => freshManager.createJob({ repoUrl: 'https://github.com/user/repo-b' })).toThrow(
+    expect(() => freshManager.createJob({ repoPath: '/repos/repo-b' })).toThrow(
       /already in progress/,
     );
 
     // Same repo should return existing job
-    const job1again = freshManager.createJob({ repoUrl: 'https://github.com/user/repo-a' });
+    const job1again = freshManager.createJob({ repoPath: '/repos/repo-a' });
     expect(job1again.id).toBe(job1.id);
 
     // After completion, new job allowed
     freshManager.updateJob(job1.id, { status: 'complete' });
-    const job2 = freshManager.createJob({ repoUrl: 'https://github.com/user/repo-b' });
+    const job2 = freshManager.createJob({ repoPath: '/repos/repo-b' });
     expect(job2.status).toBe('queued');
     expect(job2.id).not.toBe(job1.id);
 

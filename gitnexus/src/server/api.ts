@@ -32,7 +32,7 @@ import { LocalBackend } from '../mcp/local/local-backend.js';
 import { mountMCPEndpoints } from './mcp-http.js';
 import { fork } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
-import { JobManager } from './analyze-job.js';
+import { JobManager, type AnalyzeJob, type AnalyzeJobProgress } from './analyze-job.js';
 import { getCloneDir } from './git-clone.js';
 import { resolveAnalyzeRepoPath } from './local-path-policy.js';
 import { RuntimeController } from '../runtime/runtime-controller.js';
@@ -41,6 +41,15 @@ import { mountSessionBridge } from './session-bridge.js';
 
 const _require = createRequire(import.meta.url);
 const pkg = _require('../../package.json');
+
+export const LOCAL_ANALYZE_PREPARING_PROGRESS: AnalyzeJobProgress = {
+  phase: 'analyzing',
+  percent: 0,
+  message: 'Preparing local analysis...',
+};
+
+export const isActiveAnalyzeJobStatus = (status: AnalyzeJob['status']): boolean =>
+  status === 'queued' || status === 'analyzing';
 
 /**
  * Determine whether an HTTP Origin header value is allowed by CORS policy.
@@ -481,9 +490,9 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
       found = repos[0]; // default to first repo
     }
 
-    // If not yet in the registry, check whether a background job is actively cloning or
+    // If not yet in the registry, check whether a background job is actively preparing or
     // analyzing this repo. Hold the connection open (up to 5 minutes) until it completes.
-    // We only wait for in-progress jobs ('queued'|'cloning'|'analyzing') — a 'complete' job
+    // We only wait for in-progress jobs ('queued'|'analyzing') — a 'complete' job
     // whose repo is still missing means the registry sync failed; the fallback below handles it.
     if (!found && normalizedName) {
       const lower = normalizedName.toLowerCase();
@@ -499,7 +508,7 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
           job.repoName?.toLowerCase() === lower ||
           (job.repoPath && path.basename(job.repoPath).toLowerCase() === lower);
 
-        if (isMatch && ['queued', 'cloning', 'analyzing'].includes(job.status)) {
+        if (isMatch && isActiveAnalyzeJobStatus(job.status)) {
           if (process.env.DEBUG) {
             console.log(
               `[debug] resolveRepo waiting for active job ${job.id} (${normalizedName})...`,
@@ -1151,8 +1160,12 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
         return;
       }
 
-      // Mark as active synchronously to prevent race with concurrent requests
-      jobManager.updateJob(job.id, { status: 'cloning' });
+      // Mark as active synchronously to prevent race with concurrent requests.
+      // Local-only analysis has no clone/pull phase; the job enters analyze preparation immediately.
+      jobManager.updateJob(job.id, {
+        status: 'analyzing',
+        progress: LOCAL_ANALYZE_PREPARING_PROGRESS,
+      });
 
       // Start async work — don't await
       (async () => {
@@ -1166,7 +1179,11 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
             return;
           }
 
-          jobManager.updateJob(job.id, { repoPath: targetPath, status: 'analyzing' });
+          jobManager.updateJob(job.id, {
+            repoPath: targetPath,
+            status: 'analyzing',
+            progress: LOCAL_ANALYZE_PREPARING_PROGRESS,
+          });
 
           // ── Worker fork with auto-retry ──────────────────────────────
           //

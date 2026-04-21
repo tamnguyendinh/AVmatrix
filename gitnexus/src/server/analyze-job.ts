@@ -21,7 +21,7 @@ export interface AnalyzeJobProgress {
 
 export interface AnalyzeJob {
   id: string;
-  status: 'queued' | 'cloning' | 'analyzing' | 'loading' | 'complete' | 'failed';
+  status: 'queued' | 'analyzing' | 'loading' | 'complete' | 'failed';
   repoPath?: string;
   repoName?: string;
   progress: AnalyzeJobProgress;

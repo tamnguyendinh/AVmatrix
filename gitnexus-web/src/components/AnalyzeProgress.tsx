@@ -9,8 +9,7 @@ interface AnalyzeProgressProps {
 
 const PHASE_LABELS: Record<string, string> = {
   queued: 'Queued',
-  cloning: 'Cloning repository',
-  pulling: 'Pulling latest',
+  analyzing: 'Preparing local analysis',
   extracting: 'Scanning files',
   structure: 'Building structure',
   parsing: 'Parsing code',

@@ -58,8 +58,7 @@ export interface JobProgress {
 
 export interface JobStatus {
   id: string;
-  status: 'queued' | 'cloning' | 'analyzing' | 'loading' | 'complete' | 'failed';
-  repoUrl?: string;
+  status: 'queued' | 'analyzing' | 'loading' | 'complete' | 'failed';
   repoPath?: string;
   repoName?: string;
   progress: JobProgress;
@@ -411,7 +410,7 @@ export const fetchRepos = async (): Promise<BackendRepo[]> => {
 };
 
 /** Fetch repo metadata.
- * Pass `awaitAnalysis: true` when connecting to a repo that may still be cloning/analyzing —
+ * Pass `awaitAnalysis: true` when connecting to a repo that may still be queued/analyzing —
  * this enables the backend's hold-queue and uses a 5-minute timeout to match.
  * Normal calls (e.g. repo switching between already-indexed repos) use the default 10s timeout.
  *
@@ -660,13 +659,16 @@ export const fetchClusterDetail = async (repo: string, name: string): Promise<un
 
 // ── Analyze API ────────────────────────────────────────────────────────────
 
-/** Start a server-side analysis job. */
-export const startAnalyze = async (request: {
-  url?: string;
-  path?: string;
+export interface AnalyzeRequest {
+  path: string;
   force?: boolean;
   embeddings?: boolean;
-}): Promise<{ jobId: string; status: string }> => {
+}
+
+/** Start a server-side local analysis job. */
+export const startAnalyze = async (
+  request: AnalyzeRequest,
+): Promise<{ jobId: string; status: string }> => {
   const response = await fetchWithTimeout(
     `${_backendUrl}/api/analyze`,
     {
@@ -772,7 +774,7 @@ export interface ConnectResult {
 /**
  * Connect to a server: validate, fetch repo info, download graph.
  * Content is NOT included (use readFile/grep for file access).
- * Pass `awaitAnalysis: true` when the repo may still be cloning/analyzing —
+ * Pass `awaitAnalysis: true` when the repo may still be queued/analyzing —
  * this enables the backend hold-queue and a 5-minute fetch timeout.
  */
 export async function connectToServer(

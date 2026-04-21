@@ -3,6 +3,11 @@ import os from 'os';
 import path from 'path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { resolveAnalyzeRepoPath } from '../../src/server/local-path-policy.js';
+import {
+  LOCAL_ANALYZE_PREPARING_PROGRESS,
+  isActiveAnalyzeJobStatus,
+} from '../../src/server/api.js';
+import type { AnalyzeJob } from '../../src/server/analyze-job.js';
 
 const tempDirs: string[] = [];
 
@@ -16,7 +21,23 @@ afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map((dir) => fs.rm(dir, { recursive: true, force: true })));
 });
 
+type AnalyzeStatus = AnalyzeJob['status'];
+type AllowsCloneEraStatus = 'cloning' extends AnalyzeStatus ? true : false;
+const allowsCloneEraStatus: AllowsCloneEraStatus = false;
+
 describe('analyze API local path policy', () => {
+  it('removes clone-era analyze job states from the active local-only contract', () => {
+    expect(allowsCloneEraStatus).toBe(false);
+    expect(isActiveAnalyzeJobStatus('queued')).toBe(true);
+    expect(isActiveAnalyzeJobStatus('analyzing')).toBe(true);
+    expect(isActiveAnalyzeJobStatus('loading')).toBe(false);
+    expect(LOCAL_ANALYZE_PREPARING_PROGRESS).toEqual({
+      phase: 'analyzing',
+      percent: 0,
+      message: 'Preparing local analysis...',
+    });
+  });
+
   it('resolves an existing absolute local repo path to its canonical path', async () => {
     const repoPath = await createTempRepo('gitnexus-analyze');
 
