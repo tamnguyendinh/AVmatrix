@@ -1,7 +1,7 @@
-import { useAppState } from './useAppState.local-runtime';
+import { useChatRuntime } from './chat-runtime/ChatRuntimeContext';
 
 export const useSettings = () => {
-  const { llmSettings, updateLLMSettings } = useAppState();
+  const { llmSettings, updateLLMSettings } = useChatRuntime();
 
   return {
     settings: llmSettings,

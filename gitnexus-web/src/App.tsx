@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppStateProvider, useAppState } from './hooks/useAppState.local-runtime';
+import { ChatRuntimeProvider, useChatRuntime } from './hooks/chat-runtime/ChatRuntimeContext';
 import { DropZone } from './components/DropZone';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import { Header } from './components/Header';
@@ -22,6 +23,16 @@ import {
 import { DEFAULT_BACKEND_URL, ERROR_RESET_DELAY_MS } from './config/ui-constants';
 
 const AppContent = () => {
+  const { chatRuntimeBridge } = useAppState();
+
+  return (
+    <ChatRuntimeProvider bridge={chatRuntimeBridge}>
+      <AppContentBody />
+    </ChatRuntimeProvider>
+  );
+};
+
+const AppContentBody = () => {
   const {
     viewMode,
     setViewMode,
@@ -31,10 +42,9 @@ const AppContent = () => {
     setProjectName,
     progress,
     isRightPanelOpen,
+    setRightPanelOpen,
     isSettingsPanelOpen,
     setSettingsPanelOpen,
-    refreshLLMSettings,
-    initializeAgent,
     startEmbeddingsWithFallback,
     codeReferences,
     selectedNode,
@@ -46,7 +56,9 @@ const AppContent = () => {
     repoAnalyzerRequestId,
     switchRepo,
     setCurrentRepo,
+    requestRepoAnalyzeDialog,
   } = useAppState();
+  const { refreshLLMSettings } = useChatRuntime();
 
   const graphCanvasRef = useRef<GraphCanvasHandle>(null);
   const [serverDisconnected, setServerDisconnected] = useState(false);
@@ -83,20 +95,15 @@ const AppContent = () => {
       // Transition directly to exploring view
       setViewMode('exploring');
 
-      // Initialize agent with backend queries, then start embeddings
-      try {
-        await initializeAgent(projectName);
-        startEmbeddingsWithFallback();
-      } catch (err) {
-        console.warn('Failed to initialize agent:', err);
-      }
+      // Embeddings can start immediately, but chat runtime stays lazy until the
+      // user actually sends a message or explicitly refreshes settings.
+      startEmbeddingsWithFallback();
     },
     [
       setViewMode,
       setGraph,
       setProjectName,
       setCurrentRepo,
-      initializeAgent,
       startEmbeddingsWithFallback,
     ],
   );
@@ -205,8 +212,7 @@ const AppContent = () => {
   // NOTE: Must be defined BEFORE any conditional returns (React hooks rule)
   const handleSettingsSaved = useCallback(() => {
     refreshLLMSettings();
-    initializeAgent();
-  }, [refreshLLMSettings, initializeAgent]);
+  }, [refreshLLMSettings]);
 
   // ── Server heartbeat: detect when server goes down while exploring ────────
   // Uses SSE (EventSource) for instant detection — no polling delay.
@@ -307,7 +313,13 @@ const AppContent = () => {
         </div>
 
         {/* Right Panel - Code & Chat (tabbed) */}
-        {isRightPanelOpen && <RightPanel />}
+        {isRightPanelOpen && (
+          <RightPanel
+            isOpen={isRightPanelOpen}
+            onClose={() => setRightPanelOpen(false)}
+            onRequestAnalyze={requestRepoAnalyzeDialog}
+          />
+        )}
       </main>
 
       <StatusBar />

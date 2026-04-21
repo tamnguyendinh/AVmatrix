@@ -1,27 +1,6 @@
 import { act, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { setBackendUrl } from '../../src/services/backend-client';
 import { AppStateProvider, useAppState } from '../../src/hooks/useAppState';
-
-const readyStatus = {
-  provider: 'codex' as const,
-  availability: 'ready' as const,
-  available: true,
-  authenticated: true,
-  executablePath: 'bin/codex',
-  version: 'test-version',
-  runtimeEnvironment: 'wsl2' as const,
-  executionMode: 'bypass' as const,
-  supportsSse: true,
-  supportsCancel: true,
-  supportsMcp: true,
-  repo: {
-    repoName: 'GitNexus',
-    state: 'indexed' as const,
-    resolvedRepoName: 'GitNexus',
-    resolvedRepoPath: 'repos/GitNexus',
-  },
-};
 
 let appState: ReturnType<typeof useAppState> | null = null;
 
@@ -33,16 +12,6 @@ function Harness() {
 describe('useAppState compatibility wrapper', () => {
   beforeEach(() => {
     appState = null;
-    setBackendUrl('http://localhost:4747');
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(
-        new Response(JSON.stringify(readyStatus), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }),
-      ),
-    );
     vi.stubGlobal('requestAnimationFrame', ((callback: FrameRequestCallback) => {
       callback(0);
       return 1;
@@ -53,7 +22,7 @@ describe('useAppState compatibility wrapper', () => {
     vi.restoreAllMocks();
   });
 
-  it('preserves the legacy import path while using the local session runtime', async () => {
+  it('preserves the legacy import path while exposing the chat runtime bridge', async () => {
     render(
       <AppStateProvider>
         <Harness />
@@ -62,11 +31,13 @@ describe('useAppState compatibility wrapper', () => {
 
     await waitFor(() => expect(appState).not.toBeNull());
 
+    expect(appState!.chatRuntimeBridge.getRepoName()).toBeUndefined();
+
     await act(async () => {
-      await appState!.initializeAgent('GitNexus');
+      appState!.setProjectName('GitNexus');
     });
 
-    expect(appState!.isAgentReady).toBe(true);
-    expect(appState!.agentError).toBeNull();
+    expect(appState!.chatRuntimeBridge.getRepoName()).toBe('GitNexus');
+    expect(appState!.chatRuntimeBridge.getEmbeddingStatus()).toBe('idle');
   });
 });

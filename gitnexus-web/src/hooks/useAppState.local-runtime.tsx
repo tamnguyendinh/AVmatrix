@@ -11,25 +11,6 @@ import {
 import type { GraphNode, NodeLabel, PipelineProgress } from 'gitnexus-shared';
 import type { KnowledgeGraph } from '../core/graph/types';
 import { createKnowledgeGraph } from '../core/graph/graph';
-import type {
-  LLMSettings,
-  AgentStreamChunk,
-  ChatMessage,
-  ToolCallInfo,
-  MessageStep,
-} from '../core/llm/types';
-import {
-  loadLocalRuntimeSettings as loadSettings,
-  saveLocalRuntimeSettings as saveSettings,
-} from '../core/llm/settings-service-local-runtime';
-import type { LocalRuntimeSettings } from '../core/llm/settings-service-local-runtime';
-import {
-  SessionClientError,
-  cancelSession,
-  fetchSessionStatus,
-  streamSessionChat,
-  toAgentStreamChunk,
-} from '../core/llm/session-client';
 import { type EdgeType } from '../lib/constants';
 import {
   connectToServer,
@@ -48,9 +29,10 @@ import { ERROR_RESET_DELAY_MS } from '../config/ui-constants';
 import { normalizePath } from '../lib/path-resolution';
 import { FILE_REF_REGEX, NODE_REF_REGEX } from '../lib/grounding-patterns';
 import { GraphStateProvider, useGraphState } from './app-state/graph';
+import type { ChatRuntimeBridge } from './chat-runtime/types';
 
 export type ViewMode = 'onboarding' | 'loading' | 'exploring';
-export type RightPanelTab = 'code' | 'chat';
+export type RightPanelTab = 'chat' | 'processes';
 export type EmbeddingStatus = 'idle' | 'loading' | 'embedding' | 'indexing' | 'ready' | 'error';
 
 export interface QueryResult {
@@ -174,26 +156,8 @@ interface AppState {
   semanticSearchWithContext: (query: string, k?: number, hops?: number) => Promise<any[]>;
   isEmbeddingReady: boolean;
 
-  // LLM/Agent state
-  llmSettings: LocalRuntimeSettings;
-  updateLLMSettings: (updates: Partial<LocalRuntimeSettings>) => void;
   isSettingsPanelOpen: boolean;
   setSettingsPanelOpen: (open: boolean) => void;
-  isAgentReady: boolean;
-  isAgentInitializing: boolean;
-  agentError: string | null;
-
-  // Chat state
-  chatMessages: ChatMessage[];
-  isChatLoading: boolean;
-  currentToolCalls: ToolCallInfo[];
-
-  // LLM methods
-  refreshLLMSettings: () => void;
-  initializeAgent: (overrideProjectName?: string) => Promise<boolean>;
-  sendChatMessage: (message: string) => Promise<void>;
-  stopChatResponse: () => void;
-  clearChat: () => void;
 
   // Code References Panel
   codeReferences: CodeReference[];
@@ -204,6 +168,7 @@ interface AppState {
   clearAICodeReferences: () => void;
   clearCodeReferences: () => void;
   codeReferenceFocus: CodeReferenceFocus | null;
+  chatRuntimeBridge: ChatRuntimeBridge;
 }
 
 const AppStateContext = createContext<AppState | null>(null);
@@ -235,7 +200,7 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
 
   // Right Panel
   const [isRightPanelOpen, setRightPanelOpen] = useState(false);
-  const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('code');
+  const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>('chat');
   const [helpDialogBoxOpen, setHelpDialogBoxOpen] = useState(false);
 
   const openCodePanel = useCallback(() => {
@@ -339,17 +304,7 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
     percent: number;
   } | null>(null);
 
-  // LLM/Agent state
-  const [llmSettings, setLLMSettings] = useState<LocalRuntimeSettings>(loadSettings);
   const [isSettingsPanelOpen, setSettingsPanelOpen] = useState(false);
-  const [isAgentReady, setIsAgentReady] = useState(false);
-  const [isAgentInitializing, setIsAgentInitializing] = useState(false);
-  const [agentError, setAgentError] = useState<string | null>(null);
-
-  // Chat state
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [isChatLoading, setIsChatLoading] = useState(false);
-  const [currentToolCalls, setCurrentToolCalls] = useState<ToolCallInfo[]>([]);
 
   // Code References Panel state
   const [codeReferences, setCodeReferences] = useState<CodeReference[]>([]);
@@ -474,6 +429,223 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
     repoRef.current = repoName;
   }, []);
 
+  const graphRef = useRef(graph);
+  const fileNodeByPathRef = useRef(fileNodeByPath);
+  const filePathIndexRef = useRef(filePathIndex);
+  const projectNameRef = useRef(projectName);
+  const embeddingStatusRef = useRef(embeddingStatus);
+
+  useEffect(() => {
+    graphRef.current = graph;
+  }, [graph]);
+
+  useEffect(() => {
+    fileNodeByPathRef.current = fileNodeByPath;
+  }, [fileNodeByPath]);
+
+  useEffect(() => {
+    filePathIndexRef.current = filePathIndex;
+  }, [filePathIndex]);
+
+  useEffect(() => {
+    projectNameRef.current = projectName;
+  }, [projectName]);
+
+  useEffect(() => {
+    embeddingStatusRef.current = embeddingStatus;
+  }, [embeddingStatus]);
+
+  const resolveFilePathForChat = useCallback((requestedPath: string): string | null => {
+    const normalized = normalizePath(requestedPath);
+    const index = filePathIndexRef.current;
+    if (index.has(normalized)) return index.get(normalized)!;
+    for (const [key, value] of index) {
+      if (key.endsWith(normalized)) return value;
+    }
+    return null;
+  }, []);
+
+  const findFileNodeIdForChat = useCallback((filePath: string): string | undefined => {
+    return fileNodeByPathRef.current.get(normalizePath(filePath));
+  }, []);
+
+  const handleFileGroundingReference = useCallback(
+    (rawReference: string) => {
+      const raw = rawReference.trim();
+      if (!raw) return;
+
+      let rawPath = raw;
+      let startLine1: number | undefined;
+      let endLine1: number | undefined;
+
+      const lineMatch = raw.match(/^(.*):(\d+)(?:[-–](\d+))?$/);
+      if (lineMatch) {
+        rawPath = lineMatch[1].trim();
+        startLine1 = parseInt(lineMatch[2], 10);
+        endLine1 = parseInt(lineMatch[3] || lineMatch[2], 10);
+      }
+
+      const resolvedPath = resolveFilePathForChat(rawPath);
+      if (!resolvedPath) return;
+
+      const nodeId = findFileNodeIdForChat(resolvedPath);
+
+      addCodeReference({
+        filePath: resolvedPath,
+        startLine: startLine1 ? Math.max(0, startLine1 - 1) : undefined,
+        endLine: endLine1
+          ? Math.max(0, endLine1 - 1)
+          : startLine1
+            ? Math.max(0, startLine1 - 1)
+            : undefined,
+        nodeId,
+        label: 'File',
+        name: resolvedPath.split('/').pop() ?? resolvedPath,
+        source: 'ai',
+      });
+    },
+    [addCodeReference, findFileNodeIdForChat, resolveFilePathForChat],
+  );
+
+  const handleNodeGroundingReference = useCallback(
+    (nodeTypeAndName: string) => {
+      const raw = nodeTypeAndName.trim();
+      if (!raw) return;
+
+      const graphData = graphRef.current;
+      if (!graphData) return;
+
+      const match = raw.match(
+        /^(Class|Function|Method|Interface|File|Folder|Variable|Enum|Type|CodeElement):(.+)$/,
+      );
+      if (!match) return;
+
+      const [, nodeType, nodeName] = match;
+      const trimmedName = nodeName.trim();
+
+      const node = graphData.nodes.find(
+        (n) => n.label === nodeType && n.properties.name === trimmedName,
+      );
+
+      if (!node?.properties.filePath) return;
+
+      const resolvedPath = resolveFilePathForChat(node.properties.filePath);
+      if (!resolvedPath) return;
+
+      addCodeReference({
+        filePath: resolvedPath,
+        startLine: node.properties.startLine ? node.properties.startLine - 1 : undefined,
+        endLine: node.properties.endLine ? node.properties.endLine - 1 : undefined,
+        nodeId: node.id,
+        label: node.label,
+        name: node.properties.name,
+        source: 'ai',
+      });
+    },
+    [addCodeReference, resolveFilePathForChat],
+  );
+
+  const handleTranscriptLinkClick = useCallback(
+    (href: string) => {
+      if (href.startsWith('code-ref:')) {
+        const inner = decodeURIComponent(href.slice('code-ref:'.length));
+        handleFileGroundingReference(inner);
+      } else if (href.startsWith('node-ref:')) {
+        const inner = decodeURIComponent(href.slice('node-ref:'.length));
+        handleNodeGroundingReference(inner);
+      }
+    },
+    [handleFileGroundingReference, handleNodeGroundingReference],
+  );
+
+  const handleChatContentGrounding = useCallback(
+    (fullText: string) => {
+      const fileRefRegex = new RegExp(FILE_REF_REGEX.source, FILE_REF_REGEX.flags);
+      let fileMatch: RegExpExecArray | null;
+      while ((fileMatch = fileRefRegex.exec(fullText)) !== null) {
+        const rawPath = fileMatch[1].trim();
+        const startLine = fileMatch[2];
+        const endLine = fileMatch[3];
+        const reference = startLine
+          ? `${rawPath}:${startLine}${endLine ? `-${endLine}` : ''}`
+          : rawPath;
+        handleFileGroundingReference(reference);
+      }
+
+      const nodeRefRegex = new RegExp(NODE_REF_REGEX.source, NODE_REF_REGEX.flags);
+      let nodeMatch: RegExpExecArray | null;
+      while ((nodeMatch = nodeRefRegex.exec(fullText)) !== null) {
+        handleNodeGroundingReference(`${nodeMatch[1]}:${nodeMatch[2].trim()}`);
+      }
+    },
+    [handleFileGroundingReference, handleNodeGroundingReference],
+  );
+
+  const handleChatToolResult = useCallback((toolResult: string) => {
+    const graphData = graphRef.current;
+    const graphNodeIdSet = graphData ? new Set(graphData.nodes.map((n) => n.id)) : null;
+
+    const resolveNodeIds = (rawIds: string[]) => {
+      if (!graphData || !graphNodeIdSet) return new Set(rawIds);
+
+      const matchedIds = new Set<string>();
+      for (const rawId of rawIds) {
+        if (graphNodeIdSet.has(rawId)) {
+          matchedIds.add(rawId);
+        } else {
+          const found = graphData.nodes.find(
+            (n) => n.id.endsWith(rawId) || n.id.endsWith(':' + rawId),
+          )?.id;
+          if (found) {
+            matchedIds.add(found);
+          }
+        }
+      }
+      return matchedIds;
+    };
+
+    const highlightMatch = toolResult.match(/\[HIGHLIGHT_NODES:([^\]]+)\]/);
+    if (highlightMatch) {
+      const rawIds = highlightMatch[1]
+        .split(',')
+        .map((id: string) => id.trim())
+        .filter(Boolean);
+      if (rawIds.length > 0) {
+        setAIToolHighlightedNodeIds(resolveNodeIds(rawIds));
+      }
+    }
+
+    const impactMatch = toolResult.match(/\[IMPACT:([^\]]+)\]/);
+    if (impactMatch) {
+      const rawIds = impactMatch[1]
+        .split(',')
+        .map((id: string) => id.trim())
+        .filter(Boolean);
+      if (rawIds.length > 0) {
+        setBlastRadiusNodeIds(resolveNodeIds(rawIds));
+      }
+    }
+  }, []);
+
+  const chatRuntimeBridge = useMemo<ChatRuntimeBridge>(
+    () => ({
+      getRepoName: () => repoRef.current || projectNameRef.current || undefined,
+      getEmbeddingStatus: () => embeddingStatusRef.current,
+      clearAICodeReferences,
+      clearAIToolHighlights,
+      handleContentGrounding: handleChatContentGrounding,
+      handleToolResult: handleChatToolResult,
+      handleTranscriptLinkClick,
+    }),
+    [
+      clearAICodeReferences,
+      clearAIToolHighlights,
+      handleChatContentGrounding,
+      handleChatToolResult,
+      handleTranscriptLinkClick,
+    ],
+  );
+
   const requestRepoAnalyzeDialog = useCallback(() => {
     setRepoAnalyzerRequestId((prev) => prev + 1);
   }, []);
@@ -566,550 +738,6 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
     [],
   );
 
-  // LLM methods
-  const updateLLMSettings = useCallback((updates: Partial<LocalRuntimeSettings>) => {
-    setLLMSettings((prev) => {
-      const next: LocalRuntimeSettings = {
-        ...prev,
-        ...updates,
-        activeProvider: 'codex',
-        codex: {
-          ...(prev.codex ?? {}),
-          ...(updates.codex ?? {}),
-        },
-      };
-      saveSettings(next);
-      return next;
-    });
-  }, []);
-
-  const refreshLLMSettings = useCallback(() => {
-    setLLMSettings(loadSettings());
-  }, []);
-
-  // Local session runtime state
-  const activeSessionAbortRef = useRef<AbortController | null>(null);
-  const activeSessionIdRef = useRef<string | null>(null);
-
-  const cancelActiveSession = useCallback(async (reason = 'Cancelled by user'): Promise<void> => {
-    const abortController = activeSessionAbortRef.current;
-    const sessionId = activeSessionIdRef.current;
-
-    activeSessionAbortRef.current = null;
-    activeSessionIdRef.current = null;
-
-    if (abortController) {
-      abortController.abort(reason);
-    }
-
-    if (sessionId) {
-      try {
-        await cancelSession(sessionId);
-      } catch {
-        // Runtime may already have cancelled on disconnect.
-      }
-    }
-  }, []);
-
-  const initializeAgent = useCallback(
-    async (overrideProjectName?: string): Promise<boolean> => {
-      setIsAgentInitializing(true);
-      setAgentError(null);
-
-      try {
-        const repoName = overrideProjectName || repoRef.current || projectName;
-        if (!repoName) {
-          setIsAgentReady(false);
-          setAgentError('Connect to a local repository before starting a session');
-          return false;
-        }
-
-        repoRef.current = repoName;
-        const status = await fetchSessionStatus({ repoName });
-        const repoState = status.repo?.state;
-
-        if (repoState === 'not_found' || repoState === 'invalid') {
-          setIsAgentReady(false);
-          setAgentError(status.repo?.message || 'The selected repository is no longer available');
-          return false;
-        }
-
-        if (repoState === 'index_required') {
-          setIsAgentReady(false);
-          setAgentError(status.repo?.message || 'Repository is not indexed yet. Run analyze first.');
-          return false;
-        }
-
-        if (status.availability !== 'ready') {
-          setIsAgentReady(false);
-          setAgentError(status.message || 'Local Codex session is not ready');
-          return false;
-        }
-
-        setIsAgentReady(true);
-        setAgentError(null);
-        return true;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        setAgentError(message);
-        setIsAgentReady(false);
-        return false;
-      } finally {
-        setIsAgentInitializing(false);
-      }
-    },
-    [projectName],
-  );
-
-  const sendChatMessage = useCallback(
-    async (message: string): Promise<void> => {
-      // Refresh Code panel for the new question: keep user-pinned refs, clear old AI citations
-      clearAICodeReferences();
-      // Also clear previous tool-driven AI highlights (highlight_in_graph)
-      clearAIToolHighlights();
-
-      const repoName = repoRef.current || projectName;
-      if (!repoName) {
-        setAgentError('Connect to a local repository before starting a session');
-        return;
-      }
-
-      if (!isAgentReady) {
-        const ready = await initializeAgent(repoName);
-        if (!ready) return;
-      }
-
-      // Add user message
-      const userMessage: ChatMessage = {
-        id: `user-${Date.now()}`,
-        role: 'user',
-        content: message,
-        timestamp: Date.now(),
-      };
-      setChatMessages((prev) => [...prev, userMessage]);
-
-      // If embeddings are running and we're currently creating the vector index,
-      // avoid a confusing "Embeddings not ready" error and give a clear wait message.
-      if (embeddingStatus === 'indexing') {
-        const assistantMessage: ChatMessage = {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: 'Wait a moment, vector index is being created.',
-          timestamp: Date.now(),
-        };
-        setChatMessages((prev) => [...prev, assistantMessage]);
-        setAgentError(null);
-        setIsChatLoading(false);
-        setCurrentToolCalls([]);
-        return;
-      }
-
-      setIsChatLoading(true);
-      setCurrentToolCalls([]);
-
-      // Create placeholder for assistant response
-      const assistantMessageId = `assistant-${Date.now()}`;
-      // Use an ordered steps array to preserve execution order (reasoning → tool → reasoning → tool → answer)
-      const stepsForMessage: MessageStep[] = [];
-      // Keep toolCalls for backwards compat and currentToolCalls state
-      const toolCallsForMessage: ToolCallInfo[] = [];
-      let stepCounter = 0;
-
-      // Helper to update the message with current steps
-      const updateMessage = () => {
-        // Build content from steps for backwards compatibility
-        const contentParts = stepsForMessage
-          .filter((s) => s.type === 'reasoning' || s.type === 'content')
-          .map((s) => s.content)
-          .filter(Boolean);
-        const content = contentParts.join('\n\n');
-
-        setChatMessages((prev) => {
-          const existing = prev.find((m) => m.id === assistantMessageId);
-          const newMessage: ChatMessage = {
-            id: assistantMessageId,
-            role: 'assistant' as const,
-            content,
-            steps: [...stepsForMessage],
-            toolCalls: [...toolCallsForMessage],
-            timestamp: existing?.timestamp ?? Date.now(),
-          };
-          if (existing) {
-            return prev.map((m) => (m.id === assistantMessageId ? newMessage : m));
-          } else {
-            return [...prev, newMessage];
-          }
-        });
-      };
-      let pendingUpdate = false;
-      const scheduleMessageUpdate = () => {
-        if (pendingUpdate) return;
-        pendingUpdate = true;
-        requestAnimationFrame(() => {
-          pendingUpdate = false;
-          updateMessage();
-        });
-      };
-
-      try {
-        const onChunk = (chunk: AgentStreamChunk) => {
-          switch (chunk.type) {
-            case 'reasoning':
-              // LLM's thinking/reasoning - accumulate contiguous reasoning
-              if (chunk.reasoning) {
-                const lastStep = stepsForMessage[stepsForMessage.length - 1];
-                if (lastStep && lastStep.type === 'reasoning') {
-                  // Append to existing reasoning step
-                  stepsForMessage[stepsForMessage.length - 1] = {
-                    ...lastStep,
-                    content: (lastStep.content || '') + chunk.reasoning,
-                  };
-                } else {
-                  // Create new reasoning step (after tool calls or at start)
-                  stepsForMessage.push({
-                    id: `step-${stepCounter++}`,
-                    type: 'reasoning',
-                    content: chunk.reasoning,
-                  });
-                }
-                scheduleMessageUpdate();
-              }
-              break;
-
-            case 'content':
-              // Final answer content - accumulate into contiguous content step
-              if (chunk.content) {
-                const normalizedIncoming = chunk.content.trim();
-                // Only append if the LAST step is a content step (contiguous streaming)
-                const lastStep = stepsForMessage[stepsForMessage.length - 1];
-                if (lastStep && lastStep.type === 'content') {
-                  // Append to existing content step
-                  stepsForMessage[stepsForMessage.length - 1] = {
-                    ...lastStep,
-                    content: (lastStep.content || '') + chunk.content,
-                  };
-                } else if (
-                  lastStep &&
-                  lastStep.type === 'reasoning' &&
-                  (lastStep.content || '').trim() === normalizedIncoming
-                ) {
-                  // Codex can emit the final answer once as an agent_message and then again
-                  // as the terminal content payload. Replace the trailing reasoning step
-                  // instead of showing the same answer twice.
-                  stepsForMessage[stepsForMessage.length - 1] = {
-                    ...lastStep,
-                    type: 'content',
-                    content: chunk.content,
-                  };
-                } else {
-                  // Create new content step (after tool calls or at start)
-                  stepsForMessage.push({
-                    id: `step-${stepCounter++}`,
-                    type: 'content',
-                    content: chunk.content,
-                  });
-                }
-                scheduleMessageUpdate();
-
-                // Parse inline grounding references and add them to the Code References panel.
-                // Supports: [[file.ts:10-25]] (file refs) and [[Class:View]] (node refs)
-                const currentContentStep = stepsForMessage[stepsForMessage.length - 1];
-                const fullText =
-                  currentContentStep && currentContentStep.type === 'content'
-                    ? currentContentStep.content || ''
-                    : '';
-
-                // Pattern 1: File refs - [[path/file.ext]] or [[path/file.ext:line]] or [[path/file.ext:line-line]]
-                // Line numbers are optional
-                const fileRefRegex = new RegExp(FILE_REF_REGEX.source, FILE_REF_REGEX.flags);
-                let fileMatch: RegExpExecArray | null;
-                while ((fileMatch = fileRefRegex.exec(fullText)) !== null) {
-                  const rawPath = fileMatch[1].trim();
-                  const startLine1 = fileMatch[2] ? parseInt(fileMatch[2], 10) : undefined;
-                  const endLine1 = fileMatch[3] ? parseInt(fileMatch[3], 10) : startLine1;
-
-                  const resolvedPath = resolveFilePath(rawPath);
-                  if (!resolvedPath) continue;
-
-                  const startLine0 =
-                    startLine1 !== undefined ? Math.max(0, startLine1 - 1) : undefined;
-                  const endLine0 = endLine1 !== undefined ? Math.max(0, endLine1 - 1) : startLine0;
-                  const nodeId = findFileNodeId(resolvedPath);
-
-                  addCodeReference({
-                    filePath: resolvedPath,
-                    startLine: startLine0,
-                    endLine: endLine0,
-                    nodeId,
-                    label: 'File',
-                    name: resolvedPath.split('/').pop() ?? resolvedPath,
-                    source: 'ai',
-                  });
-                }
-
-                // Pattern 2: Node refs - [[Type:Name]] or [[graph:Type:Name]]
-                const nodeRefRegex = new RegExp(NODE_REF_REGEX.source, NODE_REF_REGEX.flags);
-                let nodeMatch: RegExpExecArray | null;
-                while ((nodeMatch = nodeRefRegex.exec(fullText)) !== null) {
-                  const nodeType = nodeMatch[1];
-                  const nodeName = nodeMatch[2].trim();
-
-                  // Find node in graph
-                  if (!graph) continue;
-                  const node = graph.nodes.find(
-                    (n) => n.label === nodeType && n.properties.name === nodeName,
-                  );
-                  if (!node || !node.properties.filePath) continue;
-
-                  const resolvedPath = resolveFilePath(node.properties.filePath);
-                  if (!resolvedPath) continue;
-
-                  addCodeReference({
-                    filePath: resolvedPath,
-                    startLine: node.properties.startLine
-                      ? node.properties.startLine - 1
-                      : undefined,
-                    endLine: node.properties.endLine ? node.properties.endLine - 1 : undefined,
-                    nodeId: node.id,
-                    label: node.label,
-                    name: node.properties.name,
-                    source: 'ai',
-                  });
-                }
-              }
-              break;
-
-            case 'tool_call':
-              if (chunk.toolCall) {
-                const tc = chunk.toolCall;
-                toolCallsForMessage.push(tc);
-                // Add tool call as a step (in order with reasoning)
-                stepsForMessage.push({
-                  id: `step-${stepCounter++}`,
-                  type: 'tool_call',
-                  toolCall: tc,
-                });
-                setCurrentToolCalls((prev) => [...prev, tc]);
-                scheduleMessageUpdate();
-              }
-              break;
-
-            case 'tool_result':
-              if (chunk.toolCall) {
-                const tc = chunk.toolCall;
-                // Update the tool call status in toolCallsForMessage
-                let idx = toolCallsForMessage.findIndex((t) => t.id === tc.id);
-                if (idx < 0) {
-                  idx = toolCallsForMessage.findIndex(
-                    (t) => t.name === tc.name && t.status === 'running',
-                  );
-                }
-                if (idx < 0) {
-                  idx = toolCallsForMessage.findIndex((t) => t.name === tc.name && !t.result);
-                }
-                if (idx >= 0) {
-                  toolCallsForMessage[idx] = {
-                    ...toolCallsForMessage[idx],
-                    result: tc.result,
-                    status: 'completed',
-                  };
-                }
-
-                // Also update the tool call in steps
-                const stepIdx = stepsForMessage.findIndex(
-                  (s) =>
-                    s.type === 'tool_call' &&
-                    s.toolCall &&
-                    (s.toolCall.id === tc.id ||
-                      (s.toolCall.name === tc.name && s.toolCall.status === 'running')),
-                );
-                if (stepIdx >= 0 && stepsForMessage[stepIdx].toolCall) {
-                  stepsForMessage[stepIdx] = {
-                    ...stepsForMessage[stepIdx],
-                    toolCall: {
-                      ...stepsForMessage[stepIdx].toolCall!,
-                      result: tc.result,
-                      status: 'completed',
-                    },
-                  };
-                }
-
-                // Update currentToolCalls
-                setCurrentToolCalls((prev) => {
-                  let targetIdx = prev.findIndex((t) => t.id === tc.id);
-                  if (targetIdx < 0) {
-                    targetIdx = prev.findIndex((t) => t.name === tc.name && t.status === 'running');
-                  }
-                  if (targetIdx < 0) {
-                    targetIdx = prev.findIndex((t) => t.name === tc.name && !t.result);
-                  }
-                  if (targetIdx >= 0) {
-                    return prev.map((t, i) =>
-                      i === targetIdx ? { ...t, result: tc.result, status: 'completed' } : t,
-                    );
-                  }
-                  return prev;
-                });
-
-                scheduleMessageUpdate();
-
-                // Parse highlight marker from tool results
-                if (tc.result) {
-                  const highlightMatch = tc.result.match(/\[HIGHLIGHT_NODES:([^\]]+)\]/);
-                  if (highlightMatch) {
-                    const rawIds = highlightMatch[1]
-                      .split(',')
-                      .map((id: string) => id.trim())
-                      .filter(Boolean);
-                    if (rawIds.length > 0 && graph) {
-                      const matchedIds = new Set<string>();
-                      const graphNodeIdSet = new Set(graph.nodes.map((n) => n.id));
-
-                      for (const rawId of rawIds) {
-                        if (graphNodeIdSet.has(rawId)) {
-                          matchedIds.add(rawId);
-                        } else {
-                          const found = graph.nodes.find(
-                            (n) => n.id.endsWith(rawId) || n.id.endsWith(':' + rawId),
-                          )?.id;
-                          if (found) {
-                            matchedIds.add(found);
-                          }
-                        }
-                      }
-
-                      if (matchedIds.size > 0) {
-                        setAIToolHighlightedNodeIds(matchedIds);
-                      }
-                    } else if (rawIds.length > 0) {
-                      setAIToolHighlightedNodeIds(new Set(rawIds));
-                    }
-                  }
-
-                  // Parse impact marker from tool results
-                  const impactMatch = tc.result.match(/\[IMPACT:([^\]]+)\]/);
-                  if (impactMatch) {
-                    const rawIds = impactMatch[1]
-                      .split(',')
-                      .map((id: string) => id.trim())
-                      .filter(Boolean);
-                    if (rawIds.length > 0 && graph) {
-                      const matchedIds = new Set<string>();
-                      const graphNodeIdSet = new Set(graph.nodes.map((n) => n.id));
-
-                      for (const rawId of rawIds) {
-                        if (graphNodeIdSet.has(rawId)) {
-                          matchedIds.add(rawId);
-                        } else {
-                          const found = graph.nodes.find(
-                            (n) => n.id.endsWith(rawId) || n.id.endsWith(':' + rawId),
-                          )?.id;
-                          if (found) {
-                            matchedIds.add(found);
-                          }
-                        }
-                      }
-
-                      if (matchedIds.size > 0) {
-                        setBlastRadiusNodeIds(matchedIds);
-                      }
-                    } else if (rawIds.length > 0) {
-                      setBlastRadiusNodeIds(new Set(rawIds));
-                    }
-                  }
-                }
-              }
-              break;
-
-            case 'error':
-              setAgentError(chunk.error ?? 'Unknown error');
-              break;
-
-            case 'done':
-              // Finalize the assistant message - just call updateMessage one more time
-              scheduleMessageUpdate();
-              break;
-          }
-        };
-
-        const abortController = new AbortController();
-        activeSessionAbortRef.current = abortController;
-        activeSessionIdRef.current = null;
-
-        for await (const event of streamSessionChat(
-          {
-            repoName,
-            message,
-          },
-          abortController.signal,
-        )) {
-          if (event.type === 'session_started') {
-            activeSessionIdRef.current = event.sessionId;
-            continue;
-          }
-
-          const chunk = toAgentStreamChunk(event);
-          if (chunk) {
-            onChunk(chunk);
-          }
-        }
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') {
-          return;
-        }
-
-        if (error instanceof SessionClientError) {
-          setAgentError(error.message);
-          if (
-            error.code === 'SESSION_RUNTIME_UNAVAILABLE' ||
-            error.code === 'SESSION_NOT_SIGNED_IN' ||
-            error.code === 'REPO_NOT_FOUND' ||
-            error.code === 'INDEX_REQUIRED'
-          ) {
-            setIsAgentReady(false);
-          }
-          return;
-        }
-
-        const message = error instanceof Error ? error.message : String(error);
-        setAgentError(message);
-      } finally {
-        activeSessionAbortRef.current = null;
-        activeSessionIdRef.current = null;
-        setIsChatLoading(false);
-        setCurrentToolCalls([]);
-      }
-    },
-    [
-      chatMessages,
-      isAgentReady,
-      initializeAgent,
-      resolveFilePath,
-      findFileNodeId,
-      addCodeReference,
-      clearAICodeReferences,
-      clearAIToolHighlights,
-      graph,
-      embeddingStatus,
-      projectName,
-    ],
-  );
-
-  const stopChatResponse = useCallback(() => {
-    if (isChatLoading) {
-      void cancelActiveSession('Cancelled by user');
-      setIsChatLoading(false);
-      setCurrentToolCalls([]);
-    }
-  }, [cancelActiveSession, isChatLoading]);
-
-  const clearChat = useCallback(() => {
-    void cancelActiveSession('Chat cleared by user');
-    setChatMessages([]);
-    setCurrentToolCalls([]);
-    setAgentError(null);
-  }, [cancelActiveSession]);
-
   // Switch to a different repo on the connected server
   const switchRepo = useCallback(
     async (repoName: string) => {
@@ -1122,9 +750,6 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
         detail: `Loading ${repoName}`,
       });
       setViewMode('loading');
-      setIsAgentReady(false);
-      setAgentError(null);
-      await cancelActiveSession('Repository switched');
 
       // Clear stale graph state from previous repo (highlights, selections, blast radius)
       // Without this, sigma reducers dim ALL nodes/edges because old node IDs don't match
@@ -1201,7 +826,6 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
           message: 'Failed to switch repository',
           detail: err instanceof Error ? err.message : 'Unknown error',
         });
-        setIsAgentReady(false);
         setTimeout(() => {
           setViewMode('exploring');
           setProgress(null);
@@ -1216,26 +840,9 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
         window.history.replaceState(null, '', urlObj.toString());
       }
 
-      // Reset the agent and clear chat history so the AI starts fresh for the new repo
-      setIsAgentReady(false);
-      setChatMessages([]);
-      setCurrentToolCalls([]);
-
-      // Re-initialize agent with the new repo's graph context
-      try {
-        await initializeAgent(pNameStr);
-        setViewMode('exploring');
-        startEmbeddingsWithFallback();
-        setProgress(null);
-      } catch (err) {
-        console.warn('Failed to initialize agent:', err);
-        setIsAgentReady(false);
-        setAgentError(
-          err instanceof Error ? err.message : 'Failed to initialize local session runtime',
-        );
-        setViewMode('exploring');
-        setProgress(null);
-      }
+      setViewMode('exploring');
+      startEmbeddingsWithFallback();
+      setProgress(null);
     },
     [
       serverBaseUrl,
@@ -1243,7 +850,6 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
       setViewMode,
       setProjectName,
       setGraph,
-      initializeAgent,
       startEmbeddingsWithFallback,
       setHighlightedNodeIds,
       clearAIToolHighlights,
@@ -1254,9 +860,6 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
       setCodeReferences,
       setCodePanelOpen,
       setCodeReferenceFocus,
-      setChatMessages,
-      setCurrentToolCalls,
-      cancelActiveSession,
     ],
   );
 
@@ -1356,24 +959,8 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
     semanticSearch,
     semanticSearchWithContext,
     isEmbeddingReady: embeddingStatus === 'ready',
-    // LLM/Agent state
-    llmSettings,
-    updateLLMSettings,
     isSettingsPanelOpen,
     setSettingsPanelOpen,
-    isAgentReady,
-    isAgentInitializing,
-    agentError,
-    // Chat state
-    chatMessages,
-    isChatLoading,
-    currentToolCalls,
-    // LLM methods
-    refreshLLMSettings,
-    initializeAgent,
-    sendChatMessage,
-    stopChatResponse,
-    clearChat,
     // Code References Panel
     codeReferences,
     isCodePanelOpen,
@@ -1383,6 +970,7 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
     clearAICodeReferences,
     clearCodeReferences,
     codeReferenceFocus,
+    chatRuntimeBridge,
   };
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
