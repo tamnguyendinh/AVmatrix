@@ -76,4 +76,22 @@ describe('direct tool commands reuse the shared backend/runtime core', () => {
       repo: 'GitNexus',
     });
   });
+
+  it('routes detect-changes through the same backend contract', async () => {
+    const { detectChangesCommand } = await import('../../src/cli/tool.js');
+
+    await detectChangesCommand({
+      scope: 'compare',
+      baseRef: 'main',
+      repo: 'GitNexus',
+    });
+
+    expect(initMock).toHaveBeenCalledTimes(1);
+    expect(callToolMock).toHaveBeenCalledWith('detect_changes', {
+      scope: 'compare',
+      base_ref: 'main',
+      repo: 'GitNexus',
+    });
+    expect(writeSyncMock).toHaveBeenCalledTimes(1);
+  });
 });

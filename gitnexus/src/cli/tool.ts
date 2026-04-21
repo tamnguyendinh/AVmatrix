@@ -10,6 +10,7 @@
  *   gitnexus context --name "validateUser"
  *   gitnexus impact --target "AuthService" --direction upstream
  *   gitnexus cypher "MATCH (n:Function) RETURN n.name LIMIT 10"
+ *   gitnexus detect-changes --scope staged
  *
  * Note: Output goes to stdout via fs.writeSync(fd 1), bypassing LadybugDB's
  * native module which captures the Node.js process.stdout stream during init.
@@ -161,6 +162,20 @@ export async function cypherCommand(
   const backend = await getBackend();
   const result = await backend.callTool('cypher', {
     query,
+    repo: options?.repo,
+  });
+  output(result);
+}
+
+export async function detectChangesCommand(options?: {
+  scope?: string;
+  baseRef?: string;
+  repo?: string;
+}): Promise<void> {
+  const backend = await getBackend();
+  const result = await backend.callTool('detect_changes', {
+    scope: options?.scope || 'unstaged',
+    base_ref: options?.baseRef,
     repo: options?.repo,
   });
   output(result);

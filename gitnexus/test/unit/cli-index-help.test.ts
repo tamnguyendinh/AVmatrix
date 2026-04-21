@@ -57,6 +57,17 @@ describe('CLI help surface', () => {
     expect(result.stdout).toContain('--repo <name>');
   });
 
+  it('detect-changes help exposes git-diff scope options on the direct CLI surface', () => {
+    const result = runHelp('detect-changes');
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Analyze uncommitted git changes');
+    expect(result.stdout).toContain('--scope <scope>');
+    expect(result.stdout).toContain('--base-ref <ref>');
+    expect(result.stdout).toContain('--repo <name>');
+    expect(result.stderr).not.toContain('tree-sitter-kotlin');
+  });
+
   it('wiki help only exposes the local capability gate surface', () => {
     const result = runHelp('wiki');
 
@@ -79,6 +90,7 @@ describe('CLI help surface', () => {
     expect(result.stdout).toContain('backed by the same');
     expect(result.stdout).toContain('local runtime core');
     expect(result.stdout).toContain('wiki-mode [mode]');
+    expect(result.stdout).toContain('detect-changes');
   });
 
   it('serve help enforces loopback-only host wording', () => {
