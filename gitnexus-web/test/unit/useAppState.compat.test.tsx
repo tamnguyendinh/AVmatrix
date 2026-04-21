@@ -9,7 +9,7 @@ const readyStatus = {
   available: true,
   authenticated: true,
   executablePath: 'bin/codex',
-  version: '0.119.0',
+  version: 'test-version',
   runtimeEnvironment: 'wsl2' as const,
   executionMode: 'bypass' as const,
   supportsSse: true,

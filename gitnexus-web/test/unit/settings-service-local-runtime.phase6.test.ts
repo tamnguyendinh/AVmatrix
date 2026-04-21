@@ -8,16 +8,16 @@ import {
   loadLocalRuntimeSettings,
   saveLocalRuntimeSettings,
   setLocalRuntimeProvider,
-} from '../../src/core/llm/settings-service-local-runtime';
+} from '../../src/core/llm/settings-service-local-runtime.phase6';
 
-describe('settings-service-local-runtime', () => {
+describe('settings-service-local-runtime.phase6', () => {
   it('defaults to codex when nothing is stored', () => {
     const settings = loadLocalRuntimeSettings();
     expect(settings.activeProvider).toBe('codex');
     expect(settings.codex?.model).toBe('codex-account');
   });
 
-  it('migrates legacy provider payloads into codex-first local runtime settings', () => {
+  it('migrates legacy provider payloads into codex-only local runtime settings', () => {
     localStorage.setItem(
       'gitnexus-llm-settings',
       JSON.stringify({

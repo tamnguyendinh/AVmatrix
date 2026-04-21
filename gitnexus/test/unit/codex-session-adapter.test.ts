@@ -41,7 +41,7 @@ describe('CodexSessionAdapter', () => {
         if (command === 'wsl.exe') {
           const commandLine = Array.isArray(args) ? args.join(' ') : '';
           if (commandLine.includes('--version')) {
-            child.stdout.emit('data', Buffer.from('codex-cli 0.119.0\n'));
+            child.stdout.emit('data', Buffer.from('codex-cli test-version\n'));
           } else {
             child.stdout.emit('data', Buffer.from('Logged in using ChatGPT\n'));
           }
@@ -93,7 +93,7 @@ describe('CodexSessionAdapter', () => {
     spawnMock
       .mockImplementationOnce(() => {
         queueMicrotask(() => {
-          versionChild.stdout.emit('data', Buffer.from('codex-cli 0.119.0\n'));
+          versionChild.stdout.emit('data', Buffer.from('codex-cli test-version\n'));
           versionChild.emit('exit', 0);
         });
         return versionChild;

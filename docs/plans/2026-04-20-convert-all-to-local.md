@@ -107,7 +107,7 @@
   - Dùng WSL2 bridge như execution environment chính
   - Hoặc dừng plan, không tự phát sinh workaround nửa vời trong các pha sau
   - Kết quả spike 2026-04-20:
-  - Codex CLI 0.119.0 có sẵn, `codex login status` xác nhận đang đăng nhập bằng ChatGPT account
+  - Codex CLI có sẵn trên máy tại thời điểm spike, `codex login status` xác nhận đang đăng nhập bằng ChatGPT account
   - `codex exec --json` hoạt động và cho JSONL event stream đủ giàu để bridge lên web UI
   - Trên Windows native, shell execution trong sandbox mặc định fail với lỗi `CreateProcessAsUserW failed: 5`; chế độ bypass sandbox chạy được và tôn trọng `cwd`
   - WSL2 có sẵn trên máy; vì vậy quyết định cho Windows là ưu tiên WSL2 bridge cho full agent mode thay vì dựa vào Windows native sandbox path
@@ -443,9 +443,9 @@
 ## Pha 6 — Cleanup provider/API-key path cũ
 
 - [x] Chỉ cleanup sau khi session path đạt parity
-- [ ] Xóa provider branches cũ không còn dùng
+- [x] Xóa provider branches cũ không còn dùng
 - [x] Retire provider-based modules khỏi active web build path bằng compatibility wrappers/excludes
 - [x] Dọn dependency packages chỉ còn phục vụ provider/API-key flow khỏi active web build
-- [ ] Dọn copy/provider language còn sót
+- [x] Dọn copy/provider language còn sót
 - [x] Cập nhật test theo runtime/session model mới
-- [ ] Dọn hoặc retire legacy tests không còn phản ánh kiến trúc mới
+- [x] Dọn hoặc retire legacy tests không còn phản ánh kiến trúc mới

@@ -65,7 +65,7 @@ describe('saveSettings / clearSettings', () => {
   });
 
   it('clearSettings removes settings from both storages', () => {
-    saveSettings({ ...loadSettings(), activeProvider: 'anthropic' });
+    saveSettings({ ...loadSettings(), activeProvider: 'codex' });
     expect(sessionStorage.getItem('gitnexus-llm-settings')).not.toBeNull();
     clearSettings();
     expect(sessionStorage.getItem('gitnexus-llm-settings')).toBeNull();
@@ -97,8 +97,9 @@ describe('isProviderConfigured', () => {
 });
 
 describe('getProviderDisplayName', () => {
-  it('returns human-readable names', () => {
+  it('returns local-runtime labels and compatibility names', () => {
     expect(getProviderDisplayName('codex')).toBe('Codex Account');
+    expect(getProviderDisplayName('openai')).toBe('Retired provider');
   });
 });
 

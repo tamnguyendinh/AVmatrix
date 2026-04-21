@@ -30,7 +30,7 @@ describe('SettingsPanel.local-runtime', () => {
       available: true,
       authenticated: true,
       executablePath: 'bin/codex',
-      version: '0.119.0',
+      version: 'test-version',
       runtimeEnvironment: 'wsl2',
       executionMode: 'bypass',
       supportsSse: true,
