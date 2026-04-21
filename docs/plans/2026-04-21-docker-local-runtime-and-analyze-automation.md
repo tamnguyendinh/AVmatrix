@@ -1,16 +1,16 @@
-# Docker Local Runtime and Analyze Automation
+# AVmatrix Docker Local Runtime and Analyze Automation
 
 Last updated: 2026-04-21
 Status: proposed
 
 ## Purpose
 
-Plan này chốt kiến trúc và rollout để chạy GitNexus như một local service trong Docker trên Windows, tự lên cùng máy, cho client nối ổn định, và có automation để refresh index bằng `analyze`.
+Plan này chốt kiến trúc và rollout để chạy AVmatrix như một local service trong Docker trên Windows, tự lên cùng máy, cho client nối ổn định, và có automation để refresh index bằng `analyze`.
 
 Mục tiêu cuối cùng:
 
 - bật máy lên là Docker Desktop chạy
-- GitNexus backend tự lên
+- AVmatrix backend tự lên
 - Codex/MCP nối được ngay
 - repo local được mount sẵn vào container
 - index và registry không mất sau restart
@@ -30,7 +30,7 @@ Mục tiêu cuối cùng:
 
 3. Không viết thêm orchestration trùng với cái đã có trong server nếu không cần.
 - Nếu `serve` đã có `/api/analyze` và `/api/mcp`, automation phải ưu tiên dùng các endpoint đó.
-- Không gọi raw `gitnexus analyze` từ nhiều nơi song song khi server đã có job manager và repo lock.
+- Không gọi raw `avmatrix analyze` từ nhiều nơi song song khi server đã có job manager và repo lock.
 
 4. Phải tôn trọng constraint single-writer của LadybugDB.
 - Không để watcher/analyzer mới đè lên `analyze` / embedding / MCP runtime theo cách tạo lock conflict.
@@ -39,29 +39,51 @@ Mục tiêu cuối cùng:
 - Nếu muốn auto-analyze repo từ host thì repo mount phải hỗ trợ ghi.
 - Không hứa hẹn index ngoài repo khi code hiện tại chưa support mô hình đó.
 
+6. Naming trong plan này phải bám canonical AVmatrix spec.
+- Tên canonical trong plan này là:
+  - `AVmatrix`
+  - `avmatrix`
+  - `.avmatrix`
+  - `~/.avmatrix`
+  - `AVMATRIX_HOME`
+  - `avmatrix://`
+- Nếu current implementation vẫn còn `gitnexus` / `.gitnexus` / `GITNEXUS_HOME`, đó chỉ là trạng thái hiện tại cần migrate, không phải target architecture.
+
+## Naming Contract
+
+Plan này follow trực tiếp `docs/avmatrix-canonical-spec.md`.
+
+Nguyên tắc đọc file này:
+
+- mọi quyết định kiến trúc đích phải dùng naming mới của AVmatrix
+- mọi reference `gitnexus` chỉ còn dùng để mô tả:
+  - file path / code path hiện tại
+  - current implementation chưa rename
+  - compatibility hoặc migration work cần xử lý
+
 ## Current Repo Facts
 
 Các facts dưới đây là điểm tựa của plan này:
 
-1. `gitnexus serve` hiện chỉ cho loopback host ở CLI path.
+1. Current implementation của `gitnexus serve` hiện chỉ cho loopback host ở CLI path.
 - `gitnexus/src/cli/serve.ts`
 
-2. Docker image hiện lại chạy `gitnexus serve --host 0.0.0.0`.
+2. Current Docker image hiện lại chạy legacy command `gitnexus serve --host 0.0.0.0`.
 - `Dockerfile.cli`
 
 3. HTTP server đã mount MCP-over-StreamableHTTP tại `/api/mcp`.
 - `gitnexus/src/server/mcp-http.ts`
 - `gitnexus/src/server/api.ts`
 
-4. `analyze` hiện ghi index vào `<repo>/.gitnexus`, không ghi vào `GITNEXUS_HOME`.
+4. Current implementation của `analyze` hiện ghi index vào `<repo>/.gitnexus`, không ghi vào `GITNEXUS_HOME`.
 - `gitnexus/src/storage/repo-manager.ts`
 - `gitnexus/src/core/run-analyze.ts`
 
-5. `GITNEXUS_HOME` chỉ là global home cho registry/config/runtime metadata.
+5. Current implementation dùng `GITNEXUS_HOME` chỉ như global home cho registry/config/runtime metadata.
 - `gitnexus/src/storage/repo-manager.ts`
 - `Dockerfile.cli`
 
-6. Lệnh `gitnexus index` không chạy phân tích mới.
+6. Legacy command `gitnexus index` không chạy phân tích mới.
 - Nó chỉ register một `.gitnexus` đã tồn tại vào global registry.
 - `gitnexus/src/cli/index-repo.ts`
 
@@ -84,18 +106,18 @@ Các facts dưới đây là điểm tựa của plan này:
 
 V1 dùng 3 process/container logic:
 
-1. `gitnexus-server`
-- chạy `gitnexus serve`
+1. `avmatrix-server`
+- chạy canonical command `avmatrix serve`
 - expose HTTP API + `/api/mcp`
 
-2. `gitnexus-web`
+2. `avmatrix-web`
 - optional
 - chỉ là local UI
 
-3. `gitnexus-watch`
+3. `avmatrix-watch`
 - sidecar automation
 - không trực tiếp chạm DB
-- chỉ gọi `http://gitnexus-server:4747/api/analyze`
+- chỉ gọi `http://avmatrix-server:4747/api/analyze`
 
 ### 2. Canonical network model
 
@@ -117,15 +139,23 @@ V1 chốt mô hình chuẩn như sau:
 - mount một workspace root từ host vào container tại `/workspace`
 - mount này là `read-write`
 - mỗi repo được analyze sẽ giữ index ở chính repo đó:
-  - `/workspace/<repo>/.gitnexus`
+  - `/workspace/<repo>/.avmatrix`
 - global registry/config/runtime state nằm ở volume riêng:
-  - `/data/gitnexus`
+  - `/data/avmatrix`
 
 Hệ quả:
 
 - restart container không làm mất global registry/config vì đã có volume
-- restart container cũng không làm mất index vì `.gitnexus` nằm trên host bind mount
+- restart container cũng không làm mất index vì `.avmatrix` nằm trên host bind mount
 - không cần thêm một index-store abstraction mới trong v1
+
+Ghi chú migration:
+
+- current implementation vẫn còn dùng `.gitnexus` và `GITNEXUS_HOME`
+- rollout code theo rename plan phải cutover sang:
+  - `.avmatrix`
+  - `~/.avmatrix`
+  - `AVMATRIX_HOME`
 
 ### 4. Canonical repo coverage
 
@@ -139,7 +169,7 @@ V1 hỗ trợ:
 
 V1 không lấy read-only workspace làm mode chuẩn cho auto-analyze.
 
-Read-only chỉ là mode phụ, query-only, khi repo đã có `.gitnexus` sẵn từ trước.
+Read-only chỉ là mode phụ, query-only, khi repo đã có `.avmatrix` sẵn từ trước.
 
 ### 5. Canonical client connectivity
 
@@ -147,7 +177,7 @@ Codex/MCP trong container mode sẽ nối bằng HTTP MCP:
 
 - `http://localhost:4747/api/mcp`
 
-Đây là đường chuẩn cho local background service, thay vì để Codex spawn một process `gitnexus mcp` riêng.
+Đây là đường chuẩn cho local background service, thay vì để Codex spawn một process `avmatrix mcp` riêng.
 
 Web UI tiếp tục nói chuyện với:
 
@@ -157,8 +187,8 @@ Web UI tiếp tục nói chuyện với:
 
 V1 chốt:
 
-- sidecar `gitnexus-watch` là tiến trình chủ động quyết định khi nào gọi `analyze`
-- `gitnexus-server` là nơi thực thi `analyze`
+- sidecar `avmatrix-watch` là tiến trình chủ động quyết định khi nào gọi `analyze`
+- `avmatrix-server` là nơi thực thi `analyze`
 
 Nói cách khác:
 
@@ -207,22 +237,22 @@ Nếu không giải quyết điểm này thì backend container không thể là
 
 ### Problem 2 — Docs hiện đang drift với hành vi thật của `index`
 
-Nếu README/docker docs còn nói mount repo read-only rồi dùng `gitnexus index /workspace/my-repo` như cách index repo host, người dùng sẽ hiểu sai.
+Nếu README/docker docs còn nói mount repo read-only rồi dùng legacy command `gitnexus index /workspace/my-repo`, hoặc canonical `avmatrix index /workspace/my-repo`, như cách index repo host, người dùng sẽ hiểu sai.
 
 `index` không tạo index mới.
 
 ### Problem 3 — Read-only mount không khớp với auto-analyze
 
-Vì `.gitnexus` hiện được ghi vào repo root, repo mount `:ro` không thể là mode chuẩn khi mục tiêu là tự refresh index.
+Vì current code hiện ghi `.gitnexus` vào repo root và target architecture sẽ ghi `.avmatrix` vào repo root, repo mount `:ro` không thể là mode chuẩn khi mục tiêu là tự refresh index.
 
 ### Problem 4 — Nhiều repo dirty cùng lúc có thể đụng single-slot analyze
 
 Server hiện single-slot cho analyze jobs khác repo.
 Watcher phải serialize thay vì assume parallelism.
 
-### Problem 5 — Watcher có thể tự trigger loop vì `.gitnexus` thay đổi sau analyze
+### Problem 5 — Watcher có thể tự trigger loop vì index namespace thay đổi sau analyze
 
-Fingerprint logic phải bỏ qua `.gitnexus` hoàn toàn.
+Fingerprint logic phải bỏ qua `.avmatrix` hoàn toàn, và trong giai đoạn migration phải bỏ qua cả `.gitnexus`.
 
 ## Target Runtime Behavior
 
@@ -231,8 +261,8 @@ Trạng thái vận hành cuối cùng của v1:
 1. Windows login
 2. Docker Desktop tự chạy
 3. compose stack tự lên
-4. `gitnexus-server` healthy tại `http://localhost:4747`
-5. `gitnexus-watch` đợi healthcheck xong rồi scan `/workspace`
+4. `avmatrix-server` healthy tại `http://localhost:4747`
+5. `avmatrix-watch` đợi healthcheck xong rồi scan `/workspace`
 6. Codex nối `http://localhost:4747/api/mcp`
 7. repo local được bind sẵn vào `/workspace`
 8. watcher phát hiện repo dirty theo polling rule
@@ -243,7 +273,7 @@ Trạng thái vận hành cuối cùng của v1:
 
 ## Implementation Phases
 
-### Phase A — Make `serve` Container-safe Without Breaking Local-only
+### Phase A — Make `avmatrix serve` Container-safe Without Breaking Local-only
 
 #### Goal
 
@@ -269,12 +299,13 @@ Option B:
 - server start được trong container
 - host vẫn chỉ thấy service ở `127.0.0.1`
 - local desktop mode không bị mở rộng LAN ngoài ý muốn
+- docs/help canonical sau phase này phải dùng `avmatrix serve`, không dùng `gitnexus serve` làm đường chính
 
 ### Phase B — Align Compose, README, and Storage Contract
 
 #### Goal
 
-Đưa docs và compose về đúng storage model thực tế của code.
+Đưa docs và compose về đúng storage model thực tế của code, nhưng wording/canonical output phải dùng naming mới của AVmatrix.
 
 #### Required changes
 
@@ -292,11 +323,11 @@ Option B:
   - auto-analyze được
 - query-only mode:
   - workspace `ro`
-  - chỉ dùng khi repo đã có `.gitnexus`
+  - chỉ dùng khi repo đã có `.avmatrix`
 
-3. sửa docs bị sai về `gitnexus index`
-- tài liệu phải nói `analyze` là lệnh tạo mới index
-- `index` chỉ là register existing `.gitnexus`
+3. sửa docs bị sai về `avmatrix index`
+- tài liệu phải nói `avmatrix analyze` là lệnh tạo mới index
+- `avmatrix index` chỉ là register existing `.avmatrix`
 
 #### Acceptance
 
@@ -304,20 +335,20 @@ Option B:
 - docs không còn dùng `index` như thể nó là `analyze`
 - persistence story của:
   - repo source
-  - `.gitnexus`
-  - `GITNEXUS_HOME`
+  - `.avmatrix`
+  - `AVMATRIX_HOME`
   đều rõ ràng
 
 ### Phase C — Define Canonical Client Connectivity
 
 #### Goal
 
-Chốt cách Codex và các client local nói chuyện với background GitNexus trong Docker.
+Chốt cách Codex và các client local nói chuyện với background AVmatrix trong Docker.
 
 #### Canonical path
 
 - Codex:
-  - `codex mcp add gitnexus-docker --url http://localhost:4747/api/mcp`
+  - `codex mcp add avmatrix --url http://localhost:4747/api/mcp`
 - web:
   - `http://localhost:4747`
 
@@ -334,7 +365,7 @@ Chốt cách Codex và các client local nói chuyện với background GitNexus
 - user không phải `docker exec` vào container chỉ để dùng MCP
 - background service và client config dùng cùng một URL ổn định
 
-### Phase D — Add `gitnexus-watch` Sidecar
+### Phase D — Add `avmatrix-watch` Sidecar
 
 #### Goal
 
@@ -342,10 +373,10 @@ Tạo automation runner riêng, nhưng không duplicate analyze core.
 
 #### Shape
 
-- service mới: `gitnexus-watch`
-- chạy trong cùng compose network với `gitnexus-server`
+- service mới: `avmatrix-watch`
+- chạy trong cùng compose network với `avmatrix-server`
 - mount cùng `/workspace`
-- không cần mount write vào `/data/gitnexus` nếu chỉ gọi HTTP API
+- không cần mount write vào `/data/avmatrix` nếu chỉ gọi HTTP API
 
 #### Candidate placement
 
@@ -374,7 +405,7 @@ Watcher scan direct children của `/workspace`.
 Một child folder được coi là managed repo nếu:
 
 - có `.git`, hoặc
-- có `.gitnexus`, hoặc
+- có `.avmatrix`, hoặc
 - nằm trong allowlist explicit
 
 #### Optional config
@@ -419,13 +450,14 @@ Biết khi nào thực sự cần analyze, mà không bị loop hay spam.
 
 #### Mandatory exclusions
 
+- `.avmatrix`
 - `.gitnexus`
 - `.git`
 - thư mục cache/runtime tạm của watcher
 
 #### Acceptance
 
-- analyze xong không tự kích hoạt lại chỉ vì `.gitnexus` đổi
+- analyze xong không tự kích hoạt lại chỉ vì `.avmatrix` đổi
 - save file liên tục không tạo nhiều analyze job chồng nhau
 
 ### Phase G — Control Logic and State Machine
@@ -580,11 +612,12 @@ Mitigation:
 - docs phải ghi rõ read-only chỉ là query-only mode
 - managed mode mặc định là read-write
 
-### Risk 3 — Watcher loop vì `.gitnexus` thay đổi
+### Risk 3 — Watcher loop vì `.avmatrix` thay đổi
 
 Mitigation:
 
-- exclude `.gitnexus` khỏi fingerprint bắt buộc
+- exclude `.avmatrix` khỏi fingerprint bắt buộc
+- trong giai đoạn migration transition, cũng exclude `.gitnexus`
 
 ### Risk 4 — Multi-repo backlog làm analyze chậm
 
@@ -617,6 +650,11 @@ Chỉ được coi là xong khi:
 - watcher sidecar tự phát hiện thay đổi và gọi analyze
 - watcher có debounce, lock-awareness, rerun, retry
 - Windows boot flow không cần start tay từng thành phần
+- canonical naming của rollout này khớp với:
+  - `AVmatrix`
+  - `avmatrix`
+  - `.avmatrix`
+  - `AVMATRIX_HOME`
 
 ## Explicit V1 Summary
 
@@ -627,8 +665,8 @@ V1 chỉ chốt một đường đi thực dụng và đúng với repo hôm nay
 - Docker backend chạy nền
 - host publish loopback-only
 - repo bind mount `rw`
-- index nằm trong repo `.gitnexus`
-- registry/config nằm ở `GITNEXUS_HOME` volume
+- index nằm trong repo `.avmatrix`
+- registry/config nằm ở `AVMATRIX_HOME` volume
 - Codex nối qua `http://localhost:4747/api/mcp`
 - sidecar polling gọi `/api/analyze`
 - tất cả analyze chạy tuần tự, không parallel
