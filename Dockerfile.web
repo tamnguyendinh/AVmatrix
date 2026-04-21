@@ -5,17 +5,17 @@ FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
 
 WORKDIR /app
 
-COPY gitnexus-shared/package.json gitnexus-shared/package-lock.json ./gitnexus-shared/
-RUN npm ci --prefix gitnexus-shared
+COPY avmatrix-shared/package.json avmatrix-shared/package-lock.json ./avmatrix-shared/
+RUN npm ci --prefix avmatrix-shared
 
-COPY gitnexus-shared ./gitnexus-shared
-RUN npm run build --prefix gitnexus-shared
+COPY avmatrix-shared ./avmatrix-shared
+RUN npm run build --prefix avmatrix-shared
 
-COPY gitnexus-web/package.json gitnexus-web/package-lock.json ./gitnexus-web/
-RUN npm ci --prefix gitnexus-web
+COPY avmatrix-web/package.json avmatrix-web/package-lock.json ./avmatrix-web/
+RUN npm ci --prefix avmatrix-web
 
-COPY gitnexus-web ./gitnexus-web
-RUN npm run build --prefix gitnexus-web
+COPY avmatrix-web ./avmatrix-web
+RUN npm run build --prefix avmatrix-web
 
 FROM node:22-alpine AS runtime
 
@@ -23,7 +23,7 @@ RUN apk add --no-cache curl
 
 WORKDIR /app
 
-COPY --from=builder /app/gitnexus-web/dist ./dist
+COPY --from=builder /app/avmatrix-web/dist ./dist
 COPY docker-server.mjs ./docker-server.mjs
 
 RUN chown -R node:node /app

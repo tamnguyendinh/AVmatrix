@@ -14,6 +14,6 @@ coverage
 .env.local
 .env.*.local
 
-.gitnexus
-gitnexus-web/playwright-report
-gitnexus-web/test-results
+.avmatrix
+avmatrix-web/playwright-report
+avmatrix-web/test-results

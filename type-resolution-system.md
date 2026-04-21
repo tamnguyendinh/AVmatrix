@@ -1,6 +1,6 @@
 # Type Resolution System
 
-GitNexus's type resolution system maps variables to likely declared types across the supported languages so the ingestion pipeline can perform **receiver-constrained call resolution**.
+avmatrix's type resolution system maps variables to likely declared types across the supported languages so the ingestion pipeline can perform **receiver-constrained call resolution**.
 
 When the code contains a call such as `user.save()`, the resolver tries to determine that `user` is a `User`, allowing call resolution to prefer `User#save` over unrelated methods such as `Repo#save`.
 

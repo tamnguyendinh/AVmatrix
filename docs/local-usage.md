@@ -3,7 +3,7 @@
 > Canonical rename spec cho local fork nay da duoc khoa tai [docs/avmatrix-canonical-spec.md](./avmatrix-canonical-spec.md).
 >
 > Canonical brand/command moi la `AVmatrix` / `avmatrix`.
-> Trong repo dev nay, thu muc package van la `gitnexus/`, nen cac lenh local theo source tree van chay ben trong thu muc do.
+> Trong repo dev nay, thu muc package van la `avmatrix/`, nen cac lenh local theo source tree van chay ben trong thu muc do.
 
 Tai lieu nay dung de nhac nhanh cach chay AVmatrix theo kieu local-only tren may cua ban.
 
@@ -11,14 +11,14 @@ Tai lieu nay dung de nhac nhanh cach chay AVmatrix theo kieu local-only tren may
 
 AVmatrix trong repo nay duoc dung theo 3 phan:
 
-- `avmatrix`: local bridge + CLI (package hien tai van nam trong `gitnexus/`)
-- `gitnexus-web`: giao dien web local
+- `avmatrix`: local bridge + CLI (package hien tai van nam trong `avmatrix/`)
+- `avmatrix-web`: giao dien web local
 - trinh duyet: hien thi graph, search, impact, chat, file navigation
 
 Luong dung dung:
 
 - terminal 1: chay local bridge
-- terminal 2: chay `gitnexus-web`
+- terminal 2: chay `avmatrix-web`
 - browser: mo giao dien de dung
 - terminal 3 tuy chon: goi CLI truc tiep
 
@@ -29,13 +29,13 @@ Luong dung dung:
 Chay 1 lan de cai dependency:
 
 ```powershell
-cd <repo-root>\gitnexus-shared
+cd <repo-root>\avmatrix-shared
 npm install
 
-cd <repo-root>\gitnexus
+cd <repo-root>\avmatrix
 npm install
 
-cd <repo-root>\gitnexus-web
+cd <repo-root>\avmatrix-web
 npm install
 ```
 
@@ -49,14 +49,14 @@ Luu y:
 ### Cach an toan, de hieu nhat
 
 ```powershell
-cd <repo-root>\gitnexus
+cd <repo-root>\avmatrix
 npm run serve
 ```
 
 Hoac:
 
 ```powershell
-cd <repo-root>\gitnexus
+cd <repo-root>\avmatrix
 node dist/cli/index.js serve
 ```
 
@@ -64,7 +64,7 @@ Neu muon chay tu repo root:
 
 ```powershell
 cd <repo-root>
-npm run --prefix .\gitnexus serve
+npm run --prefix .\avmatrix serve
 ```
 
 Khi thanh cong, ban se thay:
@@ -78,7 +78,7 @@ AVmatrix server running on http://localhost:4747
 Mo terminal khac:
 
 ```powershell
-cd <repo-root>\gitnexus-web
+cd <repo-root>\avmatrix-web
 npm run dev
 ```
 
@@ -115,7 +115,7 @@ Sau khi index xong, web UI dung de:
 Mo terminal khac:
 
 ```powershell
-cd <repo-root>\gitnexus
+cd <repo-root>\avmatrix
 ```
 
 ### Analyze repo
@@ -156,7 +156,7 @@ node dist/cli/index.js context "createServer" --repo <repo-alias>
 ### Impact
 
 ```powershell
-node dist/cli/index.js impact "Function:gitnexus/src/server/api.ts:createServer" --repo <repo-alias>
+node dist/cli/index.js impact "Function:avmatrix/src/server/api.ts:createServer" --repo <repo-alias>
 ```
 
 ### Detect changes
@@ -170,13 +170,13 @@ node dist/cli/index.js detect-changes --repo <repo-alias> --scope unstaged
 Neu ban dang o `C:\Windows\System32` ma chay:
 
 ```powershell
-npm run --prefix gitnexus serve
+npm run --prefix avmatrix serve
 ```
 
 thi npm se tim:
 
 ```text
-C:\Windows\System32\gitnexus\package.json
+C:\Windows\System32\avmatrix\package.json
 ```
 
 va bi loi.
@@ -185,39 +185,39 @@ Cach dung:
 
 ```powershell
 cd <repo-root>
-npm run --prefix .\gitnexus serve
+npm run --prefix .\avmatrix serve
 ```
 
 hoac:
 
 ```powershell
-cd <repo-root>\gitnexus
+cd <repo-root>\avmatrix
 npm run serve
 ```
 
 ## 8. Phan biet cac lenh
 
-### `npm run --prefix .\gitnexus serve`
+### `npm run --prefix .\avmatrix serve`
 
 - chay script local trong repo nay
-- khong tu keo `gitnexus` tu GitHub
+- khong tu keo `avmatrix` tu GitHub
 - khong tu `git clone`
 
 ### `avmatrix serve`
 
 - sau khi CLI local da nam tren `PATH`, day la lenh canonical moi
-- trong repo dev hien tai, van co the thay bang `cd gitnexus && npm run serve`
+- trong repo dev hien tai, van co the thay bang `cd avmatrix && npm run serve`
 
 ### `node dist/cli/index.js ...`
 
 - chay ban build local trong repo nay
-- khong tai package `gitnexus` tu npm
+- khong tai package `avmatrix` tu npm
 - on dinh hon `tsx` khi may ban gap loi `.ts` loader
 
 Neu muon chac chan dang chay code local trong repo hien tai, uu tien:
 
 ```powershell
-cd <repo-root>\gitnexus
+cd <repo-root>\avmatrix
 npm run serve
 ```
 
@@ -227,11 +227,11 @@ npm run serve
 
 ```powershell
 # Terminal 1
-cd <repo-root>\gitnexus
+cd <repo-root>\avmatrix
 npm run serve
 
 # Terminal 2
-cd <repo-root>\gitnexus-web
+cd <repo-root>\avmatrix-web
 npm run dev
 ```
 
@@ -248,4 +248,4 @@ Nhap local repo path, analyze, roi dung graph/impact/chat/query.
 - `serve` la local bridge, khong phai server ben thu ba
 - web UI chi la giao dien local de thao tac
 - CLI dung khi can query/analyze/impact nhanh
-- neu ban muon chac chan 100% dang chay code local, dung `cd <repo-root>\gitnexus && npm run serve`
+- neu ban muon chac chan 100% dang chay code local, dung `cd <repo-root>\avmatrix && npm run serve`

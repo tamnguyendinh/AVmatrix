@@ -1,0 +1,645 @@
+/**
+ * P1 Integration Tests: CLI End-to-End
+ *
+ * Tests CLI commands via child process spawn:
+ * - statusCommand: verify stdout for unindexed repo
+ * - analyzeCommand: verify pipeline runs and creates .avmatrix/ output
+ *
+ * Uses process.execPath (never 'node' string), no shell: true.
+ * Accepts status === null (timeout) as valid on slow CI runners.
+ */
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { spawnSync, spawn } from 'child_process';
+import path from 'path';
+import fs from 'fs';
+import os from 'os';
+import { fileURLToPath, pathToFileURL } from 'url';
+
+import { createRequire } from 'module';
+
+const testDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(testDir, '../..');
+const cliEntry = path.join(repoRoot, 'src/cli/index.ts');
+const FIXTURE_SRC = path.resolve(testDir, '..', 'fixtures', 'mini-repo');
+
+// `MINI_REPO` is a *per-run temp copy* of the fixture, not the shared
+// source. Writing into the shared source races with other suites that
+// ingest it read-only (pipeline-graph-golden, pipeline.test) — those
+// suites copy the source to their own tmp dir but the copy happens at
+// `beforeAll`, so if this suite's analyze has already created AGENTS.md
+// / CLAUDE.md / .claude/ in the source when the other suite's cpSync
+// runs, the pollution is captured before the isolation kicks in.
+//
+// The deterministic fix: this suite never touches the shared source.
+// `beforeAll` copies the fixture to a fresh mkdtemp'd directory whose
+// basename is `mini-repo` (so `--repo mini-repo` lookup by basename
+// still works), `afterAll` rms the parent tmpdir.
+let MINI_REPO: string;
+let tmpParent: string;
+
+// Absolute file:// URL to tsx loader — needed when spawning CLI with cwd
+// outside the project tree (bare 'tsx' specifier won't resolve there).
+// Cannot use require.resolve('tsx/dist/loader.mjs') because the subpath is
+// not in tsx's package.json exports; resolve the package root then join.
+const _require = createRequire(import.meta.url);
+const tsxPkgDir = path.dirname(_require.resolve('tsx/package.json'));
+const tsxImportUrl = pathToFileURL(path.join(tsxPkgDir, 'dist', 'loader.mjs')).href;
+
+beforeAll(() => {
+  // Copy the fixture into an isolated tmpdir named `mini-repo` so that the
+  // `--repo mini-repo` CLI arg (which matches by basename) still works.
+  tmpParent = fs.mkdtempSync(path.join(os.tmpdir(), 'gn-cli-e2e-'));
+  MINI_REPO = path.join(tmpParent, 'mini-repo');
+  fs.cpSync(FIXTURE_SRC, MINI_REPO, { recursive: true });
+
+  // Initialize mini-repo as a git repo so the CLI analyze command
+  // can run the full pipeline (it requires a .git directory).
+  spawnSync('git', ['init'], { cwd: MINI_REPO, stdio: 'pipe' });
+  spawnSync('git', ['add', '-A'], { cwd: MINI_REPO, stdio: 'pipe' });
+  spawnSync('git', ['commit', '-m', 'initial commit'], {
+    cwd: MINI_REPO,
+    stdio: 'pipe',
+    env: {
+      ...process.env,
+      GIT_AUTHOR_NAME: 'test',
+      GIT_AUTHOR_EMAIL: 'test@test',
+      GIT_COMMITTER_NAME: 'test',
+      GIT_COMMITTER_EMAIL: 'test@test',
+    },
+  });
+});
+
+afterAll(() => {
+  // Entire tmp copy goes away — no selective cleanup needed. The shared
+  // `test/fixtures/mini-repo/` source was never touched.
+  if (tmpParent) {
+    fs.rmSync(tmpParent, { recursive: true, force: true });
+  }
+});
+
+function runCli(command: string, cwd: string, timeoutMs = 15000) {
+  return spawnSync(process.execPath, ['--import', tsxImportUrl, cliEntry, command], {
+    cwd,
+    encoding: 'utf8',
+    timeout: timeoutMs,
+    stdio: ['pipe', 'pipe', 'pipe'],
+    env: {
+      ...process.env,
+      // Pre-set --max-old-space-size so analyzeCommand's ensureHeap() sees it
+      // and skips the re-exec. The re-exec drops the tsx loader (--import tsx
+      // is not in process.argv), causing ERR_UNKNOWN_FILE_EXTENSION on .ts files.
+      NODE_OPTIONS: `${process.env.NODE_OPTIONS || ''} --max-old-space-size=8192`.trim(),
+    },
+  });
+}
+
+/**
+ * Like runCli but accepts an arbitrary extra-args array so unhappy-path tests
+ * can pass flags (e.g. --help) or omit a command entirely.
+ */
+function runCliRaw(extraArgs: string[], cwd: string, timeoutMs = 15000) {
+  return spawnSync(process.execPath, ['--import', tsxImportUrl, cliEntry, ...extraArgs], {
+    cwd,
+    encoding: 'utf8',
+    timeout: timeoutMs,
+    stdio: ['pipe', 'pipe', 'pipe'],
+    env: {
+      ...process.env,
+      NODE_OPTIONS: `${process.env.NODE_OPTIONS || ''} --max-old-space-size=8192`.trim(),
+    },
+  });
+}
+
+/**
+ * Like runCliRaw but accepts extra env vars. Used by tests that need to
+ * isolate the global registry via AVMATRIX_HOME so they don't touch the
+ * developer / CI agent's real ~/.avmatrix/registry.json (#829).
+ */
+function runCliWithEnv(
+  extraArgs: string[],
+  cwd: string,
+  extraEnv: Record<string, string>,
+  timeoutMs = 15000,
+) {
+  return spawnSync(process.execPath, ['--import', tsxImportUrl, cliEntry, ...extraArgs], {
+    cwd,
+    encoding: 'utf8',
+    timeout: timeoutMs,
+    stdio: ['pipe', 'pipe', 'pipe'],
+    env: {
+      ...process.env,
+      NODE_OPTIONS: `${process.env.NODE_OPTIONS || ''} --max-old-space-size=8192`.trim(),
+      ...extraEnv,
+    },
+  });
+}
+
+/**
+ * Create a fresh git-initialised throwaway repo at `<parentTmp>/<basename>`
+ * and return its path. Used for tests that need multiple repos whose
+ * basenames intentionally collide (#829 reproduction).
+ */
+function makeMiniRepoCopy(basename: string, prefix: string): string {
+  const parent = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  const repo = path.join(parent, basename);
+  fs.cpSync(FIXTURE_SRC, repo, { recursive: true });
+  spawnSync('git', ['init'], { cwd: repo, stdio: 'pipe' });
+  spawnSync('git', ['add', '-A'], { cwd: repo, stdio: 'pipe' });
+  spawnSync('git', ['commit', '-m', 'initial commit'], {
+    cwd: repo,
+    stdio: 'pipe',
+    env: {
+      ...process.env,
+      GIT_AUTHOR_NAME: 'test',
+      GIT_AUTHOR_EMAIL: 'test@test',
+      GIT_COMMITTER_NAME: 'test',
+      GIT_COMMITTER_EMAIL: 'test@test',
+    },
+  });
+  return repo;
+}
+
+describe('CLI end-to-end', () => {
+  it('status command exits cleanly', () => {
+    const result = runCli('status', MINI_REPO);
+
+    // Accept timeout as valid on slow CI
+    if (result.status === null) return;
+
+    expect(result.status).toBe(0);
+    const combined = result.stdout + result.stderr;
+    // mini-repo may or may not be indexed depending on prior test runs
+    expect(combined).toMatch(/Repository|not indexed/i);
+  });
+
+  it('analyze command runs pipeline on mini-repo', () => {
+    const result = runCli('analyze', MINI_REPO, 30000);
+
+    // Accept timeout as valid on slow CI
+    if (result.status === null) return;
+
+    expect(
+      result.status,
+      [
+        `analyze exited with code ${result.status}`,
+        `stdout: ${result.stdout}`,
+        `stderr: ${result.stderr}`,
+      ].join('\n'),
+    ).toBe(0);
+
+    // Successful analyze should create .avmatrix/ output directory
+    const avmatrixDir = path.join(MINI_REPO, '.avmatrix');
+    expect(fs.existsSync(avmatrixDir)).toBe(true);
+    expect(fs.statSync(avmatrixDir).isDirectory()).toBe(true);
+  });
+
+  // ─── analyze --name <alias> + --allow-duplicate-name (#829) ──────
+  //
+  // End-to-end regression guard for the name-collision feature:
+  //   1. `analyze --name X` persists the alias to ~/.avmatrix/registry.json
+  //   2. A second `analyze --name X` on a DIFFERENT path is rejected with
+  //      a collision error (exit code 1, "already used" in output)
+  //   3. `analyze --name X --allow-duplicate-name` bypasses the guard;
+  //      both entries coexist in registry.json
+  //   4. Pipeline-re-index flags (e.g. --skills) WITHOUT
+  //      --allow-duplicate-name must STILL hit the collision guard —
+  //      the bypass must stay gated on its dedicated flag so it isn't
+  //      silently triggered by unrelated pipeline signals
+  //      (review round 2/3 design decision).
+  //
+  // This test invokes the real CLI → runFullAnalysis → registerRepo
+  // chain, so any wiring regression fails here.
+  describe('analyze --name <alias> and --allow-duplicate-name (#829)', () => {
+    // Path-equality assertions across CLI spawn boundaries are fragile
+    // cross-platform:
+    //   - macOS: os.tmpdir() returns /var/folders/...; child processes
+    //     resolve the symlink to /private/var/folders/...
+    //   - Windows: os.tmpdir() on GitHub runners returns 8.3 short-name
+    //     form (C:\Users\RUNNER~1\...); the child sees the long form
+    //     (C:\Users\runneradmin\...). fs.realpathSync does NOT reliably
+    //     expand 8.3 to long form.
+    // Rather than fight the platform-path quagmire, we assert STRUCTURAL
+    // properties: entry count, alias value, path basename, path
+    // distinctness. That covers the behavior this test is here to
+    // protect without depending on exact-string path equality.
+
+    it('--name alias stores; collision rejects; --allow-duplicate-name bypasses', () => {
+      // Isolate the global registry so this test never touches the
+      // developer's real ~/.avmatrix.
+      const gnHome = fs.mkdtempSync(path.join(os.tmpdir(), 'gn-home-'));
+
+      // Two mini-repo copies whose basenames intentionally collide.
+      const repoA = makeMiniRepoCopy('collide-app', 'gn-collide-a-');
+      const repoB = makeMiniRepoCopy('collide-app', 'gn-collide-b-');
+      const parentA = path.dirname(repoA);
+      const parentB = path.dirname(repoB);
+
+      try {
+        // Step 1: analyze repoA with --name shared → registry entry created.
+        const r1 = runCliWithEnv(
+          ['analyze', '--name', 'shared'],
+          repoA,
+          { AVMATRIX_HOME: gnHome },
+          60000,
+        );
+        if (r1.status === null) return; // CI timeout tolerance
+        expect(
+          r1.status,
+          [`step 1 exited with ${r1.status}`, `stdout: ${r1.stdout}`, `stderr: ${r1.stderr}`].join(
+            '\n',
+          ),
+        ).toBe(0);
+
+        const registryPath = path.join(gnHome, 'registry.json');
+        const afterStep1 = JSON.parse(fs.readFileSync(registryPath, 'utf-8'));
+        expect(Array.isArray(afterStep1)).toBe(true);
+        expect(afterStep1).toHaveLength(1);
+        expect(afterStep1[0].name).toBe('shared');
+        expect(path.basename(afterStep1[0].path)).toBe('collide-app');
+
+        // Step 2: analyze repoB with the SAME --name → collision error.
+        const r2 = runCliWithEnv(
+          ['analyze', '--name', 'shared'],
+          repoB,
+          { AVMATRIX_HOME: gnHome },
+          60000,
+        );
+        if (r2.status === null) return;
+        expect(r2.status).toBe(1);
+        const r2Output = `${r2.stdout}${r2.stderr}`;
+        expect(r2Output).toMatch(/Registry name collision|already used/i);
+
+        // Registry still has just the first entry — step 2 must not have
+        // silently added, overwritten, or corrupted anything.
+        const afterStep2 = JSON.parse(fs.readFileSync(registryPath, 'utf-8'));
+        expect(afterStep2).toHaveLength(1);
+        // Registry still has only the step-1 entry — the failed call
+        // must not have silently added, overwritten, or corrupted state.
+        expect(afterStep2[0].path).toBe(afterStep1[0].path);
+
+        // Step 3: REGRESSION GUARD for the missing collision-bypass wire
+        // (originally a --force passthrough bug; per review round 3 the
+        // bypass moved to its own --allow-duplicate-name flag to avoid
+        // conflating it with pipeline re-index).
+        const r3 = runCliWithEnv(
+          ['analyze', '--name', 'shared', '--allow-duplicate-name'],
+          repoB,
+          { AVMATRIX_HOME: gnHome },
+          60000,
+        );
+        if (r3.status === null) return;
+        expect(
+          r3.status,
+          [
+            `step 3 (--allow-duplicate-name bypass) exited with ${r3.status}`,
+            `stdout: ${r3.stdout}`,
+            `stderr: ${r3.stderr}`,
+          ].join('\n'),
+        ).toBe(0);
+
+        const afterStep3 = JSON.parse(fs.readFileSync(registryPath, 'utf-8'));
+        expect(afterStep3).toHaveLength(2);
+        expect(afterStep3.every((e: { name: string }) => e.name === 'shared')).toBe(true);
+        // Both entries point to distinct paths (we registered two different
+        // repos under the same alias) and both have the right basename.
+        const step3Basenames = afterStep3.map((e: { path: string }) => path.basename(e.path));
+        expect(step3Basenames).toEqual(['collide-app', 'collide-app']);
+        const step3Paths = new Set(afterStep3.map((e: { path: string }) => e.path));
+        expect(step3Paths.size).toBe(2);
+        // One of the two entries is the original from step 1 — unchanged.
+        expect(afterStep3.map((e: { path: string }) => e.path)).toContain(afterStep1[0].path);
+
+        // Step 4: REGRESSION GUARD for the design decision in review
+        // round 2/3 — pipeline-re-index flags must NOT bypass the
+        // registry collision guard. `--skills` triggers pipeline
+        // re-run (skills generation needs a fresh pipelineResult) but
+        // must leave the registry guard in force. Bypass requires the
+        // explicit --allow-duplicate-name flag.
+        const repoC = makeMiniRepoCopy('collide-app', 'gn-collide-c-');
+        const parentC = path.dirname(repoC);
+        try {
+          const r4 = runCliWithEnv(
+            ['analyze', '--name', 'shared', '--skills'],
+            repoC,
+            { AVMATRIX_HOME: gnHome },
+            60000,
+          );
+          if (r4.status === null) return;
+          expect(r4.status).toBe(1);
+          const r4Output = `${r4.stdout}${r4.stderr}`;
+          expect(r4Output).toMatch(/Registry name collision|already used/i);
+          // The error hint should point at the new flag.
+          expect(r4Output).toMatch(/--allow-duplicate-name/);
+
+          // Registry unchanged — still only A + B under "shared".
+          const afterStep4 = JSON.parse(fs.readFileSync(registryPath, 'utf-8'));
+          expect(afterStep4).toHaveLength(2);
+        } finally {
+          fs.rmSync(parentC, { recursive: true, force: true });
+        }
+      } finally {
+        fs.rmSync(gnHome, { recursive: true, force: true });
+        fs.rmSync(parentA, { recursive: true, force: true });
+        fs.rmSync(parentB, { recursive: true, force: true });
+      }
+    }, 360000); // 6-min outer budget (4 × ~60s analyze calls + fixture setup)
+  });
+
+  describe('unhappy path', () => {
+    it('exits with error when no command is given', () => {
+      const result = runCliRaw([], MINI_REPO);
+
+      // Accept timeout as valid on slow CI
+      if (result.status === null) return;
+
+      // Commander exits with code 1 when no subcommand is given and
+      // prints a usage/error message to stderr.
+      expect(result.status).toBe(1);
+      const combined = result.stdout + result.stderr;
+      expect(combined.length).toBeGreaterThan(0);
+    });
+
+    it('shows help with --help flag', () => {
+      const result = runCliRaw(['--help'], MINI_REPO);
+
+      // Accept timeout as valid on slow CI
+      if (result.status === null) return;
+
+      expect(result.status).toBe(0);
+      // Commander writes --help output to stdout.
+      expect(result.stdout).toMatch(/Usage:/i);
+      // The program name and at least one known subcommand should appear.
+      expect(result.stdout).toMatch(/avmatrix/i);
+      expect(result.stdout).toMatch(/analyze|status|serve/i);
+    });
+
+    it('fails with unknown command', () => {
+      const result = runCliRaw(['nonexistent'], MINI_REPO);
+
+      // Accept timeout as valid on slow CI
+      if (result.status === null) return;
+
+      // Commander exits with code 1 and prints an error to stderr for unknown commands.
+      expect(result.status).toBe(1);
+      expect(result.stderr).toMatch(/unknown command/i);
+    });
+  });
+
+  describe('CLI error handling', () => {
+    /**
+     * Helper to spawn CLI from a cwd outside the project tree.
+     * Uses the absolute file:// URL to tsx loader so the --import hook
+     * resolves even when cwd has no node_modules.
+     */
+    function runCliOutsideProject(args: string[], cwd: string, timeoutMs = 15000) {
+      return spawnSync(process.execPath, ['--import', tsxImportUrl, cliEntry, ...args], {
+        cwd,
+        encoding: 'utf8',
+        timeout: timeoutMs,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: {
+          ...process.env,
+          NODE_OPTIONS: `${process.env.NODE_OPTIONS || ''} --max-old-space-size=8192`.trim(),
+        },
+      });
+    }
+
+    it('status on non-indexed repo reports not indexed', () => {
+      // Even though MINI_REPO is now in an isolated tmpdir, previous tests
+      // in this suite may have created MINI_REPO/.avmatrix via analyze,
+      // and findRepo() walks up so any `.avmatrix` along the path still
+      // counts. This test needs a GUARANTEED pristine repo to assert the
+      // "not indexed" output, so it mints its own throwaway tmp git repo.
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cli-noindex-'));
+      try {
+        spawnSync('git', ['init'], { cwd: tmpDir, stdio: 'pipe' });
+        spawnSync('git', ['commit', '--allow-empty', '-m', 'init'], {
+          cwd: tmpDir,
+          stdio: 'pipe',
+          env: {
+            ...process.env,
+            GIT_AUTHOR_NAME: 'test',
+            GIT_AUTHOR_EMAIL: 'test@test',
+            GIT_COMMITTER_NAME: 'test',
+            GIT_COMMITTER_EMAIL: 'test@test',
+          },
+        });
+
+        const result = runCliOutsideProject(['status'], tmpDir);
+        if (result.status === null) return;
+
+        expect(result.status).toBe(0);
+        expect(result.stdout).toMatch(/Repository not indexed/);
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    it('status on non-git directory reports not a git repo', () => {
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cli-nogit-'));
+      try {
+        const result = runCliOutsideProject(['status'], tmpDir);
+        if (result.status === null) return;
+
+        // status.ts doesn't set process.exitCode — just prints and returns
+        expect(result.status).toBe(0);
+        expect(result.stdout).toMatch(/Not a git repository/);
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    it('analyze on non-git directory fails with exit code 1', () => {
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cli-nogit-'));
+      try {
+        // Pass the non-git path as a separate argument via runCliRaw
+        // (runCli passes the whole string as one arg which breaks path parsing)
+        const result = runCliRaw(['analyze', tmpDir], repoRoot);
+        if (result.status === null) return;
+
+        // analyze.ts sets process.exitCode = 1 for non-git paths
+        expect(result.status).toBe(1);
+        expect(result.stdout).toMatch(/not.*git repository/i);
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+  });
+
+  // ─── wiki command flags ─────────────────────────────────────────────
+
+  describe('wiki local-only gate', () => {
+    it('wiki --help does not expose remote provider flags', () => {
+      const result = runCliRaw(['wiki', '--help'], repoRoot);
+      if (result.status === null) return;
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).not.toContain('--provider <provider>');
+      expect(result.stdout).not.toContain('--review');
+      expect(result.stdout).not.toContain('-v, --verbose');
+      expect(result.stdout).not.toContain('--model <model>');
+      expect(result.stdout).not.toContain('--gist');
+      expect(result.stdout).not.toContain('--concurrency <n>');
+    });
+
+    it('wiki reports local-only off mode without prompting for API keys', () => {
+      const gnHome = fs.mkdtempSync(path.join(os.tmpdir(), 'wiki-local-only-home-'));
+      try {
+        const result = runCliWithEnv(['wiki'], repoRoot, { AVMATRIX_HOME: gnHome }, 15000);
+        if (result.status === null) return;
+
+        expect(result.status).toBe(1);
+        const combined = `${result.stdout}${result.stderr}`;
+        expect(combined).toMatch(/Wiki capability mode: off/);
+        expect(combined).toMatch(/disabled in local-only mode/);
+        expect(combined).not.toMatch(/API key:/i);
+      } finally {
+        fs.rmSync(gnHome, { recursive: true, force: true });
+      }
+    });
+
+    it('wiki-mode local persists local mode and wiki reports it without remote fallback', () => {
+      const gnHome = fs.mkdtempSync(path.join(os.tmpdir(), 'wiki-local-mode-home-'));
+      try {
+        const setMode = runCliWithEnv(['wiki-mode', 'local'], repoRoot, { AVMATRIX_HOME: gnHome }, 15000);
+        if (setMode.status === null) return;
+        expect(setMode.status).toBe(0);
+
+        const result = runCliWithEnv(['wiki'], repoRoot, { AVMATRIX_HOME: gnHome }, 15000);
+        if (result.status === null) return;
+
+        expect(result.status).toBe(1);
+        const combined = `${result.stdout}${result.stderr}`;
+        expect(combined).toMatch(/Wiki capability mode: local/);
+        expect(combined).toMatch(/will not fall back to any remote wiki service/);
+      } finally {
+        fs.rmSync(gnHome, { recursive: true, force: true });
+      }
+    });
+  });
+
+  // ─── stdout fd 1 tests (#324) ───────────────────────────────────────
+  // These tests verify that tool output goes to stdout (fd 1), not stderr.
+  // Requires analyze to have run first (the analyze test above populates .avmatrix/).
+
+  // All tool commands pass --repo to disambiguate when the global registry
+  // has multiple indexed repos (e.g. the parent project is also indexed).
+  describe('tool output goes to stdout via fd 1 (#324)', () => {
+    it('cypher: JSON appears on stdout, not stderr', () => {
+      const result = runCliRaw(
+        ['cypher', 'MATCH (n) RETURN n.name LIMIT 3', '--repo', 'mini-repo'],
+        MINI_REPO,
+      );
+      if (result.status === null) return; // CI timeout tolerance
+
+      expect(result.status).toBe(0);
+
+      // stdout must contain valid JSON (array or object)
+      expect(() => JSON.parse(result.stdout.trim())).not.toThrow();
+
+      // stderr must NOT contain JSON — only human-readable diagnostics allowed
+      const stderrTrimmed = result.stderr.trim();
+      if (stderrTrimmed.length > 0) {
+        expect(() => JSON.parse(stderrTrimmed)).toThrow();
+      }
+    });
+
+    it('query: JSON appears on stdout, not stderr', () => {
+      // "handler" is a generic term likely to match something in mini-repo
+      const result = runCliRaw(['query', 'handler', '--repo', 'mini-repo'], MINI_REPO);
+      if (result.status === null) return;
+
+      expect(result.status).toBe(0);
+      expect(() => JSON.parse(result.stdout.trim())).not.toThrow();
+    });
+
+    it('impact: JSON appears on stdout, not stderr', () => {
+      const result = runCliRaw(
+        ['impact', 'handleRequest', '--direction', 'upstream', '--repo', 'mini-repo'],
+        MINI_REPO,
+      );
+      if (result.status === null) return;
+
+      expect(result.status).toBe(0);
+      // impact may return an error object (symbol not found) or a real result —
+      // either way it must be valid JSON on stdout
+      expect(() => JSON.parse(result.stdout.trim())).not.toThrow();
+    });
+
+    it('stdout is pipeable: cypher output parses as valid JSON', () => {
+      const result = runCliRaw(
+        ['cypher', 'MATCH (n:Function) RETURN n.name LIMIT 5', '--repo', 'mini-repo'],
+        MINI_REPO,
+      );
+      if (result.status === null) return;
+
+      expect(result.status).toBe(0);
+
+      // Simulate what jq does: parse stdout as JSON
+      const parsed = JSON.parse(result.stdout.trim());
+      expect(Array.isArray(parsed) || typeof parsed === 'object').toBe(true);
+    });
+  });
+
+  // ─── EPIPE clean exit test (#324) ───────────────────────────────────
+
+  describe('EPIPE handling (#324)', () => {
+    it('cypher: EPIPE exits with code 0, not stderr dump', () => {
+      return new Promise<void>((resolve, reject) => {
+        const child = spawn(
+          process.execPath,
+          [
+            '--import',
+            tsxImportUrl,
+            cliEntry,
+            'cypher',
+            'MATCH (n) RETURN n LIMIT 500',
+            '--repo',
+            'mini-repo',
+          ],
+          {
+            cwd: MINI_REPO,
+            stdio: ['ignore', 'pipe', 'pipe'],
+            env: {
+              ...process.env,
+              NODE_OPTIONS: `${process.env.NODE_OPTIONS || ''} --max-old-space-size=8192`.trim(),
+            },
+          },
+        );
+
+        let stderrOutput = '';
+        child.stderr.on('data', (chunk: Buffer) => {
+          stderrOutput += chunk.toString();
+        });
+
+        // Destroy stdout immediately — simulates `| head -0` (consumer closes early)
+        child.stdout.once('data', () => {
+          child.stdout.destroy(); // triggers EPIPE on next write
+        });
+
+        const timer = setTimeout(() => {
+          child.kill('SIGTERM');
+          // Timeout is acceptable on CI — not a failure
+          resolve();
+        }, 20000);
+
+        child.on('close', (code) => {
+          clearTimeout(timer);
+          try {
+            // Clean EPIPE exit: code 0
+            expect(code).toBe(0);
+            // No JSON payload should appear on stderr
+            const trimmed = stderrOutput.trim();
+            if (trimmed.length > 0) {
+              expect(() => JSON.parse(trimmed)).toThrow();
+            }
+            resolve();
+          } catch (err) {
+            reject(err);
+          }
+        });
+      });
+    }, 25000);
+  });
+
+});

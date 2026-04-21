@@ -1,7 +1,7 @@
-GitNexus monorepo (CLI + web UI)
+avmatrix monorepo (CLI + web UI)
 
 # Core docs (read first for any contribution)
-- AGENTS.md — canonical agent instructions, GitNexus MCP tool reference
+- AGENTS.md — canonical agent instructions, avmatrix MCP tool reference
 - GUARDRAILS.md — non-negotiables and escalation triggers
 
 # Operational (read when running commands or debugging)
@@ -13,7 +13,7 @@ GitNexus monorepo (CLI + web UI)
 - ARCHITECTURE.md — system overview, data flow, component relationships
 
 # Key directories
-- gitnexus/ (CLI/core, MCP server — TypeScript)
-- gitnexus-web/ (web UI — React/Vite/WASM)
+- avmatrix/ (CLI/core, MCP server — TypeScript)
+- avmatrix-web/ (web UI — React/Vite/WASM)
 - avmatrix-claude-plugin/ (Claude marketplace config)
 - avmatrix-cursor-integration/ (Cursor integration config)

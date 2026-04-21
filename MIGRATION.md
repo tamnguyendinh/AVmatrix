@@ -61,7 +61,7 @@ consistency with the new `METHOD_IMPLEMENTS` edge type.
 
 ### What happens on re-index?
 
-Running `npx gitnexus analyze` on a repository produces `METHOD_OVERRIDES`
+Running `npx avmatrix analyze` on a repository produces `METHOD_OVERRIDES`
 edges going forward. The old `OVERRIDES` edges are replaced as part of the
 normal full re-index.
 

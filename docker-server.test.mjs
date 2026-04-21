@@ -50,7 +50,7 @@ async function waitForServer(port, retries = 30) {
 let tmpDir, serverPort, child;
 
 before(async () => {
-  tmpDir = await mkdtemp(join(tmpdir(), 'gitnexus-docker-test-'));
+  tmpDir = await mkdtemp(join(tmpdir(), 'avmatrix-docker-test-'));
   const distDir = join(tmpDir, 'dist');
   const assetsDir = join(distDir, 'assets');
   await mkdir(assetsDir, { recursive: true });

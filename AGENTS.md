@@ -9,9 +9,9 @@ Last reviewed: 2026-04-16
 
 | Boundary | Rule |
 |----------|------|
-| **Reads** | `gitnexus/`, `gitnexus-web/`, `eval/`, plugin packages, `.github/`, `.gitnexus/`, docs. |
+| **Reads** | `avmatrix/`, `avmatrix-web/`, plugin packages, `.github/`, `.avmatrix/`, docs. |
 | **Writes** | Only paths required for the change; keep diffs minimal. Update lockfiles when deps change. |
-| **Executes** | `npm`, `npx`, `node` under `gitnexus/` and `gitnexus-web/`; `uv run` for Python under `eval/`; documented CI/dev workflows. |
+| **Executes** | `npm`, `npx`, `node` under `avmatrix/` and `avmatrix-web/`; documented CI/dev workflows. |
 | **Off-limits** | Real `.env` / secrets, production credentials, unrelated repos, destructive git ops without confirmation. |
 
 ## Model Configuration
@@ -24,13 +24,13 @@ Last reviewed: 2026-04-16
 For multi-step work, state up front:
 1. Which rules in this file and **[GUARDRAILS.md](GUARDRAILS.md)** apply (and any relevant Signs).
 2. Current **Scope** boundaries.
-3. Which **validation commands** you will run (`cd gitnexus && npm test`, `npx tsc --noEmit`).
+3. Which **validation commands** you will run (`cd avmatrix && npm test`, `npx tsc --noEmit`).
 
 On long threads, *"Remember: apply all AGENTS.md rules"* re-weights these instructions against context dilution.
 
 ## Claude Code hooks
 
-**PreToolUse** hooks can block tools (e.g. `git_commit`) until checks pass. Adapt to this repo: `cd gitnexus && npm test` before commit.
+**PreToolUse** hooks can block tools (e.g. `git_commit`) until checks pass. Adapt to this repo: `cd avmatrix && npm test` before commit.
 
 ## Context budget
 
@@ -39,7 +39,7 @@ Commands and gotchas live under **Repo reference** below and in **[CONTRIBUTING.
 ## Reference docs
 
 - **[ARCHITECTURE.md](ARCHITECTURE.md)**, **[CONTRIBUTING.md](CONTRIBUTING.md)**, **[GUARDRAILS.md](GUARDRAILS.md)**
-- **Call-resolution DAG:** See ARCHITECTURE.md § Call-Resolution DAG. Typed 6-stage DAG inside the `parse` phase; language-specific behavior behind `inferImplicitReceiver` / `selectDispatch` hooks on `LanguageProvider`. Shared code in `gitnexus/src/core/ingestion/` must not name languages. Types: `gitnexus/src/core/ingestion/call-types.ts`.
+- **Call-resolution DAG:** See ARCHITECTURE.md § Call-Resolution DAG. Typed 6-stage DAG inside the `parse` phase; language-specific behavior behind `inferImplicitReceiver` / `selectDispatch` hooks on `LanguageProvider`. Shared code in `avmatrix/src/core/ingestion/` must not name languages. Types: `avmatrix/src/core/ingestion/call-types.ts`.
 - **Cursor:** `.cursor/index.mdc` (always-on); `.cursor/rules/*.mdc` (glob-scoped). Legacy `.cursorrules` deprecated.
 - **AVmatrix:** skills in `.claude/skills/avmatrix/`; MCP rules in `avmatrix:start` block below.
 
@@ -105,9 +105,9 @@ This project is indexed by AVmatrix as **AVmatrix-main** (17899 symbols, 23379 r
 
 | Package | Path | Purpose |
 |---------|------|---------|
-| **CLI/Core** | `gitnexus/` | TypeScript CLI, indexing pipeline, MCP server. Published to npm. |
-| **Web UI** | `gitnexus-web/` | React/Vite thin client. All queries via `gitnexus serve` HTTP API. |
-| **Shared** | `gitnexus-shared/` | Shared TypeScript types and constants. |
+| **CLI/Core** | `avmatrix/` | TypeScript CLI, indexing pipeline, MCP server. Published to npm. |
+| **Web UI** | `avmatrix-web/` | React/Vite thin client. All queries via `avmatrix serve` HTTP API. |
+| **Shared** | `avmatrix-shared/` | Shared TypeScript types and constants. |
 | Claude Plugin | `avmatrix-claude-plugin/` | Static config for Claude marketplace. |
 | Cursor Integration | `avmatrix-cursor-integration/` | Static config for Cursor editor. |
 | Eval | `eval/` | Python evaluation harness (Docker + LLM API keys). |
@@ -115,28 +115,28 @@ This project is indexed by AVmatrix as **AVmatrix-main** (17899 symbols, 23379 r
 ### Running services
 
 ```bash
-cd gitnexus && npm run dev                 # CLI: tsx watch mode
-cd gitnexus-web && npm run dev             # Web UI: Vite on port 5173
-npx gitnexus serve                         # HTTP API on port 4747 (from any indexed repo)
+cd avmatrix && npm run dev                 # CLI: tsx watch mode
+cd avmatrix-web && npm run dev             # Web UI: Vite on port 5173
+avmatrix serve                             # HTTP API on port 4747 (from any indexed repo)
 ```
 
 ### Testing
 
-**CLI / Core (`gitnexus/`)**
+**CLI / Core (`avmatrix/`)**
 - `npm test` — full vitest suite (~2000 tests)
 - `npm run test:unit` — unit tests only
 - `npm run test:integration` — integration (~1850 tests). LadybugDB file-locking tests may fail in containers (known env issue).
 - `npx tsc --noEmit` — typecheck
 
-**Web UI (`gitnexus-web/`)**
+**Web UI (`avmatrix-web/`)**
 - `npm test` — vitest (~200 tests)
-- `npm run test:e2e` — Playwright (7 spec files; requires `gitnexus serve` + `npm run dev`)
+- `npm run test:e2e` — Playwright (7 spec files; requires `avmatrix serve` + `npm run dev`)
 - `npx tsc -b --noEmit` — typecheck
 
 **Pre-commit hook** (`.husky/pre-commit`): formatting (prettier via lint-staged) + typecheck for staged packages. Tests do **not** run in pre-commit — CI only.
 
 ### Gotchas
 
-- `npm install` in `gitnexus/` triggers `prepare` (builds via `tsc`) and `postinstall` (patches tree-sitter-swift, builds tree-sitter-proto). Native bindings need `python3`, `make`, `g++`.
+- `npm install` in `avmatrix/` triggers `prepare` (builds via `tsc`) and `postinstall` (patches tree-sitter-swift, builds tree-sitter-proto). Native bindings need `python3`, `make`, `g++`.
 - `tree-sitter-kotlin` and `tree-sitter-swift` are optional — install warnings expected.
 - ESLint configured via `eslint.config.mjs` (TS, React Hooks, unused-imports). No `npm run lint` script; use `npx eslint .`. Prettier runs via lint-staged. CI checks both in `ci-quality.yml`.

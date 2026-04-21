@@ -77,5 +77,5 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(port, host, () => {
-  console.log(`gitnexus-web listening on http://${host}:${port}`);
+  console.log(`avmatrix-web listening on http://${host}:${port}`);
 });

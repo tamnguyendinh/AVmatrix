@@ -10,11 +10,11 @@ File nay la nguon tham chieu cho moi batch rename tiep theo:
 ## Trang thai hien tai
 
 - Code runtime hien tai van dang chay voi brand/command/storage cu:
-  - `GitNexus`
-  - `gitnexus`
-  - `.gitnexus`
-  - `~/.gitnexus`
-  - `gitnexus://`
+  - `AVmatrix`
+  - `avmatrix`
+  - `.avmatrix`
+  - `~/.avmatrix`
+  - `avmatrix://`
 - Batch docs nay **khong** doi code runtime ngay.
 - Batch docs nay chi khoa spec de cac phase code sau nay co diem bam ro rang.
 
@@ -26,8 +26,8 @@ File nay la nguon tham chieu cho moi batch rename tiep theo:
 | CLI command | `avmatrix` | Command canonical moi cho local usage |
 | MCP command | `avmatrix mcp` | Duong canonical de noi Codex/Claude Code |
 | MCP server name | `avmatrix` | Dung trong config MCP |
-| Repo-local namespace | `.avmatrix` | Thay cho `.gitnexus` |
-| User-global namespace | `~/.avmatrix` | Thay cho `~/.gitnexus` |
+| Repo-local namespace | `.avmatrix` | Thay cho `.avmatrix` |
+| User-global namespace | `~/.avmatrix` | Thay cho `~/.avmatrix` |
 | Env var | `AVMATRIX_HOME` | Env runtime primary moi |
 | Resource scheme | `avmatrix://` | Generator va docs moi chi duoc sinh scheme nay |
 
@@ -42,18 +42,18 @@ File nay la nguon tham chieu cho moi batch rename tiep theo:
 ### 1. Command / MCP
 
 - `avmatrix` la command canonical moi.
-- `gitnexus` co the duoc giu lam alias command/MCP trong giai doan dau de tranh gay script cu.
+- `avmatrix` co the duoc giu lam alias command/MCP trong giai doan dau de tranh gay script cu.
 - Docs moi chi huong dan `avmatrix`.
-- Neu co nhac den `gitnexus`, phai ghi ro:
+- Neu co nhac den `avmatrix`, phai ghi ro:
   - day la alias cu / migration alias
   - khong phai duong canonical nua
 
 ### 2. Storage / env
 
 - Khong chap nhan runtime fallback lau dai cho:
-  - `.gitnexus`
-  - `~/.gitnexus`
-  - `GITNEXUS_HOME`
+  - `.avmatrix`
+  - `~/.avmatrix`
+  - `AVMATRIX_HOME`
 - Huong dung la:
   - migration mot lan
   - cutover sach
@@ -65,8 +65,8 @@ File nay la nguon tham chieu cho moi batch rename tiep theo:
 ### 3. Resource scheme
 
 - Generator moi chi sinh `avmatrix://...`
-- Trong giai doan chuyen tiep, parser co the chap nhan `gitnexus://...` de doc tai lieu/du lieu cu neu can.
-- Tuy nhien user-facing surface, docs, va output moi khong duoc tiep tuc sinh `gitnexus://...`
+- Trong giai doan chuyen tiep, parser co the chap nhan `avmatrix://...` de doc tai lieu/du lieu cu neu can.
+- Tuy nhien user-facing surface, docs, va output moi khong duoc tiep tuc sinh `avmatrix://...`
 
 ## Canonical examples
 
@@ -112,7 +112,7 @@ avmatrix://repo/<name>/processes
 ## Khong nam trong V1
 
 Nhung thu sau **khong** nam trong V1, nen docs khong duoc mac dinh gia dinh da doi xong:
-- ten thu muc package `gitnexus/`, `gitnexus-web/`, `gitnexus-shared`
+- ten thu muc package `avmatrix/`, `avmatrix-web/`, `avmatrix-shared`
 - npm package name cong bo ra ngoai
 - mass rename import noi bo
 - rename ten repo tren disk hoac GitHub upstream
@@ -124,7 +124,7 @@ Trong rollout docs-first, cac file sau phai duoc doi wording/copy theo file nay:
 - `README.md` o muc local setup / MCP setup / onboarding local
 - docs setup Codex / Claude Code / Cursor
 - docs migration va plan rename
-- generator text se tao ra `AGENTS.md`, `CLAUDE.md`, `.claude/skills/gitnexus/*` trong rollout code dau tien
+- generator text se tao ra `AGENTS.md`, `CLAUDE.md`, `.claude/skills/avmatrix/*` trong rollout code dau tien
 
 ## Dieu kien de bat dau phase code
 

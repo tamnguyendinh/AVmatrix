@@ -1,6 +1,6 @@
 # COBOL Deep Indexing
 
-Beyond basic symbol extraction (program name, paragraphs, CALL, PERFORM, COPY), GitNexus performs deep indexing of COBOL-specific constructs: data items, EXEC SQL/CICS blocks, file declarations, FD entries, ENTRY points, and MOVE statements.
+Beyond basic symbol extraction (program name, paragraphs, CALL, PERFORM, COPY), AVmatrix performs deep indexing of COBOL-specific constructs: data items, EXEC SQL/CICS blocks, file declarations, FD entries, ENTRY points, and MOVE statements.
 
 ## Data Items
 
@@ -307,6 +307,6 @@ The trailing `"` on line N and the opening `"` on line N+1 are both removed, pro
 
 ## Source Files
 
-- `gitnexus/src/core/ingestion/cobol-preprocessor.ts` -- All extraction logic, clause parsers, EXEC block parsers
-- `gitnexus/src/core/ingestion/workers/parse-worker.ts` -- `processCobolRegexOnly()`, graph node/edge emission
-- `gitnexus/src/core/ingestion/parsing-processor.ts` -- Sequential fallback with same `MAX_DATA_ITEMS_PER_FILE` cap
+- `avmatrix/src/core/ingestion/cobol-preprocessor.ts` -- All extraction logic, clause parsers, EXEC block parsers
+- `avmatrix/src/core/ingestion/workers/parse-worker.ts` -- `processCobolRegexOnly()`, graph node/edge emission
+- `avmatrix/src/core/ingestion/parsing-processor.ts` -- Sequential fallback with same `MAX_DATA_ITEMS_PER_FILE` cap

@@ -1,9 +1,9 @@
 {
   "mcpServers": {
-    "gitnexus": {
+    "avmatrix": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "gitnexus@latest", "mcp"]
+      "command": "node",
+      "args": ["avmatrix/dist/cli/index.js", "mcp"]
     }
   }
 }

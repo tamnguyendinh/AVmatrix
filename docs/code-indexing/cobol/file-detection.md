@@ -1,6 +1,6 @@
 # COBOL File Detection
 
-GitNexus detects COBOL files through two mechanisms: extension-based mapping and directory-based override for extensionless files. This document covers both, plus the copybook/program classification logic.
+AVmatrix detects COBOL files through two mechanisms: extension-based mapping and directory-based override for extensionless files. This document covers both, plus the copybook/program classification logic.
 
 ## Extension Mapping
 
@@ -29,17 +29,17 @@ GitNexus detects COBOL files through two mechanisms: extension-based mapping and
 
 All extension matching is case-sensitive in `getLanguageFromFilename` (the extensions above are matched as written, including uppercase variants like `.GNM`).
 
-## Extensionless File Detection: `GITNEXUS_COBOL_DIRS`
+## Extensionless File Detection: `AVMATRIX_COBOL_DIRS`
 
-Many enterprise COBOL repositories use extensionless files -- the filename alone identifies the program (e.g., `s/BGTABFL` is the source for program `BGTABFL`). GitNexus handles this via the `GITNEXUS_COBOL_DIRS` environment variable.
+Many enterprise COBOL repositories use extensionless files -- the filename alone identifies the program (e.g., `s/BGTABFL` is the source for program `BGTABFL`). AVmatrix handles this via the `AVMATRIX_COBOL_DIRS` environment variable.
 
 ### Configuration
 
-Set `GITNEXUS_COBOL_DIRS` to a comma-separated list of directory names:
+Set `AVMATRIX_COBOL_DIRS` to a comma-separated list of directory names:
 
 ```bash
 # Files in s/, c/, and wfproc/ directories (at any depth) are treated as COBOL
-export GITNEXUS_COBOL_DIRS=s,c,wfproc
+export AVMATRIX_COBOL_DIRS=s,c,wfproc
 ```
 
 The matching is **case-insensitive** and checks all path segments:
@@ -60,7 +60,7 @@ flowchart TD
     C -->|No match| F{Has extension?}
 
     F -->|"Has dot in basename"| G[Return null]
-    F -->|"No dot = extensionless"| H{GITNEXUS_COBOL_DIRS set?}
+    F -->|"No dot = extensionless"| H{AVMATRIX_COBOL_DIRS set?}
 
     H -->|No| G
     H -->|Yes| I{Any path segment<br/>matches a configured dir?}
@@ -74,13 +74,13 @@ flowchart TD
 
 ### Implementation Detail
 
-The `GITNEXUS_COBOL_DIRS` value is parsed once (on first call) and cached in a `Set<string>`:
+The `AVMATRIX_COBOL_DIRS` value is parsed once (on first call) and cached in a `Set<string>`:
 
 ```typescript
-// From gitnexus/src/core/ingestion/utils.ts
+// From avmatrix/src/core/ingestion/utils.ts
 const getCobolDirs = (): Set<string> => {
   if (_cobolDirs) return _cobolDirs;
-  const raw = process.env.GITNEXUS_COBOL_DIRS;
+  const raw = process.env.AVMATRIX_COBOL_DIRS;
   _cobolDirs = raw
     ? new Set(raw.split(',').map(d => d.trim().toLowerCase()))
     : new Set();
@@ -122,5 +122,5 @@ This name is used to resolve `COPY CPSESP.` statements during expansion.
 
 ## Source Files
 
-- `gitnexus/src/core/ingestion/utils.ts` -- `getLanguageFromPath()`, `getLanguageFromFilename()`, `getCobolDirs()`
-- `gitnexus/src/core/ingestion/pipeline.ts` -- `isCobolCopybook()`, `getCopybookName()`, `COPYBOOK_EXTENSIONS`, `COBOL_PROGRAM_EXTENSIONS`
+- `avmatrix/src/core/ingestion/utils.ts` -- `getLanguageFromPath()`, `getLanguageFromFilename()`, `getCobolDirs()`
+- `avmatrix/src/core/ingestion/pipeline.ts` -- `isCobolCopybook()`, `getCopybookName()`, `COPYBOOK_EXTENSIONS`, `COBOL_PROGRAM_EXTENSIONS`

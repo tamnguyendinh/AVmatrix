@@ -1,12 +1,12 @@
 # Changelog
 
-All notable changes to GitNexus will be documented in this file.
+All notable changes to avmatrix will be documented in this file.
 
 ## [Unreleased]
 
 ### Changed
 - Migrated from KuzuDB to LadybugDB v0.15 (`@ladybugdb/core`, `@ladybugdb/wasm-core`)
-- Renamed all internal paths from `kuzu` to `lbug` (storage: `.gitnexus/kuzu` → `.gitnexus/lbug`)
+- Renamed all internal paths from `kuzu` to `lbug` (storage: `.avmatrix/kuzu` → `.avmatrix/lbug`)
 - Added automatic cleanup of stale KuzuDB index files
 - LadybugDB v0.15 requires explicit VECTOR extension loading for semantic search
 
@@ -36,7 +36,7 @@ All notable changes to GitNexus will be documented in this file.
 - **Type extractor directory** (`type-extractors/`) — per-language type binding extraction with `Record<SupportedLanguages, Handler>` + `satisfies` dispatch (#238) — @magyargergo
 - **Export detection dispatch table** — compile-time exhaustive `Record` + `satisfies` pattern replacing switch/if chains (#238) — @magyargergo
 - **Language config module** (`language-config.ts`) — centralized tsconfig, go.mod, composer.json, .csproj, Swift package config loaders (#238) — @magyargergo
-- **Optional skill generation** via `npx gitnexus analyze --skills` — generates AI agent skills from KuzuDB knowledge graph (#171) — @zander-raycraft
+- **Optional skill generation** via `npx avmatrix analyze --skills` — generates AI agent skills from KuzuDB knowledge graph (#171) — @zander-raycraft
 - **First-class C# support** — sibling-based modifier scanning, record/delegate/property/field/event declaration types (#163, #170, #178 via #237) — @Alice523, @benny-yamagata, @jnMetaCode
 - **C/C++ support fixes** — `.h` → C++ mapping, static-linkage export detection, qualified/parenthesized declarators, 48 entry point patterns (#163, #227 via #237) — @Alice523, @bitgineer
 - **Rust support fixes** — sibling-based `visibility_modifier` scanning for `pub` detection (#227 via #237) — @bitgineer
@@ -67,7 +67,7 @@ All notable changes to GitNexus will be documented in this file.
 
 ### Added
 
-- Auto-reindex hook that runs `gitnexus analyze` after commits and merges, with automatic embeddings preservation (#205) — @L1nusB
+- Auto-reindex hook that runs `avmatrix analyze` after commits and merges, with automatic embeddings preservation (#205) — @L1nusB
 - 968 integration tests (up from ~840) covering unhappy paths across search, enrichment, CLI, pipeline, worker pool, and KuzuDB (#209) — @magyargergo
 - Coverage auto-ratcheting so thresholds bump automatically on CI (#209) — @magyargergo
 - Rich CI PR report with coverage bars, test counts, and threshold tracking (#209) — @magyargergo
@@ -95,7 +95,7 @@ All notable changes to GitNexus will be documented in this file.
 ### Added
 
 - **Dual-framing MCP transport** (`CompatibleStdioServerTransport`): Auto-detects Content-Length (Codex/OpenCode) and newline-delimited JSON (Cursor/Claude Code) framing on the first message, responds in the same format (#207)
-- **Lazy CLI module loading**: All CLI subcommands now use `createLazyAction()` to defer heavy imports (tree-sitter, ONNX, KuzuDB) until invocation, significantly improving `gitnexus mcp` startup time (#207)
+- **Lazy CLI module loading**: All CLI subcommands now use `createLazyAction()` to defer heavy imports (tree-sitter, ONNX, KuzuDB) until invocation, significantly improving `avmatrix mcp` startup time (#207)
 - **Type-safe lazy actions**: `createLazyAction` uses constrained generics to validate export names against module types at compile time
 - **Regression test suite**: 13 unit tests covering transport framing, security hardening, buffer limits, and lazy action loading
 

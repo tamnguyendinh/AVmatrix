@@ -1,27 +1,27 @@
-# Architecture — GitNexus
+# Architecture — AVmatrix
 
-Monorepo: **CLI/MCP** (`gitnexus/`) + **browser UI** (`gitnexus-web/`).
+Monorepo: **CLI/MCP** (`avmatrix/`) + **browser UI** (`avmatrix-web/`).
 
 ## Repository layout
 
 | Path | Role |
 |------|------|
-| `gitnexus/` | npm package `gitnexus`: CLI, MCP server (stdio), HTTP API, ingestion pipeline, LadybugDB graph, embeddings. |
-| `gitnexus-web/` | Vite + React thin client: graph explorer + AI chat. All queries via `gitnexus serve` HTTP API. |
-| `gitnexus-shared/` | Shared TypeScript types and constants (consumed by CLI and Web). |
+| `avmatrix/` | npm package `avmatrix`: CLI, MCP server (stdio), HTTP API, ingestion pipeline, LadybugDB graph, embeddings. |
+| `avmatrix-web/` | Vite + React thin client: graph explorer + AI chat. All queries via `avmatrix serve` HTTP API. |
+| `avmatrix-shared/` | Shared TypeScript types and constants (consumed by CLI and Web). |
 | `.claude/`, `avmatrix-claude-plugin/`, `avmatrix-cursor-integration/` | Agent skills and plugin metadata. |
-| `.github/` | CI workflows + composite actions (`setup-gitnexus/`, `setup-gitnexus-web/`). |
+| `.github/` | CI workflows + composite actions (`setup-avmatrix/`, `setup-avmatrix-web/`). |
 
 ## End-to-end flow: index → graph → tools
 
-1. **Ingestion** — `analyze.ts` → `runFullAnalysis` (`run-analyze.ts`) → `runPipelineFromRepo` (`pipeline.ts`). DAG of 12 phases builds a `KnowledgeGraph` in memory, then loads into LadybugDB under `.gitnexus/`. Repo registered in `~/.gitnexus/registry.json` for MCP discovery.
+1. **Ingestion** — `analyze.ts` → `runFullAnalysis` (`run-analyze.ts`) → `runPipelineFromRepo` (`pipeline.ts`). DAG of 12 phases builds a `KnowledgeGraph` in memory, then loads into LadybugDB under `.avmatrix/`. Repo registered in `~/.avmatrix/registry.json` for MCP discovery.
 
 2. **Persistence** — `repo-manager.ts` (paths, registry, KuzuDB cleanup). `lbug-adapter.ts` (graph load, queries, embedding batches).
 
 3. **Query layer** — three interfaces to the same backend:
    - **MCP (stdio):** `mcp.ts` → `LocalBackend` → tools (`tools.ts`) + resources (`resources.ts`)
    - **HTTP bridge:** `serve.ts` → Express (`api.ts`, `mcp-http.ts`) for web UI
-   - **CLI direct:** `gitnexus query|context|impact|cypher` in `tool.ts`
+   - **CLI direct:** `avmatrix query|context|impact|cypher` in `tool.ts`
 
 4. **Staleness** — `staleness.ts` compares indexed `lastCommit` to `HEAD`, surfaces hints.
 
@@ -57,21 +57,21 @@ Monorepo: **CLI/MCP** (`gitnexus/`) + **browser UI** (`gitnexus-web/`).
 | Search ranking | `src/core/search/` (BM25, hybrid fusion) |
 | Embeddings | `src/core/embeddings/` + `src/core/run-analyze.ts` |
 | Wiki generation | `src/core/wiki/` |
-| Language support | `src/core/ingestion/languages/` + `tree-sitter-queries.ts` + `gitnexus-shared/src/languages.ts` |
+| Language support | `src/core/ingestion/languages/` + `tree-sitter-queries.ts` + `avmatrix-shared/src/languages.ts` |
 | Import resolution | `src/core/ingestion/import-processor.ts` + `import-resolvers/configs/` + `model/resolution-context.ts` |
 | Call resolution/MRO | `src/core/ingestion/call-processor.ts` + `model/resolve.ts` |
 | Type extraction | `src/core/ingestion/type-extractors/` |
 | Worker pool | `src/core/ingestion/workers/` |
-| Web UI | `gitnexus-web/src/` |
+| Web UI | `avmatrix-web/src/` |
 | CI | `.github/workflows/*.yml`, `.github/actions/` |
 
-> Paths above are relative to `gitnexus/` unless they start with `gitnexus-web/` or `.github/`.
+> Paths above are relative to `avmatrix/` unless they start with `avmatrix-web/` or `.github/`.
 
 ---
 
 ## Pipeline Phase DAG
 
-12 phases defined in `gitnexus/src/core/ingestion/pipeline-phases/`, each with explicit `deps` and typed output.
+12 phases defined in `avmatrix/src/core/ingestion/pipeline-phases/`, each with explicit `deps` and typed output.
 
 ```
 scan → structure → [markdown, cobol] → parse → [routes, tools, orm]
@@ -304,13 +304,13 @@ CLI (analyze.ts) → runFullAnalysis(repoPath, options, callbacks)
 ## Storage
 
 ```
-<repo>/.gitnexus/
+<repo>/.avmatrix/
   ├── lbug           # LadybugDB database
   ├── lbug.wal       # Write-ahead log
   ├── lbug.lock      # Single-writer lock
   └── meta.json      # lastCommit, indexedAt, stats
 
-~/.gitnexus/
+~/.avmatrix/
   └── registry.json  # Global repo registry (MCP discovery)
 ```
 

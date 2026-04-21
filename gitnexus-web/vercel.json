@@ -1,3 +1,0 @@
-{
-  "installCommand": "cd ../gitnexus-shared && npm install && npm run build && cd ../gitnexus-web && npm install"
-}

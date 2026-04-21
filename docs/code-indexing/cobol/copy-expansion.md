@@ -1,6 +1,6 @@
 # COBOL COPY Expansion
 
-The COPY statement is COBOL's include mechanism -- analogous to `#include` in C or `import` in modern languages. GitNexus expands COPY statements **before** regex extraction so that symbols defined inside copybooks (data items, paragraphs, etc.) are visible in the program's extracted graph.
+The COPY statement is COBOL's include mechanism -- analogous to `#include` in C or `import` in modern languages. AVmatrix expands COPY statements **before** regex extraction so that symbols defined inside copybooks (data items, paragraphs, etc.) are visible in the program's extracted graph.
 
 ## Supported Syntax
 
@@ -153,5 +153,5 @@ The copy expander's `stripInlineComment()` helper is quote-aware: pipe character
 
 ## Source Files
 
-- `gitnexus/src/core/ingestion/cobol-copy-expander.ts` -- `expandCopies()`, `parseReplacingClause()`, `applyReplacing()`
-- `gitnexus/src/core/ingestion/pipeline.ts` -- `expandCobolCopies()`, copybook map construction, chunk integration
+- `avmatrix/src/core/ingestion/cobol-copy-expander.ts` -- `expandCopies()`, `parseReplacingClause()`, `applyReplacing()`
+- `avmatrix/src/core/ingestion/pipeline.ts` -- `expandCobolCopies()`, copybook map construction, chunk integration

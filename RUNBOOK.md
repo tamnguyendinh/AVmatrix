@@ -4,17 +4,17 @@ Short, copy-paste operations for **local development**, **MCP**, and **CI**. Com
 
 ## Prerequisites
 
-- **Node.js** ≥ 20 (`gitnexus-web/package.json` `engines`).  
+- **Node.js** ≥ 20 (`avmatrix-web/package.json` `engines`).  
 - **Git** (analyze requires a git repository).  
 - From repo root, install and build the CLI package:
 
 ```bash
-cd gitnexus
+cd avmatrix
 npm install
 npm run build
 ```
 
-Use `avmatrix …` after the local CLI is on `PATH`, or `node dist/cli/index.js …` when developing from `gitnexus/` with a local build.
+Use `avmatrix …` after the local CLI is on `PATH`, or `node dist/cli/index.js …` when developing from `avmatrix/` with a local build.
 
 ---
 
@@ -106,7 +106,7 @@ Then re-run `avmatrix analyze` (and `--embeddings` if you need vectors).
 ## Local bridge for the web UI
 
 ```bash
-cd gitnexus
+cd avmatrix
 node dist/cli/index.js serve
 # default http://127.0.0.1:4747 — see serve --help for port/host
 ```
@@ -120,7 +120,7 @@ Use when the browser UI should talk to **local** indexed repos instead of WASM-o
 Useful for debugging without an editor:
 
 ```bash
-cd gitnexus
+cd avmatrix
 node dist/cli/index.js query "authentication flow" --repo MyRepo
 node dist/cli/index.js context SomeSymbol --repo MyRepo
 node dist/cli/index.js impact SomeSymbol --direction upstream --repo MyRepo
@@ -135,10 +135,10 @@ Orchestrator: `.github/workflows/ci.yml`.
 
 | Job | Typical local repro |
 |-----|---------------------|
-| **quality** | `cd gitnexus && npx tsc --noEmit` |
-| **unit-tests** | `cd gitnexus && npx vitest run test/unit` |
-| **integration** | `cd gitnexus && npx vitest run test/integration` (see workflow matrix for groups) |
-| **e2e** | Triggered when `gitnexus-web/` changes; `cd gitnexus-web && E2E=1 npx playwright test` (requires `avmatrix serve` or `node dist/cli/index.js serve` + `npm run dev`) |
+| **quality** | `cd avmatrix && npx tsc --noEmit` |
+| **unit-tests** | `cd avmatrix && npx vitest run test/unit` |
+| **integration** | `cd avmatrix && npx vitest run test/integration` (see workflow matrix for groups) |
+| **e2e** | Triggered when `avmatrix-web/` changes; `cd avmatrix-web && E2E=1 npx playwright test` (requires `avmatrix serve` or `node dist/cli/index.js serve` + `npm run dev`) |
 
 **Note:** Pushes that touch only certain markdown paths may be skipped by `paths-ignore` in CI — see workflow file for exact patterns.
 

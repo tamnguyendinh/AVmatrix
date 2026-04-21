@@ -1,6 +1,6 @@
 # COBOL Code Indexing
 
-GitNexus indexes COBOL codebases using a **regex-only extraction** strategy, bypassing tree-sitter entirely. This document explains why, how the pipeline works, and links to detailed sub-documents.
+AVmatrix indexes COBOL codebases using a **regex-only extraction** strategy, bypassing tree-sitter entirely. This document explains why, how the pipeline works, and links to detailed sub-documents.
 
 ## Why Regex-Only?
 
@@ -26,7 +26,7 @@ The regex-only approach provides:
 flowchart TD
     A[Repository Scan] --> B{File Detection}
     B -->|Extension match| C[COBOL file]
-    B -->|GITNEXUS_COBOL_DIRS match| C
+    B -->|AVMATRIX_COBOL_DIRS match| C
     B -->|No match| Z[Skip]
 
     C --> D{Copybook?}
@@ -81,7 +81,7 @@ flowchart TD
 
 | Document | Description |
 |----------|-------------|
-| [File Detection](./file-detection.md) | Extension mapping, `GITNEXUS_COBOL_DIRS`, copybook classification |
+| [File Detection](./file-detection.md) | Extension mapping, `AVMATRIX_COBOL_DIRS`, copybook classification |
 | [COPY Expansion](./copy-expansion.md) | Copybook inlining, REPLACING transformations, cycle detection |
 | [Regex Extraction](./regex-extraction.md) | State machine, regex patterns, line processing |
 | [Deep Indexing](./deep-indexing.md) | Data items, EXEC SQL/CICS, file declarations, FD, ENTRY, MOVE |
@@ -92,9 +92,9 @@ flowchart TD
 
 | File | Purpose |
 |------|---------|
-| `gitnexus/src/core/ingestion/cobol-preprocessor.ts` | Patch marker cleanup + regex extraction engine |
-| `gitnexus/src/core/ingestion/cobol-copy-expander.ts` | COPY statement expansion with REPLACING |
-| `gitnexus/src/core/ingestion/utils.ts` | `getLanguageFromPath`, `getLanguageFromFilename` |
-| `gitnexus/src/core/ingestion/pipeline.ts` | `isCobolCopybook`, `expandCobolCopies`, `detectCrossProgamContracts` |
-| `gitnexus/src/core/ingestion/workers/parse-worker.ts` | `processCobolRegexOnly` -- graph model builder |
-| `gitnexus/src/core/ingestion/workers/worker-pool.ts` | Configurable sub-batch size for COBOL |
+| `avmatrix/src/core/ingestion/cobol-preprocessor.ts` | Patch marker cleanup + regex extraction engine |
+| `avmatrix/src/core/ingestion/cobol-copy-expander.ts` | COPY statement expansion with REPLACING |
+| `avmatrix/src/core/ingestion/utils.ts` | `getLanguageFromPath`, `getLanguageFromFilename` |
+| `avmatrix/src/core/ingestion/pipeline.ts` | `isCobolCopybook`, `expandCobolCopies`, `detectCrossProgamContracts` |
+| `avmatrix/src/core/ingestion/workers/parse-worker.ts` | `processCobolRegexOnly` -- graph model builder |
+| `avmatrix/src/core/ingestion/workers/worker-pool.ts` | Configurable sub-batch size for COBOL |

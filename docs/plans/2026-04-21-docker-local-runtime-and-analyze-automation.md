@@ -47,7 +47,7 @@ Mục tiêu cuối cùng:
   - `~/.avmatrix`
   - `AVMATRIX_HOME`
   - `avmatrix://`
-- Nếu current implementation vẫn còn `gitnexus` / `.gitnexus` / `GITNEXUS_HOME`, đó chỉ là trạng thái hiện tại cần migrate, không phải target architecture.
+- Nếu current implementation vẫn còn `avmatrix` / `.avmatrix` / `AVMATRIX_HOME`, đó chỉ là trạng thái hiện tại cần migrate, không phải target architecture.
 
 ## Naming Contract
 
@@ -56,7 +56,7 @@ Plan này follow trực tiếp `docs/avmatrix-canonical-spec.md`.
 Nguyên tắc đọc file này:
 
 - mọi quyết định kiến trúc đích phải dùng naming mới của AVmatrix
-- mọi reference `gitnexus` chỉ còn dùng để mô tả:
+- mọi reference `avmatrix` chỉ còn dùng để mô tả:
   - file path / code path hiện tại
   - current implementation chưa rename
   - compatibility hoặc migration work cần xử lý
@@ -65,27 +65,27 @@ Nguyên tắc đọc file này:
 
 Các facts dưới đây là điểm tựa của plan này:
 
-1. Current implementation của `gitnexus serve` hiện chỉ cho loopback host ở CLI path.
-- `gitnexus/src/cli/serve.ts`
+1. Current implementation của `avmatrix serve` hiện chỉ cho loopback host ở CLI path.
+- `avmatrix/src/cli/serve.ts`
 
-2. Current Docker image hiện lại chạy legacy command `gitnexus serve --host 0.0.0.0`.
+2. Current Docker image hiện lại chạy legacy command `avmatrix serve --host 0.0.0.0`.
 - `Dockerfile.cli`
 
 3. HTTP server đã mount MCP-over-StreamableHTTP tại `/api/mcp`.
-- `gitnexus/src/server/mcp-http.ts`
-- `gitnexus/src/server/api.ts`
+- `avmatrix/src/server/mcp-http.ts`
+- `avmatrix/src/server/api.ts`
 
-4. Current implementation của `analyze` hiện ghi index vào `<repo>/.gitnexus`, không ghi vào `GITNEXUS_HOME`.
-- `gitnexus/src/storage/repo-manager.ts`
-- `gitnexus/src/core/run-analyze.ts`
+4. Current implementation của `analyze` hiện ghi index vào `<repo>/.avmatrix`, không ghi vào `AVMATRIX_HOME`.
+- `avmatrix/src/storage/repo-manager.ts`
+- `avmatrix/src/core/run-analyze.ts`
 
-5. Current implementation dùng `GITNEXUS_HOME` chỉ như global home cho registry/config/runtime metadata.
-- `gitnexus/src/storage/repo-manager.ts`
+5. Current implementation dùng `AVMATRIX_HOME` chỉ như global home cho registry/config/runtime metadata.
+- `avmatrix/src/storage/repo-manager.ts`
 - `Dockerfile.cli`
 
-6. Legacy command `gitnexus index` không chạy phân tích mới.
-- Nó chỉ register một `.gitnexus` đã tồn tại vào global registry.
-- `gitnexus/src/cli/index-repo.ts`
+6. Legacy command `avmatrix index` không chạy phân tích mới.
+- Nó chỉ register một `.avmatrix` đã tồn tại vào global registry.
+- `avmatrix/src/cli/index-repo.ts`
 
 7. `/api/analyze` trong server đã có sẵn:
 - local-path validation
@@ -94,11 +94,11 @@ Các facts dưới đây là điểm tựa của plan này:
 - worker retry
 - SSE progress
 - nhưng hiện vẫn single-slot toàn cục cho các analyze job khác repo
-- `gitnexus/src/server/api.ts`
-- `gitnexus/src/server/analyze-job.ts`
+- `avmatrix/src/server/api.ts`
+- `avmatrix/src/server/analyze-job.ts`
 
 8. Web UI và backend client đều đang mặc định local loopback.
-- `gitnexus-web/src/services/backend-client.ts`
+- `avmatrix-web/src/services/backend-client.ts`
 
 ## V1 Decisions
 
@@ -151,7 +151,7 @@ Hệ quả:
 
 Ghi chú migration:
 
-- current implementation vẫn còn dùng `.gitnexus` và `GITNEXUS_HOME`
+- current implementation vẫn còn dùng `.avmatrix` và `AVMATRIX_HOME`
 - rollout code theo rename plan phải cutover sang:
   - `.avmatrix`
   - `~/.avmatrix`
@@ -237,13 +237,13 @@ Nếu không giải quyết điểm này thì backend container không thể là
 
 ### Problem 2 — Docs hiện đang drift với hành vi thật của `index`
 
-Nếu README/docker docs còn nói mount repo read-only rồi dùng legacy command `gitnexus index /workspace/my-repo`, hoặc canonical `avmatrix index /workspace/my-repo`, như cách index repo host, người dùng sẽ hiểu sai.
+Nếu README/docker docs còn nói mount repo read-only rồi dùng legacy command `avmatrix index /workspace/my-repo`, hoặc canonical `avmatrix index /workspace/my-repo`, như cách index repo host, người dùng sẽ hiểu sai.
 
 `index` không tạo index mới.
 
 ### Problem 3 — Read-only mount không khớp với auto-analyze
 
-Vì current code hiện ghi `.gitnexus` vào repo root và target architecture sẽ ghi `.avmatrix` vào repo root, repo mount `:ro` không thể là mode chuẩn khi mục tiêu là tự refresh index.
+Vì current code hiện ghi `.avmatrix` vào repo root và target architecture sẽ ghi `.avmatrix` vào repo root, repo mount `:ro` không thể là mode chuẩn khi mục tiêu là tự refresh index.
 
 ### Problem 4 — Nhiều repo dirty cùng lúc có thể đụng single-slot analyze
 
@@ -252,7 +252,7 @@ Watcher phải serialize thay vì assume parallelism.
 
 ### Problem 5 — Watcher có thể tự trigger loop vì index namespace thay đổi sau analyze
 
-Fingerprint logic phải bỏ qua `.avmatrix` hoàn toàn, và trong giai đoạn migration phải bỏ qua cả `.gitnexus`.
+Fingerprint logic phải bỏ qua `.avmatrix` hoàn toàn, và trong giai đoạn migration phải bỏ qua cả `.avmatrix`.
 
 ## Target Runtime Behavior
 
@@ -281,8 +281,8 @@ Cho backend chạy được trong container nhưng vẫn giữ local-only contra
 
 #### Required changes
 
-- chỉnh `gitnexus/src/cli/serve.ts`
-- chỉnh help text trong `gitnexus/src/cli/index.ts`
+- chỉnh `avmatrix/src/cli/serve.ts`
+- chỉnh help text trong `avmatrix/src/cli/index.ts`
 - chỉnh hoặc bổ sung tests cho `serve` host policy
 - xác định một trong hai hướng implementation:
 
@@ -299,7 +299,7 @@ Option B:
 - server start được trong container
 - host vẫn chỉ thấy service ở `127.0.0.1`
 - local desktop mode không bị mở rộng LAN ngoài ý muốn
-- docs/help canonical sau phase này phải dùng `avmatrix serve`, không dùng `gitnexus serve` làm đường chính
+- docs/help canonical sau phase này phải dùng `avmatrix serve`, không dùng `avmatrix serve` làm đường chính
 
 ### Phase B — Align Compose, README, and Storage Contract
 
@@ -382,7 +382,7 @@ Tạo automation runner riêng, nhưng không duplicate analyze core.
 
 - script Node mới trong repo, ví dụ:
   - `deploy/docker/watch-and-analyze.mjs`
-  - hoặc `gitnexus/scripts/watch-and-analyze.mjs`
+  - hoặc `avmatrix/scripts/watch-and-analyze.mjs`
 
 #### Why sidecar instead of in-process watcher in server
 
@@ -451,7 +451,7 @@ Biết khi nào thực sự cần analyze, mà không bị loop hay spam.
 #### Mandatory exclusions
 
 - `.avmatrix`
-- `.gitnexus`
+- `.avmatrix`
 - `.git`
 - thư mục cache/runtime tạm của watcher
 
@@ -572,8 +572,8 @@ Không dùng Windows host path kiểu:
 
 ### Backend/container
 
-- `cd gitnexus && npx vitest run test/unit/serve-command.test.ts test/unit/analyze-api.test.ts test/unit/analyze-job.test.ts`
-- `cd gitnexus && npx tsc --noEmit`
+- `cd avmatrix && npx vitest run test/unit/serve-command.test.ts test/unit/analyze-api.test.ts test/unit/analyze-job.test.ts`
+- `cd avmatrix && npx tsc --noEmit`
 
 ### Web/docs/client path
 
@@ -617,7 +617,7 @@ Mitigation:
 Mitigation:
 
 - exclude `.avmatrix` khỏi fingerprint bắt buộc
-- trong giai đoạn migration transition, cũng exclude `.gitnexus`
+- trong giai đoạn migration transition, cũng exclude `.avmatrix`
 
 ### Risk 4 — Multi-repo backlog làm analyze chậm
 

@@ -1,7 +1,7 @@
 # PR #626 HIGH-Priority Fixes Design
 
 **Date:** 2026-04-02
-**PR:** abhigyanpatwari/GitNexus#626 — Intra-repo service communication tracking
+**PR:** abhigyanpatwari/AVmatrix#626 — Intra-repo service communication tracking
 **Scope:** 4 HIGH-priority issues identified by abhigyanpatwari and xkonjin
 **Approach:** Minimal targeted fixes (option A) — no refactoring, no scope creep
 
@@ -9,7 +9,7 @@
 
 ## Fix 1: Path Traversal via Group Name
 
-**File:** `gitnexus/src/core/group/storage.ts`
+**File:** `avmatrix/src/core/group/storage.ts`
 **Risk:** A group name like `../../etc` creates directories outside the intended path.
 
 ### Solution
@@ -56,7 +56,7 @@ All paths flow through `getGroupDir` (which validates), so coverage is implicit.
 
 ## Fix 2: gRPC Proto Regex -> Brace-Depth Counter
 
-**File:** `gitnexus/src/core/group/extractors/grpc-extractor.ts`
+**File:** `avmatrix/src/core/group/extractors/grpc-extractor.ts`
 **Risk:** `serviceRe = /service\s+(\w+)\s*\{([^}]*)}/gs` stops at first `}`. Proto services with `google.api.http` annotations inside RPCs contain nested `{ }` blocks.
 
 ### Solution
@@ -87,7 +87,7 @@ Inner `rpcRe` regex remains unchanged — it operates on the already-extracted b
 
 ## Fix 3: Directory Exclusions in Service Boundary Detector
 
-**File:** `gitnexus/src/core/group/service-boundary-detector.ts`
+**File:** `avmatrix/src/core/group/service-boundary-detector.ts`
 **Risk:** Walks entire repo tree, only skipping dotfiles and `node_modules`. Extremely slow on repos with `vendor/`, `target/`, `__pycache__/`, `.venv/`.
 
 ### Solution
@@ -127,8 +127,8 @@ Exclusions apply only to `isDirectory()` entries — file names are never checke
 ## Fix 4: Double-Close of LadybugDB Pools
 
 **Files:**
-- `gitnexus/src/core/group/sync.ts` (lines 155-157) — per-id cleanup (KEEP)
-- `gitnexus/src/cli/group.ts` (line 188) — blanket `closeLbug()` (REMOVE)
+- `avmatrix/src/core/group/sync.ts` (lines 155-157) — per-id cleanup (KEEP)
+- `avmatrix/src/cli/group.ts` (line 188) — blanket `closeLbug()` (REMOVE)
 
 **Risk:** In MCP server context, `closeLbug()` without arguments tears down ALL active pools, including ones from unrelated operations.
 

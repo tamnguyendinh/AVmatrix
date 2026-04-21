@@ -1,6 +1,6 @@
 # Type Resolution Roadmap
 
-This roadmap describes the evolution of GitNexus's type-resolution layer from a receiver-disambiguation aid into a production-grade static-analysis foundation.
+This roadmap describes the evolution of avmatrix's type-resolution layer from a receiver-disambiguation aid into a production-grade static-analysis foundation.
 
 ---
 
@@ -251,7 +251,7 @@ For-loop binding, assignment chains, `guard let` narrowing. Blocked on tree-sitt
 
 ## What "Production-Grade" Means Here
 
-For GitNexus, production-grade does **not** mean replacing a language compiler. The target:
+For avmatrix, production-grade does **not** mean replacing a language compiler. The target:
 
 - Strong receiver-constrained call resolution across common language idioms
 - Reliable handling of typed loops, constructors, and common patterns

@@ -41,8 +41,8 @@ The PROJECT-NAME project is a large Italian payroll system written in COBOL. It 
 
 ```bash
 cd /path/to/PROJECT-NAME
-GITNEXUS_COBOL_DIRS=s,c,wfproc GITNEXUS_VERBOSE=1 node --max-old-space-size=8192 \
-  /path/to/gitnexus/dist/cli/index.js analyze --force
+AVMATRIX_COBOL_DIRS=s,c,wfproc AVMATRIX_VERBOSE=1 node --max-old-space-size=8192 \
+  /path/to/avmatrix/dist/cli/index.js analyze --force
 ```
 
 ## Open-Source Benchmarks
@@ -83,11 +83,11 @@ The worker pool splits each worker's chunk into sub-batches to bound peak memory
 
 **Why 200?** COBOL regex extraction + preprocessing takes ~1ms per file on average, but with COPY expansion and deep indexing the effective time is ~150ms per file. At sub-batch size 1500, that would be ~225s per sub-batch, exceeding the 120s timeout.
 
-COBOL mode is activated automatically when `GITNEXUS_COBOL_DIRS` is set:
+COBOL mode is activated automatically when `AVMATRIX_COBOL_DIRS` is set:
 
 ```typescript
 // From pipeline.ts
-const cobolSubBatch = process.env.GITNEXUS_COBOL_DIRS ? 200 : undefined;
+const cobolSubBatch = process.env.AVMATRIX_COBOL_DIRS ? 200 : undefined;
 workerPool = createWorkerPool(workerUrl, undefined, cobolSubBatch);
 ```
 
@@ -99,8 +99,8 @@ Workers default to `min(8, cpus - 1)`. For COBOL repos, this is usually sufficie
 
 | Environment Variable                 | Default         | Purpose                                             |
 | ------------------------------------ | --------------- | --------------------------------------------------- |
-| `GITNEXUS_WORKER_TIMEOUT_MS`         | 120,000 (2 min) | Per sub-batch processing timeout                    |
-| `GITNEXUS_WORKER_STARTUP_TIMEOUT_MS` | 60,000 (1 min)  | Worker initialization timeout (tree-sitter loading) |
+| `AVMATRIX_WORKER_TIMEOUT_MS`         | 120,000 (2 min) | Per sub-batch processing timeout                    |
+| `AVMATRIX_WORKER_STARTUP_TIMEOUT_MS` | 60,000 (1 min)  | Worker initialization timeout (tree-sitter loading) |
 
 For COBOL-only repos, worker startup is faster because tree-sitter native modules are loaded lazily (skipped entirely if only COBOL files are present).
 
@@ -171,7 +171,7 @@ The `warnedCircular` set (used by the COPY expansion engine) is shared across al
 | tree-sitter-cobol hangs on ~5% of files  | Cannot use tree-sitter for COBOL                                                                                | Regex-only extraction (current approach)                   |
 | Data item cap (500/file)                 | May miss deeply nested items in large programs                                                                  | Increase `MAX_DATA_ITEMS_PER_FILE` in source               |
 | Circular copybooks (ANAZI, ANDIP, QDIPE) | Self-referential includes cannot be expanded                                                                    | Detected and skipped with warning                          |
-| wfproc/ files may not be pure COBOL      | Workflow files may produce extraction noise                                                                     | Exclude `wfproc` from `GITNEXUS_COBOL_DIRS` if problematic |
+| wfproc/ files may not be pure COBOL      | Workflow files may produce extraction noise                                                                     | Exclude `wfproc` from `AVMATRIX_COBOL_DIRS` if problematic |
 | No MOVE DATA_FLOW edges yet              | Data flow between variables not in graph                                                                        | Reserved for future release                                |
 | Continuation line handling               | Some complex multi-line continuations (especially in string literals spanning 3+ lines) may not merge correctly | Known edge case; affects <0.1% of lines                    |
 | Single-line EXEC blocks                  | `EXEC SQL SELECT ... END-EXEC` on one line is handled, but pathological nesting is not                          | Extremely rare in practice                                 |
@@ -189,7 +189,7 @@ The `warnedCircular` set (used by the COPY expansion engine) is shared across al
 
 **Fix:**
 
-1. Verify `GITNEXUS_COBOL_DIRS` includes the directory containing copybooks (typically `c`)
+1. Verify `AVMATRIX_COBOL_DIRS` includes the directory containing copybooks (typically `c`)
 2. Check that copybook filenames match the COPY target (case-insensitive, after stripping extensions)
 3. Ensure copybook files are not in `.gitignore`
 
@@ -204,7 +204,7 @@ Worker 3 sub-batch timed out after 120s (chunk: 200 items)
 **Fix:** Increase the timeout:
 
 ```bash
-GITNEXUS_WORKER_TIMEOUT_MS=300000 gitnexus analyze
+AVMATRIX_WORKER_TIMEOUT_MS=300000 avmatrix analyze
 ```
 
 ### Memory errors (heap out of memory)
@@ -216,33 +216,33 @@ FATAL ERROR: CALL_AND_RETRY_LAST Allocation failed - JavaScript heap out of memo
 **Fix:** Increase Node.js heap size:
 
 ```bash
-node --max-old-space-size=16384 /path/to/gitnexus/dist/cli/index.js analyze
+node --max-old-space-size=16384 /path/to/avmatrix/dist/cli/index.js analyze
 ```
 
 For very large repos (>500MB source), consider `--max-old-space-size=32768`.
 
 ### Concurrent analyze corruption
 
-**Rule:** Only ONE `gitnexus analyze` process should run at a time per repository. Concurrent writes to KuzuDB corrupt the database.
+**Rule:** Only ONE `avmatrix analyze` process should run at a time per repository. Concurrent writes to KuzuDB corrupt the database.
 
 If corruption occurs:
 
 ```bash
 # Remove the KuzuDB directory and re-index
-rm -rf .gitnexus/kuzu
-gitnexus analyze --force
+rm -rf .avmatrix/kuzu
+avmatrix analyze --force
 ```
 
 ### Slow KuzuDB write phase
 
-The KuzuDB write phase (132s for PROJECT-NAME) is the bottleneck for large COBOL repos. This is proportional to the number of nodes and edges being written. Reducing `MAX_DATA_ITEMS_PER_FILE` or excluding non-essential directories from `GITNEXUS_COBOL_DIRS` can help.
+The KuzuDB write phase (132s for PROJECT-NAME) is the bottleneck for large COBOL repos. This is proportional to the number of nodes and edges being written. Reducing `MAX_DATA_ITEMS_PER_FILE` or excluding non-essential directories from `AVMATRIX_COBOL_DIRS` can help.
 
 ### Verbose output
 
 Enable verbose logging to see per-phase timing and statistics:
 
 ```bash
-GITNEXUS_VERBOSE=1 gitnexus analyze
+AVMATRIX_VERBOSE=1 avmatrix analyze
 ```
 
 This outputs:
@@ -255,7 +255,7 @@ This outputs:
 
 ## Source Files
 
-- `gitnexus/src/core/ingestion/workers/worker-pool.ts` -- `DEFAULT_SUB_BATCH_SIZE`, `SUB_BATCH_TIMEOUT_MS`, `WORKER_STARTUP_TIMEOUT_MS`
-- `gitnexus/src/core/ingestion/pipeline.ts` -- `CHUNK_BYTE_BUDGET`, COBOL sub-batch configuration, chunk lifecycle
-- `gitnexus/src/core/ingestion/workers/parse-worker.ts` -- `MAX_DATA_ITEMS_PER_FILE`, `processCobolRegexOnly()`
-- `gitnexus/src/core/ingestion/parsing-processor.ts` -- Sequential fallback `MAX_DATA_ITEMS_PER_FILE`
+- `avmatrix/src/core/ingestion/workers/worker-pool.ts` -- `DEFAULT_SUB_BATCH_SIZE`, `SUB_BATCH_TIMEOUT_MS`, `WORKER_STARTUP_TIMEOUT_MS`
+- `avmatrix/src/core/ingestion/pipeline.ts` -- `CHUNK_BYTE_BUDGET`, COBOL sub-batch configuration, chunk lifecycle
+- `avmatrix/src/core/ingestion/workers/parse-worker.ts` -- `MAX_DATA_ITEMS_PER_FILE`, `processCobolRegexOnly()`
+- `avmatrix/src/core/ingestion/parsing-processor.ts` -- Sequential fallback `MAX_DATA_ITEMS_PER_FILE`

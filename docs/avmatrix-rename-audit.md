@@ -1,6 +1,6 @@
 # AVmatrix Rename Audit
 
-File nay la inventory thuc te cho ke hoach doi ten tu `GitNexus` sang `AVmatrix`.
+File nay la inventory thuc te cho ke hoach doi ten tu `AVmatrix` sang `AVmatrix`.
 
 Muc dich:
 - khong rename sot surface
@@ -15,11 +15,11 @@ Muc dich:
 ## Scope audit
 
 Audit nay dua tren grep cac token sau trong toan repo:
-- `GitNexus`
-- `gitnexus`
-- `.gitnexus`
-- `gitnexus://`
-- `GITNEXUS_HOME`
+- `AVmatrix`
+- `avmatrix`
+- `.avmatrix`
+- `avmatrix://`
+- `AVMATRIX_HOME`
 
 ## Nhan dinh tong quan
 
@@ -61,26 +61,26 @@ Audit nay dua tren grep cac token sau trong toan repo:
 
 ### Files chinh
 
-- `gitnexus/src/cli/index.ts`
-- `gitnexus/src/cli/setup.ts`
-- `gitnexus/src/cli/mcp.ts`
-- `gitnexus/src/cli/serve.ts`
-- `gitnexus/src/cli/status.ts`
-- `gitnexus/src/cli/list.ts`
-- `gitnexus/src/cli/analyze.ts`
-- `gitnexus/src/cli/index-repo.ts`
-- `gitnexus/src/cli/tool.ts`
+- `avmatrix/src/cli/index.ts`
+- `avmatrix/src/cli/setup.ts`
+- `avmatrix/src/cli/mcp.ts`
+- `avmatrix/src/cli/serve.ts`
+- `avmatrix/src/cli/status.ts`
+- `avmatrix/src/cli/list.ts`
+- `avmatrix/src/cli/analyze.ts`
+- `avmatrix/src/cli/index-repo.ts`
+- `avmatrix/src/cli/tool.ts`
 - `.mcp.json`
 
 ### Audit notes
 
 - `setup.ts` hien tai la diem tap trung cho:
-  - ten MCP server `gitnexus`
-  - command `gitnexus`
+  - ten MCP server `avmatrix`
+  - command `avmatrix`
   - config cho Codex / Claude / Cursor / OpenCode
-  - install skills vao cac thu muc `.../gitnexus/`
+  - install skills vao cac thu muc `.../avmatrix/`
 - `index.ts` dang dong vai tro nguon chinh cho:
-  - `program.name('gitnexus')`
+  - `program.name('avmatrix')`
   - copy help
   - option text
 
@@ -88,15 +88,15 @@ Audit nay dua tren grep cac token sau trong toan repo:
 
 ### Files chinh
 
-- `gitnexus/src/storage/repo-manager.ts`
-- `gitnexus/src/storage/runtime-config.ts`
-- `gitnexus/src/core/group/storage.ts`
-- `gitnexus/src/core/lbug/*`
-- `gitnexus/src/cli/analyze.ts`
-- `gitnexus/src/cli/clean.ts`
-- `gitnexus/src/cli/status.ts`
-- `gitnexus/src/cli/index-repo.ts`
-- `gitnexus/src/server/api.ts`
+- `avmatrix/src/storage/repo-manager.ts`
+- `avmatrix/src/storage/runtime-config.ts`
+- `avmatrix/src/core/group/storage.ts`
+- `avmatrix/src/core/lbug/*`
+- `avmatrix/src/cli/analyze.ts`
+- `avmatrix/src/cli/clean.ts`
+- `avmatrix/src/cli/status.ts`
+- `avmatrix/src/cli/index-repo.ts`
+- `avmatrix/src/server/api.ts`
 
 ### Audit notes
 
@@ -115,12 +115,12 @@ Audit nay dua tren grep cac token sau trong toan repo:
 
 ### Files chinh
 
-- `gitnexus/src/mcp/resources.ts`
-- `gitnexus/src/mcp/tools.ts`
-- `gitnexus/src/mcp/server.ts`
-- `gitnexus/src/mcp/local/local-backend.ts`
-- `gitnexus/src/server/mcp-http.ts`
-- `gitnexus/src/server/session-bridge.ts`
+- `avmatrix/src/mcp/resources.ts`
+- `avmatrix/src/mcp/tools.ts`
+- `avmatrix/src/mcp/server.ts`
+- `avmatrix/src/mcp/local/local-backend.ts`
+- `avmatrix/src/server/mcp-http.ts`
+- `avmatrix/src/server/session-bridge.ts`
 
 ### Audit notes
 
@@ -132,10 +132,10 @@ Audit nay dua tren grep cac token sau trong toan repo:
 
 ### Files / generators canh bao
 
-- `gitnexus/src/cli/ai-context.ts`
+- `avmatrix/src/cli/ai-context.ts`
 - `AGENTS.md`
 - `CLAUDE.md`
-- `.claude/skills/gitnexus/*`
+- `.claude/skills/avmatrix/*`
 - `.claude/skills/generated/*` neu co copy brand cu
 
 ### Audit notes
@@ -144,22 +144,22 @@ Audit nay dua tren grep cac token sau trong toan repo:
 - Neu doi brand tren UI/docs ma khong doi generator:
   - `analyze` se ghi lai brand cu
   - `AGENTS.md` / `CLAUDE.md` se bi "tai nhiem" brand cu
-  - local skills se tiep tuc tao duoi namespace `gitnexus`
+  - local skills se tiep tuc tao duoi namespace `avmatrix`
 
 ## Nhom 6: Web active path
 
 ### Files chinh
 
-- `gitnexus-web/src/App.tsx`
-- `gitnexus-web/src/components/Header.tsx`
-- `gitnexus-web/src/components/OnboardingGuide.tsx`
-- `gitnexus-web/src/components/HelpPanel.tsx`
-- `gitnexus-web/src/components/RepoLanding.tsx`
-- `gitnexus-web/src/components/AnalyzeOnboarding.tsx`
-- `gitnexus-web/src/components/SettingsPanel*`
-- `gitnexus-web/src/services/backend-client.ts`
-- `gitnexus-web/src/hooks/useAppState.local-runtime.tsx`
-- `gitnexus-web/src/components/StatusBar.tsx`
+- `avmatrix-web/src/App.tsx`
+- `avmatrix-web/src/components/Header.tsx`
+- `avmatrix-web/src/components/OnboardingGuide.tsx`
+- `avmatrix-web/src/components/HelpPanel.tsx`
+- `avmatrix-web/src/components/RepoLanding.tsx`
+- `avmatrix-web/src/components/AnalyzeOnboarding.tsx`
+- `avmatrix-web/src/components/SettingsPanel*`
+- `avmatrix-web/src/services/backend-client.ts`
+- `avmatrix-web/src/hooks/useAppState.local-runtime.tsx`
+- `avmatrix-web/src/components/StatusBar.tsx`
 
 ### Audit notes
 
@@ -170,13 +170,13 @@ Audit nay dua tren grep cac token sau trong toan repo:
 
 ### Files chinh
 
-- `gitnexus/test/unit/setup*.test.ts`
-- `gitnexus/test/unit/cli-index-help.test.ts`
-- `gitnexus/test/integration/setup-skills.test.ts`
-- `gitnexus/test/integration/cli-e2e.test.ts`
-- `gitnexus-web/e2e/*.spec.ts`
-- `gitnexus-web/test/unit/*local-only*.test.tsx`
-- `gitnexus-web/test/unit/ChatPanel.grounding-links.test.tsx`
+- `avmatrix/test/unit/setup*.test.ts`
+- `avmatrix/test/unit/cli-index-help.test.ts`
+- `avmatrix/test/integration/setup-skills.test.ts`
+- `avmatrix/test/integration/cli-e2e.test.ts`
+- `avmatrix-web/e2e/*.spec.ts`
+- `avmatrix-web/test/unit/*local-only*.test.tsx`
+- `avmatrix-web/test/unit/ChatPanel.grounding-links.test.tsx`
 
 ### Audit notes
 
@@ -184,16 +184,16 @@ Audit nay dua tren grep cac token sau trong toan repo:
   - `avmatrix --help`
   - `avmatrix mcp`
   - Codex/Claude config generation voi `avmatrix`
-  - migration `.gitnexus -> .avmatrix`
+  - migration `.avmatrix -> .avmatrix`
   - active local UI chi hien `AVmatrix`
 
 ## Nhom 8: Package / publish / infra surfaces
 
 ### Files chinh
 
-- `gitnexus/package.json`
-- `gitnexus-web/package.json`
-- `gitnexus-shared/package.json`
+- `avmatrix/package.json`
+- `avmatrix-web/package.json`
+- `avmatrix-shared/package.json`
 - `docker-compose.yaml`
 - `.env.example`
 - deploy / container image docs
@@ -210,7 +210,7 @@ Audit nay dua tren grep cac token sau trong toan repo:
 Sau khi docs/spec da khoa, batch code dau tien nen gom:
 1. CLI dual-bin:
    - them `avmatrix`
-   - giu `gitnexus` alias
+   - giu `avmatrix` alias
 2. setup/MCP config generation:
    - sinh `avmatrix`
    - server name `avmatrix`

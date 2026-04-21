@@ -22,37 +22,37 @@ This re-review is based on current code, not on the older verdict.
 The following previous blockers are now materially closed:
 
 1. Missing-folder path handling is now normalized into structured runtime errors.
-   - `gitnexus/src/runtime/runtime-controller.ts:171`
-   - `gitnexus/src/runtime/runtime-controller.ts:215`
-   - `gitnexus/src/runtime/runtime-controller.ts:234`
+   - `avmatrix/src/runtime/runtime-controller.ts:171`
+   - `avmatrix/src/runtime/runtime-controller.ts:215`
+   - `avmatrix/src/runtime/runtime-controller.ts:234`
    - Verified by runtime probe: `getStatus({ repoPath: 'F:/this/path/does/not/exist' })` now returns `repo.state = "not_found"` instead of raw `ENOENT`.
 
 2. Stream contract now carries `reasoning` and `runtimeEnvironment`.
-   - `gitnexus-shared/src/session.ts:7`
-   - `gitnexus-shared/src/session.ts:52`
-   - `gitnexus-shared/src/session.ts:85`
-   - `gitnexus/src/runtime/session-adapter.ts:32`
-   - `gitnexus/src/runtime/runtime-controller.ts:100`
+   - `avmatrix-shared/src/session.ts:7`
+   - `avmatrix-shared/src/session.ts:52`
+   - `avmatrix-shared/src/session.ts:85`
+   - `avmatrix/src/runtime/session-adapter.ts:32`
+   - `avmatrix/src/runtime/runtime-controller.ts:100`
 
 3. Codex adapter now maps `aggregated_output` and emits `reasoning`.
-   - `gitnexus/src/runtime/session-adapters/codex.ts:141`
-   - `gitnexus/src/runtime/session-adapters/codex.ts:190`
-   - `gitnexus/src/runtime/session-adapters/codex.ts:212`
+   - `avmatrix/src/runtime/session-adapters/codex.ts:141`
+   - `avmatrix/src/runtime/session-adapters/codex.ts:190`
+   - `avmatrix/src/runtime/session-adapters/codex.ts:212`
 
 4. Phase-1 behavioral tests were added and they pass.
-   - `gitnexus/test/unit/session-bridge.test.ts`
-   - `gitnexus/test/unit/runtime-controller.test.ts`
-   - `gitnexus/test/unit/codex-session-adapter.test.ts`
-   - `cd gitnexus && npx vitest run test/unit/session-bridge.test.ts test/unit/runtime-controller.test.ts test/unit/codex-session-adapter.test.ts` => `16/16` pass
+   - `avmatrix/test/unit/session-bridge.test.ts`
+   - `avmatrix/test/unit/runtime-controller.test.ts`
+   - `avmatrix/test/unit/codex-session-adapter.test.ts`
+   - `cd avmatrix && npx vitest run test/unit/session-bridge.test.ts test/unit/runtime-controller.test.ts test/unit/codex-session-adapter.test.ts` => `16/16` pass
 
 ## Validation run
 
-- `cd gitnexus && npx tsc --noEmit` => pass
-- `cd gitnexus-shared && npx tsc --noEmit` => pass
-- `cd gitnexus-web && npx tsc -b --noEmit` => pass
-- `cd gitnexus && npx vitest run test/unit/session-bridge.test.ts test/unit/runtime-controller.test.ts test/unit/codex-session-adapter.test.ts` => pass
-- `cd gitnexus-web && npm test` => `220/220` pass
-- `cd gitnexus && npm test` => `6598` passed, `98` skipped, but still `3` unhandled worker-fork errors; suite is not clean-green
+- `cd avmatrix && npx tsc --noEmit` => pass
+- `cd avmatrix-shared && npx tsc --noEmit` => pass
+- `cd avmatrix-web && npx tsc -b --noEmit` => pass
+- `cd avmatrix && npx vitest run test/unit/session-bridge.test.ts test/unit/runtime-controller.test.ts test/unit/codex-session-adapter.test.ts` => pass
+- `cd avmatrix-web && npm test` => `220/220` pass
+- `cd avmatrix && npm test` => `6598` passed, `98` skipped, but still `3` unhandled worker-fork errors; suite is not clean-green
 
 ## Remaining findings
 
@@ -62,10 +62,10 @@ The following previous blockers are now materially closed:
   - use `WSL2 bridge` as the primary execution environment for full agent mode
   - do not invent a half-workaround later
 - Current adapter still resolves Windows strategy as `auto`, tries WSL, and then silently falls back to native:
-  - `gitnexus/src/runtime/session-adapters/codex.ts:19`
-  - `gitnexus/src/runtime/session-adapters/codex.ts:46`
-  - `gitnexus/src/runtime/session-adapters/codex.ts:293`
-  - `gitnexus/src/runtime/session-adapters/codex.ts:314`
+  - `avmatrix/src/runtime/session-adapters/codex.ts:19`
+  - `avmatrix/src/runtime/session-adapters/codex.ts:46`
+  - `avmatrix/src/runtime/session-adapters/codex.ts:293`
+  - `avmatrix/src/runtime/session-adapters/codex.ts:314`
 - On this machine the real status probe now returns:
   - `runtimeEnvironment: "native"`
   - message: `WSL2 Codex unavailable; using native fallback. /mnt/c/Users/TAM PC/AppData/Roaming/npm/codex: 15: exec: node: not found`
@@ -73,7 +73,7 @@ The following previous blockers are now materially closed:
 
 Direct reproduction:
 
-- `spawn('codex.cmd', ['--version'], { shell: true, cwd: 'F:/GitNexus-main' })` => works
+- `spawn('codex.cmd', ['--version'], { shell: true, cwd: 'F:/AVmatrix-main' })` => works
 - `spawn('codex.cmd', ['--version'], { shell: true, cwd: 'C:/Users/TAM PC/AppData/Local/Temp/skills-e2e-mixed-YHP0Mp' })` => `spawn C:\WINDOWS\system32\cmd.exe ENOENT`
 
 End-to-end runtime probe against an actually indexed repo from registry:
@@ -91,11 +91,11 @@ This is a real phase-1 blocker because:
 - the failing path shape is normal on Windows user machines
 - it confirms the fallback path is not a safe substitute for the WSL2 execution decision
 
-### HIGH-2 — Phase validation gate is still not met because `gitnexus` full test suite is not clean
+### HIGH-2 — Phase validation gate is still not met because `avmatrix` full test suite is not clean
 
 - The plan’s implementation validation explicitly includes:
-  - `cd gitnexus && npx tsc --noEmit && npm test`
-- Current `cd gitnexus && npm test` still ends with:
+  - `cd avmatrix && npx tsc --noEmit && npm test`
+- Current `cd avmatrix && npm test` still ends with:
   - `Errors  3 errors`
   - `Vitest caught 3 unhandled errors during the test run`
   - `Worker forks emitted error`
@@ -136,10 +136,10 @@ This is a real phase-1 blocker because:
 
 ## Files/modules below best practice for the current Phase 1 state
 
-- `gitnexus/src/runtime/session-adapters/codex.ts`
+- `avmatrix/src/runtime/session-adapters/codex.ts`
   - `auto -> native fallback` still conflicts with the spike decision
   - native spawn path is not robust on Windows local repos with spaces
-- `gitnexus` package validation
+- `avmatrix` package validation
   - full test suite still not clean-green
 
 ## Supervisor assessment of coder
@@ -169,7 +169,7 @@ This is a real phase-1 blocker because:
    - Or reopen the plan decision explicitly and justify a different architecture
 2. Do not keep native fallback as the default “silent save” path while it still fails on user-profile paths with spaces.
 3. Add a deterministic behavioral test for Windows/native launch with a `cwd` containing spaces, or block that path intentionally with a clear runtime error.
-4. Clear the `gitnexus` full test-suite worker-fork errors before claiming phase-1 validation is done.
+4. Clear the `avmatrix` full test-suite worker-fork errors before claiming phase-1 validation is done.
 5. Only after those two gates are clean should the work move forward to Phase 2.
 
 ## Final supervisor verdict

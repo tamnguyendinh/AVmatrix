@@ -1,10 +1,10 @@
-# GitNexus
-⚠️ Important Notice:** GitNexus has NO official cryptocurrency, token, or coin. Any token/coin using the GitNexus name on Pump.fun or any other platform is **not affiliated with, endorsed by, or created by** this project or its maintainers. Do not purchase any cryptocurrency claiming association with GitNexus.
+# avmatrix
+⚠️ Important Notice:** avmatrix has NO official cryptocurrency, token, or coin. Any token/coin using the avmatrix name on Pump.fun or any other platform is **not affiliated with, endorsed by, or created by** this project or its maintainers. Do not purchase any cryptocurrency claiming association with avmatrix.
 
 <div align="center">
 
   <a href="https://trendshift.io/repositories/19809" target="_blank">
-    <img src="https://trendshift.io/api/badge/repositories/19809" alt="abhigyanpatwari%2FGitNexus | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
+    <img src="https://trendshift.io/api/badge/repositories/19809" alt="abhigyanpatwari%2Favmatrix | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
   </a>
 
   <h2>Join the official Discord to discuss ideas, issues etc!</h2>
@@ -12,8 +12,8 @@
   <a href="https://discord.gg/AAsRVT6fGb">
     <img src="https://img.shields.io/discord/1477255801545429032?color=5865F2&logo=discord&logoColor=white" alt="Discord"/>
   </a>
-  <a href="https://www.npmjs.com/package/gitnexus">
-    <img src="https://img.shields.io/npm/v/gitnexus.svg" alt="npm version"/>
+  <a href="https://www.npmjs.com/package/avmatrix">
+    <img src="https://img.shields.io/npm/v/avmatrix.svg" alt="npm version"/>
   </a>
   <a href="https://polyformproject.org/licenses/noncommercial/1.0.0/">
     <img src="https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue.svg" alt="License: PolyForm Noncommercial"/>
@@ -34,7 +34,7 @@ https://github.com/user-attachments/assets/172685ba-8e54-4ea7-9ad1-e31a3398da72
 
 
 
-> *Like DeepWiki, but deeper.* DeepWiki helps you *understand* code. GitNexus lets you *analyze* it — because a knowledge graph tracks every relationship, not just descriptions.
+> *Like DeepWiki, but deeper.* DeepWiki helps you *understand* code. avmatrix lets you *analyze* it — because a knowledge graph tracks every relationship, not just descriptions.
 
 **TL;DR:** The **Web UI** is a quick way to chat with any repo. The **CLI + MCP** is how you make your AI agent actually reliable — it gives Cursor, Claude Code, Codex, and friends a deep architectural view of your codebase so they stop missing dependencies, breaking call chains, and shipping blind edits. Even smaller models get full architectural clarity, making it compete with goliath models.
 
@@ -42,28 +42,28 @@ https://github.com/user-attachments/assets/172685ba-8e54-4ea7-9ad1-e31a3398da72
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=abhigyanpatwari/GitNexus&type=date&legend=top-left)](https://www.star-history.com/#abhigyanpatwari/GitNexus&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/svg?repos=abhigyanpatwari/avmatrix&type=date&legend=top-left)](https://www.star-history.com/#abhigyanpatwari/avmatrix&type=date&legend=top-left)
 
 
-## Two Ways to Use GitNexus
+## Two Ways to Use avmatrix
 
 |                   | **CLI + MCP**                                            | **Web UI**                                             |
 | ----------------- | -------------------------------------------------------------- | ------------------------------------------------------------ |
 | **What**    | Index repos locally, connect AI agents via MCP                 | Visual graph explorer + AI chat in browser                   |
 | **For**     | Daily development with Cursor, Claude Code, Codex, Windsurf, OpenCode | Quick exploration, demos, one-off analysis                   |
 | **Scale**   | Full repos, any size                                           | Limited by browser memory (~5k files), or unlimited via backend mode |
-| **Install** | `npm install -g gitnexus`                                    | No install — [gitnexus.vercel.app](https://gitnexus.vercel.app) |
+| **Install** | `npm install -g avmatrix`                                    | No install — [avmatrix.vercel.app](https://avmatrix.vercel.app) |
 | **Storage** | LadybugDB native (fast, persistent)                               | LadybugDB WASM (in-memory, per session)                         |
 | **Parsing** | Tree-sitter native bindings                                    | Tree-sitter WASM                                             |
 | **Privacy** | Everything local, no network                                   | Everything in-browser, no server                             |
 
-> **Bridge mode:** `gitnexus serve` connects the two — the web UI auto-detects the local server and can browse all your CLI-indexed repos without re-uploading or re-indexing.
+> **Bridge mode:** `avmatrix serve` connects the two — the web UI auto-detects the local server and can browse all your CLI-indexed repos without re-uploading or re-indexing.
 
 ---
 
 ## Enterprise
 
-GitNexus is available as an **enterprise offering** - either as a fully managed **SaaS** or a **self-hosted** deployment. Also available for **commercial use** of the OSS version with proper licensing.
+avmatrix is available as an **enterprise offering** - either as a fully managed **SaaS** or a **self-hosted** deployment. Also available for **commercial use** of the OSS version with proper licensing.
 
 Enterprise includes:
 - **PR Review** - automated blast radius analysis on pull requests
@@ -89,7 +89,7 @@ Enterprise includes:
 - [RUNBOOK.md](RUNBOOK.md) — analyze, embeddings, stale index, MCP recovery, CI snippets
 - [GUARDRAILS.md](GUARDRAILS.md) — safety rules and operational “Signs” for contributors and agents
 - [CONTRIBUTING.md](CONTRIBUTING.md) — license, setup, commits, and pull requests
-- [TESTING.md](TESTING.md) — test commands for `gitnexus` and `gitnexus-web`
+- [TESTING.md](TESTING.md) — test commands for `avmatrix` and `avmatrix-web`
 
 ## CLI + MCP (recommended)
 
@@ -99,16 +99,16 @@ The CLI indexes your repository and runs an MCP server that gives AI agents deep
 
 ```bash
 # Index your repo (run from repo root)
-npx gitnexus analyze
+npx avmatrix analyze
 ```
 
 That's it. This indexes the codebase, installs agent skills, registers Claude Code hooks, and creates `AGENTS.md` / `CLAUDE.md` context files — all in one command.
 
-To configure MCP for your editor, run `npx gitnexus setup` once — or set it up manually below.
+To configure MCP for your editor, run `npx avmatrix setup` once — or set it up manually below.
 
 ### MCP Setup
 
-`gitnexus setup` auto-detects your editors and writes the correct global MCP config. You only need to run it once.
+`avmatrix setup` auto-detects your editors and writes the correct global MCP config. You only need to run it once.
 
 ### Editor Support
 
@@ -128,25 +128,25 @@ Built by the community — not officially maintained, but worth checking out.
 
 | Project | Author | Description |
 |---------|--------|-------------|
-| [pi-gitnexus](https://github.com/tintinweb/pi-gitnexus) | [@tintinweb](https://github.com/tintinweb) | GitNexus plugin for [pi](https://pi.dev) — `pi install npm:pi-gitnexus` |
-| [gitnexus-stable-ops](https://github.com/ShunsukeHayashi/gitnexus-stable-ops) | [@ShunsukeHayashi](https://github.com/ShunsukeHayashi) | Stable ops & deployment workflows (Miyabi ecosystem) |
+| [pi-avmatrix](https://github.com/tintinweb/pi-avmatrix) | [@tintinweb](https://github.com/tintinweb) | avmatrix plugin for [pi](https://pi.dev) — `pi install npm:pi-avmatrix` |
+| [avmatrix-stable-ops](https://github.com/ShunsukeHayashi/avmatrix-stable-ops) | [@ShunsukeHayashi](https://github.com/ShunsukeHayashi) | Stable ops & deployment workflows (Miyabi ecosystem) |
 
-> Have a project built on GitNexus? Open a PR to add it here!
+> Have a project built on avmatrix? Open a PR to add it here!
 
 If you prefer manual configuration:
 
 **Claude Code** (full support — MCP + skills + hooks):
 
 ```bash
-# First install the local CLI onto PATH (for example: `cd gitnexus && npm link`)
-claude mcp add gitnexus -- gitnexus mcp
+# First install the local CLI onto PATH (for example: `cd avmatrix && npm link`)
+claude mcp add avmatrix -- avmatrix mcp
 ```
 
 **Codex** (full support — MCP + skills):
 
 ```bash
-# First install the local CLI onto PATH (for example: `cd gitnexus && npm link`)
-codex mcp add gitnexus -- gitnexus mcp
+# First install the local CLI onto PATH (for example: `cd avmatrix && npm link`)
+codex mcp add avmatrix -- avmatrix mcp
 ```
 
 **Cursor** (`~/.cursor/mcp.json` — global, works for all projects):
@@ -154,8 +154,8 @@ codex mcp add gitnexus -- gitnexus mcp
 ```json
 {
   "mcpServers": {
-    "gitnexus": {
-      "command": "gitnexus",
+    "avmatrix": {
+      "command": "avmatrix",
       "args": ["mcp"]
     }
   }
@@ -167,9 +167,9 @@ codex mcp add gitnexus -- gitnexus mcp
 ```json
 {
   "mcp": {
-    "gitnexus": {
+    "avmatrix": {
       "type": "local",
-      "command": ["gitnexus", "mcp"]
+      "command": ["avmatrix", "mcp"]
     }
   }
 }
@@ -178,41 +178,41 @@ codex mcp add gitnexus -- gitnexus mcp
 **Codex** (`~/.codex/config.toml` for system scope, or `.codex/config.toml` for project scope):
 
 ```toml
-[mcp_servers.gitnexus]
-command = "gitnexus"
+[mcp_servers.avmatrix]
+command = "avmatrix"
 args = ["mcp"]
 ```
 
 ### CLI Commands
 
 ```bash
-gitnexus setup                   # Configure MCP for your editors (one-time)
-gitnexus analyze [path]          # Index a repository (or update stale index)
-gitnexus analyze --force         # Force full re-index
-gitnexus analyze --skills        # Generate repo-specific skill files from detected communities
-gitnexus analyze --skip-embeddings  # Skip embedding generation (faster)
-gitnexus analyze --skip-agents-md  # Preserve custom AGENTS.md/CLAUDE.md gitnexus section edits
-gitnexus analyze --embeddings    # Enable embedding generation (slower, better search)
-gitnexus analyze --verbose       # Log skipped files when parsers are unavailable
-gitnexus mcp                     # Start MCP server (stdio) — serves all indexed repos
-gitnexus serve                   # Start local HTTP server (multi-repo) for web UI connection
-gitnexus list                    # List all indexed repositories
-gitnexus status                  # Show index status for current repo
-gitnexus clean                   # Delete index for current repo
-gitnexus clean --all --force     # Delete all indexes
-gitnexus wiki [path]             # Generate repository wiki from knowledge graph
-gitnexus wiki --model <model>    # Wiki with custom LLM model (default: gpt-4o-mini)
-gitnexus wiki --base-url <url>   # Wiki with custom LLM API base URL
+avmatrix setup                   # Configure MCP for your editors (one-time)
+avmatrix analyze [path]          # Index a repository (or update stale index)
+avmatrix analyze --force         # Force full re-index
+avmatrix analyze --skills        # Generate repo-specific skill files from detected communities
+avmatrix analyze --skip-embeddings  # Skip embedding generation (faster)
+avmatrix analyze --skip-agents-md  # Preserve custom AGENTS.md/CLAUDE.md avmatrix section edits
+avmatrix analyze --embeddings    # Enable embedding generation (slower, better search)
+avmatrix analyze --verbose       # Log skipped files when parsers are unavailable
+avmatrix mcp                     # Start MCP server (stdio) — serves all indexed repos
+avmatrix serve                   # Start local HTTP server (multi-repo) for web UI connection
+avmatrix list                    # List all indexed repositories
+avmatrix status                  # Show index status for current repo
+avmatrix clean                   # Delete index for current repo
+avmatrix clean --all --force     # Delete all indexes
+avmatrix wiki [path]             # Generate repository wiki from knowledge graph
+avmatrix wiki --model <model>    # Wiki with custom LLM model (default: gpt-4o-mini)
+avmatrix wiki --base-url <url>   # Wiki with custom LLM API base URL
 
 # Repository groups (multi-repo / monorepo service tracking)
-gitnexus group create <name>     # Create a repository group
-gitnexus group add <name> <repo> # Add a repo to a group
-gitnexus group remove <name> <repo> # Remove a repo from a group
-gitnexus group list [name]       # List groups, or show one group's config
-gitnexus group sync <name>       # Extract contracts and match across repos/services
-gitnexus group contracts <name>  # Inspect extracted contracts and cross-links
-gitnexus group query <name> <q>  # Search execution flows across all repos in a group
-gitnexus group status <name>     # Check staleness of repos in a group
+avmatrix group create <name>     # Create a repository group
+avmatrix group add <name> <repo> # Add a repo to a group
+avmatrix group remove <name> <repo> # Remove a repo from a group
+avmatrix group list [name]       # List groups, or show one group's config
+avmatrix group sync <name>       # Extract contracts and match across repos/services
+avmatrix group contracts <name>  # Inspect extracted contracts and cross-links
+avmatrix group query <name> <q>  # Search execution flows across all repos in a group
+avmatrix group status <name>     # Check staleness of repos in a group
 ```
 
 ### What Your AI Agent Gets
@@ -240,13 +240,13 @@ gitnexus group status <name>     # Check staleness of repos in a group
 
 | Resource                                  | Purpose                                              |
 | ----------------------------------------- | ---------------------------------------------------- |
-| `gitnexus://repos`                      | List all indexed repositories (read this first)      |
-| `gitnexus://repo/{name}/context`        | Codebase stats, staleness check, and available tools |
-| `gitnexus://repo/{name}/clusters`       | All functional clusters with cohesion scores         |
-| `gitnexus://repo/{name}/cluster/{name}` | Cluster members and details                          |
-| `gitnexus://repo/{name}/processes`      | All execution flows                                  |
-| `gitnexus://repo/{name}/process/{name}` | Full process trace with steps                        |
-| `gitnexus://repo/{name}/schema`         | Graph schema for Cypher queries                      |
+| `avmatrix://repos`                      | List all indexed repositories (read this first)      |
+| `avmatrix://repo/{name}/context`        | Codebase stats, staleness check, and available tools |
+| `avmatrix://repo/{name}/clusters`       | All functional clusters with cohesion scores         |
+| `avmatrix://repo/{name}/cluster/{name}` | Cluster members and details                          |
+| `avmatrix://repo/{name}/processes`      | All execution flows                                  |
+| `avmatrix://repo/{name}/process/{name}` | Full process trace with steps                        |
+| `avmatrix://repo/{name}/schema`         | Graph schema for Cypher queries                      |
 
 **2 MCP prompts** for guided workflows:
 
@@ -264,30 +264,30 @@ gitnexus group status <name>     # Check staleness of repos in a group
 
 **Repo-specific skills** generated with `--skills`:
 
-When you run `gitnexus analyze --skills`, GitNexus detects the functional areas of your codebase (via Leiden community detection) and generates a `SKILL.md` file for each one under `.claude/skills/generated/`. Each skill describes a module's key files, entry points, execution flows, and cross-area connections — so your AI agent gets targeted context for the exact area of code you're working in. Skills are regenerated on each `--skills` run to stay current with the codebase.
+When you run `avmatrix analyze --skills`, avmatrix detects the functional areas of your codebase (via Leiden community detection) and generates a `SKILL.md` file for each one under `.claude/skills/generated/`. Each skill describes a module's key files, entry points, execution flows, and cross-area connections — so your AI agent gets targeted context for the exact area of code you're working in. Skills are regenerated on each `--skills` run to stay current with the codebase.
 
 ---
 
 ## Multi-Repo MCP Architecture
 
-GitNexus uses a **global registry** so one MCP server can serve multiple indexed repos. No per-project MCP config needed — set it up once and it works everywhere.
+avmatrix uses a **global registry** so one MCP server can serve multiple indexed repos. No per-project MCP config needed — set it up once and it works everywhere.
 
 ```mermaid
 flowchart TD
     subgraph CLI [CLI Commands]
-        Setup["gitnexus setup"]
-        Analyze["gitnexus analyze"]
-        Clean["gitnexus clean"]
-        List["gitnexus list"]
+        Setup["avmatrix setup"]
+        Analyze["avmatrix analyze"]
+        Clean["avmatrix clean"]
+        List["avmatrix list"]
     end
 
-    subgraph Registry ["~/.gitnexus/"]
+    subgraph Registry ["~/.avmatrix/"]
         RegFile["registry.json"]
     end
 
     subgraph Repos [Project Repos]
-        RepoA[".gitnexus/ in repo A"]
-        RepoB[".gitnexus/ in repo B"]
+        RepoA[".avmatrix/ in repo A"]
+        RepoB[".avmatrix/ in repo B"]
     end
 
     subgraph MCP [MCP Server]
@@ -312,7 +312,7 @@ flowchart TD
     ConnB -->|"queries"| RepoB
 ```
 
-**How it works:** Each `gitnexus analyze` stores the index in `.gitnexus/` inside the repo (portable, gitignored) and registers a pointer in `~/.gitnexus/registry.json`. When an AI agent starts, the MCP server reads the registry and can serve any indexed repo. LadybugDB connections are opened lazily on first query and evicted after 5 minutes of inactivity (max 5 concurrent). If only one repo is indexed, the `repo` parameter is optional on all tools — agents don't need to change anything.
+**How it works:** Each `avmatrix analyze` stores the index in `.avmatrix/` inside the repo (portable, gitignored) and registers a pointer in `~/.avmatrix/registry.json`. When an AI agent starts, the MCP server reads the registry and can serve any indexed repo. LadybugDB connections are opened lazily on first query and evicted after 5 minutes of inactivity (max 5 concurrent). If only one repo is indexed, the `repo` parameter is optional on all tools — agents don't need to change anything.
 
 ---
 
@@ -320,16 +320,16 @@ flowchart TD
 
 A fully client-side graph explorer and AI chat. No server, no install — your code never leaves the browser.
 
-**Try it now:** [gitnexus.vercel.app](https://gitnexus.vercel.app) — drag & drop a ZIP and start exploring.
+**Try it now:** [avmatrix.vercel.app](https://avmatrix.vercel.app) — drag & drop a ZIP and start exploring.
 
-<img width="2550" height="1343" alt="gitnexus_img" src="https://github.com/user-attachments/assets/cc5d637d-e0e5-48e6-93ff-5bcfdb929285" />
+<img width="2550" height="1343" alt="avmatrix_img" src="https://github.com/user-attachments/assets/cc5d637d-e0e5-48e6-93ff-5bcfdb929285" />
 
 Or run locally:
 
 ```bash
-git clone https://github.com/abhigyanpatwari/gitnexus.git
-cd gitnexus/gitnexus-shared && npm install && npm run build
-cd ../gitnexus-web && npm install
+git clone https://github.com/abhigyanpatwari/avmatrix.git
+cd avmatrix/avmatrix-shared && npm install && npm run build
+cd ../avmatrix-web && npm install
 npm run dev
 ```
 
@@ -339,13 +339,13 @@ The official Docker setup ships **two signed images** orchestrated by `docker-co
 
 | Image                                              | Purpose                                                                |
 | -------------------------------------------------- | ---------------------------------------------------------------------- |
-| `ghcr.io/abhigyanpatwari/gitnexus:latest`          | CLI / `gitnexus serve` backend (HTTP API on port `4747`, MCP, indexer) |
-| `ghcr.io/abhigyanpatwari/gitnexus-web:latest`      | Static web UI (port `4173`)                                            |
+| `ghcr.io/abhigyanpatwari/avmatrix:latest`          | CLI / `avmatrix serve` backend (HTTP API on port `4747`, MCP, indexer) |
+| `ghcr.io/abhigyanpatwari/avmatrix-web:latest`      | Static web UI (port `4173`)                                            |
 
 > **Heads-up — image rename.** Earlier releases published the web UI under
-> `ghcr.io/abhigyanpatwari/gitnexus`. Starting with the introduction of the
+> `ghcr.io/abhigyanpatwari/avmatrix`. Starting with the introduction of the
 > bundled backend, that slug now hosts the CLI/server image and the UI moved
-> to `ghcr.io/abhigyanpatwari/gitnexus-web`. The previous tags remain
+> to `ghcr.io/abhigyanpatwari/avmatrix-web`. The previous tags remain
 > available for pulling, but new versions are only published under the new
 > slugs. Update your `docker run` / compose files accordingly (or just adopt
 > the bundled compose).
@@ -360,14 +360,14 @@ This starts the server on `http://localhost:4747` and the web UI on
 `http://localhost:4173`. The UI auto-detects the server because the browser
 runs on the host and reaches the container via the mapped port.
 
-A named volume (`gitnexus-data`) persists the global registry, indexes, and
-cloned repos at `/data/gitnexus` inside the server container. To make repos on
+A named volume (`avmatrix-data`) persists the global registry, indexes, and
+cloned repos at `/data/avmatrix` inside the server container. To make repos on
 your host machine indexable, set `WORKSPACE_DIR` before bringing the stack up:
 
 ```bash
 WORKSPACE_DIR=$HOME/code docker compose up -d
 # Inside the server container the directory is mounted read-only at /workspace.
-docker compose exec gitnexus-server gitnexus index /workspace/my-repo
+docker compose exec avmatrix-server avmatrix index /workspace/my-repo
 ```
 
 ### Direct `docker run`
@@ -375,16 +375,16 @@ docker compose exec gitnexus-server gitnexus index /workspace/my-repo
 ```bash
 # Server
 docker run --rm -d \
-  --name gitnexus-server \
+  --name avmatrix-server \
   -p 4747:4747 \
-  -v gitnexus-data:/data/gitnexus \
-  ghcr.io/abhigyanpatwari/gitnexus:latest
+  -v avmatrix-data:/data/avmatrix \
+  ghcr.io/abhigyanpatwari/avmatrix:latest
 
 # Web UI
 docker run --rm -d \
-  --name gitnexus-web \
+  --name avmatrix-web \
   -p 4173:4173 \
-  ghcr.io/abhigyanpatwari/gitnexus-web:latest
+  ghcr.io/abhigyanpatwari/avmatrix-web:latest
 ```
 
 Optional env file (override image tags, container names, ports, workspace dir):
@@ -400,9 +400,9 @@ The Docker images are version-locked to the npm package:
 
 - Stable images are **only published from `vX.Y.Z` git tags** (via `docker.yml`
   triggered directly by the tag push), and the workflow refuses to build unless
-  the tag exactly matches `gitnexus/package.json`'s version. So
-  `ghcr.io/abhigyanpatwari/gitnexus:1.6.2` is byte-for-byte the same release
-  as `npm install gitnexus@1.6.2` — no drift, no floating builds from `main`.
+  the tag exactly matches `avmatrix/package.json`'s version. So
+  `ghcr.io/abhigyanpatwari/avmatrix:1.6.2` is byte-for-byte the same release
+  as `npm install avmatrix@1.6.2` — no drift, no floating builds from `main`.
 - Release-candidate images (e.g. `:1.7.0-rc.1`) are published alongside each
   RC npm release. They are built by `release-candidate.yml` calling `docker.yml`
   as a reusable workflow after the RC tag is created and pushed.
@@ -414,14 +414,14 @@ workflow's GitHub OIDC identity, and shipped with build provenance and SBOM
 attestations. **This is your protection against supply-chain attacks**: even if
 an attacker republishes a same-named image elsewhere (or somehow pushes to a
 typo-squatted registry), they cannot forge a Cosign signature tied to
-`abhigyanpatwari/GitNexus`'s `docker.yml`. Always verify before pulling into
+`abhigyanpatwari/avmatrix`'s `docker.yml`. Always verify before pulling into
 sensitive environments:
 
 **Stable releases** — signed from the `v*` tag ref:
 
 ```bash
-cosign verify ghcr.io/abhigyanpatwari/gitnexus:1.6.2 \
-  --certificate-identity-regexp '^https://github\.com/abhigyanpatwari/GitNexus/\.github/workflows/docker\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$' \
+cosign verify ghcr.io/abhigyanpatwari/avmatrix:1.6.2 \
+  --certificate-identity-regexp '^https://github\.com/abhigyanpatwari/avmatrix/\.github/workflows/docker\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
@@ -433,15 +433,15 @@ workflows, and images signed from unprotected refs.
 `release-candidate.yml` invokes `docker.yml` as a reusable workflow):
 
 ```bash
-cosign verify ghcr.io/abhigyanpatwari/gitnexus:1.7.0-rc.1 \
-  --certificate-identity 'https://github.com/abhigyanpatwari/GitNexus/.github/workflows/docker.yml@refs/heads/main' \
+cosign verify ghcr.io/abhigyanpatwari/avmatrix:1.7.0-rc.1 \
+  --certificate-identity 'https://github.com/abhigyanpatwari/avmatrix/.github/workflows/docker.yml@refs/heads/main' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
 You can also inspect the build provenance and SBOM:
 
 ```bash
-cosign download attestation ghcr.io/abhigyanpatwari/gitnexus:1.6.2 \
+cosign download attestation ghcr.io/abhigyanpatwari/avmatrix:1.6.2 \
   --predicate-type https://slsa.dev/provenance/v1
 ```
 
@@ -449,7 +449,7 @@ cosign download attestation ghcr.io/abhigyanpatwari/gitnexus:1.6.2 \
 
 For Kubernetes deployments, ship the bundled
 [`ClusterImagePolicy`](deploy/kubernetes/cluster-image-policy.yaml) so the
-[Sigstore policy-controller][policy-controller] rejects any GitNexus pod whose
+[Sigstore policy-controller][policy-controller] rejects any avmatrix pod whose
 image is not signed by this repo's `docker.yml` running from a `vX.Y.Z` tag —
 the same identity the `cosign verify` snippet above pins.
 
@@ -467,7 +467,7 @@ kubectl apply -f deploy/kubernetes/cluster-image-policy.yaml
 ```
 
 After this, attempting to deploy an unsigned image — or one signed by anything
-other than `abhigyanpatwari/GitNexus`'s `docker.yml` at a `v*` tag — fails the
+other than `abhigyanpatwari/avmatrix`'s `docker.yml` at a `v*` tag — fails the
 admission webhook before a pod is ever created. This turns the verifiable
 signature into an enforced policy, which is the supply-chain control most
 clusters actually need.
@@ -477,18 +477,18 @@ clusters actually need.
 
 ### Files
 
-- [Dockerfile.web](Dockerfile.web) — builds `avmatrix-shared` and `gitnexus-web`, then serves the production frontend.
-- [Dockerfile.cli](Dockerfile.cli) — builds the CLI/server (with its native deps) and runs `gitnexus serve --host 0.0.0.0`.
+- [Dockerfile.web](Dockerfile.web) — builds `avmatrix-shared` and `avmatrix-web`, then serves the production frontend.
+- [Dockerfile.cli](Dockerfile.cli) — builds the CLI/server (with its native deps) and runs `avmatrix serve --host 0.0.0.0`.
 - [docker-compose.yaml](docker-compose.yaml) — starts both signed images side by side.
 - [.env.example](.env.example) — overrides for image names, container names, ports, and the workspace mount.
 
 The web UI uses the same indexing pipeline as the CLI but runs entirely in WebAssembly (Tree-sitter WASM, LadybugDB WASM, in-browser embeddings). It's great for quick exploration but limited by browser memory for larger repos.
 
-**Local Backend Mode:** Run `gitnexus serve` and open the web UI locally — it auto-detects the server and shows all your indexed repos, with full AI chat support. No need to re-upload or re-index. The agent's tools (Cypher queries, search, code navigation) route through the backend HTTP API automatically.
+**Local Backend Mode:** Run `avmatrix serve` and open the web UI locally — it auto-detects the server and shows all your indexed repos, with full AI chat support. No need to re-upload or re-index. The agent's tools (Cypher queries, search, code navigation) route through the backend HTTP API automatically.
 
 ---
 
-## The Problem GitNexus Solves
+## The Problem avmatrix Solves
 
 Tools like **Cursor**, **Claude Code**, **Codex**, **Cline**, **Roo Code**, and **Windsurf** are powerful — but they don't truly know your codebase structure.
 
@@ -498,9 +498,9 @@ Tools like **Cursor**, **Claude Code**, **Codex**, **Cline**, **Roo Code**, and 
 2. Doesn't know 47 functions depend on its return type
 3. **Breaking changes ship**
 
-### Traditional Graph RAG vs GitNexus
+### Traditional Graph RAG vs avmatrix
 
-Traditional approaches give the LLM raw graph edges and hope it explores enough. GitNexus **precomputes structure at index time** — clustering, tracing, scoring — so tools return complete context in one call:
+Traditional approaches give the LLM raw graph edges and hope it explores enough. avmatrix **precomputes structure at index time** — clustering, tracing, scoring — so tools return complete context in one call:
 
 ```mermaid
 flowchart TB
@@ -515,7 +515,7 @@ flowchart TB
         Q4 --> OUT1["Answer after 4+ queries"]
     end
 
-    subgraph GN["GitNexus Smart Tools"]
+    subgraph GN["avmatrix Smart Tools"]
         direction TB
         U2["User: What depends on UserService?"]
         U2 --> TOOL["impact UserService upstream"]
@@ -535,7 +535,7 @@ flowchart TB
 
 ## How It Works
 
-GitNexus builds a complete knowledge graph of your codebase through a multi-phase indexing pipeline:
+avmatrix builds a complete knowledge graph of your codebase through a multi-phase indexing pipeline:
 
 1. **Structure** — Walks the file tree and maps folder/file relationships
 2. **Parsing** — Extracts functions, classes, methods, and interfaces using Tree-sitter ASTs
@@ -682,14 +682,14 @@ Generate LLM-powered documentation from your knowledge graph:
 
 ```bash
 # Requires an LLM API key (OPENAI_API_KEY, etc.)
-gitnexus wiki
+avmatrix wiki
 
 # Use a custom model or provider
-gitnexus wiki --model gpt-4o
-gitnexus wiki --base-url https://api.anthropic.com/v1
+avmatrix wiki --model gpt-4o
+avmatrix wiki --base-url https://api.anthropic.com/v1
 
 # Force full regeneration
-gitnexus wiki --force
+avmatrix wiki --force
 ```
 
 The wiki generator reads the indexed graph structure, groups files into modules via LLM, generates per-module documentation pages, and creates an overview page — all with cross-references to the knowledge graph.
@@ -734,7 +734,7 @@ The wiki generator reads the indexed graph structure, groups files into modules 
 
 ## Security & Privacy
 
-- **CLI**: Everything runs locally on your machine. No network calls. Index stored in `.gitnexus/` (gitignored). Global registry at `~/.gitnexus/` stores only paths and metadata.
+- **CLI**: Everything runs locally on your machine. No network calls. Index stored in `.avmatrix/` (gitignored). Global registry at `~/.avmatrix/` stores only paths and metadata.
 - **Web**: Everything runs in your browser. No code uploaded to any server. API keys stored in localStorage only.
 - Open source — audit the code yourself.
 

@@ -17,21 +17,21 @@
 
 - Read plan and hard rules: `AGENTS.md`, `GUARDRAILS.md`, `docs/plans/2026-04-20-convert-all-to-local.md`
 - Read core phase-1 files:
-  - `gitnexus-shared/src/session.ts`
-  - `gitnexus/src/runtime/session-adapter.ts`
-  - `gitnexus/src/runtime/runtime-controller.ts`
-  - `gitnexus/src/runtime/session-jobs/session-job.ts`
-  - `gitnexus/src/runtime/session-adapters/codex.ts`
-  - `gitnexus/src/server/session-bridge.ts`
-  - `gitnexus/src/server/api.ts`
+  - `avmatrix-shared/src/session.ts`
+  - `avmatrix/src/runtime/session-adapter.ts`
+  - `avmatrix/src/runtime/runtime-controller.ts`
+  - `avmatrix/src/runtime/session-jobs/session-job.ts`
+  - `avmatrix/src/runtime/session-adapters/codex.ts`
+  - `avmatrix/src/server/session-bridge.ts`
+  - `avmatrix/src/server/api.ts`
 - Read current web wiring state:
-  - `gitnexus-web/src/hooks/useAppState.tsx`
-  - `gitnexus-web/src/core/llm/agent.ts`
-  - `gitnexus-web/src/core/llm/settings-service.ts`
-  - `gitnexus-web/src/components/SettingsPanel.tsx`
-  - `gitnexus-web/src/components/RightPanel.tsx`
+  - `avmatrix-web/src/hooks/useAppState.tsx`
+  - `avmatrix-web/src/core/llm/agent.ts`
+  - `avmatrix-web/src/core/llm/settings-service.ts`
+  - `avmatrix-web/src/components/SettingsPanel.tsx`
+  - `avmatrix-web/src/components/RightPanel.tsx`
 - Runtime probes executed:
-  - `runtime.getStatus({ repoPath: 'F:/GitNexus-main/deploy' })` => `index_required`
+  - `runtime.getStatus({ repoPath: 'F:/AVmatrix-main/deploy' })` => `index_required`
   - `runtime.getStatus({ repoPath: 'https://github.com/openai/openai' })` => rejected as invalid remote URL
   - `runtime.getStatus({ repoPath: 'F:/this/path/does/not/exist' })` => raw `ENOENT`
   - `runtime.startChat({ message: 'hi', repoPath: 'F:/this/path/does/not/exist' })` => raw `ENOENT`
@@ -39,10 +39,10 @@
 
 ## Validation run
 
-- `cd gitnexus && npx tsc --noEmit` => pass
-- `cd gitnexus-shared && npx tsc --noEmit` => pass
-- `cd gitnexus && npx vitest run test/unit/analyze-api.test.ts test/unit/wiki-flags.test.ts` => pass, `21/21`
-- `cd gitnexus && npm test` => `6582` passed, `98` skipped, but Vitest reported `3` unhandled worker-fork errors, so suite was not clean-green
+- `cd avmatrix && npx tsc --noEmit` => pass
+- `cd avmatrix-shared && npx tsc --noEmit` => pass
+- `cd avmatrix && npx vitest run test/unit/analyze-api.test.ts test/unit/wiki-flags.test.ts` => pass, `21/21`
+- `cd avmatrix && npm test` => `6582` passed, `98` skipped, but Vitest reported `3` unhandled worker-fork errors, so suite was not clean-green
 
 ## Findings
 
@@ -50,11 +50,11 @@
 
 - Plan decision: Windows phải ưu tiên `WSL2 bridge` cho full agent mode sau spike, không tiếp tục dựa vào native sandbox path.
 - Current implementation still launches native Codex on Windows via `codex.cmd` and simply flips to bypass mode:
-  - `gitnexus/src/runtime/session-adapters/codex.ts:24`
-  - `gitnexus/src/runtime/session-adapters/codex.ts:34`
-  - `gitnexus/src/runtime/session-adapters/codex.ts:217`
-  - `gitnexus/src/runtime/session-adapters/codex.ts:275`
-  - `gitnexus/src/runtime/session-adapters/codex.ts:277`
+  - `avmatrix/src/runtime/session-adapters/codex.ts:24`
+  - `avmatrix/src/runtime/session-adapters/codex.ts:34`
+  - `avmatrix/src/runtime/session-adapters/codex.ts:217`
+  - `avmatrix/src/runtime/session-adapters/codex.ts:275`
+  - `avmatrix/src/runtime/session-adapters/codex.ts:277`
 - This is not a naming issue. It changes the actual execution environment and ignores the explicit `WSL2-first` decision already recorded in the plan.
 - Result: phase-1 runtime is architecturally off-track on the platform that the spike explicitly flagged as risky.
 
@@ -62,10 +62,10 @@
 
 - The phase-1 contract requires explicit handling for invalid path, missing folder, UNC path, traversal, and repo-binding mismatch.
 - `runtime-controller` validates remote URL, UNC, and absolute-path shape, but then calls `fs.realpath()` without converting `ENOENT` into a structured session error:
-  - `gitnexus/src/runtime/runtime-controller.ts:184`
-  - `gitnexus/src/runtime/runtime-controller.ts:191`
-  - `gitnexus/src/runtime/runtime-controller.ts:201`
-  - `gitnexus/src/runtime/runtime-controller.ts:206`
+  - `avmatrix/src/runtime/runtime-controller.ts:184`
+  - `avmatrix/src/runtime/runtime-controller.ts:191`
+  - `avmatrix/src/runtime/runtime-controller.ts:201`
+  - `avmatrix/src/runtime/runtime-controller.ts:206`
 - Direct probe evidence:
   - `runtime.getStatus({ repoPath: 'F:/this/path/does/not/exist' })` => `ENOENT: no such file or directory, realpath ...`
   - `runtime.startChat({ message: 'hi', repoPath: 'F:/this/path/does/not/exist' })` => same raw `ENOENT`
@@ -74,21 +74,21 @@
 ### HIGH-3 — The new stream contract has stale wiring inside its own scope
 
 - `SessionReasoningEvent` is defined in shared types:
-  - `gitnexus-shared/src/session.ts:87`
+  - `avmatrix-shared/src/session.ts:87`
 - The current Codex adapter never emits a `reasoning` event. It emits pre-tool and post-tool agent messages as plain `content`:
-  - `gitnexus/src/runtime/session-adapters/codex.ts:142`
-  - `gitnexus/src/runtime/session-adapters/codex.ts:150`
-  - `gitnexus/src/runtime/session-adapters/codex.ts:170`
-  - `gitnexus/src/runtime/session-adapters/codex.ts:362`
+  - `avmatrix/src/runtime/session-adapters/codex.ts:142`
+  - `avmatrix/src/runtime/session-adapters/codex.ts:150`
+  - `avmatrix/src/runtime/session-adapters/codex.ts:170`
+  - `avmatrix/src/runtime/session-adapters/codex.ts:362`
 - The current web chat renderer still has distinct reasoning-step semantics waiting on the stream shape:
-  - `gitnexus-web/src/hooks/useAppState.tsx:732`
+  - `avmatrix-web/src/hooks/useAppState.tsx:732`
 - This leaves a dead stream type already baked into the new contract and guarantees extra UI surgery later instead of the promised compatibility-first bridge.
 
 ### HIGH-4 — Tool result payload is currently lossy for real Codex command events
 
 - The adapter only builds tool results from `stdout`, `stderr`, `output`, or `text`:
-  - `gitnexus/src/runtime/session-adapters/codex.ts:107`
-  - `gitnexus/src/runtime/session-adapters/codex.ts:118`
+  - `avmatrix/src/runtime/session-adapters/codex.ts:107`
+  - `avmatrix/src/runtime/session-adapters/codex.ts:118`
 - Real Codex `command_execution` events in this environment return `aggregated_output`, not `stdout`:
   - direct probe: `codex exec --json --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox "Run one command to list the top-level entries..."`
   - observed event shape included `item.completed` with `type: "command_execution"` and `aggregated_output: "..."`.
@@ -97,52 +97,52 @@
 ### HIGH-5 — Required phase-1 tests are missing, so same-scope stale-test blocker applies
 
 - Plan-required tests:
-  - `gitnexus/test/unit/session-bridge.test.ts`
-  - `gitnexus/test/unit/setup-session-runtime.test.ts`
+  - `avmatrix/test/unit/session-bridge.test.ts`
+  - `avmatrix/test/unit/setup-session-runtime.test.ts`
   - API contract tests for `/api/session/status` and `/api/session/chat`
   - Codex adapter lifecycle tests
   - local-path policy tests for absolute path, traversal, UNC, missing folder, repo mismatch
-- Current repo does not contain those files. Grep inventory in `gitnexus/test/unit` only shows unrelated coverage such as:
-  - `gitnexus/test/unit/analyze-api.test.ts`
-  - `gitnexus/test/unit/wiki-flags.test.ts`
+- Current repo does not contain those files. Grep inventory in `avmatrix/test/unit` only shows unrelated coverage such as:
+  - `avmatrix/test/unit/analyze-api.test.ts`
+  - `avmatrix/test/unit/wiki-flags.test.ts`
 - Because the scope added a new runtime and a new HTTP bridge without closing its own tests, this is a hard blocker under the supervisor rule.
 
 ### MEDIUM-1 — Phase 1 landed only backend scaffolding; frontend chat is still on the old provider path
 
 - Current UI still initializes browser-side provider agent:
-  - `gitnexus-web/src/hooks/useAppState.tsx:573`
-  - `gitnexus-web/src/hooks/useAppState.tsx:592`
-  - `gitnexus-web/src/hooks/useAppState.tsx:606`
-  - `gitnexus-web/src/hooks/useAppState.tsx:986`
-  - `gitnexus-web/src/hooks/useAppState.tsx:987`
+  - `avmatrix-web/src/hooks/useAppState.tsx:573`
+  - `avmatrix-web/src/hooks/useAppState.tsx:592`
+  - `avmatrix-web/src/hooks/useAppState.tsx:606`
+  - `avmatrix-web/src/hooks/useAppState.tsx:986`
+  - `avmatrix-web/src/hooks/useAppState.tsx:987`
 - Current UI copy still instructs provider/API-key setup:
-  - `gitnexus-web/src/components/RightPanel.tsx:453`
-  - `gitnexus-web/src/components/SettingsPanel.tsx:357`
-  - `gitnexus-web/src/components/SettingsPanel.tsx:358`
-  - `gitnexus-web/src/components/SettingsPanel.tsx:441`
+  - `avmatrix-web/src/components/RightPanel.tsx:453`
+  - `avmatrix-web/src/components/SettingsPanel.tsx:357`
+  - `avmatrix-web/src/components/SettingsPanel.tsx:358`
+  - `avmatrix-web/src/components/SettingsPanel.tsx:441`
 - This is acceptable as “phase 2 not started yet”, but it means phase 1 completion is backend-only, not end-to-end usable.
 
 ### MEDIUM-2 — `supportsMcp: true` is advertised, but runtime-owned MCP wiring is not visible in the adapter
 
 - `supportsMcp` is reported as `true`:
-  - `gitnexus/src/runtime/session-adapters/codex.ts:221`
-  - `gitnexus/src/runtime/session-adapters/codex.ts:236`
+  - `avmatrix/src/runtime/session-adapters/codex.ts:221`
+  - `avmatrix/src/runtime/session-adapters/codex.ts:236`
 - The adapter parses `mcp_tool_call` items if they appear:
-  - `gitnexus/src/runtime/session-adapters/codex.ts:91`
-  - `gitnexus/src/runtime/session-adapters/codex.ts:103`
+  - `avmatrix/src/runtime/session-adapters/codex.ts:91`
+  - `avmatrix/src/runtime/session-adapters/codex.ts:103`
 - But the adapter itself does not show runtime-owned MCP attachment/config. In practice this means tool availability still depends on ambient Codex config on the machine instead of being clearly owned by the new runtime surface.
 - I am not scoring this as a phase-1 blocker only because the plan left a dedicated validation task for Codex tool-call path after spike, but this is still incomplete closure.
 
 ### POSITIVE — A meaningful part of phase 1 is real, not fake
 
 - Shared session/runtime types exist and are exported:
-  - `gitnexus-shared/src/session.ts:1`
-  - `gitnexus-shared/src/index.ts:25`
-  - `gitnexus-shared/src/index.ts:28`
-  - `gitnexus-shared/src/index.ts:29`
-  - `gitnexus-shared/src/index.ts:30`
-  - `gitnexus-shared/src/index.ts:31`
-  - `gitnexus-shared/src/index.ts:40`
+  - `avmatrix-shared/src/session.ts:1`
+  - `avmatrix-shared/src/index.ts:25`
+  - `avmatrix-shared/src/index.ts:28`
+  - `avmatrix-shared/src/index.ts:29`
+  - `avmatrix-shared/src/index.ts:30`
+  - `avmatrix-shared/src/index.ts:31`
+  - `avmatrix-shared/src/index.ts:40`
 - Runtime controller exists and enforces several good rules:
   - explicit repo binding required
   - remote URL rejection
@@ -151,11 +151,11 @@
   - same-repo chat supersede
   - `INDEX_REQUIRED` on existing local folder without index
 - Session bridge routes are mounted in the HTTP server:
-  - `gitnexus/src/server/api.ts:469`
-  - `gitnexus/src/server/api.ts:471`
-  - `gitnexus/src/server/session-bridge.ts:47`
-  - `gitnexus/src/server/session-bridge.ts:56`
-  - `gitnexus/src/server/session-bridge.ts:99`
+  - `avmatrix/src/server/api.ts:469`
+  - `avmatrix/src/server/api.ts:471`
+  - `avmatrix/src/server/session-bridge.ts:47`
+  - `avmatrix/src/server/session-bridge.ts:56`
+  - `avmatrix/src/server/session-bridge.ts:99`
 
 ## 19-task supervisor matrix
 
@@ -183,25 +183,25 @@
 
 ## Files/modules below best practice for this phase
 
-- `gitnexus/src/runtime/session-adapters/codex.ts`
+- `avmatrix/src/runtime/session-adapters/codex.ts`
   - Sai execution strategy trên Windows so với plan
   - Không map `aggregated_output`
   - Có `reasoning` contract nhưng không phát event tương ứng
-- `gitnexus/src/runtime/runtime-controller.ts`
+- `avmatrix/src/runtime/runtime-controller.ts`
   - Raw `ENOENT` leak ra ngoài contract cho missing-folder case
-- `gitnexus/src/server/session-bridge.ts`
+- `avmatrix/src/server/session-bridge.ts`
   - Không có dedicated tests dù vừa mở API surface mới
-- `gitnexus/test/unit/`
+- `avmatrix/test/unit/`
   - Thiếu hẳn bộ test cho `session-bridge`, `runtime-controller`, `codex adapter`, local-path policy
-- `gitnexus-web/src/hooks/useAppState.tsx`
+- `avmatrix-web/src/hooks/useAppState.tsx`
   - Chat runtime vẫn dùng `createGraphRAGAgent()` browser-side
-- `gitnexus-web/src/core/llm/agent.ts`
+- `avmatrix-web/src/core/llm/agent.ts`
   - Provider-based browser agent vẫn là đường chính
-- `gitnexus-web/src/core/llm/settings-service.ts`
+- `avmatrix-web/src/core/llm/settings-service.ts`
   - Vẫn là provider/API-key state model
-- `gitnexus-web/src/components/SettingsPanel.tsx`
+- `avmatrix-web/src/components/SettingsPanel.tsx`
   - UI vẫn là provider picker + API-key forms
-- `gitnexus-web/src/components/RightPanel.tsx`
+- `avmatrix-web/src/components/RightPanel.tsx`
   - Message “Configure an LLM provider” vẫn active
 
 ## Coder speed and style assessment
@@ -219,7 +219,7 @@
 
 - Good:
   - Type-first design
-  - Explicit contracts in `gitnexus-shared`
+  - Explicit contracts in `avmatrix-shared`
   - Decent separation of `adapter` / `controller` / `bridge`
   - Local-path policy intent is visible
 - Weak:

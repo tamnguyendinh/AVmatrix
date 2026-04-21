@@ -5,7 +5,7 @@ Status: completed
 
 ## Purpose
 
-This plan removes the `SWE-bench` benchmark/evaluation feature from the local GitNexus product surface and removes the sponsor banner from the local web UI.
+This plan removes the `SWE-bench` benchmark/evaluation feature from the local AVmatrix product surface and removes the sponsor banner from the local web UI.
 
 The goal is to keep the product focused on its actual local-first use case:
 
@@ -50,7 +50,7 @@ After this change:
 
 ### In scope
 
-- `gitnexus-web/src/components/StatusBar.tsx`
+- `avmatrix-web/src/components/StatusBar.tsx`
 - local UI/help/docs copy that implies `SWE-bench` is an active local-user feature
 - CLI product surface for `eval-server`
 - `eval/` package and its documentation/scripts/configs
@@ -103,15 +103,15 @@ If a real local evaluation feature is desired later, it should come back as a ne
 
 ### Web UI
 
-- `gitnexus-web/src/components/StatusBar.tsx`
+- `avmatrix-web/src/components/StatusBar.tsx`
   - external sponsor link
   - `need to buy some API credits to run SWE-bench 😅`
 
 ### CLI
 
-- `gitnexus/src/cli/index.ts`
+- `avmatrix/src/cli/index.ts`
   - `eval-server` command registration
-- `gitnexus/src/cli/eval-server.ts`
+- `avmatrix/src/cli/eval-server.ts`
   - evaluation-only HTTP daemon
 
 ### Eval package
@@ -129,8 +129,8 @@ If a real local evaluation feature is desired later, it should come back as a ne
 
 ### Tests / docs coupled to eval-server
 
-- `gitnexus/test/unit/eval-formatters.test.ts`
-- `gitnexus/test/integration/cli-e2e.test.ts` eval-server section
+- `avmatrix/test/unit/eval-formatters.test.ts`
+- `avmatrix/test/integration/cli-e2e.test.ts` eval-server section
 - any README/help/docs references discovered during implementation
 
 ## Implementation Phases
@@ -143,7 +143,7 @@ Remove the sponsor banner and all `SWE-bench` text from the local web UI while k
 
 #### Changes
 
-- update `gitnexus-web/src/components/StatusBar.tsx`
+- update `avmatrix-web/src/components/StatusBar.tsx`
 - remove:
   - external sponsor link
   - sponsor heart icon block
@@ -166,8 +166,8 @@ Remove `eval-server` from the public CLI surface.
 
 #### Changes
 
-- remove `eval-server` registration from `gitnexus/src/cli/index.ts`
-- remove `gitnexus/src/cli/eval-server.ts`
+- remove `eval-server` registration from `avmatrix/src/cli/index.ts`
+- remove `avmatrix/src/cli/eval-server.ts`
 - remove any imports/exports or help text tied to it
 
 #### Tests
@@ -220,11 +220,11 @@ Verify that no stale `SWE-bench` / sponsor product surface remains.
 
 #### Required checks
 
-- `rg -n "SWE-bench|Sponsor need to buy|eval-server" gitnexus gitnexus-web docs README.md`
+- `rg -n "SWE-bench|Sponsor need to buy|eval-server" avmatrix avmatrix-web docs README.md`
 - targeted test suite for changed surfaces
 - typecheck:
-  - `cd gitnexus && npx tsc --noEmit`
-  - `cd gitnexus-web && npx tsc -b --noEmit`
+  - `cd avmatrix && npx tsc --noEmit`
+  - `cd avmatrix-web && npx tsc -b --noEmit`
 
 ## Validation Matrix
 
@@ -237,7 +237,7 @@ Verify that no stale `SWE-bench` / sponsor product surface remains.
 
 ### CLI
 
-- `gitnexus --help` no longer lists `eval-server`
+- `avmatrix --help` no longer lists `eval-server`
 - no dead imports from removed eval-server code
 
 ### Repo surface
@@ -276,17 +276,17 @@ Mitigation:
 - [x] `eval/` package is removed
 - [x] README/docs no longer advertise SWE-bench
 - [x] targeted tests updated and passing
-- [x] typecheck passes in `gitnexus`
-- [x] typecheck passes in `gitnexus-web`
+- [x] typecheck passes in `avmatrix`
+- [x] typecheck passes in `avmatrix-web`
 
 ## Validation Summary
 
-- `cd gitnexus-web && npx vitest run test/unit/StatusBar.local-only.test.tsx`
-- `cd gitnexus-web && npm test`
-- `cd gitnexus-web && npx tsc -b --noEmit`
-- `cd gitnexus && npx vitest run test/unit/cli-index-help.test.ts test/integration/cli-e2e.test.ts`
-- `cd gitnexus && npx tsc --noEmit`
-- `cd gitnexus && node dist/cli/index.js detect-changes --repo GitNexus-main --scope unstaged`
+- `cd avmatrix-web && npx vitest run test/unit/StatusBar.local-only.test.tsx`
+- `cd avmatrix-web && npm test`
+- `cd avmatrix-web && npx tsc -b --noEmit`
+- `cd avmatrix && npx vitest run test/unit/cli-index-help.test.ts test/integration/cli-e2e.test.ts`
+- `cd avmatrix && npx tsc --noEmit`
+- `cd avmatrix && node dist/cli/index.js detect-changes --repo AVmatrix-main --scope unstaged`
 
 ## Notes
 

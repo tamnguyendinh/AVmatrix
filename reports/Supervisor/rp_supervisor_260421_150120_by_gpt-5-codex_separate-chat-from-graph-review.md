@@ -12,13 +12,13 @@
 
 The refactor moved the active transcript click chain onto the new chat surface:
 
-- `gitnexus-web/src/components/ChatPanel.tsx:37`
-- `gitnexus-web/src/components/ChatPanel.tsx:50`
-- `gitnexus-web/src/components/right-panel/ChatTranscript.tsx:134`
-- `gitnexus-web/src/components/right-panel/ChatTranscript.tsx:149`
-- `gitnexus-web/src/components/MarkdownRenderer.tsx:93`
-- `gitnexus-web/src/components/MarkdownRenderer.tsx:125`
-- `gitnexus-web/src/hooks/useAppState.local-runtime.tsx:548`
+- `avmatrix-web/src/components/ChatPanel.tsx:37`
+- `avmatrix-web/src/components/ChatPanel.tsx:50`
+- `avmatrix-web/src/components/right-panel/ChatTranscript.tsx:134`
+- `avmatrix-web/src/components/right-panel/ChatTranscript.tsx:149`
+- `avmatrix-web/src/components/MarkdownRenderer.tsx:93`
+- `avmatrix-web/src/components/MarkdownRenderer.tsx:125`
+- `avmatrix-web/src/hooks/useAppState.local-runtime.tsx:548`
 
 That is now the real active wiring for:
 
@@ -29,9 +29,9 @@ That is now the real active wiring for:
 
 But the new tests only lock:
 
-- analyze CTA and typing behavior in `gitnexus-web/test/unit/ChatPanel.test.tsx:69`
-- bridge parsing via direct calls in `gitnexus-web/test/unit/useAppState.local-runtime.test.tsx:83`
-- runtime lazy start / repo reset in `gitnexus-web/test/unit/ChatRuntimeContext.test.tsx:54`
+- analyze CTA and typing behavior in `avmatrix-web/test/unit/ChatPanel.test.tsx:69`
+- bridge parsing via direct calls in `avmatrix-web/test/unit/useAppState.local-runtime.test.tsx:83`
+- runtime lazy start / repo reset in `avmatrix-web/test/unit/ChatRuntimeContext.test.tsx:54`
 
 I did not find any test that exercises the active `ChatPanel -> ChatTranscript -> MarkdownRenderer -> handleTranscriptLinkClick -> addCodeReference` click path after the refactor. The plan explicitly lists this as a mandatory behavioral check under:
 
@@ -43,24 +43,24 @@ Under the supervisor hard rule, a missing/stale test in the same refactor scope 
 ## What is already good
 
 - `RightPanel` is now a shell that mounts `ChatPanel` / `ProcessesPanel` only.
-  - `gitnexus-web/src/components/RightPanel.tsx:12`
-  - `gitnexus-web/src/components/RightPanel.tsx:71`
+  - `avmatrix-web/src/components/RightPanel.tsx:12`
+  - `avmatrix-web/src/components/RightPanel.tsx:71`
 - `ChatPanel` no longer reads graph state directly.
   - no `GraphCanvas`
   - no `useSigma`
   - no direct `useAppState()` in `ChatPanel`
 - chat runtime moved into the new provider.
-  - `gitnexus-web/src/hooks/chat-runtime/ChatRuntimeContext.tsx:33`
+  - `avmatrix-web/src/hooks/chat-runtime/ChatRuntimeContext.tsx:33`
 - `AppContent` now gets `refreshLLMSettings` from `useChatRuntime`, not old app context.
-  - `gitnexus-web/src/App.tsx:61`
+  - `avmatrix-web/src/App.tsx:61`
 - targeted plan validation passes
-- full `gitnexus-web` suite passes
+- full `avmatrix-web` suite passes
 
 ## Validation run
 
-- `cd gitnexus-web && npx vitest run test/unit/ChatRuntimeContext.test.tsx test/unit/ChatPanel.test.tsx test/unit/RightPanel.local-runtime.test.tsx test/unit/ChatComposer.test.tsx`
-- `cd gitnexus-web && npx tsc -b --noEmit`
-- `cd gitnexus-web && npm test`
+- `cd avmatrix-web && npx vitest run test/unit/ChatRuntimeContext.test.tsx test/unit/ChatPanel.test.tsx test/unit/RightPanel.local-runtime.test.tsx test/unit/ChatComposer.test.tsx`
+- `cd avmatrix-web && npx tsc -b --noEmit`
+- `cd avmatrix-web && npm test`
 
 Results:
 

@@ -1,11 +1,11 @@
 # Mục đích plan này
 
-  - Plan này dùng để chuyển GitNexus sang chế độ local-only theo đúng mong muốn ban đầu:
+  - Plan này dùng để chuyển AVmatrix sang chế độ local-only theo đúng mong muốn ban đầu:
   - Giữ nguyên toàn bộ feature surface quan trọng của sản phẩm trên web UI, CLI, và MCP; không cắt tính năng chỉ để đơn giản hóa migration
   - Cái cần thay là đường đi auth/model execution: thay vì API key hoặc server/proxy bên thứ ba thì dùng session local đã đăng nhập của Codex hoặc Claude Code
   - Dùng tài khoản Codex hoặc Claude đã đăng nhập sẵn trên máy thay cho luồng API key và provider settings kiểu cloud
   - Chỉ cho phép phân tích repo từ đường dẫn local trên máy, không clone/pull từ GitHub hay URL bên ngoài
-  - Không được đưa dữ liệu qua server của GitNexus hay proxy trung gian do GitNexus vận hành
+  - Không được đưa dữ liệu qua server của AVmatrix hay proxy trung gian do AVmatrix vận hành
   - Tool sau khi chuyển phải dùng hiệu quả ở cả giao diện web trong trình duyệt và ở CLI/MCP, vì cả hai đều quan trọng cho workflow agent viết code
   - Trình duyệt/web UI chỉ là lớp hiển thị local; mọi xử lý repo, tool, session, và orchestration phải chạy trong local runtime trên localhost
   - Xóa mọi gợi ý, copy, config, fallback, và dependency kéo tư duy API key/provider-setup để tránh đi nhầm luồng
@@ -15,9 +15,9 @@
  # Ranh giới dữ liệu cần giữ
 
   - Được phép: dữ liệu đi từ máy local của người dùng lên OpenAI/Anthropic thông qua chính session local của Codex/Claude
-  - Không được phép: dữ liệu repo đi qua server/proxy trung gian của GitNexus hoặc một backend cloud riêng được dựng thêm cho app này
+  - Không được phép: dữ liệu repo đi qua server/proxy trung gian của AVmatrix hoặc một backend cloud riêng được dựng thêm cho app này
   - Được phép: chạy process local trên máy người dùng như localhost bridge, daemon, CLI, hoặc native helper
-  - Không được phép: biến kiến trúc thành mô hình “browser -> GitNexus-hosted backend -> model provider”
+  - Không được phép: biến kiến trúc thành mô hình “browser -> AVmatrix-hosted backend -> model provider”
 
 # Nguyên tắc sản phẩm sau khi chuyển
 
@@ -34,27 +34,27 @@
  # Khung làm việc
 
   - Áp dụng AGENTS.md + GUARDRAILS.md.
-  - Scope dự kiến: gitnexus/, gitnexus-web/, gitnexus-shared/, docs/tests liên quan.
+  - Scope dự kiến: avmatrix/, avmatrix-web/, avmatrix-shared/, docs/tests liên quan.
   - Bước này chỉ lên plan, chưa sửa code.
-  - Trước khi edit từng pha, tôi sẽ chạy gitnexus_impact cho symbol chính bị đụng.
+  - Trước khi edit từng pha, tôi sẽ chạy impact cho symbol chính bị đụng.
   - Validation khi triển khai:
-      - cd gitnexus && npx tsc --noEmit && npm test
-      - cd gitnexus-web && npx tsc -b --noEmit && npm test
+      - cd avmatrix && npx tsc --noEmit && npm test
+      - cd avmatrix-web && npx tsc -b --noEmit && npm test
 
  # Kiến trúc nên chốt
 
   - Không cố nhét luồng “login Codex/Claude account” vào browser.
   - Browser/web UI chỉ là local presentation layer; không giữ API key, không tự làm auth với model provider.
-  - Kiến trúc mục tiêu là: web UI + CLI/MCP -> shared local runtime trên máy người dùng -> Codex/Claude local session + GitNexus local tools/index.
-  - Shared local runtime ở đây là process local trên máy người dùng, có thể là daemon hoặc helper on-demand; không phải server cloud hay GitNexus-hosted backend.
+  - Kiến trúc mục tiêu là: web UI + CLI/MCP -> shared local runtime trên máy người dùng -> Codex/Claude local session + AVmatrix local tools/index.
+  - Shared local runtime ở đây là process local trên máy người dùng, có thể là daemon hoặc helper on-demand; không phải server cloud hay AVmatrix-hosted backend.
   - Shared local runtime core phải tách khỏi HTTP adapter: runtime/core sống ở lớp riêng; `api.ts`, CLI, và MCP chỉ là các adapter/client vào cùng lõi này.
-  - MCP của v1 là MCP local của chính GitNexus; không tạo MCP bên thứ 3 và không dùng MCP cloud/proxy.
-  - Luồng agent-first đúng là: Codex CLI hoặc Claude Code CLI -> GitNexus MCP local -> GitNexus local index/tools.
-  - Không lái người dùng sang direct `gitnexus query/context/impact` như mặt dùng chính nếu mục tiêu là workflow qua Codex/Claude Code; direct CLI chỉ là tooling phụ.
+  - MCP của v1 là MCP local của chính AVmatrix; không tạo MCP bên thứ 3 và không dùng MCP cloud/proxy.
+  - Luồng agent-first đúng là: Codex CLI hoặc Claude Code CLI -> AVmatrix MCP local -> AVmatrix local index/tools.
+  - Không lái người dùng sang direct `avmatrix query/context/impact` như mặt dùng chính nếu mục tiêu là workflow qua Codex/Claude Code; direct CLI chỉ là tooling phụ.
   - Web UI, direct CLI commands, và MCP surface phải hoặc gọi cùng runtime contracts, hoặc dùng cùng core modules; không duy trì hai hệ auth/session/tool riêng.
   - Hướng triển khai là compatibility-first: ưu tiên giữ nguyên contract UI/stream/tool hiện có, chỉ thay implementation phía sau bằng local session adapter.
-  - Lý do: chat hiện tại đang là browser-side LangGraph + API-key providers trong `gitnexus-web/src/core/llm/agent.ts`,
-    `gitnexus-web/src/core/llm/types.ts`, và `gitnexus-web/src/core/llm/settings-service.ts`. Session account của Codex/Claude theo docs và thực tế công cụ
+  - Lý do: chat hiện tại đang là browser-side LangGraph + API-key providers trong `avmatrix-web/src/core/llm/agent.ts`,
+    `avmatrix-web/src/core/llm/types.ts`, và `avmatrix-web/src/core/llm/settings-service.ts`. Session account của Codex/Claude theo docs và thực tế công cụ
     kiểu desktop/CLI hiện nằm ở local app hoặc local CLI, không phải public browser auth flow cho web app này.
   - Tính đến ngày 2026-04-20, docs chính thức xác nhận Codex CLI hỗ trợ sign-in bằng ChatGPT account và
     có mode non-interactive codex exec; đồng thời Windows vẫn là experimental.
@@ -62,22 +62,22 @@
     https://help.openai.com/en/articles/11381614-codex-codex-andsign-in-with-chatgpt
   - Out of scope cho plan này:
   - Luồng API key cho OpenAI/Gemini/Anthropic/OpenRouter/Ollama
-  - GitNexus-hosted backend hoặc proxy cloud
+  - AVmatrix-hosted backend hoặc proxy cloud
   - Browser-only auth flow cho Codex/Claude
   - Wiki chạy qua server bên thứ 3
 
  # Pha 0: Spike/Gate
 
-  - Repo đụng: gitnexus.
+  - Repo đụng: avmatrix.
   - Mục tiêu: chứng minh bridge khả thi trên máy bạn trước khi refactor UI.
   - Checklist:
   - Xác minh codex binary có sẵn và dùng được trên máy này.
   - Xác minh Codex CLI đã đăng nhập account của bạn.
   - Xác minh codex exec --json có stream/event shape đủ ổn định để map sang UI hiện tại.
   - Xác minh cancel được, timeout được, và chạy đúng theo cwd của repo local.
-  - Xác minh Codex CLI có nối được GitNexus MCP local hay không.
-  - Xác minh GitNexus MCP local tự chạy được standalone, không cần Codex/Claude bọc bên ngoài.
-  - Nếu MCP hookup tốt: dùng Codex CLI làm agent, GitNexus giữ vai trò tool server.
+  - Xác minh Codex CLI có nối được AVmatrix MCP local hay không.
+  - Xác minh AVmatrix MCP local tự chạy được standalone, không cần Codex/Claude bọc bên ngoài.
+  - Nếu MCP hookup tốt: dùng Codex CLI làm agent, AVmatrix giữ vai trò tool server.
   - Nếu MCP hookup không ổn: fallback sang backend bridge gọi Codex CLI theo prompt orchestration hẹp
     hơn.
   - Go criteria: stream được partial output, cancel được, repo-local working dir đúng.
@@ -122,40 +122,40 @@
   - Repo local hợp lệ nhưng chưa index => explicit analyze gate, không auto-analyze ngầm trong chat path
   - `serve` và `mcp` host cùng runtime core theo kiểu in-process; v1 không dựng daemon riêng để attach chéo process
   - `wikiMode` nằm trong global runtime config file và runtime là source of truth
-  - Canonical local MCP command cho v1 là `gitnexus mcp` sau khi local GitNexus CLI đã được cài vào `PATH` từ source local (ví dụ `cd gitnexus && npm link`)
+  - Canonical local MCP command cho v1 là `avmatrix mcp` sau khi local AVmatrix CLI đã được cài vào `PATH` từ source local (ví dụ `cd avmatrix && npm link`)
 
  # MCP-first rollout order
 
   - Thứ tự đúng để đưa tool này vào Codex/Claude Code là:
-  - 1. Xác nhận GitNexus MCP local chạy standalone bằng canonical local MCP command
-  - 2. Sửa setup/docs để bỏ hoàn toàn `npx -y gitnexus@latest mcp`
-  - 3. Đảm bảo local GitNexus CLI có trên `PATH` từ source local (ví dụ `npm link`)
-  - 4. Ghi config MCP cho Codex (`~/.codex/config.toml`) và Claude Code (`~/.claude.json` nếu dùng) bằng `gitnexus mcp`
+  - 1. Xác nhận AVmatrix MCP local chạy standalone bằng canonical local MCP command
+  - 2. Sửa setup/docs để bỏ hoàn toàn `npx -y avmatrix@latest mcp`
+  - 3. Đảm bảo local AVmatrix CLI có trên `PATH` từ source local (ví dụ `npm link`)
+  - 4. Ghi config MCP cho Codex (`~/.codex/config.toml`) và Claude Code (`~/.claude.json` nếu dùng) bằng `avmatrix mcp`
   - 5. Chỉ sau đó mới test end-to-end với repo local đã index, ví dụ repo alias `website`
   - Mục tiêu của rollout này là:
   - Codex/Claude Code CLI là mặt dùng chính
-  - GitNexus MCP local là tool server local
+  - AVmatrix MCP local là tool server local
   - direct CLI commands chỉ còn vai trò phụ trợ/diagnostic
 
  # Pha 1: Shared Local Runtime + Session Bridge
 
-  - Repo đụng: gitnexus, gitnexus-shared.
+  - Repo đụng: avmatrix, avmatrix-shared.
   - Mục tiêu:
   - Tạo shared local runtime làm lõi dùng chung cho web UI, CLI, và MCP surface
   - Tách session bridge ra khỏi web/browser để auth và tool execution nằm hoàn toàn local
   - Tạo abstraction đủ trung tính để hỗ trợ cả Codex và Claude Code session adapters, không hard-code toàn bộ runtime vào một vendor duy nhất
   - Tạo mới:
-  - gitnexus/src/runtime/runtime-controller.ts hoặc tên tương đương để quản lý lifecycle của local runtime
-  - gitnexus/src/runtime/session-adapter.ts hoặc tên tương đương cho contract session chung
-  - gitnexus/src/server/session-bridge.ts hoặc tên tương đương làm HTTP/localhost adapter chung
-  - gitnexus/src/runtime/session-adapters/codex.ts hoặc tên tương đương cho Codex adapter đầu tiên
-  - gitnexus/src/runtime/session-jobs/session-job.ts hoặc tên tương đương cho lifecycle/cancel/stream
-  - Có thể thêm gitnexus/src/runtime/session-adapters/claude-code.ts sau khi core ổn định
-  - shared types trong gitnexus-shared cho SessionStatus, SessionChatRequest, SessionStreamEvent
+  - avmatrix/src/runtime/runtime-controller.ts hoặc tên tương đương để quản lý lifecycle của local runtime
+  - avmatrix/src/runtime/session-adapter.ts hoặc tên tương đương cho contract session chung
+  - avmatrix/src/server/session-bridge.ts hoặc tên tương đương làm HTTP/localhost adapter chung
+  - avmatrix/src/runtime/session-adapters/codex.ts hoặc tên tương đương cho Codex adapter đầu tiên
+  - avmatrix/src/runtime/session-jobs/session-job.ts hoặc tên tương đương cho lifecycle/cancel/stream
+  - Có thể thêm avmatrix/src/runtime/session-adapters/claude-code.ts sau khi core ổn định
+  - shared types trong avmatrix-shared cho SessionStatus, SessionChatRequest, SessionStreamEvent
   - Sửa:
-  - `gitnexus/src/server/api.ts` để thêm local bridge endpoints trung tính như `/api/session/status`
-  - `gitnexus/src/server/api.ts` để thêm `/api/session/chat` stream SSE
-  - `gitnexus/src/server/api.ts` để thêm cancel endpoint cho chat session
+  - `avmatrix/src/server/api.ts` để thêm local bridge endpoints trung tính như `/api/session/status`
+  - `avmatrix/src/server/api.ts` để thêm `/api/session/chat` stream SSE
+  - `avmatrix/src/server/api.ts` để thêm cancel endpoint cho chat session
   - V1 implementation đi qua Codex adapter trước, nhưng route/type/core naming giữ trung tính để không phải rename lớn khi thêm Claude Code
   - Contract tối thiểu cần chốt trước khi code:
   - Request chat phải mang repo binding rõ ràng: repoName hoặc repoPath; không ngầm dùng repo cuối cùng trên server
@@ -165,13 +165,13 @@
   - Repo local hợp lệ nhưng chưa index phải trả về trạng thái rõ ràng kiểu `INDEX_REQUIRED`; UI/CLI hiển thị CTA `Analyze now`, không tự chạy analyze ngầm từ chat request
   - Quy tắc bridge:
   - Chỉ cho phép chạy trong repo local đã index hoặc repo path hợp lệ
-  - Không giới hạn vào workspace của GitNexus; được phép dùng repo local bất kỳ do người dùng chỉ định, miễn qua local-only path policy
+  - Không giới hạn vào workspace của AVmatrix; được phép dùng repo local bất kỳ do người dùng chỉ định, miễn qua local-only path policy
   - Log stderr nội bộ, trả lỗi an toàn kiểu “Session runtime not installed” hoặc “Session not signed in”; adapter có thể chi tiết hóa thành Codex/Claude Code
   - Ưu tiên map event stream về gần shape AgentStreamChunk hiện có để giảm sửa UI
-  - Bridge local không được forward dữ liệu qua bất kỳ GitNexus-hosted service nào
+  - Bridge local không được forward dữ liệu qua bất kỳ AVmatrix-hosted service nào
   - V1 process model:
-  - `gitnexus serve` host runtime core trong chính process HTTP server
-  - `gitnexus mcp` host runtime core trong chính process stdio MCP server
+  - `avmatrix serve` host runtime core trong chính process HTTP server
+  - `avmatrix mcp` host runtime core trong chính process stdio MCP server
   - direct CLI commands reuse cùng runtime/core modules theo kiểu in-process hoặc ephemeral, không attach vào một daemon riêng
   - Chính sách local-only cho path ở backend:
   - Reject hoàn toàn mọi URL/git URL
@@ -180,28 +180,28 @@
   - Chỉ chấp nhận thư mục local tồn tại thật trên máy
   - Nếu path resolve sang network mount hoặc outside policy thì reject sớm với lỗi rõ ràng
   - Test cần thêm/sửa:
-  - gitnexus/test/unit/session-bridge.test.ts
+  - avmatrix/test/unit/session-bridge.test.ts
   - test API contract mới cho /api/session/status và /api/session/chat
   - codex-adapter tests cho session lifecycle đầu tiên
   - test local-path policy: absolute path, traversal, UNC path, missing folder, repo binding mismatch
 
  # Pha 2: Di chuyển web UI sang shared local runtime
 
-  - Repo đụng: gitnexus-web.
+  - Repo đụng: avmatrix-web.
   - Khuyến nghị an toàn: tạo file mới trước, không đập ngay agent.ts.
   - Tạo mới:
-  - gitnexus-web/src/core/llm/session-client.ts
-  - Có thể thêm gitnexus-web/src/core/llm/session-types.ts nếu chưa đưa vào gitnexus-shared
+  - avmatrix-web/src/core/llm/session-client.ts
+  - Có thể thêm avmatrix-web/src/core/llm/session-types.ts nếu chưa đưa vào avmatrix-shared
   - Sửa:
-  - `gitnexus-web/src/hooks/useAppState.tsx` để dùng backend session stream thay cho `createGraphRAGAgent()`
-  - `gitnexus-web/src/core/llm/types.ts` để chuyển từ provider model sang session/backends model, hoặc thêm compatibility shim có thời hạn rõ ràng nếu cần giữ app ổn trong giai đoạn chuyển đổi
-  - `gitnexus-web/src/core/llm/settings-service.ts` để migrate settings cũ và bỏ logic API-key/provider setup, nhưng vẫn giữ được các capability UI vốn phụ thuộc vào settings
-  - `gitnexus-web/src/components/SettingsPanel.tsx` để chuyển từ provider form sang local session management UI như “Codex Account” / “Claude Code”
-  - `gitnexus-web/src/components/RightPanel.tsx` để bỏ message “Configure an LLM provider”
-  - `gitnexus-web/src/hooks/useAppState.tsx` để đổi error/init flow từ “provider” sang “local session bridge”
-  - `gitnexus-web/src/components/OnboardingGuide.tsx` để bỏ gợi ý `npx gitnexus@latest serve`
-  - `gitnexus-web/src/components/HelpPanel.tsx` để bỏ remote/provider copy không còn đúng
-  - `gitnexus-web/src/config/ui-constants.ts` để dọn constants provider cũ nếu không còn dùng
+  - `avmatrix-web/src/hooks/useAppState.tsx` để dùng backend session stream thay cho `createGraphRAGAgent()`
+  - `avmatrix-web/src/core/llm/types.ts` để chuyển từ provider model sang session/backends model, hoặc thêm compatibility shim có thời hạn rõ ràng nếu cần giữ app ổn trong giai đoạn chuyển đổi
+  - `avmatrix-web/src/core/llm/settings-service.ts` để migrate settings cũ và bỏ logic API-key/provider setup, nhưng vẫn giữ được các capability UI vốn phụ thuộc vào settings
+  - `avmatrix-web/src/components/SettingsPanel.tsx` để chuyển từ provider form sang local session management UI như “Codex Account” / “Claude Code”
+  - `avmatrix-web/src/components/RightPanel.tsx` để bỏ message “Configure an LLM provider”
+  - `avmatrix-web/src/hooks/useAppState.tsx` để đổi error/init flow từ “provider” sang “local session bridge”
+  - `avmatrix-web/src/components/OnboardingGuide.tsx` để bỏ gợi ý `npx avmatrix@latest serve`
+  - `avmatrix-web/src/components/HelpPanel.tsx` để bỏ remote/provider copy không còn đúng
+  - `avmatrix-web/src/config/ui-constants.ts` để dọn constants provider cũ nếu không còn dùng
   - Giữ nguyên UI chat message/step nếu stream mới map được sang AgentStreamChunk
   - UX mục tiêu:
   - Không còn ô API key
@@ -220,83 +220,83 @@
   - Chỉ thay file cũ sau khi file mới đã đạt parity và có behavioral tests đi kèm
   - Không delete/rewrite rút gọn file cũ giữa chừng trong lúc parity chưa đạt
   - Test cần thêm/sửa:
-  - gitnexus-web/test/unit/settings-service.test.ts
+  - avmatrix-web/test/unit/settings-service.test.ts
   - test stream client/backend-client mới cho session bridge
   - test init/send/cancel chat flow nếu cần
   - test settings migration/reset từ dữ liệu provider cũ
 
 # Pha 2B: Căn CLI/MCP vào shared local runtime
 
-  - Repo đụng: gitnexus.
+  - Repo đụng: avmatrix.
   - Mục tiêu:
   - Đảm bảo CLI và MCP vẫn là surface quan trọng cho agent coding, nhưng dùng cùng mô hình runtime/session local như web
   - Tránh việc web chạy một kiểu, CLI chạy một kiểu khác
   - Sửa:
-  - `gitnexus/src/cli/index.ts` để thêm hoặc chỉnh help/copy theo shared local runtime model
-  - `gitnexus/src/cli/mcp.ts` để chốt cách MCP attach vào runtime hoặc dùng cùng core modules
-  - `gitnexus/src/cli/tool.ts` để chốt cách direct tool commands reuse runtime/core contracts
-  - `gitnexus/src/cli/setup.ts` để wording không còn gợi ý provider/API-key flow
-  - README.md, gitnexus/README.md, skills, onboarding docs để không còn gợi ý `npx -y gitnexus@latest mcp`
+  - `avmatrix/src/cli/index.ts` để thêm hoặc chỉnh help/copy theo shared local runtime model
+  - `avmatrix/src/cli/mcp.ts` để chốt cách MCP attach vào runtime hoặc dùng cùng core modules
+  - `avmatrix/src/cli/tool.ts` để chốt cách direct tool commands reuse runtime/core contracts
+  - `avmatrix/src/cli/setup.ts` để wording không còn gợi ý provider/API-key flow
+  - README.md, avmatrix/README.md, skills, onboarding docs để không còn gợi ý `npx -y avmatrix@latest mcp`
   - Quy tắc:
   - Không tạo một session/auth stack riêng cho CLI
   - Không tạo một tool execution path riêng cho web nếu CLI/MCP có thể dùng cùng core/runtime
-  - Không tạo MCP server mới bên thứ 3; chỉ dùng `gitnexus mcp`/local built CLI của chính repo
-  - `setup` phải chuẩn hóa về canonical local MCP command `gitnexus mcp`, không được ngầm đẩy người dùng sang remote/npm-latest path hay găm absolute repo path vào config editor
+  - Không tạo MCP server mới bên thứ 3; chỉ dùng `avmatrix mcp`/local built CLI của chính repo
+  - `setup` phải chuẩn hóa về canonical local MCP command `avmatrix mcp`, không được ngầm đẩy người dùng sang remote/npm-latest path hay găm absolute repo path vào config editor
   - Giữ nguyên toàn bộ direct tool commands và MCP capability hiện có; chỉ thay session/model execution path bên dưới khi có đụng tới LLM-backed capability
   - V1 không thêm interactive chat/session command mới cho CLI trừ khi spike chứng minh đó là bắt buộc để đạt parity
   - Nếu cần thêm runtime management commands, chỉ thêm những lệnh local như status/doctor/restart
   - `serve` và `mcp` không attach vào một daemon runtime riêng ở v1; mỗi surface host runtime core của chính nó và chia sẻ contract/module thay vì chia sẻ OS process
   - MCP smoke path bắt buộc phải pass độc lập trước khi cấu hình Codex/Claude:
-  - `gitnexus mcp`
+  - `avmatrix mcp`
   - Sau khi smoke pass, Codex/Claude config mới được viết để trỏ vào command local đó
   - Test cần thêm/sửa:
-  - gitnexus/test/unit/setup-session-runtime.test.ts
-  - gitnexus/test/unit/tools.test.ts
+  - avmatrix/test/unit/setup-session-runtime.test.ts
+  - avmatrix/test/unit/tools.test.ts
   - smoke tests cho MCP/runtime attach path nếu thay đổi contract
 
  # Pha 3: Khóa analyze sang local path only
 
-  - Repo đụng: gitnexus, gitnexus-web.
+  - Repo đụng: avmatrix, avmatrix-web.
   - Sửa backend:
-  - `gitnexus/src/server/api.ts` chỉ nhận path, reject url
-  - `gitnexus/src/server/analyze-job.ts` bỏ repoUrl, dedupe theo repoPath
-  - Gỡ runtime use của `gitnexus/src/server/git-clone.ts`
+  - `avmatrix/src/server/api.ts` chỉ nhận path, reject url
+  - `avmatrix/src/server/analyze-job.ts` bỏ repoUrl, dedupe theo repoPath
+  - Gỡ runtime use của `avmatrix/src/server/git-clone.ts`
   - Chốt path policy ở API/analyze:
   - Chỉ nhận absolute local paths
   - Reject UNC/network share
   - Resolve realpath trước khi enqueue job
   - Chỉ dedupe theo canonical repoPath sau normalize/realpath
   - Sửa web:
-  - `gitnexus-web/src/components/RepoAnalyzer.tsx` bỏ mode GitHub, bỏ URL validation, chỉ còn local path
-  - `gitnexus-web/src/components/AnalyzeOnboarding.tsx` sửa copy local-only
+  - `avmatrix-web/src/components/RepoAnalyzer.tsx` bỏ mode GitHub, bỏ URL validation, chỉ còn local path
+  - `avmatrix-web/src/components/AnalyzeOnboarding.tsx` sửa copy local-only
   - RepoLanding.tsx, Header.tsx, backend-client.ts cập nhật theo contract mới
   - Test cần thêm/sửa:
-  - gitnexus/test/unit/analyze-api.test.ts
-  - gitnexus/test/unit/analyze-job.test.ts
+  - avmatrix/test/unit/analyze-api.test.ts
+  - avmatrix/test/unit/analyze-job.test.ts
 
  # Pha 4: Hardening local-only
 
-  - Repo đụng: gitnexus, gitnexus-web.
+  - Repo đụng: avmatrix, avmatrix-web.
   - Sửa:
-  - `gitnexus/src/cli/setup.ts` bỏ fallback `npx -y gitnexus@latest`
-  - `gitnexus/src/server/api.ts` siết CORS còn localhost, 127.0.0.1, ::1, và no-origin
-  - gitnexus-web/src/services/backend-client.ts và useBackend chỉ chấp nhận backend local như mặc định bắt buộc của chế độ local-only
+  - `avmatrix/src/cli/setup.ts` bỏ fallback `npx -y avmatrix@latest`
+  - `avmatrix/src/server/api.ts` siết CORS còn localhost, 127.0.0.1, ::1, và no-origin
+  - avmatrix-web/src/services/backend-client.ts và useBackend chỉ chấp nhận backend local như mặc định bắt buộc của chế độ local-only
   - Backend URL cũ trong localStorage nếu trỏ remote host phải bị reset an toàn về localhost mặc định, không được âm thầm tiếp tục dùng remote endpoint
   - Auto-connect bằng `?project=` phải mặc định về local backend URL chuẩn, không dùng `window.location.origin` kiểu hosted UI cũ
-  - `gitnexus/src/cli/serve.ts` update help/comment/copy để không còn assumption về hosted frontend
+  - `avmatrix/src/cli/serve.ts` update help/comment/copy để không còn assumption về hosted frontend
   - Xóa mọi copy “remote provider”, “API key”, “hosted UI”, “GitHub URL”, “cloud” trong onboarding/settings/help
   - Acceptance:
   - UI không còn gợi ý remote
   - Setup/runtime không còn tự kéo remote package
-  - Không còn đường dữ liệu nào đi qua GitNexus-hosted/proxy backend
+  - Không còn đường dữ liệu nào đi qua AVmatrix-hosted/proxy backend
   - Backend local không còn mở cho Vercel/LAN nếu bạn muốn khóa tuyệt đối
 
 # Pha 5: Capability gate cho wiki
 
-  - Repo đụng: gitnexus, gitnexus-web.
+  - Repo đụng: avmatrix, avmatrix-web.
   - Đóng hoàn toàn đường đi wiki qua server bên thứ 3.
   - Thêm cơ chế bật/tắt capability wiki, ví dụ `wikiMode: off | local` hoặc feature flag tương đương.
-  - `wikiMode` được lưu trong global runtime config file, ví dụ `~/.gitnexus/runtime.json`; runtime là source of truth, không dùng localStorage làm nguồn chuẩn
+  - `wikiMode` được lưu trong global runtime config file, ví dụ `~/.avmatrix/runtime.json`; runtime là source of truth, không dùng localStorage làm nguồn chuẩn
   - Yêu cầu với `wiki off`:
   - Web UI, CLI, MCP, analyze, graph, chat vẫn hoạt động bình thường mà không cần wiki
   - Các menu/command/help text liên quan wiki phải ẩn hoặc disable có kiểm soát, không để dead path gọi nhầm
@@ -310,15 +310,15 @@
 
 # Pha 6: Dọn provider/API-key path cũ sau khi bridge đạt parity
 
-  - Repo đụng: gitnexus-web.
+  - Repo đụng: avmatrix-web.
   - Chỉ dọn sau khi local-session path đã đạt feature parity cho các surface tương ứng.
   - Sau khi local session bridge ổn định end-to-end:
   - Xóa nhánh openai, azure-openai, gemini, anthropic, ollama, openrouter, minimax, glm nếu và chỉ nếu không còn feature nào phụ thuộc chúng
-  - Dọn helper OpenRouter/Ollama trong `gitnexus-web/src/components/SettingsPanel.tsx`
-  - Dọn builder cũ trong `gitnexus-web/src/core/llm/settings-service.ts`
-  - Dọn model branches cũ trong `gitnexus-web/src/core/llm/agent.ts` nếu file này còn
+  - Dọn helper OpenRouter/Ollama trong `avmatrix-web/src/components/SettingsPanel.tsx`
+  - Dọn builder cũ trong `avmatrix-web/src/core/llm/settings-service.ts`
+  - Dọn model branches cũ trong `avmatrix-web/src/core/llm/agent.ts` nếu file này còn
     tồn tại
-  - Dọn dependency packages chỉ còn phục vụ provider/API-key flow trong gitnexus-web/package.json và lockfile
+  - Dọn dependency packages chỉ còn phục vụ provider/API-key flow trong avmatrix-web/package.json và lockfile
   - Dọn language/copy “provider-based” còn sót trong cả web và CLI surfaces
   - Cập nhật toàn bộ test còn hard-code gemini hoặc provider cũ
 
@@ -331,7 +331,7 @@
   - UI không còn GitHub URL input
   - Backend không clone/pull từ URL
   - Backend chỉ nhận absolute local paths
-  - setup không còn kéo gitnexus@latest
+  - setup không còn kéo avmatrix@latest
   - CORS/backend flow không còn remote suggestion
   - Track A hoặc Track B đã được chốt sau spike, không giữ hai hướng song song
   - V1 rollout được chốt là Codex-first trên session abstraction trung tính; Claude Code follow-up không đòi rename lớn
@@ -339,7 +339,7 @@
   - UNC/network-share path bị reject ở analyze và chat bridge
   - settings cũ được migrate hoặc reset có kiểm soát, không để app boot lỗi vì provider state cũ
   - Browser chỉ làm local UI; không có auth flow model-provider chạy trong browser
-  - Không còn đường dữ liệu nào đi qua GitNexus/proxy server trung gian
+  - Không còn đường dữ liệu nào đi qua AVmatrix/proxy server trung gian
   - Web UI và CLI/MCP cùng dựa trên shared local runtime, không còn hai luồng session/tool khác nhau
   - Cancel chat và cancel analyze vẫn hoạt động
   - Graph browsing/search/query hiện có không bị regress
@@ -355,31 +355,31 @@
   - Test legacy chỉ được dùng lại khi còn phản ánh đúng hành vi sản phẩm sau migration; test nào khóa vào provider/cloud path cũ không được coi là blocker cho phase mới
   - Ưu tiên thứ tự: behavioral tests của phase hiện tại -> targeted integration tests của phase hiện tại -> typecheck package liên quan -> legacy regression tests còn phù hợp
   - Không sang phase tiếp theo khi phase hiện tại chưa có test hành vi riêng xác nhận contract mới
-  - gitnexus:
+  - avmatrix:
   - npx tsc --noEmit
   - npm test
   - unit trọng điểm: analyze-api.test.ts, analyze-job.test.ts, session-bridge.test.ts, cli-index-help.test.ts, setup-session-runtime.test.ts, tools.test.ts
   - integration/e2e trọng điểm: cli-e2e.test.ts cho help/runtime surface bị ảnh hưởng bởi local-session migration và capability gate của wiki
-  - gitnexus-web:
+  - avmatrix-web:
   - npx tsc -b --noEmit
   - npm test
   - unit trọng điểm: settings-service.test.ts, server-connection.test.ts, test mới cho session stream client, test mới cho RepoAnalyzer local-only, test mới cho wiki off/on capability behavior
 
  # Inventory file dự kiến
 
-  - gitnexus: src/server/api.ts, src/server/analyze-job.ts, src/server/git-clone.ts, src/server/
+  - avmatrix: src/server/api.ts, src/server/analyze-job.ts, src/server/git-clone.ts, src/server/
     session-bridge.ts mới, src/runtime/* mới nếu có, src/cli/index.ts, src/cli/mcp.ts, src/cli/tool.ts,
     src/cli/setup.ts, src/cli/serve.ts, src/cli/ai-context.ts, src/cli/wiki.ts, src/core/wiki/*,
     src/storage/repo-manager.ts, tests liên quan
-  - gitnexus-web: src/core/llm/types.ts, src/core/llm/settings-service.ts, src/core/llm/agent.ts hoặc
+  - avmatrix-web: src/core/llm/types.ts, src/core/llm/settings-service.ts, src/core/llm/agent.ts hoặc
     src/core/llm/session-client.ts mới, src/core/llm/tools.ts, src/core/llm/context-builder.ts, src/core/llm/index.ts,
     src/hooks/useAppState.tsx, src/components/SettingsPanel.tsx, src/components/RepoAnalyzer.tsx,
     src/components/AnalyzeOnboarding.tsx, src/components/OnboardingGuide.tsx, src/components/Header.tsx,
     src/components/RepoLanding.tsx, src/components/RightPanel.tsx, src/components/HelpPanel.tsx,
     src/services/backend-client.ts, src/config/ui-constants.ts, package.json, package-lock.json, vercel.json,
     tests liên quan
-  - gitnexus-shared: shared request/response/event types nếu chuẩn hóa contract giữa backend và web
-  - runtime config: `~/.gitnexus/runtime.json` hoặc helper tương đương để giữ mode/capability chung như `wikiMode`
+  - avmatrix-shared: shared request/response/event types nếu chuẩn hóa contract giữa backend và web
+  - runtime config: `~/.avmatrix/runtime.json` hoặc helper tương đương để giữ mode/capability chung như `wikiMode`
   - docs/tests: README/CONTRIBUTING/help/unit tests bị ảnh hưởng
 
 # Checklist theo dõi triển khai
@@ -390,7 +390,7 @@
 - [x] Xác minh `codex login status` dùng ChatGPT account
 - [x] Xác minh `codex exec --json` cho JSONL event stream usable
 - [x] Xác minh `cwd` binding hoạt động khi Codex chạy command thành công
-- [x] Xác minh MCP config/resource hookup với GitNexus local
+- [x] Xác minh MCP config/resource hookup với AVmatrix local
 - [x] Chốt `Codex-first`
 - [x] Chốt `Track A`
 - [x] Chốt stream protocol là `SSE`
@@ -432,8 +432,8 @@
 - [x] Không cần thêm runtime management commands mới ở v1; `serve`, `mcp`, và `wiki-mode` đã đủ cho local runtime surface
 - [x] Viết behavioral tests cho CLI/MCP runtime alignment
 - [ ] Xác nhận canonical local MCP command chạy standalone
-- [ ] Bỏ hoàn toàn `npx -y gitnexus@latest mcp` khỏi setup/docs/config writers
-- [ ] Đảm bảo local GitNexus CLI có trên `PATH`
+- [ ] Bỏ hoàn toàn `npx -y avmatrix@latest mcp` khỏi setup/docs/config writers
+- [ ] Đảm bảo local AVmatrix CLI có trên `PATH`
 - [ ] Cấu hình Codex dùng canonical local MCP command
 - [ ] Test end-to-end qua Codex với repo local đã index, ví dụ `website`
 
@@ -449,7 +449,7 @@
 
 ## Pha 4 — Hardening local-only
 
-- [x] Bỏ fallback `npx -y gitnexus@latest`
+- [x] Bỏ fallback `npx -y avmatrix@latest`
 - [x] Siết CORS còn localhost/no-origin
 - [x] Backend client chỉ chấp nhận local backend
 - [x] Bỏ wording remote/API key/cloud khỏi các active surfaces; wording còn sót trong legacy compatibility files sẽ được dọn ở Pha 6

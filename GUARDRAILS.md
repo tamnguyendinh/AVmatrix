@@ -1,4 +1,4 @@
-# Guardrails — GitNexus
+# Guardrails — avmatrix
 
 Rules for **human contributors** and **AI agents**. Complements `AGENTS.md` (workflows) and `CONTRIBUTING.md` (PR process).
 
@@ -16,10 +16,10 @@ Maintainer may widen scope per task.
 ## Non-negotiables
 
 1. **Never commit secrets** — API keys, tokens, real `.env` values, private URLs, session cookies. Use `.env.example` with placeholders.
-2. **Never rename with find-and-replace** in GitNexus-indexed projects — use `rename` MCP tool with `dry_run: true` first, review `graph` vs `text_search` edits. No separate `gitnexus rename` CLI exists.
+2. **Never rename with find-and-replace** in avmatrix-indexed projects — use `rename` MCP tool with `dry_run: true` first, review `graph` vs `text_search` edits. No separate `avmatrix rename` CLI exists.
 3. **Run impact analysis before editing shared symbols** — `impact` (upstream) for functions/classes/methods others call. Do not ignore HIGH/CRITICAL without maintainer sign-off.
 4. **Run `detect_changes` before commit** — confirm diffs map to expected symbols/processes when the graph is available.
-5. **Preserve embeddings** — if `.gitnexus/meta.json` shows embeddings, use `npx gitnexus analyze --embeddings`; plain `analyze` drops them.
+5. **Preserve embeddings** — if `.avmatrix/meta.json` shows embeddings, use `npx avmatrix analyze --embeddings`; plain `analyze` drops them.
 
 ---
 
@@ -30,20 +30,20 @@ Format: **Trigger → Instruction → Reason**. Append new Signs when the same m
 ### Stale graph after edits
 
 - **Trigger:** MCP warns index is behind `HEAD`, or search doesn't match latest commit.
-- **Do:** `npx gitnexus analyze` (plus `--embeddings` if used).
+- **Do:** `npx avmatrix analyze` (plus `--embeddings` if used).
 - **Why:** Tools query LadybugDB from last analyze; git changes are invisible until re-indexed.
 
 ### Embeddings vanished after analyze
 
 - **Trigger:** Semantic search quality drops; `stats.embeddings` in `meta.json` is 0 after refresh.
-- **Do:** `npx gitnexus analyze --embeddings`, confirm `meta.json` reflects stored embeddings.
+- **Do:** `npx avmatrix analyze --embeddings`, confirm `meta.json` reflects stored embeddings.
 - **Why:** Embedding generation is opt-in; analyze without the flag does not preserve prior vectors.
 
 ### MCP lists no repos
 
 - **Trigger:** MCP stderr says no indexed repos.
-- **Do:** `npx gitnexus analyze` in the target repo; verify `npx gitnexus list` shows it.
-- **Why:** MCP discovers repos via `~/.gitnexus/registry.json`, populated by analyze.
+- **Do:** `npx avmatrix analyze` in the target repo; verify `npx avmatrix list` shows it.
+- **Why:** MCP discovers repos via `~/.avmatrix/registry.json`, populated by analyze.
 
 ### Wrong repo in multi-repo setups
 
@@ -53,7 +53,7 @@ Format: **Trigger → Instruction → Reason**. Append new Signs when the same m
 
 ### LadybugDB lock / "database busy"
 
-- **Trigger:** Errors opening `.gitnexus/lbug` while MCP and analyze both run.
+- **Trigger:** Errors opening `.avmatrix/lbug` while MCP and analyze both run.
 - **Do:** Stop overlapping processes (one writer at a time). Retry analyze or restart MCP.
 - **Why:** Embedded DB expects single-process ownership.
 

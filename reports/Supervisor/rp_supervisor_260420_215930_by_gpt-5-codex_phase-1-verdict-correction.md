@@ -7,7 +7,7 @@
 
 ## Why this correction exists
 
-The previous Phase 1 re-review blocked sign-off using a remaining full-suite `vitest` worker-fork error from `cd gitnexus && npm test`.
+The previous Phase 1 re-review blocked sign-off using a remaining full-suite `vitest` worker-fork error from `cd avmatrix && npm test`.
 
 That blocker was too broad for this plan review.
 
@@ -36,19 +36,19 @@ Phase 1 now matches the intended plan behavior:
 Relevant code:
 
 - WSL2-only Windows adapter path:
-  - [`gitnexus/src/runtime/session-adapters/codex.ts:285`](F:\GitNexus-main\gitnexus\src\runtime\session-adapters\codex.ts:285)
-  - [`gitnexus/src/runtime/session-adapters/codex.ts:319`](F:\GitNexus-main\gitnexus\src\runtime\session-adapters\codex.ts:319)
+  - [`avmatrix/src/runtime/session-adapters/codex.ts:285`](F:\AVmatrix-main\avmatrix\src\runtime\session-adapters\codex.ts:285)
+  - [`avmatrix/src/runtime/session-adapters/codex.ts:319`](F:\AVmatrix-main\avmatrix\src\runtime\session-adapters\codex.ts:319)
 - no Windows shell/native branch kept alive in adapter launch:
-  - [`gitnexus/src/runtime/session-adapters/codex.ts:62`](F:\GitNexus-main\gitnexus\src\runtime\session-adapters\codex.ts:62)
+  - [`avmatrix/src/runtime/session-adapters/codex.ts:62`](F:\AVmatrix-main\avmatrix\src\runtime\session-adapters\codex.ts:62)
 - stale registry path handling through `repoName`:
-  - [`gitnexus/src/runtime/runtime-controller.ts:163`](F:\GitNexus-main\gitnexus\src\runtime\runtime-controller.ts:163)
-  - [`gitnexus/src/runtime/runtime-controller.ts:183`](F:\GitNexus-main\gitnexus\src\runtime\runtime-controller.ts:183)
+  - [`avmatrix/src/runtime/runtime-controller.ts:163`](F:\AVmatrix-main\avmatrix\src\runtime\runtime-controller.ts:163)
+  - [`avmatrix/src/runtime/runtime-controller.ts:183`](F:\AVmatrix-main\avmatrix\src\runtime\runtime-controller.ts:183)
 
 ## Validation that is in-scope for Phase 1
 
-- `cd gitnexus && npx vitest run test/unit/runtime-controller.test.ts test/unit/session-bridge.test.ts test/unit/codex-session-adapter.test.ts`
+- `cd avmatrix && npx vitest run test/unit/runtime-controller.test.ts test/unit/session-bridge.test.ts test/unit/codex-session-adapter.test.ts`
   - result: `18/18` pass
-- `cd gitnexus && npx tsc --noEmit`
+- `cd avmatrix && npx tsc --noEmit`
   - result: pass
 - real smoke for `CodexSessionAdapter.getStatus()`
   - result:
@@ -59,16 +59,16 @@ Relevant code:
 Updated behavioral tests are aligned with the migrated contract:
 
 - stale registry path via `repoName` status path:
-  - [`gitnexus/test/unit/runtime-controller.test.ts:144`](F:\GitNexus-main\gitnexus\test\unit\runtime-controller.test.ts:144)
+  - [`avmatrix/test/unit/runtime-controller.test.ts:144`](F:\AVmatrix-main\avmatrix\test\unit\runtime-controller.test.ts:144)
 - stale registry path via `repoName` chat path:
-  - [`gitnexus/test/unit/runtime-controller.test.ts:216`](F:\GitNexus-main\gitnexus\test\unit\runtime-controller.test.ts:216)
+  - [`avmatrix/test/unit/runtime-controller.test.ts:216`](F:\AVmatrix-main\avmatrix\test\unit\runtime-controller.test.ts:216)
 - WSL2 available / WSL2 required adapter behavior:
-  - [`gitnexus/test/unit/codex-session-adapter.test.ts:56`](F:\GitNexus-main\gitnexus\test\unit\codex-session-adapter.test.ts:56)
-  - [`gitnexus/test/unit/codex-session-adapter.test.ts:64`](F:\GitNexus-main\gitnexus\test\unit\codex-session-adapter.test.ts:64)
+  - [`avmatrix/test/unit/codex-session-adapter.test.ts:56`](F:\AVmatrix-main\avmatrix\test\unit\codex-session-adapter.test.ts:56)
+  - [`avmatrix/test/unit/codex-session-adapter.test.ts:64`](F:\AVmatrix-main\avmatrix\test\unit\codex-session-adapter.test.ts:64)
 
 ## Out-of-scope note
 
-`cd gitnexus && npm test` still reports one repo-wide unhandled worker-fork error.
+`cd avmatrix && npm test` still reports one repo-wide unhandled worker-fork error.
 
 At the time of this correction, that error has **not** been traced to:
 

@@ -26,7 +26,7 @@ Same discipline as [AGENTS.md](AGENTS.md): before large multi-step work, state w
 
 ## Claude Code hooks
 
-Prefer **PreToolUse** hooks for hard gates (e.g. tests before `git_commit`). Adapt hook commands to `gitnexus/` npm scripts.
+Prefer **PreToolUse** hooks for hard gates (e.g. tests before `git_commit`). Adapt hook commands to `avmatrix/` npm scripts.
 
 ## Context budget
 
@@ -35,7 +35,7 @@ If always-on instructions grow, load deep conventions via conditional reads (e.g
 ## Reference Documentation
 
 - **This repository:** [AGENTS.md](AGENTS.md) (Cursor + monorepo notes), [ARCHITECTURE.md](ARCHITECTURE.md), [CONTRIBUTING.md](CONTRIBUTING.md), [GUARDRAILS.md](GUARDRAILS.md).
-- **Call-resolution DAG:** See ARCHITECTURE.md § Call-Resolution DAG. Shared pipeline code in `gitnexus/src/core/ingestion/` must not name languages — use `LanguageProvider` hooks instead (see AGENTS.md).
+- **Call-resolution DAG:** See ARCHITECTURE.md § Call-Resolution DAG. Shared pipeline code in `avmatrix/src/core/ingestion/` must not name languages — use `LanguageProvider` hooks instead (see AGENTS.md).
 - **AVmatrix:** `.claude/skills/avmatrix/`; MCP and indexed-repo rules live only in [AGENTS.md](AGENTS.md) (`avmatrix:start` … `avmatrix:end`). See **AVmatrix rules** below.
 
 ## Changelog

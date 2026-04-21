@@ -1,12 +1,12 @@
-# Contributing to GitNexus
+# Contributing to avmatrix
 
 How to propose changes, run checks locally, and open pull requests.
 
 ## Development setup
 
 1. Clone the repository.
-2. **CLI / MCP package:** `cd gitnexus && npm install && npm run build`
-3. **Web UI (if needed):** `cd gitnexus-web && npm install`
+2. **CLI / MCP package:** `cd avmatrix && npm install && npm run build`
+3. **Web UI (if needed):** `cd avmatrix-web && npm install`
 4. Run tests as described in [TESTING.md](TESTING.md).
 
 ## Branch and pull requests
@@ -49,8 +49,8 @@ Commits within a PR may use any style — only the **merged PR title** shows up 
 
 ## Before you open a PR
 
-- [ ] Tests pass for the packages you touched (`gitnexus` and/or `gitnexus-web`).
-- [ ] Typecheck passes: `npx tsc --noEmit` in `gitnexus/` and `npx tsc -b --noEmit` in `gitnexus-web/`.
+- [ ] Tests pass for the packages you touched (`avmatrix` and/or `avmatrix-web`).
+- [ ] Typecheck passes: `npx tsc --noEmit` in `avmatrix/` and `npx tsc -b --noEmit` in `avmatrix-web/`.
 - [ ] No secrets, tokens, or machine-specific paths committed.
 - [ ] Documentation updated if behavior or public CLI/MCP contract changes.
 - [ ] Pre-commit hook runs clean (`.husky/pre-commit` — formatting via lint-staged + typecheck for staged packages; tests run in CI only).
@@ -100,7 +100,7 @@ If you use coding agents, follow project context files (e.g. `AGENTS.md`, `CLAUD
 
 ## Releases
 
-Two publish workflows ship `gitnexus` to npm:
+Two publish workflows ship `avmatrix` to npm:
 
 - **Stable** (`.github/workflows/publish.yml`) — triggered by pushing any `v*`
   tag. Publishes to the `latest` dist-tag with a changelog-backed GitHub
@@ -120,7 +120,7 @@ Two publish workflows ship `gitnexus` to npm:
     registry. First rc for a given base is `rc.1`.
   - After the npm publish succeeds, the workflow calls `docker.yml` as a
     reusable workflow to build and push the corresponding RC Docker images
-    (e.g. `ghcr.io/abhigyanpatwari/gitnexus:1.7.0-rc.1`). The images are
+    (e.g. `ghcr.io/abhigyanpatwari/avmatrix:1.7.0-rc.1`). The images are
     signed with Cosign; the OIDC identity is `docker.yml@refs/heads/main`
     (the caller's ref — see README.md § Docker for the verify command).
 
@@ -160,5 +160,5 @@ Two publish workflows ship `gitnexus` to npm:
 The rc workflow never moves `latest`. To verify after a change, inspect dist-tags:
 
 ```bash
-npm view gitnexus dist-tags
+npm view avmatrix dist-tags
 ```

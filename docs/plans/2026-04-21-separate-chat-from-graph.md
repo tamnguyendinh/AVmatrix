@@ -1,11 +1,11 @@
 # Mục đích plan này
 
-- Plan này dùng để **tách hoàn toàn nhánh chat khỏi nhánh graph/render** trong `gitnexus-web`.
+- Plan này dùng để **tách hoàn toàn nhánh chat khỏi nhánh graph/render** trong `avmatrix-web`.
 - Mục tiêu không phải redesign giao diện, không phải thay đổi tính năng, và không phải đổi hành vi agent.
 - Mục tiêu chính là:
   - giảm lag khi gõ chat trong web local
   - ngăn graph state / Sigma render / highlight updates làm chat subtree rerender không cần thiết
-  - chỉ gọi local session runtime / GitNexus tool path khi **user thật sự gửi yêu cầu**
+  - chỉ gọi local session runtime / AVmatrix tool path khi **user thật sự gửi yêu cầu**
 
 # Vấn đề hiện tại
 
@@ -145,31 +145,31 @@ Bridge này phải:
 
 # Files dự kiến tạo mới
 
-- `gitnexus-web/src/hooks/chat-runtime/ChatRuntimeContext.tsx`
-- `gitnexus-web/src/components/ChatPanel.tsx`
+- `avmatrix-web/src/hooks/chat-runtime/ChatRuntimeContext.tsx`
+- `avmatrix-web/src/components/ChatPanel.tsx`
 - Có thể giữ và tái sử dụng:
-  - `gitnexus-web/src/components/right-panel/ChatTranscript.tsx`
-  - `gitnexus-web/src/components/right-panel/ChatComposer.tsx`
+  - `avmatrix-web/src/components/right-panel/ChatTranscript.tsx`
+  - `avmatrix-web/src/components/right-panel/ChatComposer.tsx`
 
 # Files dự kiến sửa
 
-- `gitnexus-web/src/hooks/useAppState.local-runtime.tsx`
-- `gitnexus-web/src/components/RightPanel.tsx`
-- `gitnexus-web/src/App.tsx`
+- `avmatrix-web/src/hooks/useAppState.local-runtime.tsx`
+- `avmatrix-web/src/components/RightPanel.tsx`
+- `avmatrix-web/src/App.tsx`
 
 # Files test dự kiến tạo/sửa
 
-- `gitnexus-web/test/unit/ChatRuntimeContext.test.tsx`
-- `gitnexus-web/test/unit/ChatPanel.test.tsx`
-- `gitnexus-web/test/unit/RightPanel.local-runtime.test.tsx`
-- `gitnexus-web/test/unit/ChatComposer.test.tsx`
+- `avmatrix-web/test/unit/ChatRuntimeContext.test.tsx`
+- `avmatrix-web/test/unit/ChatPanel.test.tsx`
+- `avmatrix-web/test/unit/RightPanel.local-runtime.test.tsx`
+- `avmatrix-web/test/unit/ChatComposer.test.tsx`
 
 # Blast radius đã kiểm tra
 
-- `Function:gitnexus-web/src/components/RightPanel.tsx:RightPanel`
+- `Function:avmatrix-web/src/components/RightPanel.tsx:RightPanel`
   - `risk: LOW`
   - `impactedCount: 0`
-- `Function:gitnexus-web/src/hooks/useAppState.local-runtime.tsx:AppStateProviderInner`
+- `Function:avmatrix-web/src/hooks/useAppState.local-runtime.tsx:AppStateProviderInner`
   - `risk: LOW`
   - `impactedCount: 0`
 
@@ -262,7 +262,7 @@ Checklist:
 - thay graph/highlight/selection
 - `ChatTranscript` không rerender nếu chat data không đổi
 
-3. **Mở chat panel không gọi GitNexus runtime**
+3. **Mở chat panel không gọi AVmatrix runtime**
 - mount/open panel
 - không có `streamSessionChat`
 - không có tool/query call
@@ -290,8 +290,8 @@ Checklist:
 
 # Validation commands
 
-- `cd gitnexus-web && npx vitest run test/unit/ChatRuntimeContext.test.tsx test/unit/ChatPanel.test.tsx test/unit/RightPanel.local-runtime.test.tsx test/unit/ChatComposer.test.tsx`
-- `cd gitnexus-web && npx tsc -b --noEmit`
+- `cd avmatrix-web && npx vitest run test/unit/ChatRuntimeContext.test.tsx test/unit/ChatPanel.test.tsx test/unit/RightPanel.local-runtime.test.tsx test/unit/ChatComposer.test.tsx`
+- `cd avmatrix-web && npx tsc -b --noEmit`
 
 # Điều kiện hoàn thành
 
