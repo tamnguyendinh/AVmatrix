@@ -1,6 +1,6 @@
 // gitnexus/src/core/ingestion/field-extractors/configs/typescript-javascript.ts
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import type { FieldExtractionConfig } from '../generic.js';
 import { hasKeyword, findVisibility, typeFromAnnotation } from './helpers.js';
 import type { FieldVisibility } from '../../field-types.js';

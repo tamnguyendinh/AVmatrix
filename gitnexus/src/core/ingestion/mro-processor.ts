@@ -21,7 +21,7 @@
 
 import { KnowledgeGraph } from '../graph/types.js';
 import { generateId } from '../../lib/utils.js';
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import { getProvider } from './languages/index.js';
 import { c3Linearize, gatherAncestors } from './model/resolve.js';
 

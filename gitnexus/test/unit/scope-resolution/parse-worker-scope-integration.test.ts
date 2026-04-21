@@ -16,7 +16,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import type { Capture, CaptureMatch } from 'gitnexus-shared';
+import type { Capture, CaptureMatch } from 'avmatrix-shared';
 import { extractParsedFile } from '../../../src/core/ingestion/scope-extractor-bridge.js';
 import type { LanguageProvider } from '../../../src/core/ingestion/language-provider.js';
 

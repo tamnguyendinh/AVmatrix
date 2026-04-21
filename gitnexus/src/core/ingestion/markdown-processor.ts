@@ -8,7 +8,7 @@
 
 import path from 'node:path';
 import { generateId } from '../../lib/utils.js';
-import type { GraphNode } from 'gitnexus-shared';
+import type { GraphNode } from 'avmatrix-shared';
 import { KnowledgeGraph } from '../graph/types.js';
 
 const HEADING_RE = /^(#{1,6})\s+(.+)$/;

@@ -1,6 +1,6 @@
 // gitnexus/src/core/ingestion/call-extractors/configs/jvm.ts
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import type { CallExtractionConfig, ExtractedCallSite } from '../../call-types.js';
 import type { SyntaxNode } from '../../utils/ast-helpers.js';
 

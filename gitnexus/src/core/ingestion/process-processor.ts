@@ -10,11 +10,11 @@
  * Processes help agents understand how features work through the codebase.
  */
 
-import type { GraphNode, NodeLabel } from 'gitnexus-shared';
+import type { GraphNode, NodeLabel } from 'avmatrix-shared';
 import { KnowledgeGraph } from '../graph/types.js';
 import { CommunityMembership } from './community-processor.js';
 import { calculateEntryPointScore, isTestFile } from './entry-point-scoring.js';
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import { isDev } from './utils/env.js';
 
 // ============================================================================

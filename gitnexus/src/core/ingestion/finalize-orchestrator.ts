@@ -3,7 +3,7 @@
  * materialized `ScopeResolutionIndexes` (RFC §3.2 Phase 2; Ring 2 PKG #921).
  *
  * Thin integration glue, per issue #884's boundary: all algorithmic logic
- * lives in `gitnexus-shared` (finalize algorithm #915, the four per-file
+ * lives in `avmatrix-shared` (finalize algorithm #915, the four per-file
  * indexes #913, the method-dispatch materialization #914, the scope tree
  * #912). This file does three things only:
  *
@@ -41,7 +41,7 @@ import type {
   ScopeId,
   SymbolDefinition,
   WorkspaceIndex,
-} from 'gitnexus-shared';
+} from 'avmatrix-shared';
 import {
   buildDefIndex,
   buildMethodDispatchIndex,
@@ -49,7 +49,7 @@ import {
   buildQualifiedNameIndex,
   buildScopeTree,
   finalize,
-} from 'gitnexus-shared';
+} from 'avmatrix-shared';
 import type { ScopeResolutionIndexes } from './model/scope-resolution-indexes.js';
 
 // ─── Public entry point ─────────────────────────────────────────────────────
@@ -100,7 +100,7 @@ export function finalizeScopeModel(
 
   // ── Step 2: Workspace-wide indexes built from the per-file unions.
   // These are pure aggregations — no algorithm beyond what the builders
-  // in gitnexus-shared already encapsulate (first-write-wins, qname
+  // in avmatrix-shared already encapsulate (first-write-wins, qname
   // collision buckets, etc.).
 
   const allScopes: Scope[] = [];

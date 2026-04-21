@@ -18,7 +18,7 @@ import {
   SigmaNodeAttributes,
   SigmaEdgeAttributes,
 } from '../lib/graph-adapter';
-import type { GraphNode } from 'gitnexus-shared';
+import type { GraphNode } from 'avmatrix-shared';
 import { QueryFAB } from './QueryFAB';
 import Graph from 'graphology';
 

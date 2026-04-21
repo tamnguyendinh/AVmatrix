@@ -7,7 +7,7 @@
  * registries unchanged; construction is the caller's responsibility
  * (typically once per workspace-indexing pass in Ring 2 PKG).
  *
- * The design intent is **pure-logic in `gitnexus-shared`, data + hooks
+ * The design intent is **pure-logic in `avmatrix-shared`, data + hooks
  * supplied by the caller**. Nothing here loads files, parses AST, or
  * reaches into the CLI package.
  */

@@ -1332,7 +1332,7 @@ export const DART_QUERIES = `
       (type_identifier) @heritage.trait))) @heritage
 `;
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 
 export const LANGUAGE_QUERIES: Record<SupportedLanguages, string> = {
   [SupportedLanguages.TypeScript]: TYPESCRIPT_QUERIES,

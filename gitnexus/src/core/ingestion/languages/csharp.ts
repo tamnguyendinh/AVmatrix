@@ -6,7 +6,7 @@
  * Interface names follow the I-prefix convention (e.g., IDisposable).
  */
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import { createClassExtractor } from '../class-extractors/generic.js';
 import { csharpClassConfig } from '../class-extractors/configs/csharp.js';
 import { defineLanguage } from '../language-provider.js';

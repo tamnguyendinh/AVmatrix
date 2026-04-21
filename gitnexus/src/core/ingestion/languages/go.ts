@@ -9,7 +9,7 @@
  *   - callRouter: present (Go method calls may need routing)
  */
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import { createClassExtractor } from '../class-extractors/generic.js';
 import { goClassConfig } from '../class-extractors/configs/go.js';
 import { defineLanguage } from '../language-provider.js';

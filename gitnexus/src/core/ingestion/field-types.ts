@@ -2,7 +2,7 @@
 
 import type { TypeEnvironment } from './type-env.js';
 import type { SymbolTableReader } from './model/index.js';
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 
 /**
  * Visibility levels used across all supported languages.

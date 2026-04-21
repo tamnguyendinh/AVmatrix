@@ -16,7 +16,7 @@ import {
   type Resolution,
   type ShadowCallsite,
   type SymbolDefinition,
-} from 'gitnexus-shared';
+} from 'avmatrix-shared';
 import {
   createShadowHarness,
   type PersistedShadowReport,

@@ -6,7 +6,7 @@ import type {
   SessionRuntimeEnvironment,
   SessionStatus,
   SessionStreamEvent,
-} from 'gitnexus-shared';
+} from 'avmatrix-shared';
 import { randomUUID } from 'crypto';
 import { EventEmitter } from 'events';
 

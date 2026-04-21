@@ -1,6 +1,6 @@
 // gitnexus/src/core/ingestion/variable-extractors/configs/rust.ts
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import type { VariableExtractionConfig } from '../../variable-types.js';
 import type { VariableVisibility } from '../../variable-types.js';
 import { extractSimpleTypeName } from '../../type-extractors/shared.js';

@@ -1,6 +1,6 @@
 // gitnexus/src/core/ingestion/heritage-extractors/configs/go.ts
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import type { HeritageExtractionConfig } from '../../heritage-types.js';
 
 /**

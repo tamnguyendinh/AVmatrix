@@ -59,7 +59,7 @@
  * ## What this module does NOT do
  *
  *   - No AST reads (pure data in, pure data out).
- *   - No `gitnexus/` imports.
+ *   - No `avmatrix/` imports.
  *   - No language switches. Language-specific behavior flows exclusively
  *     through `providers.*` and the `params` object.
  *   - No caching. Callers that want memoization can wrap this function.

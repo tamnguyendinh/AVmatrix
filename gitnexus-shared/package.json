@@ -1,8 +1,8 @@
 {
-  "name": "gitnexus-shared",
+  "name": "avmatrix-shared",
   "version": "1.0.0",
   "private": true,
-  "description": "Shared type definitions for GitNexus CLI and web",
+  "description": "Shared type definitions for AVmatrix CLI and web",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

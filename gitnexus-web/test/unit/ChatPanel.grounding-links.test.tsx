@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { GraphNode } from 'gitnexus-shared';
+import type { GraphNode } from 'avmatrix-shared';
 import { createKnowledgeGraph } from '../../src/core/graph/graph';
 import { AppStateProvider, useAppState } from '../../src/hooks/useAppState.local-runtime';
 import type { ChatRuntimeState } from '../../src/hooks/chat-runtime/types';

@@ -1,7 +1,7 @@
 // gitnexus/src/core/ingestion/field-extractors/typescript.ts
 
 import type { SyntaxNode } from '../utils/ast-helpers.js';
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import { BaseFieldExtractor } from '../field-extractor.js';
 import type {
   FieldExtractorContext,

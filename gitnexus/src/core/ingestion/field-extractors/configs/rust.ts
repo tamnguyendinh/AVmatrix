@@ -1,6 +1,6 @@
 // gitnexus/src/core/ingestion/field-extractors/configs/rust.ts
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import type { FieldExtractionConfig } from '../generic.js';
 import { extractSimpleTypeName } from '../../type-extractors/shared.js';
 import { hasKeyword } from './helpers.js';

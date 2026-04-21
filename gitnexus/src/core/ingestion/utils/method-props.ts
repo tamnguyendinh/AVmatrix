@@ -1,5 +1,5 @@
 import type { MethodInfo } from '../method-types.js';
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 
 /** Languages where class overload signatures are declaration-only contracts
  *  that should collapse to the implementation body's node ID. */

@@ -68,7 +68,7 @@ import {
   type ShadowDiff,
   type ShadowParityReport,
   type SupportedLanguages,
-} from 'gitnexus-shared';
+} from 'avmatrix-shared';
 
 // ─── Public API ────────────────────────────────────────────────────────────
 

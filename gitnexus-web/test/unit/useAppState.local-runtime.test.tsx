@@ -2,7 +2,7 @@ import { act, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 import { createKnowledgeGraph } from '../../src/core/graph/graph';
-import type { GraphNode } from 'gitnexus-shared';
+import type { GraphNode } from 'avmatrix-shared';
 import { setBackendUrl } from '../../src/services/backend-client';
 import { AppStateProvider, useAppState } from '../../src/hooks/useAppState.local-runtime';
 

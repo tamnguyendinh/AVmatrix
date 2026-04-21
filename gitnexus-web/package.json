@@ -1,5 +1,5 @@
 {
-  "name": "gitnexus",
+  "name": "avmatrix-web",
   "private": true,
   "version": "0.0.0",
   "engines": {
@@ -23,7 +23,7 @@
     "axios": "^1.13.2",
     "d3": "^7.9.0",
     "dompurify": "^3.3.3",
-    "gitnexus-shared": "file:../gitnexus-shared",
+    "avmatrix-shared": "file:../gitnexus-shared",
     "graphology": "^0.26.0",
     "graphology-indices": "^0.17.0",
     "graphology-layout-force": "^0.2.4",

@@ -10,7 +10,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs/promises';
 import path from 'path';
 import { loadParser, loadLanguage } from '../../src/core/tree-sitter/parser-loader.js';
-import { getLanguageFromFilename, SupportedLanguages } from 'gitnexus-shared';
+import { getLanguageFromFilename, SupportedLanguages } from 'avmatrix-shared';
 import { getProvider } from '../../src/core/ingestion/languages/index.js';
 
 const FIXTURES_DIR = path.join(process.cwd(), 'test', 'fixtures', 'sample-code');

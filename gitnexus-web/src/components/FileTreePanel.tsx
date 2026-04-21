@@ -20,7 +20,7 @@ import {
 } from '@/lib/lucide-icons';
 import { useAppState } from '../hooks/useAppState.local-runtime';
 import { FILTERABLE_LABELS, NODE_COLORS, ALL_EDGE_TYPES, EDGE_INFO } from '../lib/constants';
-import type { GraphNode, NodeLabel } from 'gitnexus-shared';
+import type { GraphNode, NodeLabel } from 'avmatrix-shared';
 
 // Tree node structure
 interface TreeNode {

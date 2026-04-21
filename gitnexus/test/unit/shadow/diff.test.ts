@@ -12,7 +12,7 @@ import {
   type ResolutionEvidence,
   type ShadowCallsite,
   type SymbolDefinition,
-} from 'gitnexus-shared';
+} from 'avmatrix-shared';
 
 // ─── Fixtures ───────────────────────────────────────────────────────────────
 

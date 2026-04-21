@@ -1,18 +1,18 @@
 {
-  "name": "gitnexus-marketplace",
+  "name": "avmatrix-marketplace",
   "owner": {
-    "name": "GitNexus",
-    "email": "nico@gitnexus.dev"
+    "name": "AVmatrix",
+    "email": "halotam@gmail.com"
   },
   "metadata": {
     "description": "Code intelligence powered by a knowledge graph — execution flows, blast radius, and semantic search",
-    "homepage": "https://github.com/nicosxt/gitnexus"
+    "homepage": "https://github.com/tamnguyendinh/"
   },
   "plugins": [
     {
-      "name": "gitnexus",
+      "name": "avmatrix",
       "version": "1.3.3",
-      "source": "./gitnexus-claude-plugin",
+      "source": "./avmatrix-claude-plugin",
       "description": "Code intelligence powered by a knowledge graph. Provides execution flow tracing, blast radius analysis, and augmented search across your codebase."
     }
   ]

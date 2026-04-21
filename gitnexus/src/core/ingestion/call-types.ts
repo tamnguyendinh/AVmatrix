@@ -7,7 +7,7 @@
  * consumed by createCallExtractor() and the per-language configs.
  */
 
-import type { SupportedLanguages } from 'gitnexus-shared';
+import type { SupportedLanguages } from 'avmatrix-shared';
 import type { SyntaxNode } from './utils/ast-helpers.js';
 import type { MixedChainStep } from './utils/call-analysis.js';
 

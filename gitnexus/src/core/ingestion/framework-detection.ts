@@ -10,7 +10,7 @@
  * (no bonus, no penalty) - same behavior as before this feature.
  */
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 
 // ============================================================================
 // TYPES

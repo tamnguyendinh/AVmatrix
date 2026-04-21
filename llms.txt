@@ -15,5 +15,5 @@ GitNexus monorepo (CLI + web UI)
 # Key directories
 - gitnexus/ (CLI/core, MCP server — TypeScript)
 - gitnexus-web/ (web UI — React/Vite/WASM)
-- gitnexus-claude-plugin/ (Claude marketplace config)
-- gitnexus-cursor-integration/ (Cursor integration config)
+- avmatrix-claude-plugin/ (Claude marketplace config)
+- avmatrix-cursor-integration/ (Cursor integration config)

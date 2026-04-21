@@ -31,8 +31,8 @@ export interface AIContextOptions {
 
 const AVMATRIX_START_MARKER = '<!-- avmatrix:start -->';
 const AVMATRIX_END_MARKER = '<!-- avmatrix:end -->';
-const LEGACY_GITNEXUS_START_MARKER = '<!-- gitnexus:start -->';
-const LEGACY_GITNEXUS_END_MARKER = '<!-- gitnexus:end -->';
+const MANAGED_SECTION_PATTERN =
+  /<!--\s*([a-z0-9-]+):start\s*-->[\s\S]*?#\s+[^\n]*Code Intelligence[\s\S]*?<!--\s*\1:end\s*-->/i;
 
 function rewriteMcpToolNames(content: string): string {
   return content
@@ -40,7 +40,12 @@ function rewriteMcpToolNames(content: string): string {
     .replaceAll('gitnexus_impact', 'impact')
     .replaceAll('gitnexus_query', 'query')
     .replaceAll('gitnexus_context', 'context')
-    .replaceAll('gitnexus_rename', 'rename');
+    .replaceAll('gitnexus_rename', 'rename')
+    .replaceAll('avmatrix_detect_changes', 'detect_changes')
+    .replaceAll('avmatrix_impact', 'impact')
+    .replaceAll('avmatrix_query', 'query')
+    .replaceAll('avmatrix_context', 'context')
+    .replaceAll('avmatrix_rename', 'rename');
 }
 
 /**
@@ -156,10 +161,11 @@ async function fileExists(filePath: string): Promise<boolean> {
 }
 
 /**
- * Create or update AVmatrix section in a file
- * - If file doesn't exist: create with AVmatrix content
- * - If file exists without GitNexus section: append
- * - If file exists with GitNexus section: replace that section
+ * Create or update the AVmatrix section in a file.
+ * - If the file doesn't exist: create it with AVmatrix content
+ * - If the file exists without any managed section: append the AVmatrix section
+ * - If the file exists with a managed AVmatrix-era section from any prior rollout step:
+ *   replace that section in place
  */
 async function upsertAVmatrixSection(
   filePath: string,
@@ -174,23 +180,10 @@ async function upsertAVmatrixSection(
 
   const existingContent = await fs.readFile(filePath, 'utf-8');
 
-  // Check if AVmatrix section already exists, or migrate the legacy GitNexus block in-place.
-  const markerPairs = [
-    { start: AVMATRIX_START_MARKER, end: AVMATRIX_END_MARKER },
-    { start: LEGACY_GITNEXUS_START_MARKER, end: LEGACY_GITNEXUS_END_MARKER },
-  ];
-
-  const pair = markerPairs.find(
-    ({ start, end }) => existingContent.indexOf(start) !== -1 && existingContent.indexOf(end) !== -1,
-  );
-  const startIdx = pair ? existingContent.indexOf(pair.start) : -1;
-  const endIdx = pair ? existingContent.indexOf(pair.end) : -1;
-
-  if (pair && startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-    // Replace existing section
-    const before = existingContent.substring(0, startIdx);
-    const after = existingContent.substring(endIdx + pair.end.length);
-    const newContent = before + content + after;
+  // Replace whichever managed Code Intelligence block is already present.
+  const existingSection = existingContent.match(MANAGED_SECTION_PATTERN);
+  if (existingSection) {
+    const newContent = existingContent.replace(MANAGED_SECTION_PATTERN, content);
     await fs.writeFile(filePath, newContent.trim() + '\n', 'utf-8');
     return 'updated';
   }
@@ -213,37 +206,37 @@ async function installSkills(repoPath: string): Promise<string[]> {
   // Skill definitions bundled with the package
   const skills = [
     {
-      name: 'gitnexus-exploring',
+      name: 'avmatrix-exploring',
       outputName: 'avmatrix-exploring',
       description:
         'Use when the user asks how code works, wants to understand architecture, trace execution flows, or explore unfamiliar parts of the codebase. Examples: "How does X work?", "What calls this function?", "Show me the auth flow"',
     },
     {
-      name: 'gitnexus-debugging',
+      name: 'avmatrix-debugging',
       outputName: 'avmatrix-debugging',
       description:
         'Use when the user is debugging a bug, tracing an error, or asking why something fails. Examples: "Why is X failing?", "Where does this error come from?", "Trace this bug"',
     },
     {
-      name: 'gitnexus-impact-analysis',
+      name: 'avmatrix-impact-analysis',
       outputName: 'avmatrix-impact-analysis',
       description:
         'Use when the user wants to know what will break if they change something, or needs safety analysis before editing code. Examples: "Is it safe to change X?", "What depends on this?", "What will break?"',
     },
     {
-      name: 'gitnexus-refactoring',
+      name: 'avmatrix-refactoring',
       outputName: 'avmatrix-refactoring',
       description:
         'Use when the user wants to rename, extract, split, move, or restructure code safely. Examples: "Rename this function", "Extract this into a module", "Refactor this class", "Move this to a separate file"',
     },
     {
-      name: 'gitnexus-guide',
+      name: 'avmatrix-guide',
       outputName: 'avmatrix-guide',
       description:
         'Use when the user asks about AVmatrix itself — available tools, how to query the knowledge graph, MCP resources, graph schema, or workflow reference. Examples: "What AVmatrix tools are available?", "How do I use AVmatrix?"',
     },
     {
-      name: 'gitnexus-cli',
+      name: 'avmatrix-cli',
       outputName: 'avmatrix-cli',
       description:
         'Use when the user needs to run AVmatrix CLI commands like analyze/index a repo, check status, clean the index, inspect wiki capability mode, or list indexed repos. Examples: "Index this repo", "Reanalyze the codebase", "Check wiki mode"',

@@ -1,5 +1,5 @@
 import Graph from 'graphology';
-import type { NodeLabel } from 'gitnexus-shared';
+import type { NodeLabel } from 'avmatrix-shared';
 import type { KnowledgeGraph } from '../core/graph/types';
 import { NODE_COLORS, NODE_SIZES, getCommunityColor } from './constants';
 

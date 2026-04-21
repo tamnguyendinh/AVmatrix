@@ -1,7 +1,7 @@
 /**
  * MRO (Method Resolution Order) strategy — shared canonical definition.
  *
- * Lives in `gitnexus-shared` so `model/resolve.ts` and `mro-processor.ts` share
+ * Lives in `avmatrix-shared` so `model/resolve.ts` and `mro-processor.ts` share
  * the type without importing the language registry (avoids circular coupling).
  *
  * `first-wins` (default, Java/C#/Kotlin/Go/Swift/Dart):

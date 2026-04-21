@@ -8,7 +8,7 @@
  * 4. Run `tsc --noEmit` to verify
  */
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import type { LanguageProvider } from '../language-provider.js';
 
 import { typescriptProvider, javascriptProvider } from './typescript.js';

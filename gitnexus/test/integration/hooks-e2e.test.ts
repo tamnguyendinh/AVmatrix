@@ -1,7 +1,7 @@
 /**
  * Integration Tests: Claude Code Hooks End-to-End
  *
- * Tests the hook scripts with real git repos and .gitnexus directories.
+ * Tests the hook scripts with real git repos and managed index directories.
  * Unlike unit/hooks.test.ts which tests source code patterns and simple
  * stdin/stdout, these tests verify actual behavior with filesystem state.
  */
@@ -14,15 +14,15 @@ import { runHook, parseHookOutput } from '../utils/hook-test-helpers.js';
 
 // ─── Paths to both hook variants ────────────────────────────────────
 
-const CJS_HOOK = path.resolve(__dirname, '..', '..', 'hooks', 'claude', 'gitnexus-hook.cjs');
+const CJS_HOOK = path.resolve(__dirname, '..', '..', 'hooks', 'claude', 'avmatrix-hook.cjs');
 const PLUGIN_HOOK = path.resolve(
   __dirname,
   '..',
   '..',
   '..',
-  'gitnexus-claude-plugin',
+  'avmatrix-claude-plugin',
   'hooks',
-  'gitnexus-hook.js',
+  'avmatrix-hook.js',
 );
 
 const HOOKS = [
@@ -30,15 +30,15 @@ const HOOKS = [
   ...(fs.existsSync(PLUGIN_HOOK) ? [{ name: 'Plugin', path: PLUGIN_HOOK }] : []),
 ];
 
-// ─── Temp git repo with .gitnexus ───────────────────────────────────
+// ─── Temp git repo with managed index directory ─────────────────────
 
 let tmpDir: string;
-let gitNexusDir: string;
+let avmatrixDir: string;
 
 beforeAll(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hooks-e2e-'));
-  gitNexusDir = path.join(tmpDir, '.gitnexus');
-  fs.mkdirSync(gitNexusDir, { recursive: true });
+  avmatrixDir = path.join(tmpDir, '.avmatrix');
+  fs.mkdirSync(avmatrixDir, { recursive: true });
 
   // Initialize a real git repo
   spawnSync('git', ['init'], { cwd: tmpDir, stdio: 'pipe' });
@@ -62,7 +62,7 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
     it('detects stale index when meta.json lastCommit differs from HEAD', () => {
       // Write meta.json with an old commit hash
       fs.writeFileSync(
-        path.join(gitNexusDir, 'meta.json'),
+        path.join(avmatrixDir, 'meta.json'),
         JSON.stringify({ lastCommit: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', stats: {} }),
       );
 
@@ -77,7 +77,7 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
       const output = parseHookOutput(result.stdout);
       expect(output).not.toBeNull();
       expect(output!.additionalContext).toContain('stale');
-      expect(output!.additionalContext).toContain('npx gitnexus analyze');
+      expect(output!.additionalContext).toContain('avmatrix analyze');
     });
 
     it('stays silent when meta.json lastCommit matches HEAD', () => {
@@ -91,7 +91,7 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
 
       // Write meta.json with matching commit
       fs.writeFileSync(
-        path.join(gitNexusDir, 'meta.json'),
+        path.join(avmatrixDir, 'meta.json'),
         JSON.stringify({ lastCommit: head, stats: {} }),
       );
 
@@ -109,7 +109,7 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
 
     it('includes --embeddings flag when previous index had embeddings', () => {
       fs.writeFileSync(
-        path.join(gitNexusDir, 'meta.json'),
+        path.join(avmatrixDir, 'meta.json'),
         JSON.stringify({
           lastCommit: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
           stats: { embeddings: 42 },
@@ -131,7 +131,7 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
 
     it('treats missing meta.json as stale', () => {
       // Remove meta.json
-      const metaPath = path.join(gitNexusDir, 'meta.json');
+      const metaPath = path.join(avmatrixDir, 'meta.json');
       if (fs.existsSync(metaPath)) fs.unlinkSync(metaPath);
 
       const result = runHook(hookPath, {
@@ -149,7 +149,7 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
 
     it('ignores failed git commands (exit_code !== 0)', () => {
       fs.writeFileSync(
-        path.join(gitNexusDir, 'meta.json'),
+        path.join(avmatrixDir, 'meta.json'),
         JSON.stringify({ lastCommit: 'cccccccccccccccccccccccccccccccccccccccc', stats: {} }),
       );
 
@@ -167,7 +167,7 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
 
     it('ignores non-mutation git commands', () => {
       fs.writeFileSync(
-        path.join(gitNexusDir, 'meta.json'),
+        path.join(avmatrixDir, 'meta.json'),
         JSON.stringify({ lastCommit: 'dddddddddddddddddddddddddddddddddddddddd', stats: {} }),
       );
 
@@ -187,7 +187,7 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
 
     it('detects all 5 git mutation types', () => {
       fs.writeFileSync(
-        path.join(gitNexusDir, 'meta.json'),
+        path.join(avmatrixDir, 'meta.json'),
         JSON.stringify({ lastCommit: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', stats: {} }),
       );
 
@@ -286,7 +286,7 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
 
   describe('unhappy paths', () => {
     it('handles corrupted meta.json (invalid JSON) without crashing', () => {
-      fs.writeFileSync(path.join(gitNexusDir, 'meta.json'), 'THIS IS NOT JSON {{{');
+      fs.writeFileSync(path.join(avmatrixDir, 'meta.json'), 'THIS IS NOT JSON {{{');
 
       const result = runHook(hookPath, {
         hook_event_name: 'PostToolUse',
@@ -301,7 +301,7 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
     });
 
     it('handles meta.json with missing lastCommit field', () => {
-      fs.writeFileSync(path.join(gitNexusDir, 'meta.json'), JSON.stringify({ stats: {} }));
+      fs.writeFileSync(path.join(avmatrixDir, 'meta.json'), JSON.stringify({ stats: {} }));
 
       const result = runHook(hookPath, {
         hook_event_name: 'PostToolUse',
@@ -335,7 +335,7 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
 
     it('handles empty tool_input for PostToolUse without crashing', () => {
       fs.writeFileSync(
-        path.join(gitNexusDir, 'meta.json'),
+        path.join(avmatrixDir, 'meta.json'),
         JSON.stringify({ lastCommit: 'aaaa', stats: {} }),
       );
 
@@ -355,7 +355,7 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
 
     it('ignores non-Bash tool for PostToolUse', () => {
       fs.writeFileSync(
-        path.join(gitNexusDir, 'meta.json'),
+        path.join(avmatrixDir, 'meta.json'),
         JSON.stringify({ lastCommit: 'aaaa', stats: {} }),
       );
 
@@ -373,20 +373,20 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
     });
   });
 
-  describe('directory without .gitnexus', () => {
-    // The hook walks up 5 parent directories looking for .gitnexus.
+  describe('directory without .avmatrix', () => {
+    // The hook walks up 5 parent directories looking for .avmatrix.
     // To guarantee none is found, create a deeply nested temp dir at the
-    // filesystem root where no .gitnexus could exist in any ancestor.
-    let noGitNexusDir: string;
+    // filesystem root where no .avmatrix could exist in any ancestor.
+    let noAVmatrixDir: string;
 
     beforeAll(() => {
-      // Use a root-level temp path so parent traversal can't find .gitnexus
+      // Use a root-level temp path so parent traversal can't find .avmatrix
       const root = os.platform() === 'win32' ? 'C:\\' : '/tmp';
-      const base = path.join(root, `no-gitnexus-${Date.now()}`);
+      const base = path.join(root, `no-avmatrix-${Date.now()}`);
       // Nest 6 levels deep (hook walks up 5) to ensure isolation
-      noGitNexusDir = path.join(base, 'a', 'b', 'c', 'd', 'e', 'f');
-      fs.mkdirSync(noGitNexusDir, { recursive: true });
-      spawnSync('git', ['init'], { cwd: noGitNexusDir, stdio: 'pipe' });
+      noAVmatrixDir = path.join(base, 'a', 'b', 'c', 'd', 'e', 'f');
+      fs.mkdirSync(noAVmatrixDir, { recursive: true });
+      spawnSync('git', ['init'], { cwd: noAVmatrixDir, stdio: 'pipe' });
     });
 
     afterAll(() => {
@@ -394,30 +394,30 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
       const root = os.platform() === 'win32' ? 'C:\\' : '/tmp';
       const base = path.join(
         root,
-        path.basename(path.resolve(noGitNexusDir, '..', '..', '..', '..', '..', '..')),
+        path.basename(path.resolve(noAVmatrixDir, '..', '..', '..', '..', '..', '..')),
       );
       fs.rmSync(base, { recursive: true, force: true });
     });
 
-    it('ignores PostToolUse when no .gitnexus directory exists', () => {
+    it('ignores PostToolUse when no .avmatrix directory exists', () => {
       const result = runHook(hookPath, {
         hook_event_name: 'PostToolUse',
         tool_name: 'Bash',
         tool_input: { command: 'git commit -m "x"' },
         tool_output: { exit_code: 0 },
-        cwd: noGitNexusDir,
+        cwd: noAVmatrixDir,
       });
 
       const output = parseHookOutput(result.stdout);
       expect(output).toBeNull();
     });
 
-    it('ignores PreToolUse when no .gitnexus directory exists', () => {
+    it('ignores PreToolUse when no .avmatrix directory exists', () => {
       const result = runHook(hookPath, {
         hook_event_name: 'PreToolUse',
         tool_name: 'Grep',
         tool_input: { pattern: 'somePattern' },
-        cwd: noGitNexusDir,
+        cwd: noAVmatrixDir,
       });
 
       const output = parseHookOutput(result.stdout);

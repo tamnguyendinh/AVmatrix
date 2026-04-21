@@ -12,7 +12,7 @@ import type {
 } from '../language-config.js';
 import type { SwiftPackageConfig } from '../language-config.js';
 import type { SuffixIndex } from './utils.js';
-import type { SupportedLanguages } from 'gitnexus-shared';
+import type { SupportedLanguages } from 'avmatrix-shared';
 
 /**
  * Result of resolving an import via language-specific dispatch.

@@ -477,7 +477,7 @@ clusters actually need.
 
 ### Files
 
-- [Dockerfile.web](Dockerfile.web) — builds `gitnexus-shared` and `gitnexus-web`, then serves the production frontend.
+- [Dockerfile.web](Dockerfile.web) — builds `avmatrix-shared` and `gitnexus-web`, then serves the production frontend.
 - [Dockerfile.cli](Dockerfile.cli) — builds the CLI/server (with its native deps) and runs `gitnexus serve --host 0.0.0.0`.
 - [docker-compose.yaml](docker-compose.yaml) — starts both signed images side by side.
 - [.env.example](.env.example) — overrides for image names, container names, ports, and the workspace mount.

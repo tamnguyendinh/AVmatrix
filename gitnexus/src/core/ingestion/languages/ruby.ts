@@ -7,8 +7,8 @@
  * attr_reader/attr_writer (property definitions) as call expressions.
  */
 
-import { SupportedLanguages } from 'gitnexus-shared';
-import type { NodeLabel } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
+import type { NodeLabel } from 'avmatrix-shared';
 import { createClassExtractor } from '../class-extractors/generic.js';
 import { rubyClassConfig } from '../class-extractors/configs/ruby.js';
 import { defineLanguage } from '../language-provider.js';

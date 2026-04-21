@@ -1,4 +1,4 @@
-import type { NodeLabel, SupportedLanguages } from 'gitnexus-shared';
+import type { NodeLabel, SupportedLanguages } from 'avmatrix-shared';
 import type { SyntaxNode } from './utils/ast-helpers.js';
 
 export type ClassLikeNodeLabel = Extract<

@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, afterEach, beforeEach } from 'vitest';
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import {
   envVarNameFor,
   isRegistryPrimary,

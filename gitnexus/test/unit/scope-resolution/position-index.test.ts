@@ -14,7 +14,7 @@ import {
   type Scope,
   type ScopeId,
   type ScopeKind,
-} from 'gitnexus-shared';
+} from 'avmatrix-shared';
 
 // ─── Test helpers ───────────────────────────────────────────────────────────
 

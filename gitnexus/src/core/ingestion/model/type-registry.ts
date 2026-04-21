@@ -6,7 +6,7 @@
  * Also includes a separate index for Rust Impl blocks.
  */
 
-import type { SymbolDefinition } from 'gitnexus-shared';
+import type { SymbolDefinition } from 'avmatrix-shared';
 
 // ---------------------------------------------------------------------------
 // Public read-only interface

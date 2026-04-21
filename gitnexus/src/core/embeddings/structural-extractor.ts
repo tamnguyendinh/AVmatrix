@@ -10,7 +10,7 @@ import type { MethodExtractorContext, ExtractedMethods } from '../ingestion/meth
 import type { FieldExtractorContext, ExtractedFields } from '../ingestion/field-types.js';
 import type { LanguageProvider } from '../ingestion/language-provider.js';
 import { buildTypeEnv } from '../ingestion/type-env.js';
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import { ensureAndParse, findDeclarationNode } from './ast-utils.js';
 
 export interface StructuralNames {

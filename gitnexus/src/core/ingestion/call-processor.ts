@@ -1,6 +1,6 @@
 import { KnowledgeGraph } from '../graph/types.js';
 import { ASTCache } from './ast-cache.js';
-import type { SymbolDefinition } from 'gitnexus-shared';
+import type { SymbolDefinition } from 'avmatrix-shared';
 import type { SymbolTableReader, HeritageMap, ExtractedHeritage } from './model/index.js';
 import { CLASS_TYPES, CALL_TARGET_TYPES, lookupMethodByOwnerWithMRO } from './model/index.js';
 import type { DispatchDecision, ReceiverEnriched } from './call-types.js';
@@ -36,7 +36,7 @@ import type { TieredCandidates } from './model/resolution-context.js';
 import { isLanguageAvailable, loadParser, loadLanguage } from '../tree-sitter/parser-loader.js';
 import { getProvider } from './languages/index.js';
 import { generateId } from '../../lib/utils.js';
-import { getLanguageFromFilename, SupportedLanguages } from 'gitnexus-shared';
+import { getLanguageFromFilename, SupportedLanguages } from 'avmatrix-shared';
 import { isVerboseIngestionEnabled } from './utils/verbose.js';
 import { yieldToEventLoop } from './utils/event-loop.js';
 import {

@@ -22,7 +22,7 @@ vi.mock('../../src/core/tree-sitter/parser-loader.js', () => ({
   ),
 }));
 
-vi.mock('gitnexus-shared', () => ({
+vi.mock('avmatrix-shared', () => ({
   getLanguageFromFilename,
 }));
 

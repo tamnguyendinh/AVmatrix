@@ -1,4 +1,4 @@
-import type { GraphNode, GraphRelationship } from 'gitnexus-shared';
+import type { GraphNode, GraphRelationship } from 'avmatrix-shared';
 import { KnowledgeGraph } from './types.js';
 
 export const createKnowledgeGraph = (): KnowledgeGraph => {

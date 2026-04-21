@@ -8,7 +8,7 @@ import {
   useMemo,
   ReactNode,
 } from 'react';
-import type { GraphNode, NodeLabel, PipelineProgress } from 'gitnexus-shared';
+import type { GraphNode, NodeLabel, PipelineProgress } from 'avmatrix-shared';
 import type { KnowledgeGraph } from '../core/graph/types';
 import { createKnowledgeGraph } from '../core/graph/graph';
 import { type EdgeType } from '../lib/constants';

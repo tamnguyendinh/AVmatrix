@@ -18,7 +18,7 @@ import {
 } from '../src/core/lbug/schema.js';
 
 export default async function setup({ provide }: GlobalSetupContext) {
-  const tmpHandle = await createTempDir('gitnexus-shared-');
+  const tmpHandle = await createTempDir('avmatrix-shared-');
   const dbPath = path.join(tmpHandle.dbPath, 'lbug');
 
   // Create DB with full schema

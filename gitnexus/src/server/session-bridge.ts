@@ -1,5 +1,5 @@
 import type express from 'express';
-import type { SessionChatRequest, SessionRepoBinding, SessionStreamEvent } from 'gitnexus-shared';
+import type { SessionChatRequest, SessionRepoBinding, SessionStreamEvent } from 'avmatrix-shared';
 import { RuntimeController } from '../runtime/runtime-controller.js';
 import { SessionRuntimeError } from '../runtime/session-adapter.js';
 

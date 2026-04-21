@@ -37,7 +37,7 @@ import {
   getLanguageFromFilename,
   type SupportedLanguages,
   type WorkspaceIndex,
-} from 'gitnexus-shared';
+} from 'avmatrix-shared';
 import type { ImportResolverFn, ImportResult, ResolveCtx } from './import-resolvers/types.js';
 import type { LanguageProvider } from './language-provider.js';
 

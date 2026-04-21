@@ -16,7 +16,7 @@ import type {
   ImportResolverStrategy,
   ResolveCtx,
 } from '../../src/core/ingestion/import-resolvers/types.js';
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import { buildSuffixIndex } from '../../src/core/ingestion/import-resolvers/utils.js';
 
 // ── Per-language strategy imports (from config files) ──────────────────

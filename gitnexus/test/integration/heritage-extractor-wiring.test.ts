@@ -13,7 +13,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import Parser from 'tree-sitter';
 import { loadParser, loadLanguage } from '../../src/core/tree-sitter/parser-loader.js';
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import { getProvider } from '../../src/core/ingestion/languages/index.js';
 import type { CaptureMap } from '../../src/core/ingestion/language-provider.js';
 import { rubyHeritageConfig } from '../../src/core/ingestion/heritage-extractors/configs/ruby.js';

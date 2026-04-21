@@ -11,7 +11,7 @@
  * checker here is used as fallback for non-setup <script> blocks.
  */
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import { createClassExtractor } from '../class-extractors/generic.js';
 import { vueClassConfig } from '../class-extractors/configs/typescript-javascript.js';
 import { defineLanguage } from '../language-provider.js';

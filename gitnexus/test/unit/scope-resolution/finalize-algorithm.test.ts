@@ -16,7 +16,7 @@ import {
   type BindingRef,
   type SymbolDefinition,
   type ScopeId,
-} from 'gitnexus-shared';
+} from 'avmatrix-shared';
 
 // ─── Test helpers ───────────────────────────────────────────────────────────
 

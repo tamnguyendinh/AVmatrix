@@ -5,7 +5,7 @@ import {
   genericFuncName,
 } from './utils/ast-helpers.js';
 import { CALL_EXPRESSION_TYPES } from './utils/call-analysis.js';
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import { TYPED_PARAMETER_TYPES } from './type-extractors/shared.js';
 import { getProvider } from './languages/index.js';
 import type { BindingAccumulator, BindingEntry } from './binding-accumulator.js';
@@ -22,7 +22,7 @@ import {
   extractReturnTypeName,
 } from './type-extractors/shared.js';
 import type { SemanticModel } from './model/index.js';
-import type { NodeLabel } from 'gitnexus-shared';
+import type { NodeLabel } from 'avmatrix-shared';
 
 /**
  * Per-file scoped type environment: maps (scope, variableName) → typeName.

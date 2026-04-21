@@ -15,7 +15,7 @@
  */
 
 import type { KnowledgeGraph } from '../../graph/types.js';
-import type { PipelineProgress } from 'gitnexus-shared';
+import type { PipelineProgress } from 'avmatrix-shared';
 import type { PipelineOptions } from '../pipeline.js';
 
 // ── Shared context ─────────────────────────────────────────────────────────

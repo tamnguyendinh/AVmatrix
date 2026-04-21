@@ -1,5 +1,5 @@
 import type Parser from 'tree-sitter';
-import type { NodeLabel } from 'gitnexus-shared';
+import type { NodeLabel } from 'avmatrix-shared';
 import type { LanguageProvider } from '../language-provider.js';
 import { generateId } from '../../../lib/utils.js';
 

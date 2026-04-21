@@ -3,7 +3,7 @@
  * Rust module strategy (grouped imports, crate/super/self paths), then standard fallback.
  */
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import type { ImportResolutionConfig, ImportResolverStrategy } from '../types.js';
 import { createStandardStrategy } from '../standard.js';
 import { resolveRustImportInternal } from '../rust.js';

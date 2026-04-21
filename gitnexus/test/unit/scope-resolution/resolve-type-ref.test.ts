@@ -20,7 +20,7 @@ import {
   type ScopeId,
   type SymbolDefinition,
   type TypeRef,
-} from 'gitnexus-shared';
+} from 'avmatrix-shared';
 
 // ─── Test helpers ───────────────────────────────────────────────────────────
 

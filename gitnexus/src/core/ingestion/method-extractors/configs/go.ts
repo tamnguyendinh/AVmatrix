@@ -1,7 +1,7 @@
 // gitnexus/src/core/ingestion/method-extractors/configs/go.ts
 // Verified against tree-sitter-go 0.23.4
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import type {
   MethodExtractionConfig,
   ParameterInfo,

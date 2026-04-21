@@ -3,7 +3,7 @@ import type {
   SessionRepoBinding,
   SessionStatusResponse,
   SessionStreamEvent,
-} from 'gitnexus-shared';
+} from 'avmatrix-shared';
 import { getBackendUrl } from '../../services/backend-client';
 import type { AgentStreamChunk } from './types';
 

@@ -3,7 +3,7 @@
  * PSR-4 strategy via composer.json — no standard fallback (PSR-4 includes its own suffix matching).
  */
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import type { ImportResolutionConfig, ImportResolverStrategy } from '../types.js';
 import { resolvePhpImportInternal } from '../php.js';
 

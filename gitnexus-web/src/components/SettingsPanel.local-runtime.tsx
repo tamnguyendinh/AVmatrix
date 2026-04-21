@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { X, Server, Brain, Check, AlertCircle, RefreshCw, Loader2 } from '@/lib/lucide-icons';
-import type { SessionStatusResponse } from 'gitnexus-shared';
+import type { SessionStatusResponse } from 'avmatrix-shared';
 import {
   fetchSessionStatus,
   SessionClientError,

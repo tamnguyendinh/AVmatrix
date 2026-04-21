@@ -3,7 +3,7 @@
 
 Last reviewed: 2026-04-16
 
-**Project:** GitNexus · **Environment:** dev · **Maintainer:** repository maintainers (see GitHub)
+**Project:** AVmatrix · **Environment:** dev · **Maintainer:** repository maintainers (see GitHub)
 
 ## Scope
 
@@ -17,7 +17,7 @@ Last reviewed: 2026-04-16
 ## Model Configuration
 
 - **Primary:** Use a named model (e.g. Claude Sonnet 4.x). Avoid `Auto` or unversioned `latest` when reproducibility matters.
-- **Notes:** The GitNexus CLI indexer does not call an LLM.
+- **Notes:** The AVmatrix CLI indexer does not call an LLM.
 
 ## Execution Sequence (complex tasks)
 
@@ -41,63 +41,63 @@ Commands and gotchas live under **Repo reference** below and in **[CONTRIBUTING.
 - **[ARCHITECTURE.md](ARCHITECTURE.md)**, **[CONTRIBUTING.md](CONTRIBUTING.md)**, **[GUARDRAILS.md](GUARDRAILS.md)**
 - **Call-resolution DAG:** See ARCHITECTURE.md § Call-Resolution DAG. Typed 6-stage DAG inside the `parse` phase; language-specific behavior behind `inferImplicitReceiver` / `selectDispatch` hooks on `LanguageProvider`. Shared code in `gitnexus/src/core/ingestion/` must not name languages. Types: `gitnexus/src/core/ingestion/call-types.ts`.
 - **Cursor:** `.cursor/index.mdc` (always-on); `.cursor/rules/*.mdc` (glob-scoped). Legacy `.cursorrules` deprecated.
-- **GitNexus:** skills in `.claude/skills/gitnexus/`; MCP rules in `gitnexus:start` block below.
+- **AVmatrix:** skills in `.claude/skills/avmatrix/`; MCP rules in `avmatrix:start` block below.
 
 ## Changelog
 
 | Date | Version | Change |
 |------|---------|--------|
-| 2026-04-16 | 1.4.0 | Fixed: web UI description, pre-commit behavior, MCP tools (7->16), added gitnexus-shared, removed stale vite-plugin-wasm gotcha. |
-| 2026-04-13 | 1.3.0 | Updated GitNexus index stats after DAG refactor. |
-| 2026-03-24 | 1.2.0 | Fixed gitnexus:start block duplication. |
+| 2026-04-16 | 1.4.0 | Fixed: web UI description, pre-commit behavior, MCP tools (7->16), added avmatrix-shared, removed stale vite-plugin-wasm gotcha. |
+| 2026-04-13 | 1.3.0 | Updated AVmatrix index stats after DAG refactor. |
+| 2026-03-24 | 1.2.0 | Fixed avmatrix:start block duplication. |
 | 2026-03-23 | 1.1.0 | Updated agent instructions, references, Cursor layout. |
 | 2026-03-22 | 1.0.0 | Initial structured header and changelog. |
 
 ---
 
-<!-- gitnexus:start -->
-# GitNexus — Code Intelligence
+<!-- avmatrix:start -->
+# AVmatrix — Code Intelligence
 
-This project is indexed by GitNexus as **GitNexus-main** (17899 symbols, 23379 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by AVmatrix as **AVmatrix-main** (17899 symbols, 23379 relationships, 300 execution flows). Use the AVmatrix MCP tools to understand code, assess impact, and navigate safely.
 
-> If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
+> If any AVmatrix tool warns the index is stale, run `avmatrix analyze` in terminal first.
 
 ## Always Do
 
-- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `gitnexus_impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
-- **MUST run `gitnexus_detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows.
+- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
+- **MUST run `detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows.
 - **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
-- When exploring unfamiliar code, use `gitnexus_query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
-- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `gitnexus_context({name: "symbolName"})`.
+- When exploring unfamiliar code, use `query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
+- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `context({name: "symbolName"})`.
 
 ## Never Do
 
-- NEVER edit a function, class, or method without first running `gitnexus_impact` on it.
+- NEVER edit a function, class, or method without first running `impact` on it.
 - NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
-- NEVER rename symbols with find-and-replace — use `gitnexus_rename` which understands the call graph.
-- NEVER commit changes without running `gitnexus_detect_changes()` to check affected scope.
+- NEVER rename symbols with find-and-replace — use `rename` which understands the call graph.
+- NEVER commit changes without running `detect_changes()` to check affected scope.
 
 ## Resources
 
 | Resource | Use for |
 |----------|---------|
-| `gitnexus://repo/GitNexus-main/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/GitNexus-main/clusters` | All functional areas |
-| `gitnexus://repo/GitNexus-main/processes` | All execution flows |
-| `gitnexus://repo/GitNexus-main/process/{name}` | Step-by-step execution trace |
+| `avmatrix://repo/AVmatrix-main/context` | Codebase overview, check index freshness |
+| `avmatrix://repo/AVmatrix-main/clusters` | All functional areas |
+| `avmatrix://repo/AVmatrix-main/processes` | All execution flows |
+| `avmatrix://repo/AVmatrix-main/process/{name}` | Step-by-step execution trace |
 
 ## CLI
 
 | Task | Read this skill file |
 |------|---------------------|
-| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
-| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
-| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
-| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
-| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
-| Index, status, clean, and wiki capability CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+| Understand architecture / "How does X work?" | `.claude/skills/avmatrix/avmatrix-exploring/SKILL.md` |
+| Blast radius / "What breaks if I change X?" | `.claude/skills/avmatrix/avmatrix-impact-analysis/SKILL.md` |
+| Trace bugs / "Why is X failing?" | `.claude/skills/avmatrix/avmatrix-debugging/SKILL.md` |
+| Rename / extract / split / refactor | `.claude/skills/avmatrix/avmatrix-refactoring/SKILL.md` |
+| Tools, resources, schema reference | `.claude/skills/avmatrix/avmatrix-guide/SKILL.md` |
+| Index, status, clean, and wiki capability CLI commands | `.claude/skills/avmatrix/avmatrix-cli/SKILL.md` |
 
-<!-- gitnexus:end -->
+<!-- avmatrix:end -->
 
 ## Repo reference
 
@@ -108,8 +108,8 @@ This project is indexed by GitNexus as **GitNexus-main** (17899 symbols, 23379 r
 | **CLI/Core** | `gitnexus/` | TypeScript CLI, indexing pipeline, MCP server. Published to npm. |
 | **Web UI** | `gitnexus-web/` | React/Vite thin client. All queries via `gitnexus serve` HTTP API. |
 | **Shared** | `gitnexus-shared/` | Shared TypeScript types and constants. |
-| Claude Plugin | `gitnexus-claude-plugin/` | Static config for Claude marketplace. |
-| Cursor Integration | `gitnexus-cursor-integration/` | Static config for Cursor editor. |
+| Claude Plugin | `avmatrix-claude-plugin/` | Static config for Claude marketplace. |
+| Cursor Integration | `avmatrix-cursor-integration/` | Static config for Cursor editor. |
 | Eval | `eval/` | Python evaluation harness (Docker + LLM API keys). |
 
 ### Running services

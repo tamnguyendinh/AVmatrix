@@ -2,11 +2,11 @@
  * CLI-specific graph types.
  *
  * Shared types (NodeLabel, GraphNode, etc.) should be imported
- * directly from 'gitnexus-shared' at call sites.
+ * directly from 'avmatrix-shared' at call sites.
  *
  * This file only defines the CLI's KnowledgeGraph with mutation methods.
  */
-import type { GraphNode, GraphRelationship } from 'gitnexus-shared';
+import type { GraphNode, GraphRelationship } from 'avmatrix-shared';
 
 // CLI-specific: full KnowledgeGraph with mutation methods for incremental updates
 export interface KnowledgeGraph {

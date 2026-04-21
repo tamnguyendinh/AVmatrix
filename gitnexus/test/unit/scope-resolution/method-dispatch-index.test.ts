@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { buildMethodDispatchIndex, type MethodDispatchInput, type DefId } from 'gitnexus-shared';
+import { buildMethodDispatchIndex, type MethodDispatchInput, type DefId } from 'avmatrix-shared';
 
 // ─── Test helpers ───────────────────────────────────────────────────────────
 

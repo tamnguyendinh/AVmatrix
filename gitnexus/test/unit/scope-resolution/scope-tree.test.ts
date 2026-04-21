@@ -22,7 +22,7 @@ import {
   type ScopeId,
   type ScopeKind,
   type SymbolDefinition,
-} from 'gitnexus-shared';
+} from 'avmatrix-shared';
 
 // ─── Test helpers ───────────────────────────────────────────────────────────
 

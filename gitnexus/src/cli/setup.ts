@@ -187,7 +187,7 @@ async function installClaudeCodeHooks(result: SetupResult): Promise<void> {
   try {
     await fs.mkdir(destHooksDir, { recursive: true });
 
-    const src = path.join(pluginHooksPath, 'gitnexus-hook.cjs');
+    const src = path.join(pluginHooksPath, 'avmatrix-hook.cjs');
     const dest = path.join(destHooksDir, 'avmatrix-hook.cjs');
     try {
       let content = await fs.readFile(src, 'utf-8');
@@ -229,7 +229,7 @@ async function installClaudeCodeHooks(result: SetupResult): Promise<void> {
       existing.hooks[eventName] = existing.hooks[eventName].filter(
         (h: HookEntry) =>
           !h.hooks?.some((hh) =>
-            hh.command?.includes('gitnexus-hook') || hh.command?.includes('avmatrix-hook'),
+            hh.command?.includes('avmatrix-hook'),
           ),
       );
       const hasHook = existing.hooks[eventName].some((h: HookEntry) =>

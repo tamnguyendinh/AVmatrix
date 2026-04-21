@@ -74,8 +74,8 @@ import type {
   ScopeKind,
   SymbolDefinition,
   TypeRef,
-} from 'gitnexus-shared';
-import { buildPositionIndex, buildScopeTree, makeScopeId } from 'gitnexus-shared';
+} from 'avmatrix-shared';
+import { buildPositionIndex, buildScopeTree, makeScopeId } from 'avmatrix-shared';
 import type { LanguageProvider } from './language-provider.js';
 
 // ─── Narrow hook surface the extractor actually uses ───────────────────────

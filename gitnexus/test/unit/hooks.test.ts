@@ -1,12 +1,12 @@
 /**
  * Regression Tests: Claude Code Hooks
  *
- * Tests the hook scripts (gitnexus-hook.cjs and gitnexus-hook.js) that run
+ * Tests the hook scripts (avmatrix-hook.cjs and avmatrix-hook.js) that run
  * as PreToolUse and PostToolUse hooks in Claude Code.
  *
  * Covers:
  * - extractPattern: pattern extraction from Grep/Glob/Bash tool inputs
- * - findGitNexusDir: .gitnexus directory discovery
+ * - findAVmatrixDir: .avmatrix directory discovery
  * - handlePostToolUse: staleness detection after git mutations
  * - cwd validation: rejects relative paths (defense-in-depth)
  * - shell injection: verifies no shell: true in spawnSync calls
@@ -25,26 +25,26 @@ import { runHook, parseHookOutput } from '../utils/hook-test-helpers.js';
 
 // ─── Paths to both hook variants ────────────────────────────────────
 
-const CJS_HOOK = path.resolve(__dirname, '..', '..', 'hooks', 'claude', 'gitnexus-hook.cjs');
+const CJS_HOOK = path.resolve(__dirname, '..', '..', 'hooks', 'claude', 'avmatrix-hook.cjs');
 const PLUGIN_HOOK = path.resolve(
   __dirname,
   '..',
   '..',
   '..',
-  'gitnexus-claude-plugin',
+  'avmatrix-claude-plugin',
   'hooks',
-  'gitnexus-hook.js',
+  'avmatrix-hook.js',
 );
 
-// ─── Test fixtures: temporary .gitnexus directory ───────────────────
+// ─── Test fixtures: temporary .avmatrix directory ───────────────────
 
 let tmpDir: string;
-let gitNexusDir: string;
+let avmatrixDir: string;
 
 beforeAll(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gitnexus-hook-test-'));
-  gitNexusDir = path.join(tmpDir, '.gitnexus');
-  fs.mkdirSync(gitNexusDir, { recursive: true });
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'avmatrix-hook-test-'));
+  avmatrixDir = path.join(tmpDir, '.avmatrix');
+  fs.mkdirSync(avmatrixDir, { recursive: true });
 
   // Initialize a bare git repo so git rev-parse HEAD works
   spawnSync('git', ['init'], { cwd: tmpDir, stdio: 'pipe' });
@@ -120,9 +120,9 @@ describe('Windows .cmd extension handling', () => {
     });
   }
 
-  it('Plugin hook uses .cmd extension for Windows gitnexus binary', () => {
+  it('Plugin hook uses .cmd extension for Windows avmatrix binary', () => {
     const source = fs.readFileSync(PLUGIN_HOOK, 'utf-8');
-    expect(source).toContain('gitnexus.cmd');
+    expect(source).toContain('avmatrix.cmd');
   });
 });
 
@@ -275,7 +275,7 @@ describe('PostToolUse staleness detection (integration)', () => {
     it(`${label}: emits stale notification when HEAD differs from meta`, () => {
       // Write meta.json with a different commit
       fs.writeFileSync(
-        path.join(gitNexusDir, 'meta.json'),
+        path.join(avmatrixDir, 'meta.json'),
         JSON.stringify({ lastCommit: 'aaaaaaa0000000000000000000000000deadbeef', stats: {} }),
       );
 
@@ -297,7 +297,7 @@ describe('PostToolUse staleness detection (integration)', () => {
     it(`${label}: silent when HEAD matches meta lastCommit`, () => {
       const head = getHeadCommit();
       fs.writeFileSync(
-        path.join(gitNexusDir, 'meta.json'),
+        path.join(avmatrixDir, 'meta.json'),
         JSON.stringify({ lastCommit: head, stats: {} }),
       );
 
@@ -346,7 +346,7 @@ describe('PostToolUse staleness detection (integration)', () => {
 
     it(`${label}: includes --embeddings in suggestion when meta had embeddings`, () => {
       fs.writeFileSync(
-        path.join(gitNexusDir, 'meta.json'),
+        path.join(avmatrixDir, 'meta.json'),
         JSON.stringify({ lastCommit: 'deadbeef', stats: { embeddings: 42 } }),
       );
 
@@ -365,7 +365,7 @@ describe('PostToolUse staleness detection (integration)', () => {
 
     it(`${label}: omits --embeddings when meta had no embeddings`, () => {
       fs.writeFileSync(
-        path.join(gitNexusDir, 'meta.json'),
+        path.join(avmatrixDir, 'meta.json'),
         JSON.stringify({ lastCommit: 'deadbeef', stats: { embeddings: 0 } }),
       );
 
@@ -384,7 +384,7 @@ describe('PostToolUse staleness detection (integration)', () => {
 
     it(`${label}: detects git rebase as a mutation`, () => {
       fs.writeFileSync(
-        path.join(gitNexusDir, 'meta.json'),
+        path.join(avmatrixDir, 'meta.json'),
         JSON.stringify({ lastCommit: 'oldcommit', stats: {} }),
       );
 
@@ -403,7 +403,7 @@ describe('PostToolUse staleness detection (integration)', () => {
 
     it(`${label}: detects git cherry-pick as a mutation`, () => {
       fs.writeFileSync(
-        path.join(gitNexusDir, 'meta.json'),
+        path.join(avmatrixDir, 'meta.json'),
         JSON.stringify({ lastCommit: 'oldcommit', stats: {} }),
       );
 
@@ -421,7 +421,7 @@ describe('PostToolUse staleness detection (integration)', () => {
 
     it(`${label}: detects git pull as a mutation`, () => {
       fs.writeFileSync(
-        path.join(gitNexusDir, 'meta.json'),
+        path.join(avmatrixDir, 'meta.json'),
         JSON.stringify({ lastCommit: 'oldcommit', stats: {} }),
       );
 
@@ -537,7 +537,7 @@ describe('PostToolUse with missing/corrupt meta.json', () => {
     ['Plugin', PLUGIN_HOOK],
   ] as const) {
     it(`${label}: emits stale when meta.json does not exist`, () => {
-      const metaPath = path.join(gitNexusDir, 'meta.json');
+      const metaPath = path.join(avmatrixDir, 'meta.json');
       const hadMeta = fs.existsSync(metaPath);
       if (hadMeta) fs.unlinkSync(metaPath);
 
@@ -560,7 +560,7 @@ describe('PostToolUse with missing/corrupt meta.json', () => {
     });
 
     it(`${label}: emits stale when meta.json is corrupt`, () => {
-      const metaPath = path.join(gitNexusDir, 'meta.json');
+      const metaPath = path.join(avmatrixDir, 'meta.json');
       fs.writeFileSync(metaPath, 'not valid json!!!');
 
       const result = runHook(hookPath, {

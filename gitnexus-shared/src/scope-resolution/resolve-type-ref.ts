@@ -75,7 +75,7 @@ const STRICT_ORIGINS: ReadonlySet<BindingRef['origin']> = new Set<BindingRef['or
  * *shadowing* binding, which the algorithm short-circuits to `null`.
  *
  * `'Type'` (the generic `NodeLabel` value) is also excluded — verified
- * against `gitnexus/src/core/ingestion/` at the time of writing, no
+ * against `avmatrix/src/core/ingestion/` at the time of writing, no
  * production extractor emits `type: 'Type'` for annotation-relevant
  * symbols. Should a future extractor start emitting it, add `'Type'`
  * here and add a test asserting the new path.

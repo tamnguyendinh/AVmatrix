@@ -4,7 +4,7 @@
  * used by both chunker.ts and structural-extractor.ts.
  */
 
-import { getLanguageFromFilename } from 'gitnexus-shared';
+import { getLanguageFromFilename } from 'avmatrix-shared';
 import {
   createParserForLanguage,
   isLanguageAvailable,

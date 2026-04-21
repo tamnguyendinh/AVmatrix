@@ -17,7 +17,7 @@
  *
  * Dependency direction (strictly enforced):
  *
- *     gitnexus-shared (NodeLabel)       — leaf type
+ *     avmatrix-shared (NodeLabel)       — leaf type
  *          ↑
  *     symbol-table.ts                   — THIS FILE (pure storage)
  *          ↑
@@ -34,7 +34,7 @@
  * logic up the dependency chain instead.
  */
 
-import type { NodeLabel, SymbolDefinition } from 'gitnexus-shared';
+import type { NodeLabel, SymbolDefinition } from 'avmatrix-shared';
 
 /**
  * Class-like NodeLabels — used for qualifiedName fallback inside
@@ -113,10 +113,10 @@ export const CALL_TARGET_TYPES: ReadonlySet<NodeLabel> = new Set<NodeLabel>([
   'Constructor',
 ]);
 
-// `SymbolDefinition` moved to `gitnexus-shared` as part of RFC #909 Ring 1
-// (see #910). It is imported at the top of this file from `gitnexus-shared`
+// `SymbolDefinition` moved to `avmatrix-shared` as part of RFC #909 Ring 1
+// (see #910). It is imported at the top of this file from `avmatrix-shared`
 // and re-used unchanged throughout. Consumers should import
-// `SymbolDefinition` directly from `gitnexus-shared`, not via this file.
+// `SymbolDefinition` directly from `avmatrix-shared`, not via this file.
 
 /**
  * Optional metadata accepted by {@link SymbolTable.add}. Kept as a separate

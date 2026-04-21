@@ -11,7 +11,7 @@ import Rust from 'tree-sitter-rust';
 import PHP from 'tree-sitter-php';
 import Ruby from 'tree-sitter-ruby';
 import { createRequire } from 'node:module';
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 
 // tree-sitter-swift and tree-sitter-dart are optionalDependencies — may not be installed
 const _require = createRequire(import.meta.url);

@@ -1,6 +1,6 @@
 // gitnexus/src/core/ingestion/variable-extractors/configs/typescript-javascript.ts
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import type { VariableExtractionConfig } from '../../variable-types.js';
 import type { VariableVisibility } from '../../variable-types.js';
 import { hasKeyword, typeFromAnnotation } from '../../field-extractors/configs/helpers.js';

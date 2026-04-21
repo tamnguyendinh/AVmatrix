@@ -10,8 +10,8 @@
  *   - namedBindingExtractor: present (use X::{a, b} extracts named bindings)
  */
 
-import { SupportedLanguages } from 'gitnexus-shared';
-import type { NodeLabel } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
+import type { NodeLabel } from 'avmatrix-shared';
 import { createClassExtractor } from '../class-extractors/generic.js';
 import { rustClassConfig } from '../class-extractors/configs/rust.js';
 import { defineLanguage } from '../language-provider.js';

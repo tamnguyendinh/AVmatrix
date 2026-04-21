@@ -16,7 +16,7 @@ import type {
   ReferenceKind,
   Scope,
   ScopeKind,
-} from 'gitnexus-shared';
+} from 'avmatrix-shared';
 import { extract, type ScopeExtractorHooks } from '../../../src/core/ingestion/scope-extractor.js';
 
 // ─── Synthetic-capture helpers ──────────────────────────────────────────────

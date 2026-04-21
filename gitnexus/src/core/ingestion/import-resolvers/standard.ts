@@ -7,7 +7,7 @@
 import type { SuffixIndex } from './utils.js';
 import { tryResolveWithExtensions, suffixResolve } from './utils.js';
 import { resolveRustImportInternal } from './rust.js';
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import type { ImportResult, ImportResolverStrategy, ResolveCtx } from './types.js';
 import type { TsconfigPaths } from '../language-config.js';
 

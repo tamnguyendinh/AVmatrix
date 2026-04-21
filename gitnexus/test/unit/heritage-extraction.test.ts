@@ -7,7 +7,7 @@ import type {
   HeritageExtractorContext,
 } from '../../src/core/ingestion/heritage-types.js';
 import type { CaptureMap } from '../../src/core/ingestion/language-provider.js';
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import { getProvider } from '../../src/core/ingestion/languages/index.js';
 
 // ---------------------------------------------------------------------------

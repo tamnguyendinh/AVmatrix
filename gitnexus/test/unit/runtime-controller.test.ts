@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { SessionStatus } from 'gitnexus-shared';
+import type { SessionStatus } from 'avmatrix-shared';
 import { RuntimeController } from '../../src/runtime/runtime-controller.js';
 import type { SessionAdapter, SessionChatContext } from '../../src/runtime/session-adapter.js';
 import { SessionRuntimeError } from '../../src/runtime/session-adapter.js';

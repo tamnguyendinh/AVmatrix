@@ -22,7 +22,7 @@ import {
   type Scope,
   type ScopeId,
   type SymbolDefinition,
-} from 'gitnexus-shared';
+} from 'avmatrix-shared';
 import { createKnowledgeGraph } from '../../../src/core/graph/graph.js';
 import {
   emitReferencesToGraph,

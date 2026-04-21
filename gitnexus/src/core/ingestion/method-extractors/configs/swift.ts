@@ -1,7 +1,7 @@
 // gitnexus/src/core/ingestion/method-extractors/configs/swift.ts
 // Verified against tree-sitter-swift 0.6.0
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import type {
   MethodExtractionConfig,
   ParameterInfo,

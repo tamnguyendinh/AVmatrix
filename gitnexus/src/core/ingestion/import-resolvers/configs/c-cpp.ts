@@ -3,7 +3,7 @@
  * Both use standard resolution for #include directives.
  */
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import type { ImportResolutionConfig } from '../types.js';
 import { createStandardStrategy } from '../standard.js';
 

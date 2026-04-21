@@ -2,7 +2,7 @@ import express from 'express';
 import type { Server } from 'http';
 import type { AddressInfo } from 'net';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { SessionStatusResponse } from 'gitnexus-shared';
+import type { SessionStatusResponse } from 'avmatrix-shared';
 import { SessionJob, SessionRuntimeError } from '../../src/runtime/session-adapter.js';
 import { mountSessionBridge } from '../../src/server/session-bridge.js';
 

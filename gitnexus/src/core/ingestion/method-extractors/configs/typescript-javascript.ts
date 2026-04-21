@@ -1,7 +1,7 @@
 // gitnexus/src/core/ingestion/method-extractors/configs/typescript-javascript.ts
 // Verified against tree-sitter-typescript ^0.23.2, tree-sitter-javascript ^0.23.0
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import type {
   MethodExtractionConfig,
   ParameterInfo,

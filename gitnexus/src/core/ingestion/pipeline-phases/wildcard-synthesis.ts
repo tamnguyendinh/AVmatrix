@@ -15,8 +15,8 @@
 
 import type { KnowledgeGraph } from '../../graph/types.js';
 import type { createResolutionContext } from '../model/resolution-context.js';
-import { getLanguageFromFilename } from 'gitnexus-shared';
-import type { SupportedLanguages } from 'gitnexus-shared';
+import { getLanguageFromFilename } from 'avmatrix-shared';
+import type { SupportedLanguages } from 'avmatrix-shared';
 import { providers, getProviderForFile } from '../languages/index.js';
 import type { LanguageProvider, ImportSemantics } from '../language-provider.js';
 

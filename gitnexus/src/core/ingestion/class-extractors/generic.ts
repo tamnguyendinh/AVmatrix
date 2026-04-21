@@ -1,5 +1,5 @@
 import type { SyntaxNode } from '../utils/ast-helpers.js';
-import type { NodeLabel } from 'gitnexus-shared';
+import type { NodeLabel } from 'avmatrix-shared';
 import type {
   ClassExtractionConfig,
   ClassExtractor,

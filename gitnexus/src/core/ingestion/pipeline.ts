@@ -16,7 +16,7 @@
  */
 
 import { createKnowledgeGraph } from '../graph/graph.js';
-import { type PipelineProgress } from 'gitnexus-shared';
+import { type PipelineProgress } from 'avmatrix-shared';
 import { PipelineResult } from '../../types/pipeline.js';
 import {
   runPipeline,

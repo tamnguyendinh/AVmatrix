@@ -52,7 +52,7 @@ import type {
   ReferenceSite,
   ScopeId,
   ScopeTree,
-} from 'gitnexus-shared';
+} from 'avmatrix-shared';
 
 export interface ScopeResolutionIndexes {
   readonly scopeTree: ScopeTree;

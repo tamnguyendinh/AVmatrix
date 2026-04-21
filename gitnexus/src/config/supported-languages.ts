@@ -1,5 +1,5 @@
 /**
- * Re-export SupportedLanguages from gitnexus-shared (single source of truth).
+ * Re-export SupportedLanguages from avmatrix-shared (single source of truth).
  *
  * HOW TO ADD A NEW LANGUAGE:
  *
@@ -10,4 +10,4 @@
  * 5. Add file extension mapping in utils.ts getLanguageFromFilename()
  * 6. Run full test suite
  */
-export { SupportedLanguages } from 'gitnexus-shared';
+export { SupportedLanguages } from 'avmatrix-shared';

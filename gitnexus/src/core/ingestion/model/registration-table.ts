@@ -49,7 +49,7 @@
  * `NodeLabel` is missing from all three sets.
  */
 
-import type { NodeLabel, SymbolDefinition } from 'gitnexus-shared';
+import type { NodeLabel, SymbolDefinition } from 'avmatrix-shared';
 import type { ClassLikeLabel, FreeCallableLabel } from './symbol-table.js';
 import { FREE_CALLABLE_TYPES } from './symbol-table.js';
 import type { MutableTypeRegistry } from './type-registry.js';
@@ -128,7 +128,7 @@ export type LabelBehavior = 'dispatch' | 'callable-only' | 'inert';
  *   - **Valid values** — `LabelBehavior` is a narrow union, so a typo in
  *     the category name fails to compile.
  *
- * Adding a new NodeLabel to `gitnexus-shared`: TypeScript will flag this
+ * Adding a new NodeLabel to `avmatrix-shared`: TypeScript will flag this
  * file as incomplete. Add the new label with its behavior category and
  * the three `*_LABELS` Sets + `ALL_NODE_LABELS` array below are derived
  * automatically — no separate list to update, no runtime drift detection

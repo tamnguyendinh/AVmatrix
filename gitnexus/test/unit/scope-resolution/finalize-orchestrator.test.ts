@@ -17,7 +17,7 @@ import type {
   Scope,
   ScopeId,
   SymbolDefinition,
-} from 'gitnexus-shared';
+} from 'avmatrix-shared';
 import { finalizeScopeModel } from '../../../src/core/ingestion/finalize-orchestrator.js';
 import { createSemanticModel } from '../../../src/core/ingestion/model/semantic-model.js';
 import type { ScopeResolutionIndexes } from '../../../src/core/ingestion/model/scope-resolution-indexes.js';

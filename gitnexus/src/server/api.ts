@@ -23,7 +23,7 @@ import {
   withLbugDb,
 } from '../core/lbug/lbug-adapter.js';
 import { isWriteQuery } from '../core/lbug/pool-adapter.js';
-import { NODE_TABLES, type GraphNode, type GraphRelationship } from 'gitnexus-shared';
+import { NODE_TABLES, type GraphNode, type GraphRelationship } from 'avmatrix-shared';
 import { searchFTSFromLbug } from '../core/search/bm25-index.js';
 import { hybridSearch } from '../core/search/hybrid-search.js';
 // Embedding imports are lazy (dynamic import) to avoid loading onnxruntime-node

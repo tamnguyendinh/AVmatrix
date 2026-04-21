@@ -3,7 +3,7 @@
  * Package.swift target map strategy — no standard fallback (unresolved = external framework).
  */
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import type { ImportResolutionConfig, ImportResolverStrategy } from '../types.js';
 
 /** Swift Package.swift target map resolution strategy. */

@@ -12,7 +12,7 @@ import Rust from 'tree-sitter-rust';
 import PHP from 'tree-sitter-php';
 import Ruby from 'tree-sitter-ruby';
 import { createRequire } from 'node:module';
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import { getProvider } from '../languages/index.js';
 import { getTreeSitterBufferSize, TREE_SITTER_MAX_BUFFER } from '../constants.js';
 import type { SymbolTableReader } from '../model/symbol-table.js';
@@ -39,7 +39,7 @@ let Kotlin: TreeSitterLanguage | null = null;
 try {
   Kotlin = _require('tree-sitter-kotlin');
 } catch {}
-import { getLanguageFromFilename } from 'gitnexus-shared';
+import { getLanguageFromFilename } from 'avmatrix-shared';
 import {
   FUNCTION_NODE_TYPES,
   getDefinitionNodeFromCaptures,
@@ -65,7 +65,7 @@ import {
   isVueSetupTopLevel,
 } from '../vue-sfc-extractor.js';
 import type { NamedBinding } from '../named-bindings/types.js';
-import type { NodeLabel } from 'gitnexus-shared';
+import type { NodeLabel } from 'avmatrix-shared';
 import type { FieldInfo, FieldExtractorContext } from '../field-types.js';
 import type { MethodInfo, MethodExtractorContext } from '../method-types.js';
 import type { VariableExtractorContext } from '../variable-types.js';
@@ -77,7 +77,7 @@ import {
   buildCollisionGroups,
 } from '../utils/method-props.js';
 import type { LanguageProvider } from '../language-provider.js';
-import type { ParsedFile } from 'gitnexus-shared';
+import type { ParsedFile } from 'avmatrix-shared';
 import { extractParsedFile } from '../scope-extractor-bridge.js';
 
 // ============================================================================

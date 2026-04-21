@@ -11,7 +11,7 @@
  */
 
 import { detectFrameworkFromPath } from './framework-detection.js';
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 
 // ============================================================================
 // NAME PATTERNS - All 13 supported languages

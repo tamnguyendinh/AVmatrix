@@ -1,6 +1,6 @@
 // gitnexus/src/core/ingestion/variable-types.ts
 
-import type { SupportedLanguages } from 'gitnexus-shared';
+import type { SupportedLanguages } from 'avmatrix-shared';
 import type { FieldVisibility } from './field-types.js';
 import type { SyntaxNode } from './utils/ast-helpers.js';
 

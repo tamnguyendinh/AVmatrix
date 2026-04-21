@@ -36,7 +36,7 @@
  * lives in `shadow-harness.ts` (#923), not here.
  */
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 
 /**
  * Return the env-var name that controls a given language's registry-

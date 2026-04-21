@@ -1,4 +1,4 @@
-import type { NodeLabel } from 'gitnexus-shared';
+import type { NodeLabel } from 'avmatrix-shared';
 
 // Node colors by type - slightly muted for less visual noise
 export const NODE_COLORS: Record<NodeLabel, string> = {

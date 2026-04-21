@@ -1,6 +1,6 @@
 // gitnexus/src/core/ingestion/class-extractors/configs/php.ts
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import type { ClassExtractionConfig } from '../../class-types.js';
 
 export const phpClassConfig: ClassExtractionConfig = {

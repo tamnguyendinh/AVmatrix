@@ -20,7 +20,7 @@
  * Why callbacks and not a shared strategy registry: the five strategies
  * (Python C3, Ruby kind-aware, Java/Kotlin linear, Rust qualified-syntax,
  * COBOL none) already exist in the CLI package and depend on the CLI's
- * `HeritageMap` + `SemanticModel`. Pulling them into `gitnexus-shared` would
+ * `HeritageMap` + `SemanticModel`. Pulling them into `avmatrix-shared` would
  * require migrating both — out of scope for #914. Callbacks let the shared
  * build stay pure while honoring existing strategies verbatim.
  *

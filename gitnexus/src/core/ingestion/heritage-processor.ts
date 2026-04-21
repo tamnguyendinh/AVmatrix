@@ -19,7 +19,7 @@ import { ASTCache } from './ast-cache.js';
 import Parser from 'tree-sitter';
 import { isLanguageAvailable, loadParser, loadLanguage } from '../tree-sitter/parser-loader.js';
 import { generateId } from '../../lib/utils.js';
-import { getLanguageFromFilename, type NodeLabel, type SupportedLanguages } from 'gitnexus-shared';
+import { getLanguageFromFilename, type NodeLabel, type SupportedLanguages } from 'avmatrix-shared';
 import { isVerboseIngestionEnabled } from './utils/verbose.js';
 import { yieldToEventLoop } from './utils/event-loop.js';
 import { getProvider } from './languages/index.js';

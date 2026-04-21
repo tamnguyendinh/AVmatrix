@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { buildQualifiedNameIndex, type SymbolDefinition } from 'gitnexus-shared';
+import { buildQualifiedNameIndex, type SymbolDefinition } from 'avmatrix-shared';
 
 const makeDef = (overrides: Partial<SymbolDefinition> = {}): SymbolDefinition => ({
   nodeId: 'def:test',

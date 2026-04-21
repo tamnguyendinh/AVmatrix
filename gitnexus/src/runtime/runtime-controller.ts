@@ -11,7 +11,7 @@ import type {
   SessionRepoBinding,
   SessionRepoResolution,
   SessionStatusResponse,
-} from 'gitnexus-shared';
+} from 'avmatrix-shared';
 import type { SessionAdapter } from './session-adapter.js';
 import { SessionJob, SessionRuntimeError } from './session-adapter.js';
 

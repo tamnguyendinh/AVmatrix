@@ -6,7 +6,7 @@
  * and file operations go through this client.
  */
 
-import type { GraphNode, GraphRelationship } from 'gitnexus-shared';
+import type { GraphNode, GraphRelationship } from 'avmatrix-shared';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 

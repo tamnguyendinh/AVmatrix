@@ -4,7 +4,7 @@
  * Vue delegates to TypeScript's resolver.
  */
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import type { ImportResolutionConfig } from '../types.js';
 import { createStandardStrategy } from '../standard.js';
 

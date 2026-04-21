@@ -16,7 +16,7 @@ import {
 } from '../call-processor.js';
 import type { createResolutionContext } from '../model/resolution-context.js';
 import { createASTCache } from '../ast-cache.js';
-import { type PipelineProgress, getLanguageFromFilename } from 'gitnexus-shared';
+import { type PipelineProgress, getLanguageFromFilename } from 'avmatrix-shared';
 import { readFileContents } from '../filesystem-walker.js';
 import { isLanguageAvailable } from '../../tree-sitter/parser-loader.js';
 import { topologicalLevelSort } from '../utils/graph-sort.js';

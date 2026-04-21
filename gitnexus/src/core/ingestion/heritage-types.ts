@@ -12,7 +12,7 @@
  * (include/extend/prepend expressed as method calls).
  */
 
-import type { SupportedLanguages } from 'gitnexus-shared';
+import type { SupportedLanguages } from 'avmatrix-shared';
 import type { SyntaxNode } from './utils/ast-helpers.js';
 import type { CaptureMap } from './language-provider.js';
 

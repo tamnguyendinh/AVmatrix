@@ -11,7 +11,7 @@ import type {
   SessionStatus,
   SessionToolCall,
   SessionStreamEvent,
-} from 'gitnexus-shared';
+} from 'avmatrix-shared';
 import type { SessionAdapter, SessionChatContext, SessionJob } from '../session-adapter.js';
 import { SessionRuntimeError } from '../session-adapter.js';
 

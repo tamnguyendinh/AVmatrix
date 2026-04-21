@@ -18,7 +18,7 @@ vi.mock('../../src/core/tree-sitter/parser-loader.js', () => ({
   resolveLanguageKey: vi.fn((language: string) => language),
 }));
 
-vi.mock('gitnexus-shared', () => ({
+vi.mock('avmatrix-shared', () => ({
   getLanguageFromFilename: vi.fn().mockReturnValue('typescript'),
 }));
 

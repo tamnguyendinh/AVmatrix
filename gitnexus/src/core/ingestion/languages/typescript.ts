@@ -7,8 +7,8 @@
  * queries (TypeScript grammar has interface/type nodes), and language ID.
  */
 
-import { SupportedLanguages } from 'gitnexus-shared';
-import type { NodeLabel } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
+import type { NodeLabel } from 'avmatrix-shared';
 import { defineLanguage } from '../language-provider.js';
 import { createClassExtractor } from '../class-extractors/generic.js';
 import {

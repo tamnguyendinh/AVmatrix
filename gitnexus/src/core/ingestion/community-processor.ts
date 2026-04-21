@@ -16,7 +16,7 @@ import type { AbstractGraph, Attributes } from 'graphology-types';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import type { NodeLabel } from 'gitnexus-shared';
+import type { NodeLabel } from 'avmatrix-shared';
 import { KnowledgeGraph } from '../graph/types.js';
 
 const __filename = fileURLToPath(import.meta.url);

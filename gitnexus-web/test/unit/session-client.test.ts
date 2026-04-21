@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { SessionStatusResponse, SessionStreamEvent } from 'gitnexus-shared';
+import type { SessionStatusResponse, SessionStreamEvent } from 'avmatrix-shared';
 import { setBackendUrl } from '../../src/services/backend-client';
 import {
   SessionClientError,

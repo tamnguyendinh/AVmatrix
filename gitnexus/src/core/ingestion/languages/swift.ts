@@ -10,8 +10,8 @@
  *   - implicitImportWirer: all files in the same SPM target see each other
  */
 
-import { SupportedLanguages } from 'gitnexus-shared';
-import type { NodeLabel } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
+import type { NodeLabel } from 'avmatrix-shared';
 import { createClassExtractor } from '../class-extractors/generic.js';
 import { swiftClassConfig } from '../class-extractors/configs/swift.js';
 import { defineLanguage } from '../language-provider.js';

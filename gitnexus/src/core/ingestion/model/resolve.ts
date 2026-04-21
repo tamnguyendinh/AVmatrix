@@ -6,10 +6,10 @@
  * on resolution-context.ts (circular dependency risk).
  */
 
-import type { SymbolDefinition } from 'gitnexus-shared';
+import type { SymbolDefinition } from 'avmatrix-shared';
 import type { SemanticModel } from './semantic-model.js';
 import type { HeritageMap } from './heritage-map.js';
-import type { MroStrategy } from 'gitnexus-shared';
+import type { MroStrategy } from 'avmatrix-shared';
 
 // ---------------------------------------------------------------------------
 // MRO primitives.

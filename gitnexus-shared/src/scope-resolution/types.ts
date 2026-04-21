@@ -5,7 +5,7 @@
  *
  * Anti-drift rule: every type, interface, and enum defined here is the single
  * source of truth. Later code that references these names must import them
- * from `gitnexus-shared`; it must not re-define them locally.
+ * from `avmatrix-shared`; it must not re-define them locally.
  *
  * Lifecycle contract (RFC §2.8): scopes are **constructed during extraction,
  * linked during finalize, immutable after finalize**. All fields are
@@ -207,7 +207,7 @@ export type WorkspaceIndex = unknown;
 
 // `ScopeTree` is exported from `./scope-tree.js` as of Ring 2 SHARED (#912).
 // The former opaque placeholder lived here during Ring 1; removed now that
-// the concrete type exists. Consumers import from `gitnexus-shared` directly.
+// the concrete type exists. Consumers import from `avmatrix-shared` directly.
 
 /**
  * Minimal scope-lookup contract: map a `ScopeId` back to its `Scope` record.

@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { buildModuleScopeIndex, type ModuleScopeEntry, type ScopeId } from 'gitnexus-shared';
+import { buildModuleScopeIndex, type ModuleScopeEntry, type ScopeId } from 'avmatrix-shared';
 
 const entry = (filePath: string, moduleScopeId: ScopeId): ModuleScopeEntry => ({
   filePath,

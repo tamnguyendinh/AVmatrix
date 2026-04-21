@@ -13,7 +13,7 @@ import {
   type ResolutionEvidence,
   type ShadowAgreement,
   type ShadowDiff,
-} from 'gitnexus-shared';
+} from 'avmatrix-shared';
 
 // ─── Fixtures ───────────────────────────────────────────────────────────────
 

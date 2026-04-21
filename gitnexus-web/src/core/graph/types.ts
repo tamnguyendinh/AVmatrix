@@ -2,11 +2,11 @@
  * Web-specific graph types.
  *
  * Shared types (NodeLabel, GraphNode, etc.) should be imported
- * directly from 'gitnexus-shared' at call sites.
+ * directly from 'avmatrix-shared' at call sites.
  *
  * This file only defines web-specific additions.
  */
-import type { GraphNode, GraphRelationship } from 'gitnexus-shared';
+import type { GraphNode, GraphRelationship } from 'avmatrix-shared';
 
 // Web-specific: in-memory graph container (simpler than CLI version)
 export interface KnowledgeGraph {

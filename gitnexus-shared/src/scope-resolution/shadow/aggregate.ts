@@ -3,12 +3,12 @@
  * breakdown of divergences. Consumed by the parity dashboard (RING2-PKG-5).
  *
  * Pure functions; no I/O. The harness persists per-run JSON; the dashboard
- * reads `.gitnexus/shadow-parity/latest.json` and renders.
+ * reads `.avmatrix/shadow-parity/latest.json` and renders.
  *
  * Related types — `ShadowAgreement`, `ShadowCallsite`, `ShadowDiff` — are
  * defined alongside `diffResolutions` in `./diff.ts` and re-exported
- * through the top-level `gitnexus-shared` barrel. Consumers import all
- * three from `gitnexus-shared`, not from this module.
+ * through the top-level `avmatrix-shared` barrel. Consumers import all
+ * three from `avmatrix-shared`, not from this module.
  *
  * Part of RFC #909 Ring 2 SHARED — #918.
  */
@@ -59,7 +59,7 @@ export interface ShadowParityReport {
  *
  * - `perLanguage` rows are sorted alphabetically by `SupportedLanguages`
  *   value for stable JSON output (the dashboard reads
- *   `.gitnexus/shadow-parity/latest.json` and diffing snapshots is useful).
+ *   `.avmatrix/shadow-parity/latest.json` and diffing snapshots is useful).
  * - `overall` is the column-wise sum across languages.
  * - `generatedAt` is injected via the `now` parameter so tests stay
  *   deterministic; production callers let it default to `new Date()`.

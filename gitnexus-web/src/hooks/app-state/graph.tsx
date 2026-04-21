@@ -1,5 +1,5 @@
 import { createContext, useContext, useCallback, useMemo, useState, ReactNode } from 'react';
-import type { GraphNode, NodeLabel } from 'gitnexus-shared';
+import type { GraphNode, NodeLabel } from 'avmatrix-shared';
 import type { KnowledgeGraph } from '../../core/graph/types';
 import { DEFAULT_VISIBLE_LABELS, DEFAULT_VISIBLE_EDGES, type EdgeType } from '../../lib/constants';
 

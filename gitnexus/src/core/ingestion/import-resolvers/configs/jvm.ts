@@ -3,7 +3,7 @@
  * JVM-specific wildcard/member strategy, then standard fallback.
  */
 
-import { SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'avmatrix-shared';
 import type { ImportResolutionConfig, ImportResolverStrategy } from '../types.js';
 import { createStandardStrategy } from '../standard.js';
 import { resolveJvmWildcard, resolveJvmMemberImport, KOTLIN_EXTENSIONS } from '../jvm.js';
