@@ -1,49 +1,15 @@
 # avmatrix
 ⚠️ Important Notice:** avmatrix has NO official cryptocurrency, token, or coin. Any token/coin using the avmatrix name on Pump.fun or any other platform is **not affiliated with, endorsed by, or created by** this project or its maintainers. Do not purchase any cryptocurrency claiming association with avmatrix.
 
-<div align="center">
-
-  <a href="https://trendshift.io/repositories/19809" target="_blank">
-    <img src="https://trendshift.io/api/badge/repositories/19809" alt="abhigyanpatwari%2Favmatrix | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
-  </a>
-
-  <h2>Join the official Discord to discuss ideas, issues etc!</h2>
-
-  <a href="https://discord.gg/AAsRVT6fGb">
-    <img src="https://img.shields.io/discord/1477255801545429032?color=5865F2&logo=discord&logoColor=white" alt="Discord"/>
-  </a>
-  <a href="https://www.npmjs.com/package/avmatrix">
-    <img src="https://img.shields.io/npm/v/avmatrix.svg" alt="npm version"/>
-  </a>
-  <a href="https://polyformproject.org/licenses/noncommercial/1.0.0/">
-    <img src="https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue.svg" alt="License: PolyForm Noncommercial"/>
-  </a>
-
-  <p><strong>Enterprise (SaaS & Self-hosted)</strong> - <a href="https://akonlabs.com">akonlabs.com</a></p>
-
-</div>
-
 **Building nervous system for agent context.**
 
 Indexes any codebase into a knowledge graph — every dependency, call chain, cluster, and execution flow — then exposes it through smart tools so AI agents never miss code.
-
-
-
-
-https://github.com/user-attachments/assets/172685ba-8e54-4ea7-9ad1-e31a3398da72
-
-
 
 > *Like DeepWiki, but deeper.* DeepWiki helps you *understand* code. avmatrix lets you *analyze* it — because a knowledge graph tracks every relationship, not just descriptions.
 
 **TL;DR:** The **Web UI** is a quick way to chat with any repo. The **CLI + MCP** is how you make your AI agent actually reliable — it gives Cursor, Claude Code, Codex, and friends a deep architectural view of your codebase so they stop missing dependencies, breaking call chains, and shipping blind edits. Even smaller models get full architectural clarity, making it compete with goliath models.
 
 ---
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=abhigyanpatwari/avmatrix&type=date&legend=top-left)](https://www.star-history.com/#abhigyanpatwari/avmatrix&type=date&legend=top-left)
-
 
 ## Two Ways to Use avmatrix
 
@@ -52,34 +18,12 @@ https://github.com/user-attachments/assets/172685ba-8e54-4ea7-9ad1-e31a3398da72
 | **What**    | Index repos locally, connect AI agents via MCP                 | Visual graph explorer + AI chat in browser                   |
 | **For**     | Daily development with Cursor, Claude Code, Codex, Windsurf, OpenCode | Quick exploration, demos, one-off analysis                   |
 | **Scale**   | Full repos, any size                                           | Limited by browser memory (~5k files), or unlimited via backend mode |
-| **Install** | `npm install -g avmatrix`                                    | No install — [avmatrix.vercel.app](https://avmatrix.vercel.app) |
+| **Install** | `npm install -g avmatrix`                                    | Local web |
 | **Storage** | LadybugDB native (fast, persistent)                               | LadybugDB WASM (in-memory, per session)                         |
 | **Parsing** | Tree-sitter native bindings                                    | Tree-sitter WASM                                             |
 | **Privacy** | Everything local, no network                                   | Everything in-browser, no server                             |
 
 > **Bridge mode:** `avmatrix serve` connects the two — the web UI auto-detects the local server and can browse all your CLI-indexed repos without re-uploading or re-indexing.
-
----
-
-## Enterprise
-
-avmatrix is available as an **enterprise offering** - either as a fully managed **SaaS** or a **self-hosted** deployment. Also available for **commercial use** of the OSS version with proper licensing.
-
-Enterprise includes:
-- **PR Review** - automated blast radius analysis on pull requests
-- **Auto-updating Code Wiki** - always up-to-date documentation (Code Wiki is also available in OSS)
-- **Auto-reindexing** - knowledge graph stays fresh automatically
-- **Multi-repo support** - unified graph across repositories
-- **OCaml support** - additional language coverage
-- **Priority feature/language support** - request new languages or features
-
-**Upcoming:**
-- Auto regression forensics
-- End-to-end test generation
-
-👉 Learn more at [akonlabs.com](https://akonlabs.com)
-
-💬 For commercial licensing or enterprise inquiries, ping us on [Discord](https://discord.gg/AAsRVT6fGb) or drop an email at founders@akonlabs.com
 
 ---
 
@@ -106,7 +50,7 @@ That's it. This indexes the codebase, installs agent skills, registers Claude Co
 
 To configure MCP for your editor, run `npx avmatrix setup` once — or set it up manually below.
 
-### MCP Setup
+### MCP local Setup
 
 `avmatrix setup` auto-detects your editors and writes the correct global MCP config. You only need to run it once.
 
@@ -114,22 +58,14 @@ To configure MCP for your editor, run `npx avmatrix setup` once — or set it up
 
 | Editor                | MCP | Skills | Hooks (auto-augment) | Support        |
 | --------------------- | --- | ------ | -------------------- | -------------- |
-| **Claude Code** | Yes | Yes    | Yes (PreToolUse + PostToolUse) | **Full** |
+| **Claude Code** | Yes | Yes    | Yes                  | Full           |
+| **Codex**       | Yes | Yes    | Yes                  | **Full** |
 | **Cursor**      | Yes | Yes    | —                   | MCP + Skills   |
 | **Codex**       | Yes | Yes    | —                   | MCP + Skills   |
 | **Windsurf**    | Yes | —     | —                   | MCP            |
 | **OpenCode**    | Yes | Yes    | —                   | MCP + Skills   |
 
 > **Claude Code** gets the deepest integration: MCP tools + agent skills + PreToolUse hooks that enrich searches with graph context + PostToolUse hooks that auto-reindex after commits.
-
-## Community Integrations
-
-Built by the community — not officially maintained, but worth checking out.
-
-| Project | Author | Description |
-|---------|--------|-------------|
-| [pi-avmatrix](https://github.com/tintinweb/pi-avmatrix) | [@tintinweb](https://github.com/tintinweb) | avmatrix plugin for [pi](https://pi.dev) — `pi install npm:pi-avmatrix` |
-| [avmatrix-stable-ops](https://github.com/ShunsukeHayashi/avmatrix-stable-ops) | [@ShunsukeHayashi](https://github.com/ShunsukeHayashi) | Stable ops & deployment workflows (Miyabi ecosystem) |
 
 > Have a project built on avmatrix? Open a PR to add it here!
 
