@@ -205,6 +205,7 @@ export class LocalBackend {
   private contextCache: Map<string, CodebaseContext> = new Map();
   private initializedRepos: Set<string> = new Set();
   private reinitPromises: Map<string, Promise<void>> = new Map();
+  private refreshReposPromise: Promise<void> | null = null;
   private lastStalenessCheck: Map<string, number> = new Map();
   private groupToolSvc: GroupService | null = null;
 
@@ -246,6 +247,20 @@ export class LocalBackend {
    * LadybugDB connections for removed repos are NOT closed (they idle-timeout naturally).
    */
   private async refreshRepos(): Promise<void> {
+    if (this.refreshReposPromise) {
+      return this.refreshReposPromise;
+    }
+
+    const refreshPromise = this.refreshReposInternal().finally(() => {
+      if (this.refreshReposPromise === refreshPromise) {
+        this.refreshReposPromise = null;
+      }
+    });
+    this.refreshReposPromise = refreshPromise;
+    return refreshPromise;
+  }
+
+  private async refreshReposInternal(): Promise<void> {
     const entries = await listRegisteredRepos({ validate: true });
     const freshIds = new Set<string>();
 
@@ -3509,5 +3524,6 @@ export class LocalBackend {
     this.repos.clear();
     this.contextCache.clear();
     this.initializedRepos.clear();
+    this.refreshReposPromise = null;
   }
 }

@@ -9,7 +9,17 @@
 import { startMCPServer } from '../mcp/server.js';
 import { LocalBackend } from '../mcp/local/local-backend.js';
 
+const STARTUP_LOG_PREFIX = 'AVmatrix MCP [startup]';
+
+function logStartup(stage: string, startedAt: number, details?: string): void {
+  const elapsedMs = Date.now() - startedAt;
+  const suffix = details ? ` ${details}` : '';
+  process.stderr.write(`${STARTUP_LOG_PREFIX} stage=${stage} elapsedMs=${elapsedMs}${suffix}\n`);
+}
+
 export const mcpCommand = async () => {
+  const startedAt = Date.now();
+
   // Prevent unhandled errors from crashing the MCP server process.
   // LadybugDB lock conflicts and transient errors should degrade gracefully.
   process.on('uncaughtException', (err) => {
@@ -22,23 +32,13 @@ export const mcpCommand = async () => {
     console.error(`AVmatrix MCP: unhandled rejection — ${msg}`);
   });
 
-  // Initialize multi-repo backend from registry.
-  // The server starts even with 0 repos — tools call refreshRepos() lazily,
-  // so repos indexed after the server starts are discovered automatically.
+  // Construct the backend, but do not block MCP handshake on repo discovery.
+  // Repo refresh and DB work happen lazily on the first repo-aware request.
   const backend = new LocalBackend();
-  await backend.init();
+  logStartup('backend_created', startedAt);
 
-  const repos = await backend.listRepos();
-  if (repos.length === 0) {
-    console.error(
-      'AVmatrix: No indexed repos yet. Run `avmatrix analyze` in a local repo — the MCP/runtime layer will pick it up automatically.',
-    );
-  } else {
-    console.error(
-      `AVmatrix: MCP server starting with ${repos.length} repo(s) on the shared local runtime core: ${repos.map((r) => r.name).join(', ')}`,
-    );
-  }
-
-  // Start MCP server (serves all repos, discovers new ones lazily)
+  // Start MCP server immediately so the client can handshake before any
+  // registry refresh or repo warm-up work runs.
   await startMCPServer(backend);
+  logStartup('transport_connected', startedAt);
 };

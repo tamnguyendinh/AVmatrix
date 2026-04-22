@@ -24,13 +24,13 @@ const { lbugMocks } = vi.hoisted(() => ({
 }));
 
 vi.mock('../../src/core/lbug/pool-adapter.js', async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = (await importOriginal()) as Record<string, unknown>;
   return { ...actual, ...lbugMocks };
 });
 
 // Re-export shim must resolve to the same mocks
 vi.mock('../../src/mcp/core/lbug-adapter.js', async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = (await importOriginal()) as Record<string, unknown>;
   return { ...actual, ...lbugMocks };
 });
 
@@ -748,6 +748,31 @@ describe('LocalBackend.resolveRepo', () => {
     // listRegisteredRepos should have been called again
     expect(listRegisteredRepos).toHaveBeenCalledTimes(2); // once in init, once in refreshRepos
   });
+
+  it('coalesces concurrent repo-miss refreshes into one registry read', async () => {
+    setupNoRepos();
+    await backend.init();
+
+    let releaseRefresh: ((value: Array<typeof MOCK_REPO_ENTRY>) => void) | undefined;
+    (listRegisteredRepos as any).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          releaseRefresh = resolve;
+        }),
+    );
+
+    const first = backend.resolveRepo('test-project');
+    const second = backend.resolveRepo('test-project');
+
+    expect(listRegisteredRepos).toHaveBeenCalledTimes(2); // init + shared refresh
+
+    releaseRefresh?.([MOCK_REPO_ENTRY]);
+
+    const [repoA, repoB] = await Promise.all([first, second]);
+    expect(repoA.name).toBe('test-project');
+    expect(repoB.name).toBe('test-project');
+    expect(listRegisteredRepos).toHaveBeenCalledTimes(2);
+  });
 });
 
 // ─── getContext ──────────────────────────────────────────────────────
@@ -904,6 +929,28 @@ describe('LocalBackend.listRepos', () => {
     await backend.callTool('list_repos', {});
     // listRegisteredRepos called: once in init, once per listRepos
     expect(listRegisteredRepos).toHaveBeenCalledTimes(3);
+  });
+
+  it('coalesces concurrent listRepos refreshes into one registry read', async () => {
+    let releaseRefresh: ((value: Array<typeof MOCK_REPO_ENTRY>) => void) | undefined;
+    (listRegisteredRepos as any).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          releaseRefresh = resolve;
+        }),
+    );
+
+    const first = backend.listRepos();
+    const second = backend.listRepos();
+
+    expect(listRegisteredRepos).toHaveBeenCalledTimes(1);
+
+    releaseRefresh?.([MOCK_REPO_ENTRY]);
+
+    const [reposA, reposB] = await Promise.all([first, second]);
+    expect(reposA).toHaveLength(1);
+    expect(reposB).toHaveLength(1);
+    expect(listRegisteredRepos).toHaveBeenCalledTimes(1);
   });
 });
 
