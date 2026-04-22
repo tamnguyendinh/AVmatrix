@@ -54,7 +54,7 @@ If always-on instructions grow, load deep conventions via conditional reads (e.g
 See the `<!-- avmatrix:start -->
 # AVmatrix — Code Intelligence
 
-This project is indexed by AVmatrix as **AVmatrix-main** (17145 symbols, 24275 relationships, 300 execution flows). Use the AVmatrix MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by AVmatrix as **AVmatrix-main** (17353 symbols, 24959 relationships, 466 execution flows). Use the AVmatrix MCP tools to understand code, assess impact, and navigate safely.
 
 > If any AVmatrix tool warns the index is stale, run `avmatrix analyze` in terminal first.
 

@@ -18,10 +18,50 @@ import type { StructureOutput } from './structure.js';
 import { processProcesses, type ProcessDetectionResult } from '../process-processor.js';
 import { generateId } from '../../../lib/utils.js';
 import { isDev } from '../utils/env.js';
+import type { CLIConfig } from '../../../storage/repo-manager.js';
 
 export interface ProcessesOutput {
   processResult: ProcessDetectionResult;
 }
+
+export const DEFAULT_MAX_PROCESSES_CAP = 700;
+
+type MaxProcessesConfig = Pick<CLIConfig, 'maxProcesses'>;
+
+const parseConfiguredMaxProcesses = (rawValue: string | number | undefined): number | null => {
+  if (typeof rawValue === 'number' && Number.isInteger(rawValue) && rawValue > 0) {
+    return rawValue;
+  }
+  if (typeof rawValue === 'string') {
+    const parsed = Number.parseInt(rawValue, 10);
+    if (Number.isInteger(parsed) && parsed > 0) return parsed;
+  }
+  return null;
+};
+
+const loadStoredMaxProcessesConfig = async (): Promise<MaxProcessesConfig> => {
+  const { loadCLIConfig } = await import('../../../storage/repo-manager.js');
+  return loadCLIConfig();
+};
+
+export const resolveConfiguredMaxProcessesCap = async (
+  envValue = process.env.AVMATRIX_MAX_PROCESSES,
+  loadConfig: () => Promise<MaxProcessesConfig> = loadStoredMaxProcessesConfig,
+): Promise<number> => {
+  const envCap = parseConfiguredMaxProcesses(envValue);
+  if (envCap !== null) return envCap;
+
+  const savedConfig = await loadConfig();
+  return parseConfiguredMaxProcesses(savedConfig.maxProcesses) ?? DEFAULT_MAX_PROCESSES_CAP;
+};
+
+export const calculateDynamicMaxProcesses = (
+  symbolCount: number,
+  maxProcessesCap = DEFAULT_MAX_PROCESSES_CAP,
+): number => {
+  const scaledBudget = Math.max(20, Math.round(symbolCount / 10));
+  return Math.min(maxProcessesCap, scaledBudget);
+};
 
 export const processesPhase: PipelinePhase<ProcessesOutput> = {
   name: 'processes',
@@ -49,7 +89,11 @@ export const processesPhase: PipelinePhase<ProcessesOutput> = {
     ctx.graph.forEachNode((n) => {
       if (n.label !== 'File') symbolCount++;
     });
-    const dynamicMaxProcesses = Math.max(20, Math.min(300, Math.round(symbolCount / 10)));
+    const configuredMaxProcessesCap = await resolveConfiguredMaxProcessesCap();
+    const dynamicMaxProcesses = calculateDynamicMaxProcesses(
+      symbolCount,
+      configuredMaxProcessesCap,
+    );
 
     const processResult = await processProcesses(
       ctx.graph,

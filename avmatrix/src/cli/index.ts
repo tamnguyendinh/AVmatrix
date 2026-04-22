@@ -41,7 +41,9 @@ program
   .option('-v, --verbose', 'Enable verbose ingestion warnings (default: false)')
   .addHelpText(
     'after',
-    '\nEnvironment variables:\n  AVMATRIX_NO_GITIGNORE=1  Skip .gitignore parsing (still reads the local ignore override file)',
+    '\nEnvironment variables:\n' +
+      '  AVMATRIX_NO_GITIGNORE=1  Skip .gitignore parsing (still reads the local ignore override file)\n' +
+      '  AVMATRIX_MAX_PROCESSES=700  Cap indexed execution flows during analyze (overrides ~/.avmatrix/config.json)',
   )
   .action(createLazyAction(() => import('./analyze.js'), 'analyzeCommand'));
 

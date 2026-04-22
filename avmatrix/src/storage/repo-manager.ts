@@ -482,6 +482,8 @@ export interface CLIConfig {
   baseUrl?: string;
   provider?: 'openai' | 'openrouter' | 'azure' | 'custom' | 'cursor';
   cursorModel?: string;
+  /** Optional cap for materialized execution flows during analyze. */
+  maxProcesses?: number;
   /** Azure api-version query param (e.g. '2024-10-21'). Only used when provider is 'azure'. */
   apiVersion?: string;
   /** Set true when the deployment is a reasoning model (o1, o3, o4-mini). Auto-detected for OpenAI; must be set for Azure deployments. */
