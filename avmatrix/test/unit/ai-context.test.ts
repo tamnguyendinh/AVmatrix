@@ -142,14 +142,16 @@ describe('generateAIContextFiles', () => {
     await generateAIContextFiles(tmpDir, storagePath, 'TestProject', stats);
 
     const content = await fs.readFile(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
+    expect(content).toContain('`avmatrix analyze --force`');
+    expect(content).not.toContain('`avmatrix analyze --force --skip-agents-md`');
     expect(content).toContain('`impact({target: "symbolName", direction: "upstream"})`');
     expect(content).toContain('`detect_changes()`');
     expect(content).toContain('`query({query: "concept"})`');
     expect(content).toContain('`context({name: "symbolName"})`');
-    expect(content).not.toContain('impact');
-    expect(content).not.toContain('detect_changes');
-    expect(content).not.toContain('query');
-    expect(content).not.toContain('context');
+    expect(content).not.toContain('avmatrix_impact');
+    expect(content).not.toContain('avmatrix_detect_changes');
+    expect(content).not.toContain('avmatrix_query');
+    expect(content).not.toContain('avmatrix_context');
   });
 
   it('preserves manual AGENTS.md and CLAUDE.md edits when skipAgentsMd is enabled', async () => {

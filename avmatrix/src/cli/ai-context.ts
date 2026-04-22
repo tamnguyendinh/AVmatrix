@@ -97,7 +97,7 @@ This project is indexed by AVmatrix as **${projectName}**${noStats ? '' : ` (${s
 
 ## Always Do
 
-- **MUST refresh the graph before any graph-based work.** From the repo root, run \`avmatrix analyze --force --skip-agents-md\` before using \`query\`, \`context\`, \`impact\`, \`detect_changes\`, \`rename\`, or \`cypher\`.
+- **MUST refresh the graph before graph-based work.** Run \`avmatrix analyze --force\` before using \`query\`, \`context\`, \`impact\`, \`detect_changes\`, \`rename\`, or \`cypher\`.
 - **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run \`impact({target: "symbolName", direction: "upstream"})\` and report the blast radius (direct callers, affected processes, risk level) to the user.
 - **MUST run \`detect_changes()\` before committing** to verify your changes only affect expected symbols and execution flows.
 - **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.

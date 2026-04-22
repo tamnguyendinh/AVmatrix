@@ -58,12 +58,13 @@ Commands and gotchas live under **Repo reference** below and in **[CONTRIBUTING.
 <!-- avmatrix:start -->
 # AVmatrix — Code Intelligence
 
-This project is indexed by AVmatrix as **AVmatrix-main** (17899 symbols, 23379 relationships, 300 execution flows). Use the AVmatrix MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by AVmatrix as **AVmatrix-main** (17145 symbols, 24275 relationships, 300 execution flows). Use the AVmatrix MCP tools to understand code, assess impact, and navigate safely.
 
 > If any AVmatrix tool warns the index is stale, run `avmatrix analyze` in terminal first.
 
 ## Always Do
 
+- **MUST refresh the graph before graph-based work.** Run `avmatrix analyze --force` before using `query`, `context`, `impact`, `detect_changes`, `rename`, or `cypher`.
 - **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
 - **MUST run `detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows.
 - **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.

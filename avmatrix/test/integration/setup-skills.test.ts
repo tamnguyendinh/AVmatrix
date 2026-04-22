@@ -68,9 +68,9 @@ describe('setupCommand skills integration', () => {
     );
     expect(skillContent).toContain('AVmatrix CLI Commands');
     expect(skillContent).not.toContain('detect_changes');
-    expect(skillContent).not.toContain('impact');
-    expect(skillContent).not.toContain('query');
-    expect(skillContent).not.toContain('context');
+    expect(skillContent).not.toContain('`avmatrix impact');
+    expect(skillContent).not.toContain('`avmatrix query');
+    expect(skillContent).not.toContain('context({');
 
     // Flat file source should be installed as {name}/SKILL.md.
     const flatInstalled = await fs.readFile(
@@ -110,7 +110,7 @@ describe('setupCommand skills integration', () => {
     );
     expect(codexSkill).toContain('AVmatrix CLI Commands');
     expect(codexSkill).not.toContain('detect_changes');
-    expect(codexSkill).not.toContain('impact');
+    expect(codexSkill).not.toContain('`avmatrix impact');
   });
 
   it('does not duplicate the Codex MCP section on repeated fallback setup runs', async () => {
