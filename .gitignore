@@ -40,10 +40,6 @@ HANDOFF*.md
 .vercel
 
 
-
-
-
-
 .env*.local
 .avmatrix
 .claude/settings.local.json
@@ -102,3 +98,7 @@ local_docs/
 # Generated agent context docs
 AGENTS.md
 CLAUDE.md
+
+# other
+avmatrix/undefined/
+.codex-tmp/
