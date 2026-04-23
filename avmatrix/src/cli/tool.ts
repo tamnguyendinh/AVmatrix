@@ -8,7 +8,8 @@
  * Usage:
  *   avmatrix query "authentication flow"
  *   avmatrix context --name "validateUser"
- *   avmatrix impact --target "AuthService" --direction upstream
+ *   avmatrix impact AuthService --direction upstream
+ *   avmatrix impact --uid "sym:AuthService" --direction upstream
  *   avmatrix cypher "MATCH (n:Function) RETURN n.name LIMIT 10"
  *   avmatrix detect-changes --scope staged
  *
@@ -18,6 +19,11 @@
  */
 
 import { writeSync } from 'node:fs';
+import {
+  IMPACT_ALLOWED_DIRECTIONS,
+  IMPACT_DEFAULTS,
+  parseImpactInput,
+} from '../mcp/contracts/impact.js';
 import { LocalBackend } from '../mcp/local/local-backend.js';
 
 let _backend: LocalBackend | null = null;
@@ -111,27 +117,47 @@ export async function contextCommand(
 }
 
 export async function impactCommand(
-  target: string,
+  target: string | undefined,
   options?: {
     direction?: string;
     repo?: string;
     depth?: string;
+    uid?: string;
     includeTests?: boolean;
   },
 ): Promise<void> {
-  if (!target?.trim()) {
-    console.error('Usage: avmatrix impact <symbol_name> [--direction upstream|downstream]');
+  if (!target?.trim() && !options?.uid?.trim()) {
+    console.error(
+      `Usage: avmatrix impact [symbol_name] [--uid <uid>] [--direction ${IMPACT_ALLOWED_DIRECTIONS.join('|')}]`,
+    );
+    process.exit(1);
+  }
+
+  const parsed = parseImpactInput({
+    target,
+    target_uid: options?.uid,
+    direction: options?.direction ?? IMPACT_DEFAULTS.direction,
+    maxDepth: options?.depth,
+    includeTests: options?.includeTests,
+    repo: options?.repo,
+  });
+  if ('error' in parsed) {
+    const validationError = parsed.error;
+    output(validationError);
     process.exit(1);
   }
 
   try {
     const backend = await getBackend();
     const result = await backend.callTool('impact', {
-      target,
-      direction: options?.direction || 'upstream',
-      maxDepth: options?.depth ? parseInt(options.depth, 10) : undefined,
-      includeTests: options?.includeTests ?? false,
-      repo: options?.repo,
+      target: parsed.value.target,
+      target_uid: parsed.value.target_uid,
+      direction: parsed.value.direction,
+      maxDepth: parsed.value.maxDepth,
+      relationTypes: parsed.value.relationTypes,
+      includeTests: parsed.value.includeTests,
+      minConfidence: parsed.value.minConfidence,
+      repo: parsed.value.repo,
     });
     output(result);
   } catch (err: unknown) {
@@ -140,8 +166,8 @@ export async function impactCommand(
     output({
       error:
         (err instanceof Error ? err.message : String(err)) || 'Impact analysis failed unexpectedly',
-      target: { name: target },
-      direction: options?.direction || 'upstream',
+      target: { name: parsed.value.target ?? parsed.value.target_uid ?? '' },
+      direction: parsed.value.direction,
       suggestion: 'Try reducing --depth or using avmatrix context <symbol> as a fallback',
     });
     process.exit(1);

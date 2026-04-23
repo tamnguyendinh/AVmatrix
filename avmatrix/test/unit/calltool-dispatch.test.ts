@@ -440,7 +440,6 @@ describe('LocalBackend.callTool', () => {
     (executeQuery as any).mockResolvedValue([]);
 
     const result = await backend.callTool('impact', {
-      target: 'ignoredName',
       target_uid: 'uid:1234',
       direction: 'upstream',
     });
@@ -457,6 +456,40 @@ describe('LocalBackend.callTool', () => {
     for (const [, cypher] of calls) {
       expect(cypher).not.toMatch(/WHERE n\.name = \$symName/);
     }
+  });
+
+  it('impact tool returns a structured validation error for invalid direction', async () => {
+    const result = await backend.callTool('impact', {
+      target: 'main',
+      direction: 'sideways',
+    });
+
+    expect(result.error).toContain('direction must be one of');
+    expect(result.field).toBe('direction');
+    expect(result.allowedValues).toEqual(['upstream', 'downstream']);
+    expect((executeParameterized as any).mock.calls).toHaveLength(0);
+  });
+
+  it('impact tool returns a structured validation error for invalid relationTypes', async () => {
+    const result = await backend.callTool('impact', {
+      target: 'main',
+      direction: 'upstream',
+      relationTypes: ['NOT_A_RELATION'],
+    });
+
+    expect(result.error).toContain('invalid relationTypes');
+    expect(result.field).toBe('relationTypes');
+    expect((executeParameterized as any).mock.calls).toHaveLength(0);
+  });
+
+  it('impact tool returns a structured validation error when target and target_uid are both missing', async () => {
+    const result = await backend.callTool('impact', {
+      direction: 'upstream',
+    });
+
+    expect(result.error).toContain('provide either target or target_uid');
+    expect(result.field).toBe('target');
+    expect((executeParameterized as any).mock.calls).toHaveLength(0);
   });
 
   it('dispatches impact tool', async () => {

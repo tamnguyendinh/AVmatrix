@@ -5,6 +5,7 @@
 
 import { Command } from 'commander';
 import { createRequire } from 'node:module';
+import { IMPACT_ALLOWED_DIRECTIONS } from '../mcp/contracts/impact.js';
 import { createLazyAction } from './lazy-action.js';
 import { registerGroupCommands } from './group.js';
 
@@ -43,7 +44,7 @@ program
     'after',
     '\nEnvironment variables:\n' +
       '  AVMATRIX_NO_GITIGNORE=1  Skip .gitignore parsing (still reads the local ignore override file)\n' +
-      '  AVMATRIX_MAX_PROCESSES=700  Cap indexed execution flows during analyze (overrides ~/.avmatrix/config.json)',
+      '  AVMATRIX_MAX_PROCESSES=700  Temporarily override maxExecutionFlows from .avmatrix/settings.json in the target repo during analyze',
   )
   .action(createLazyAction(() => import('./analyze.js'), 'analyzeCommand'));
 
@@ -123,10 +124,15 @@ program
   .action(createLazyAction(() => import('./tool.js'), 'contextCommand'));
 
 program
-  .command('impact <target>')
+  .command('impact [target]')
   .description('Blast radius analysis: what breaks if you change a symbol')
-  .option('-d, --direction <dir>', 'upstream (dependants) or downstream (dependencies)', 'upstream')
+  .option(
+    '-d, --direction <dir>',
+    `upstream (dependants) or downstream (dependencies) [${IMPACT_ALLOWED_DIRECTIONS.join('|')}]`,
+    'upstream',
+  )
   .option('-r, --repo <name>', 'Target repository')
+  .option('-u, --uid <uid>', 'Direct symbol UID (zero-ambiguity lookup)')
   .option('--depth <n>', 'Max relationship depth (default: 3)')
   .option('--include-tests', 'Include test files in results')
   .action(createLazyAction(() => import('./tool.js'), 'impactCommand'));

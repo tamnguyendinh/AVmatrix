@@ -2,7 +2,10 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { generateAIContextFiles } from '../../src/cli/ai-context.js';
+import {
+  formatCrossRepoGroupsSection,
+  generateAIContextFiles,
+} from '../../src/cli/ai-context.js';
 
 describe('generateAIContextFiles', () => {
   let tmpDir: string;
@@ -152,6 +155,20 @@ describe('generateAIContextFiles', () => {
     expect(content).not.toContain('avmatrix_detect_changes');
     expect(content).not.toContain('avmatrix_query');
     expect(content).not.toContain('avmatrix_context');
+  });
+
+  it('cross-repo guidance mentions only supported group tools and commands', () => {
+    const section = formatCrossRepoGroupsSection(['CorePlatform']);
+
+    expect(section).toContain('`group_list`');
+    expect(section).toContain('`group_status`');
+    expect(section).toContain('`group_sync`');
+    expect(section).toContain('`group_query`');
+    expect(section).toContain('`group_contracts`');
+    expect(section).toContain('`avmatrix group list`');
+    expect(section).toContain('`avmatrix group sync <name>`');
+    expect(section).not.toContain('group_impact');
+    expect(section).not.toContain('avmatrix group impact');
   });
 
   it('preserves manual AGENTS.md and CLAUDE.md edits when skipAgentsMd is enabled', async () => {

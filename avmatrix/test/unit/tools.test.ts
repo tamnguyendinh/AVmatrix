@@ -8,6 +8,11 @@
  * - Optional repo parameter is present on tools that need it
  */
 import { describe, it, expect } from 'vitest';
+import {
+  IMPACT_ALLOWED_DIRECTIONS,
+  IMPACT_ALLOWED_RELATION_TYPES,
+  IMPACT_DEFAULTS,
+} from '../../src/mcp/contracts/impact.js';
 import { AVMATRIX_TOOLS } from '../../src/mcp/tools.js';
 
 const GROUP_TOOLS = new Set([
@@ -69,10 +74,28 @@ describe('AVMATRIX_TOOLS', () => {
     expect(contextTool.inputSchema.required).toEqual([]);
   });
 
-  it('impact tool requires target and direction', () => {
+  it('impact tool requires direction and accepts target or target_uid', () => {
     const impactTool = AVMATRIX_TOOLS.find((t) => t.name === 'impact')!;
-    expect(impactTool.inputSchema.required).toContain('target');
     expect(impactTool.inputSchema.required).toContain('direction');
+    expect(impactTool.inputSchema.oneOf).toEqual([
+      { required: ['target'] },
+      { required: ['target_uid'] },
+    ]);
+    expect(impactTool.inputSchema.properties.target.minLength).toBe(1);
+    expect(impactTool.inputSchema.properties.target_uid.minLength).toBe(1);
+  });
+
+  it('impact direction enum and defaults mirror the shared contract', () => {
+    const impactTool = AVMATRIX_TOOLS.find((t) => t.name === 'impact')!;
+    expect(impactTool.inputSchema.properties.direction.enum).toEqual([...IMPACT_ALLOWED_DIRECTIONS]);
+    expect(impactTool.inputSchema.properties.direction.default).toBe(IMPACT_DEFAULTS.direction);
+    expect(impactTool.inputSchema.properties.maxDepth.default).toBe(IMPACT_DEFAULTS.maxDepth);
+    expect(impactTool.inputSchema.properties.includeTests.default).toBe(
+      IMPACT_DEFAULTS.includeTests,
+    );
+    expect(impactTool.inputSchema.properties.minConfidence.default).toBe(
+      IMPACT_DEFAULTS.minConfidence,
+    );
   });
 
   it('rename tool requires new_name', () => {
@@ -139,7 +162,7 @@ describe('AVMATRIX_TOOLS', () => {
     const impactTool = AVMATRIX_TOOLS.find((t) => t.name === 'impact')!;
     const relProp = impactTool.inputSchema.properties.relationTypes;
     expect(relProp.type).toBe('array');
-    expect(relProp.items).toEqual({ type: 'string' });
+    expect(relProp.items).toEqual({ type: 'string', enum: IMPACT_ALLOWED_RELATION_TYPES });
   });
 
   it('route_map description defers to api_impact for pre-change analysis', () => {

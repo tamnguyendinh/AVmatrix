@@ -9,6 +9,8 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { GROUP_AI_CONTEXT_CLI_COMMANDS } from '../core/group/capabilities.js';
+import { AVMATRIX_TOOLS } from '../mcp/tools.js';
 import { type GeneratedSkillInfo } from './skill-gen.js';
 
 // ESM equivalent of __dirname
@@ -88,6 +90,8 @@ function generateAVmatrixContent(
 | Tools, resources, schema reference | \`.claude/skills/avmatrix/avmatrix-guide/SKILL.md\` |
 | Index, status, clean, and wiki capability CLI commands | \`.claude/skills/avmatrix/avmatrix-cli/SKILL.md\` |${generatedRows ? '\n' + generatedRows : ''}`;
 
+  const crossRepoGroupsSection = formatCrossRepoGroupsSection(groupNames);
+
   return `${AVMATRIX_START_MARKER}
 # AVmatrix — Code Intelligence
 
@@ -120,19 +124,26 @@ This project is indexed by AVmatrix as **${projectName}**${noStats ? '' : ` (${s
 | \`avmatrix://repo/${projectName}/processes\` | All execution flows |
 | \`avmatrix://repo/${projectName}/process/{name}\` | Step-by-step execution trace |
 
-${
-  groupNames && groupNames.length > 0
-    ? `## Cross-Repo Groups
-
-This repository is listed under AVmatrix **group(s): ${groupNames.join(', ')}**. For blast radius across repository boundaries, use MCP tools \`group_impact\`, \`group_sync\`, \`group_query\`, \`group_contracts\`, \`group_status\`, and \`group_list\`. From the terminal: \`avmatrix group list\`, \`avmatrix group sync <name>\`, \`avmatrix group impact <name> --target <symbol> --repo <group-path>\`.
-
-`
-    : ''
-}## CLI
+${crossRepoGroupsSection}## CLI
 
 ${skillsTable}
 
 ${AVMATRIX_END_MARKER}`;
+}
+
+export function formatCrossRepoGroupsSection(groupNames?: string[]): string {
+  if (!groupNames || groupNames.length === 0) return '';
+
+  const groupToolNames = AVMATRIX_TOOLS.filter((tool) => tool.name.startsWith('group_')).map(
+    (tool) => `\`${tool.name}\``,
+  );
+  const cliCommands = GROUP_AI_CONTEXT_CLI_COMMANDS.map((command) => `\`${command}\``);
+
+  return `## Cross-Repo Groups
+
+This repository is listed under AVmatrix **group(s): ${groupNames.join(', ')}**. For cross-repo work, use MCP tools ${groupToolNames.join(', ')}. From the terminal, use ${cliCommands.join(', ')}.
+
+`;
 }
 
 /**

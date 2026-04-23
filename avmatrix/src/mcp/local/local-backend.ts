@@ -31,6 +31,15 @@ import { GroupService, type GroupToolPort } from '../../core/group/service.js';
 import { collectBestChunks } from '../../core/embeddings/types.js';
 import { EMBEDDING_TABLE_NAME, EMBEDDING_INDEX_NAME } from '../../core/lbug/schema.js';
 import { PhaseTimer } from '../../core/search/phase-timer.js';
+import {
+  IMPACT_ALLOWED_RELATION_TYPES,
+  IMPACT_DEFAULTS,
+  parseImpactInput,
+  type ImpactDirection,
+  type ImpactInputLike,
+  type ImpactValidationError,
+  type ParsedImpactInput,
+} from '../contracts/impact.js';
 // AI context generation is CLI-only (avmatrix analyze)
 // import { generateAIContextFiles } from '../../cli/ai-context.js';
 
@@ -94,21 +103,7 @@ export const VALID_NODE_LABELS = new Set([
 
 /** Valid relation types for impact analysis filtering */
 export const VALID_RELATION_TYPES = new Set([
-  'CALLS',
-  'IMPORTS',
-  'EXTENDS',
-  'IMPLEMENTS',
-  'HAS_METHOD',
-  'HAS_PROPERTY',
-  'METHOD_OVERRIDES',
-  'OVERRIDES', // Legacy alias — dual-read for pre-rename indexes
-  'METHOD_IMPLEMENTS',
-  'ACCESSES',
-  'HANDLES_ROUTE',
-  'FETCHES',
-  'HANDLES_TOOL',
-  'ENTRY_POINT_OF',
-  'WRAPS',
+  ...IMPACT_ALLOWED_RELATION_TYPES,
 ]);
 
 /**
@@ -2194,28 +2189,43 @@ export class LocalBackend {
     };
   }
 
+  private impactValidationResult(
+    params: ImpactInputLike,
+    issue: ImpactValidationError,
+  ): Record<string, unknown> {
+    return {
+      error: issue.error,
+      field: issue.field,
+      allowedValues: issue.allowedValues,
+      target: { name: params.target ?? params.target_uid ?? '' },
+      direction:
+        typeof params.direction === 'string' && params.direction.trim().length > 0
+          ? params.direction
+          : IMPACT_DEFAULTS.direction,
+      impactedCount: 0,
+      risk: 'UNKNOWN',
+      suggestion: 'Fix the invalid impact parameters and retry the request.',
+    };
+  }
+
   private async impact(
     repo: RepoHandle,
-    params: {
-      target: string;
-      target_uid?: string;
-      file_path?: string;
-      kind?: string;
-      direction: 'upstream' | 'downstream';
-      maxDepth?: number;
-      relationTypes?: string[];
-      includeTests?: boolean;
-      minConfidence?: number;
-    },
+    params: ImpactInputLike,
   ): Promise<any> {
+    const parsed = parseImpactInput(params);
+    if ('error' in parsed) {
+      const validationError = parsed.error;
+      return this.impactValidationResult(params, validationError);
+    }
+
     try {
-      return await this._impactImpl(repo, params);
+      return await this._impactImpl(repo, parsed.value);
     } catch (err: any) {
       // Return structured error instead of crashing (#321)
       return {
         error: (err instanceof Error ? err.message : String(err)) || 'Impact analysis failed',
-        target: { name: params.target },
-        direction: params.direction,
+        target: { name: parsed.value.target ?? parsed.value.target_uid ?? '' },
+        direction: parsed.value.direction,
         impactedCount: 0,
         risk: 'UNKNOWN',
         suggestion: 'The graph query failed — try avmatrix context <symbol> as a fallback',
@@ -2225,52 +2235,17 @@ export class LocalBackend {
 
   private async _impactImpl(
     repo: RepoHandle,
-    params: {
-      target: string;
-      target_uid?: string;
-      file_path?: string;
-      kind?: string;
-      direction: 'upstream' | 'downstream';
-      maxDepth?: number;
-      relationTypes?: string[];
-      includeTests?: boolean;
-      minConfidence?: number;
-    },
+    params: ImpactInputLike,
   ): Promise<any> {
     await this.ensureInitialized(repo.id);
 
-    const { target, direction } = params;
-    const maxDepth = params.maxDepth || 3;
-    // Map legacy relation type names before filtering (backward compat for OVERRIDES → METHOD_OVERRIDES)
-    const mappedRelTypes = params.relationTypes?.flatMap((t: string) =>
-      t === 'OVERRIDES' ? ['OVERRIDES', 'METHOD_OVERRIDES'] : [t],
-    );
-    const rawRelTypes =
-      mappedRelTypes && mappedRelTypes.length > 0
-        ? mappedRelTypes.filter((t: string) => VALID_RELATION_TYPES.has(t))
-        : [
-            'CALLS',
-            'IMPORTS',
-            'EXTENDS',
-            'IMPLEMENTS',
-            'METHOD_OVERRIDES',
-            'OVERRIDES',
-            'METHOD_IMPLEMENTS',
-          ];
-    const relationTypes =
-      rawRelTypes.length > 0
-        ? rawRelTypes
-        : [
-            'CALLS',
-            'IMPORTS',
-            'EXTENDS',
-            'IMPLEMENTS',
-            'METHOD_OVERRIDES',
-            'OVERRIDES',
-            'METHOD_IMPLEMENTS',
-          ];
-    const includeTests = params.includeTests ?? false;
-    const minConfidence = params.minConfidence ?? 0;
+    const parsed = parseImpactInput(params);
+    if ('error' in parsed) {
+      return this.impactValidationResult(params, parsed.error);
+    }
+
+    const { target, direction } = parsed.value;
+    const { maxDepth, relationTypes, includeTests, minConfidence } = parsed.value;
 
     // Resolve target via the shared symbol resolver. When the caller passes
     // target_uid we skip the name lookup entirely (zero-ambiguity). Otherwise
@@ -2283,15 +2258,15 @@ export class LocalBackend {
     // selected silently.
     const outcome = await this.resolveSymbolCandidates(
       repo,
-      { uid: params.target_uid, name: target },
-      { file_path: params.file_path, kind: params.kind },
+      { uid: parsed.value.target_uid, name: target },
+      { file_path: parsed.value.file_path, kind: parsed.value.kind },
     );
 
     if (outcome.kind === 'not_found') {
-      const missing = params.target_uid ?? target;
+      const missing = parsed.value.target_uid ?? target;
       return {
         error: `Target '${missing}' not found`,
-        target: { name: target },
+        target: { name: target ?? parsed.value.target_uid ?? '' },
         direction,
         impactedCount: 0,
         risk: 'UNKNOWN',
@@ -2301,8 +2276,8 @@ export class LocalBackend {
     if (outcome.kind === 'ambiguous') {
       return {
         status: 'ambiguous',
-        message: `Found ${outcome.candidates.length} symbols matching '${target}'. Use target_uid, file_path, or kind to disambiguate.`,
-        target: { name: target },
+        message: `Found ${outcome.candidates.length} symbols matching '${target ?? parsed.value.target_uid}'. Use target_uid, file_path, or kind to disambiguate.`,
+        target: { name: target ?? parsed.value.target_uid ?? '' },
         direction,
         impactedCount: 0,
         risk: 'UNKNOWN',
@@ -2782,7 +2757,15 @@ export class LocalBackend {
     const repo = this.repos.get(repoId);
     if (!repo) return null;
 
-    const dir: 'upstream' | 'downstream' = direction === 'downstream' ? 'downstream' : 'upstream';
+    const parsed = parseImpactInput({
+      target_uid: uid,
+      direction,
+      maxDepth: opts.maxDepth,
+      relationTypes: opts.relationTypes,
+      minConfidence: opts.minConfidence,
+      includeTests: opts.includeTests,
+    });
+    if (!parsed.ok) return null;
 
     let rows: any[];
     try {
@@ -2803,41 +2786,12 @@ export class LocalBackend {
     const symType =
       typeof labelRaw === 'string' && labelRaw.trim().length > 0 ? labelRaw.trim() : '';
 
-    // Map legacy relation type names (backward compat for OVERRIDES → METHOD_OVERRIDES)
-    const mappedRelTypes = opts.relationTypes?.flatMap((t: string) =>
-      t === 'OVERRIDES' ? ['OVERRIDES', 'METHOD_OVERRIDES'] : [t],
-    );
-    const rawRelTypes =
-      mappedRelTypes && mappedRelTypes.length > 0
-        ? mappedRelTypes.filter((t: string) => VALID_RELATION_TYPES.has(t))
-        : [
-            'CALLS',
-            'IMPORTS',
-            'EXTENDS',
-            'IMPLEMENTS',
-            'METHOD_OVERRIDES',
-            'OVERRIDES',
-            'METHOD_IMPLEMENTS',
-          ];
-    const relationTypes =
-      rawRelTypes.length > 0
-        ? rawRelTypes
-        : [
-            'CALLS',
-            'IMPORTS',
-            'EXTENDS',
-            'IMPLEMENTS',
-            'METHOD_OVERRIDES',
-            'OVERRIDES',
-            'METHOD_IMPLEMENTS',
-          ];
-
     try {
-      return await this._runImpactBFS(repo, sym, symType, dir, {
-        maxDepth: opts.maxDepth,
-        relationTypes,
-        includeTests: opts.includeTests,
-        minConfidence: opts.minConfidence,
+      return await this._runImpactBFS(repo, sym, symType, parsed.value.direction, {
+        maxDepth: parsed.value.maxDepth,
+        relationTypes: parsed.value.relationTypes,
+        includeTests: parsed.value.includeTests,
+        minConfidence: parsed.value.minConfidence,
       });
     } catch {
       return null;

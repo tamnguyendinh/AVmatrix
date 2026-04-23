@@ -5,23 +5,13 @@
  * All tools support an optional `repo` parameter for multi-repo setups.
  */
 
+import { buildImpactInputSchema } from './contracts/impact.js';
+import type { ObjectSchema } from './tool-schema.js';
+
 export interface ToolDefinition {
   name: string;
   description: string;
-  inputSchema: {
-    type: 'object';
-    properties: Record<
-      string,
-      {
-        type: string;
-        description?: string;
-        default?: any;
-        items?: { type: string };
-        enum?: string[];
-      }
-    >;
-    required: string[];
-  };
+  inputSchema: ObjectSchema;
 }
 
 export const AVMATRIX_TOOLS: ToolDefinition[] = [
@@ -274,48 +264,7 @@ Handles disambiguation: when multiple symbols share the target name, returns ran
 
 EdgeType: CALLS, IMPORTS, EXTENDS, IMPLEMENTS, HAS_METHOD, HAS_PROPERTY, METHOD_OVERRIDES, METHOD_IMPLEMENTS, ACCESSES
 Confidence: 1.0 = certain, <0.8 = fuzzy match`,
-    inputSchema: {
-      type: 'object',
-      properties: {
-        target: { type: 'string', description: 'Name of function, class, or file to analyze' },
-        target_uid: {
-          type: 'string',
-          description:
-            'Direct symbol UID from prior tool results (zero-ambiguity lookup, skips target resolution)',
-        },
-        direction: {
-          type: 'string',
-          description: 'upstream (what depends on this) or downstream (what this depends on)',
-        },
-        file_path: {
-          type: 'string',
-          description: 'File path hint to disambiguate common names',
-        },
-        kind: {
-          type: 'string',
-          description:
-            "Kind filter to disambiguate common names (e.g. 'Function', 'Class', 'Method', 'Interface', 'Constructor')",
-        },
-        maxDepth: {
-          type: 'number',
-          description: 'Max relationship depth (default: 3)',
-          default: 3,
-        },
-        relationTypes: {
-          type: 'array',
-          items: { type: 'string' },
-          description:
-            'Filter: CALLS, IMPORTS, EXTENDS, IMPLEMENTS, HAS_METHOD, HAS_PROPERTY, METHOD_OVERRIDES, METHOD_IMPLEMENTS, ACCESSES (default: usage-based, ACCESSES excluded by default)',
-        },
-        includeTests: { type: 'boolean', description: 'Include test files (default: false)' },
-        minConfidence: { type: 'number', description: 'Minimum confidence 0-1 (default: 0.7)' },
-        repo: {
-          type: 'string',
-          description: 'Repository name or path. Omit if only one repo is indexed.',
-        },
-      },
-      required: ['target', 'direction'],
-    },
+    inputSchema: buildImpactInputSchema(),
   },
   {
     name: 'route_map',

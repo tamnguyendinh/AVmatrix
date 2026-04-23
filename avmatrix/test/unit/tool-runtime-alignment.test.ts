@@ -66,13 +66,37 @@ describe('direct tool commands reuse the shared backend/runtime core', () => {
     expect(initMock).toHaveBeenCalledTimes(1);
     expect(callToolMock).toHaveBeenNthCalledWith(1, 'impact', {
       target: 'AuthService',
+      target_uid: undefined,
       direction: 'upstream',
       maxDepth: 2,
+      relationTypes: ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS', 'METHOD_OVERRIDES', 'OVERRIDES', 'METHOD_IMPLEMENTS'],
       includeTests: true,
+      minConfidence: 0,
       repo: 'AVmatrix',
     });
     expect(callToolMock).toHaveBeenNthCalledWith(2, 'cypher', {
       query: 'MATCH (n) RETURN n LIMIT 1',
+      repo: 'AVmatrix',
+    });
+  });
+
+  it('supports uid-only impact calls in the direct CLI surface', async () => {
+    const { impactCommand } = await import('../../src/cli/tool.js');
+
+    await impactCommand(undefined, {
+      uid: 'uid:AuthService',
+      direction: 'upstream',
+      repo: 'AVmatrix',
+    });
+
+    expect(callToolMock).toHaveBeenCalledWith('impact', {
+      target: undefined,
+      target_uid: 'uid:AuthService',
+      direction: 'upstream',
+      maxDepth: 3,
+      relationTypes: ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS', 'METHOD_OVERRIDES', 'OVERRIDES', 'METHOD_IMPLEMENTS'],
+      includeTests: false,
+      minConfidence: 0,
       repo: 'AVmatrix',
     });
   });
