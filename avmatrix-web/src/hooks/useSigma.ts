@@ -4,11 +4,12 @@ import Graph from 'graphology';
 import FA2Layout from 'graphology-layout-forceatlas2/worker';
 import forceAtlas2 from 'graphology-layout-forceatlas2';
 import noverlap from 'graphology-layout-noverlap';
-import EdgeCurveProgram from '@sigma/edge-curve';
 import { SigmaNodeAttributes, SigmaEdgeAttributes } from '../lib/graph-adapter';
 import type { NodeAnimation } from './useAppState.local-runtime';
 import type { EdgeType } from '../lib/constants';
-import { shouldHideGraphEdge } from '../lib/graph-links-visibility';
+import { getGraphEdgeVisibilityMode } from '../lib/graph-edge-visibility-mode';
+import { getSelectedContextEdgeSize } from '../lib/graph-edge-render-style';
+import { buildSelectedGraphContext } from '../lib/selected-graph-context';
 // Helper: Parse hex color to RGB
 const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -63,6 +64,7 @@ interface UseSigmaOptions {
   blastRadiusNodeIds?: Set<string>;
   animatedNodes?: Map<string, NodeAnimation>;
   visibleEdgeTypes?: EdgeType[];
+  // Ambient-only toggle: selected-node contextual edges may still render when off.
   areGraphLinksVisible?: boolean;
 }
 
@@ -136,6 +138,8 @@ export const useSigma = (options: UseSigmaOptions = {}): UseSigmaReturn => {
   const graphRef = useRef<Graph<SigmaNodeAttributes, SigmaEdgeAttributes> | null>(null);
   const layoutRef = useRef<FA2Layout | null>(null);
   const selectedNodeRef = useRef<string | null>(null);
+  const selectedNeighborNodeIdsRef = useRef<Set<string>>(new Set());
+  const selectedDirectEdgeIdsRef = useRef<Set<string>>(new Set());
   const highlightedRef = useRef<Set<string>>(new Set());
   const blastRadiusRef = useRef<Set<string>>(new Set());
   const animatedNodesRef = useRef<Map<string, NodeAnimation>>(new Map());
@@ -187,17 +191,19 @@ export const useSigma = (options: UseSigmaOptions = {}): UseSigmaReturn => {
   }, [options.animatedNodes]);
 
   const setSelectedNode = useCallback((nodeId: string | null) => {
+    if (selectedNodeRef.current === nodeId) {
+      return;
+    }
+
     selectedNodeRef.current = nodeId;
     setSelectedNodeState(nodeId);
 
+    const selectedContext = buildSelectedGraphContext(graphRef.current, nodeId);
+    selectedNeighborNodeIdsRef.current = selectedContext.neighborNodeIds;
+    selectedDirectEdgeIdsRef.current = selectedContext.directEdgeIds;
+
     const sigma = sigmaRef.current;
     if (!sigma) return;
-
-    // Tiny camera nudge to force edge refresh (workaround for Sigma edge caching)
-    const camera = sigma.getCamera();
-    const currentRatio = camera.ratio;
-    // Imperceptible zoom change that triggers re-render
-    camera.animate({ ratio: currentRatio * 1.0001 }, { duration: 50 });
 
     sigma.refresh();
   }, []);
@@ -221,11 +227,6 @@ export const useSigma = (options: UseSigmaOptions = {}): UseSigmaReturn => {
 
       defaultNodeColor: '#6b7280',
       defaultEdgeColor: '#2a2a3a',
-
-      defaultEdgeType: 'curved',
-      edgeProgramClasses: {
-        curved: EdgeCurveProgram,
-      },
 
       // Custom hover renderer - dark background instead of white
       defaultDrawNodeHover: (context, data, settings) => {
@@ -369,26 +370,22 @@ export const useSigma = (options: UseSigmaOptions = {}): UseSigmaReturn => {
         }
 
         if (currentSelected) {
-          const graph = graphRef.current;
-          if (graph) {
-            const isSelected = node === currentSelected;
-            const isNeighbor =
-              graph.hasEdge(node, currentSelected) || graph.hasEdge(currentSelected, node);
+          const isSelected = node === currentSelected;
+          const isNeighbor = selectedNeighborNodeIdsRef.current.has(node);
 
-            if (isSelected) {
-              res.color = data.color;
-              res.size = (data.size || 8) * 1.8;
-              res.zIndex = 2;
-              res.highlighted = true;
-            } else if (isNeighbor) {
-              res.color = data.color;
-              res.size = (data.size || 8) * 1.3;
-              res.zIndex = 1;
-            } else {
-              res.color = dimColor(data.color, 0.25);
-              res.size = (data.size || 8) * 0.6;
-              res.zIndex = 0;
-            }
+          if (isSelected) {
+            res.color = data.color;
+            res.size = (data.size || 8) * 1.8;
+            res.zIndex = 2;
+            res.highlighted = true;
+          } else if (isNeighbor) {
+            res.color = data.color;
+            res.size = (data.size || 8) * 1.3;
+            res.zIndex = 1;
+          } else {
+            res.color = dimColor(data.color, 0.25);
+            res.size = (data.size || 8) * 0.6;
+            res.zIndex = 0;
           }
         }
 
@@ -397,72 +394,76 @@ export const useSigma = (options: UseSigmaOptions = {}): UseSigmaReturn => {
 
       edgeReducer: (edge, data) => {
         const res = { ...data };
+        const graph = graphRef.current;
 
-        if (
-          shouldHideGraphEdge({
-            areGraphLinksVisible: areGraphLinksVisibleRef.current,
-            relationType: data.relationType,
-            visibleEdgeTypes: visibleEdgeTypesRef.current,
-          })
-        ) {
+        if (!graph) {
+          return res;
+        }
+
+        const [source, target] = graph.extremities(edge);
+        const currentSelected = selectedNodeRef.current;
+        const visibilityMode = getGraphEdgeVisibilityMode({
+          areAmbientGraphLinksVisible: areGraphLinksVisibleRef.current,
+          currentSelectedNodeId: currentSelected,
+          sourceNodeId: source,
+          targetNodeId: target,
+          relationType: data.relationType,
+          visibleEdgeTypes: visibleEdgeTypesRef.current,
+        });
+
+        if (visibilityMode === 'hidden') {
           res.hidden = true;
           return res;
         }
 
-        const currentSelected = selectedNodeRef.current;
         const highlighted = highlightedRef.current;
         const blastRadius = blastRadiusRef.current;
         const hasHighlights = highlighted.size > 0 || blastRadius.size > 0; // Check BOTH sets
 
         if (hasHighlights && !currentSelected) {
-          const graph = graphRef.current;
-          if (graph) {
-            const [source, target] = graph.extremities(edge);
+          // Check if nodes are in EITHER set
+          const isSourceActive = highlighted.has(source) || blastRadius.has(source);
+          const isTargetActive = highlighted.has(target) || blastRadius.has(target);
 
-            // Check if nodes are in EITHER set
-            const isSourceActive = highlighted.has(source) || blastRadius.has(source);
-            const isTargetActive = highlighted.has(target) || blastRadius.has(target);
+          const bothHighlighted = isSourceActive && isTargetActive;
+          const oneHighlighted = isSourceActive || isTargetActive;
 
-            const bothHighlighted = isSourceActive && isTargetActive;
-            const oneHighlighted = isSourceActive || isTargetActive;
-
-            if (bothHighlighted) {
-              // If both nodes are in blast radius, use red edge
-              if (blastRadius.has(source) && blastRadius.has(target)) {
-                res.color = '#ef4444';
-              } else {
-                res.color = '#06b6d4';
-              }
-              res.size = Math.max(2, (data.size || 1) * 3);
-              res.zIndex = 2;
-            } else if (oneHighlighted) {
-              res.color = dimColor('#06b6d4', 0.4);
-              res.size = 1;
-              res.zIndex = 1;
+          if (bothHighlighted) {
+            // If both nodes are in blast radius, use red edge
+            if (blastRadius.has(source) && blastRadius.has(target)) {
+              res.color = '#ef4444';
             } else {
-              res.color = dimColor(data.color, 0.08);
-              res.size = 0.2;
-              res.zIndex = 0;
+              res.color = '#06b6d4';
             }
+            res.size = Math.max(2, (data.size || 1) * 3);
+            res.zIndex = 2;
+          } else if (oneHighlighted) {
+            res.color = dimColor('#06b6d4', 0.4);
+            res.size = 1;
+            res.zIndex = 1;
+          } else {
+            res.color = dimColor(data.color, 0.08);
+            res.size = 0.2;
+            res.zIndex = 0;
           }
           return res;
         }
 
         if (currentSelected) {
-          const graph = graphRef.current;
-          if (graph) {
-            const [source, target] = graph.extremities(edge);
-            const isConnected = source === currentSelected || target === currentSelected;
+          const isConnected =
+            visibilityMode === 'selected-context' && selectedDirectEdgeIdsRef.current.has(edge);
 
-            if (isConnected) {
-              res.color = brightenColor(data.color, 1.5);
-              res.size = Math.max(3, (data.size || 1) * 4);
-              res.zIndex = 2;
-            } else {
-              res.color = dimColor(data.color, 0.1);
-              res.size = 0.3;
-              res.zIndex = 0;
-            }
+          if (isConnected) {
+            res.color = brightenColor(data.color, 1.5);
+            res.size = getSelectedContextEdgeSize({
+              baseSize: data.size || 1,
+              areAmbientGraphLinksVisible: areGraphLinksVisibleRef.current,
+            });
+            res.zIndex = 2;
+          } else {
+            res.color = dimColor(data.color, 0.1);
+            res.size = 0.3;
+            res.zIndex = 0;
           }
         }
 
@@ -564,6 +565,9 @@ export const useSigma = (options: UseSigmaOptions = {}): UseSigmaReturn => {
       }
 
       graphRef.current = newGraph;
+      const selectedContext = buildSelectedGraphContext(newGraph, null);
+      selectedNeighborNodeIdsRef.current = selectedContext.neighborNodeIds;
+      selectedDirectEdgeIdsRef.current = selectedContext.directEdgeIds;
       sigma.setGraph(newGraph);
       setSelectedNode(null);
 
@@ -584,6 +588,9 @@ export const useSigma = (options: UseSigmaOptions = {}): UseSigmaReturn => {
     // Set selection state directly (without the camera nudge from setSelectedNode)
     selectedNodeRef.current = nodeId;
     setSelectedNodeState(nodeId);
+    const selectedContext = buildSelectedGraphContext(graph, nodeId);
+    selectedNeighborNodeIdsRef.current = selectedContext.neighborNodeIds;
+    selectedDirectEdgeIdsRef.current = selectedContext.directEdgeIds;
 
     // Only animate camera if selecting a new node
     if (!alreadySelected) {

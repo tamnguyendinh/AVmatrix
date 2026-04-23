@@ -7,6 +7,7 @@ import {
   useEffect,
   useMemo,
   ReactNode,
+  startTransition,
 } from 'react';
 import type { GraphNode, NodeLabel, PipelineProgress } from 'avmatrix-shared';
 import type { KnowledgeGraph } from '../core/graph/types';
@@ -425,7 +426,9 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
     if (!selectedNode) return;
     // User selection should show in the top "Selected file" viewer,
     // not be appended to the AI citations list.
-    setCodePanelOpen(true);
+    startTransition(() => {
+      setCodePanelOpen(true);
+    });
   }, [selectedNode]);
 
   // Backend client — direct HTTP calls (no Worker/Comlink)

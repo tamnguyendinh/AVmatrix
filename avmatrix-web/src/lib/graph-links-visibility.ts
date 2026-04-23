@@ -33,6 +33,7 @@ export const shouldHideGraphEdge = ({
   relationType?: string;
   visibleEdgeTypes: EdgeType[] | null;
 }): boolean => {
+  // Ambient-only helper. Selected-node contextual edge exceptions are decided elsewhere.
   if (!areGraphLinksVisible) {
     return true;
   }

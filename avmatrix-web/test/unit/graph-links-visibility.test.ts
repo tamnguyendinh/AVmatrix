@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { shouldHideGraphEdge } from '../../src/lib/graph-links-visibility';
 
-describe('graph links visibility helper', () => {
-  it('hides every edge when the master toggle is off', () => {
+describe('ambient graph links visibility helper', () => {
+  it('hides ambient edges when the ambient toggle is off', () => {
     expect(
       shouldHideGraphEdge({
         areGraphLinksVisible: false,

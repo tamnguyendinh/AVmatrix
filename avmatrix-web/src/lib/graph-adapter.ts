@@ -25,8 +25,7 @@ export interface SigmaEdgeAttributes {
   size: number;
   color: string;
   relationType: string;
-  type?: string;
-  curvature?: number;
+  hidden?: boolean;
   zIndex?: number;
 }
 
@@ -301,14 +300,11 @@ export const knowledgeGraphToGraphology = (
     if (graph.hasNode(rel.sourceId) && graph.hasNode(rel.targetId)) {
       if (!graph.hasEdge(rel.sourceId, rel.targetId)) {
         const style = EDGE_STYLES[rel.type] || { color: '#4a4a5a', sizeMultiplier: 0.5 };
-        const curvature = 0.12 + Math.random() * 0.08;
 
         graph.addEdge(rel.sourceId, rel.targetId, {
           size: edgeBaseSize * style.sizeMultiplier,
           color: style.color,
           relationType: rel.type,
-          type: 'curved',
-          curvature: curvature,
         });
       }
     }

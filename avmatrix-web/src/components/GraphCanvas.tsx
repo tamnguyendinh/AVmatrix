@@ -16,6 +16,7 @@ import { useAppState } from '../hooks/useAppState.local-runtime';
 import {
   knowledgeGraphToGraphology,
   filterGraphByDepth,
+  filterGraphByLabels,
   SigmaNodeAttributes,
   SigmaEdgeAttributes,
 } from '../lib/graph-adapter';
@@ -35,7 +36,6 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle>((_, ref) => {
     visibleLabels,
     visibleEdgeTypes,
     areGraphLinksVisible,
-    openCodePanel,
     depthFilter,
     highlightedNodeIds,
     setHighlightedNodeIds,
@@ -89,10 +89,9 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle>((_, ref) => {
       const node = nodeById.get(nodeId);
       if (node) {
         setSelectedNode(node);
-        openCodePanel();
       }
     },
-    [graph, nodeById, setSelectedNode, openCodePanel],
+    [graph, nodeById, setSelectedNode],
   );
 
   const handleNodeHover = useCallback(
@@ -163,13 +162,12 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle>((_, ref) => {
           const node = nodeById.get(nodeId);
           if (node) {
             setSelectedNode(node);
-            openCodePanel();
           }
         }
         focusNode(nodeId);
       },
     }),
-    [focusNode, graph, nodeById, setSelectedNode, openCodePanel],
+    [focusNode, graph, nodeById, setSelectedNode],
   );
 
   // Update Sigma graph when KnowledgeGraph changes
@@ -196,7 +194,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle>((_, ref) => {
     setSigmaGraph(sigmaGraph);
   }, [graph, nodeById, setSigmaGraph]);
 
-  // Update node visibility when filters change
+  // Update graph visibility when label filters or depth filter mode change.
   useEffect(() => {
     const sigma = sigmaRef.current;
     if (!sigma) return;
@@ -204,10 +202,29 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle>((_, ref) => {
     const sigmaGraph = sigma.getGraph() as Graph<SigmaNodeAttributes, SigmaEdgeAttributes>;
     if (sigmaGraph.order === 0) return; // Don't filter empty graph
 
+    if (depthFilter === null) {
+      filterGraphByLabels(sigmaGraph, visibleLabels);
+    } else {
+      filterGraphByDepth(sigmaGraph, appSelectedNode?.id || null, depthFilter, visibleLabels);
+    }
+    sigma.refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sigmaRef identity never changes
+  }, [visibleLabels, depthFilter]);
+
+  // Re-apply depth filtering when selection changes only if the feature is enabled.
+  useEffect(() => {
+    if (depthFilter === null) return;
+
+    const sigma = sigmaRef.current;
+    if (!sigma) return;
+
+    const sigmaGraph = sigma.getGraph() as Graph<SigmaNodeAttributes, SigmaEdgeAttributes>;
+    if (sigmaGraph.order === 0) return;
+
     filterGraphByDepth(sigmaGraph, appSelectedNode?.id || null, depthFilter, visibleLabels);
     sigma.refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sigmaRef identity never changes
-  }, [visibleLabels, depthFilter, appSelectedNode]);
+  }, [appSelectedNode?.id]);
 
   // Sync app selected node with sigma
   useEffect(() => {
