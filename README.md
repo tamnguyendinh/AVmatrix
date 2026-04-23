@@ -1,5 +1,5 @@
 # avmatrix
-⚠️ Important Notice:** avmatrix has NO official cryptocurrency, token, or coin. Any token/coin using the avmatrix name on Pump.fun or any other platform is **not affiliated with, endorsed by, or created by** this project or its maintainers. Do not purchase any cryptocurrency claiming association with avmatrix.
+**⚠ Important Notice:** avmatrix has NO official cryptocurrency, token, or coin. Any token/coin using the avmatrix name on Pump.fun or any other platform is **not affiliated with, endorsed by, or created by** this project or its maintainers. Do not purchase any cryptocurrency claiming association with avmatrix.
 
 **Building nervous system for agent context.**
 
@@ -7,23 +7,23 @@ Indexes any codebase into a knowledge graph — every dependency, call chain, cl
 
 > *Like DeepWiki, but deeper.* DeepWiki helps you *understand* code. avmatrix lets you *analyze* it — because a knowledge graph tracks every relationship, not just descriptions.
 
-**TL;DR:** The **Web UI** is a quick way to chat with any repo. The **CLI + MCP** is how you make your AI agent actually reliable — it gives Cursor, Claude Code, Codex, and friends a deep architectural view of your codebase so they stop missing dependencies, breaking call chains, and shipping blind edits. Even smaller models get full architectural clarity, making it compete with goliath models.
+**TL;DR:** The **CLI + MCP** path is the core product: index locally, expose the graph to your editor or agent, and work against the same repo-backed knowledge graph every time. The **Web UI** is the local browser frontend for that same runtime via `avmatrix serve` when you want graph browsing, repo switching, and chat in a browser.
 
 ---
 
 ## Two Ways to Use avmatrix
 
-|                   | **CLI + MCP**                                            | **Web UI**                                             |
-| ----------------- | -------------------------------------------------------------- | ------------------------------------------------------------ |
-| **What**    | Index repos locally, connect AI agents via MCP                 | Visual graph explorer + AI chat in browser                   |
-| **For**     | Daily development with Cursor, Claude Code, Codex, Windsurf, OpenCode | Quick exploration, demos, one-off analysis                   |
-| **Scale**   | Full repos, any size                                           | Limited by browser memory (~5k files), or unlimited via backend mode |
-| **Install** | `npm install -g avmatrix`                                    | Local web |
-| **Storage** | LadybugDB native (fast, persistent)                               | LadybugDB WASM (in-memory, per session)                         |
-| **Parsing** | Tree-sitter native bindings                                    | Tree-sitter WASM                                             |
-| **Privacy** | Everything local, no network                                   | Everything in-browser, no server                             |
+|                   | **CLI + MCP**                                                  | **Web UI**                                                                  |
+| ----------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| **What**          | Local indexer, MCP server, direct graph tools                  | Local browser frontend for `avmatrix serve`                                 |
+| **For**           | Daily development with Claude Code, Codex, Cursor, OpenCode    | Graph browsing, repo switching, local chat/session UX                       |
+| **Scale**         | Full repos, any size                                           | Uses backend indexes, so practical limits are the local backend machine     |
+| **Install**       | Build from source, then `npm link` in `avmatrix/`             | Run `avmatrix serve` plus `avmatrix-web`, or use the Docker stack           |
+| **Storage**       | LadybugDB native in repo-local `.avmatrix/`                    | Uses backend data from the same repo-local `.avmatrix/`                     |
+| **Parsing**       | Tree-sitter native bindings                                    | Reads backend graph over HTTP                                               |
+| **Privacy**       | Local-first                                                    | Local-first                                                                 |
 
-> **Bridge mode:** `avmatrix serve` connects the two — the web UI auto-detects the local server and can browse all your CLI-indexed repos without re-uploading or re-indexing.
+> **Bridge mode:** `avmatrix serve` is the bridge. The web UI auto-detects `http://localhost:4747`, lists indexed repos, can start local analyze jobs, and uses the same runtime core as MCP.
 
 ---
 
@@ -42,13 +42,24 @@ The CLI indexes your repository and runs an MCP server that gives AI agents deep
 ### Quick Start
 
 ```bash
-# Index your repo (run from repo root)
-npx avmatrix analyze
+# 1. Build and link the local CLI once
+git clone https://github.com/tamnguyendinh/AVmatrix.git
+cd AVmatrix/avmatrix-shared && npm install && npm run build
+cd ../avmatrix && npm install && npm link
+
+# 2. Index your target repo
+cd /path/to/your/repo
+avmatrix analyze
+
+# 3. Optional one-time editor setup
+avmatrix setup
 ```
 
-That's it. This indexes the codebase, installs agent skills, registers Claude Code hooks, and creates `AGENTS.md` / `CLAUDE.md` context files — all in one command.
+`analyze` is the repo-local step. It builds the graph, stores the index in `.avmatrix/`, writes the managed AVmatrix sections in `AGENTS.md` / `CLAUDE.md`, and installs repo-local skills under `.claude/skills/avmatrix/`.
 
-To configure MCP for your editor, run `npx avmatrix setup` once — or set it up manually below.
+`setup` is the global editor step. It writes MCP config for supported editors, installs global skills where supported, and registers Claude Code hooks.
+
+The manual MCP snippets below assume the local `avmatrix` CLI is already on your `PATH`. In the current source tree, the canonical way to do that is `npm link` from `AVmatrix/avmatrix` after building `avmatrix-shared`.
 
 ### MCP local Setup
 
@@ -56,22 +67,19 @@ To configure MCP for your editor, run `npx avmatrix setup` once — or set it up
 
 ### Editor Support
 
-| Editor                | MCP | Skills | Hooks (auto-augment) | Support        |
-| --------------------- | --- | ------ | -------------------- | -------------- |
-| **Claude Code** | Yes | Yes    | Yes                  | Full           |
-| **Codex**       | Yes | Yes    | Yes                  | **Full** |
-| **Cursor**      | Yes | Yes    | —                   | MCP + Skills   |
-| **Codex**       | Yes | Yes    | —                   | MCP + Skills   |
-| **Windsurf**    | Yes | —     | —                   | MCP            |
-| **OpenCode**    | Yes | Yes    | —                   | MCP + Skills   |
+| Editor           | MCP | Skills | Hooks | Setup Path |
+| ---------------- | --- | ------ | ----- | ---------- |
+| **Claude Code**  | Yes | Yes    | Yes   | `avmatrix setup` or manual |
+| **Codex**        | Yes | Yes    | —     | `avmatrix setup` or manual |
+| **Cursor**       | Yes | Yes    | —     | `avmatrix setup` or manual |
+| **OpenCode**     | Yes | Yes    | —     | `avmatrix setup` or manual |
+| **Other MCP clients** | Manual | Manual | — | Configure a local stdio MCP entry if the client supports it |
 
-> **Claude Code** gets the deepest integration: MCP tools + agent skills + PreToolUse hooks that enrich searches with graph context + PostToolUse hooks that auto-reindex after commits.
-
-> Have a project built on avmatrix? Open a PR to add it here!
+> **Claude Code** currently has the deepest integration: MCP + global skills + PreToolUse/PostToolUse hooks.
 
 If you prefer manual configuration:
 
-**Claude Code** (full support — MCP + skills + hooks):
+**Claude Code** (`~/.claude.json` or via `claude mcp add`):
 
 ```bash
 # First install the local CLI onto PATH (for example: `cd avmatrix && npm link`)
@@ -98,7 +106,7 @@ codex mcp add avmatrix -- avmatrix mcp
 }
 ```
 
-**OpenCode** (`~/.config/opencode/config.json`):
+**OpenCode** (`~/.config/opencode/opencode.json`):
 
 ```json
 {
@@ -126,49 +134,63 @@ avmatrix setup                   # Configure MCP for your editors (one-time)
 avmatrix analyze [path]          # Index a repository (or update stale index)
 avmatrix analyze --force         # Force full re-index
 avmatrix analyze --skills        # Generate repo-specific skill files from detected communities
-avmatrix analyze --skip-embeddings  # Skip embedding generation (faster)
-avmatrix analyze --skip-agents-md  # Preserve custom AGENTS.md/CLAUDE.md avmatrix section edits
 avmatrix analyze --embeddings    # Enable embedding generation (slower, better search)
+avmatrix analyze --skip-agents-md  # Skip updating the managed AVmatrix section in AGENTS.md/CLAUDE.md
+avmatrix analyze --skip-git      # Index a folder without requiring .git
+avmatrix analyze --name <alias>  # Register a repo under a custom registry name
 avmatrix analyze --verbose       # Log skipped files when parsers are unavailable
+avmatrix index [path...]         # Register an existing local index into the global registry
 avmatrix mcp                     # Start MCP server (stdio) — serves all indexed repos
-avmatrix serve                   # Start local HTTP server (multi-repo) for web UI connection
+avmatrix serve                   # Start local HTTP server for the web UI and local session runtime
 avmatrix list                    # List all indexed repositories
 avmatrix status                  # Show index status for current repo
 avmatrix clean                   # Delete index for current repo
 avmatrix clean --all --force     # Delete all indexes
-avmatrix wiki [path]             # Generate repository wiki from knowledge graph
-avmatrix wiki --model <model>    # Wiki with custom LLM model (default: gpt-4o-mini)
-avmatrix wiki --base-url <url>   # Wiki with custom LLM API base URL
+avmatrix wiki                    # Show wiki capability status in the local-only build
+avmatrix wiki-mode [mode]        # Show or set wiki mode (off|local)
+
+# Direct graph tools (CLI, no MCP transport)
+avmatrix query <search_query>    # Search execution flows related to a concept
+avmatrix context [name]          # 360-degree symbol context
+avmatrix impact [target]         # Blast radius analysis for a symbol
+avmatrix cypher <query>          # Raw Cypher query against the graph
+avmatrix detect-changes          # Analyze current git diff against the graph
 
 # Repository groups (multi-repo / monorepo service tracking)
 avmatrix group create <name>     # Create a repository group
-avmatrix group add <name> <repo> # Add a repo to a group
-avmatrix group remove <name> <repo> # Remove a repo from a group
+avmatrix group add <group> <groupPath> <registryName>
+avmatrix group remove <group> <path>
 avmatrix group list [name]       # List groups, or show one group's config
 avmatrix group sync <name>       # Extract contracts and match across repos/services
 avmatrix group contracts <name>  # Inspect extracted contracts and cross-links
-avmatrix group query <name> <q>  # Search execution flows across all repos in a group
+avmatrix group query <name> <query>  # Search execution flows across all repos in a group
 avmatrix group status <name>     # Check staleness of repos in a group
 ```
 
+Repository-local indexing settings live in `.avmatrix/settings.json`. Today that includes `maxExecutionFlows`, which controls the cap used when materializing execution flows during `analyze`. `AVMATRIX_MAX_PROCESSES` is still supported as a temporary override.
+
 ### What Your AI Agent Gets
 
-**16 tools** exposed via MCP (11 per-repo + 5 group):
+**16 tools** exposed via MCP (11 repo/global + 5 group):
 
-| Tool               | What It Does                                                      | `repo` Param |
-| ------------------ | ----------------------------------------------------------------- | -------------- |
-| `list_repos`     | Discover all indexed repositories                                 | —             |
-| `query`          | Process-grouped hybrid search (BM25 + semantic + RRF)             | Optional       |
-| `context`        | 360-degree symbol view — categorized refs, process participation | Optional       |
-| `impact`         | Blast radius analysis with depth grouping and confidence          | Optional       |
-| `detect_changes` | Git-diff impact — maps changed lines to affected processes       | Optional       |
-| `rename`         | Multi-file coordinated rename with graph + text search            | Optional       |
-| `cypher`         | Raw Cypher graph queries                                          | Optional       |
-| `group_list`     | List configured repository groups                                 | —             |
-| `group_sync`     | Extract contracts and match across repos/services                 | —             |
-| `group_contracts`| Inspect extracted contracts and cross-links                       | —             |
-| `group_query`    | Search execution flows across all repos in a group                | —             |
-| `group_status`   | Check staleness of repos in a group                               | —             |
+| Tool | What It Does | `repo` Param |
+| ---- | ------------ | ------------ |
+| `list_repos` | Discover all indexed repositories | — |
+| `query` | Process-grouped hybrid search (BM25 + semantic + RRF) | Optional |
+| `cypher` | Raw Cypher graph queries | Optional |
+| `context` | 360-degree symbol view with categorized refs and process participation | Optional |
+| `detect_changes` | Git-diff impact mapped back to symbols and processes | Optional |
+| `rename` | Multi-file coordinated rename with graph + text search | Optional |
+| `impact` | Blast radius analysis with depth grouping and confidence | Optional |
+| `route_map` | Route-to-handler-to-consumer mapping for API paths | Optional |
+| `tool_map` | MCP/RPC tool definitions and handler mapping | Optional |
+| `shape_check` | Consumer-vs-response shape checks for API routes | Optional |
+| `api_impact` | Pre-change impact report for an API route handler | Optional |
+| `group_list` | List configured repository groups | — |
+| `group_sync` | Rebuild contract registry and cross-links for a group | — |
+| `group_contracts` | Inspect extracted contracts and cross-links | — |
+| `group_query` | Search execution flows across all repos in a group | — |
+| `group_status` | Check staleness of repos in a group | — |
 
 > When only one repo is indexed, the `repo` parameter is optional. With multiple repos, specify which one: `query({query: "auth", repo: "my-app"})`.
 
@@ -177,6 +199,7 @@ avmatrix group status <name>     # Check staleness of repos in a group
 | Resource                                  | Purpose                                              |
 | ----------------------------------------- | ---------------------------------------------------- |
 | `avmatrix://repos`                      | List all indexed repositories (read this first)      |
+| `avmatrix://setup`                      | Generated setup/onboarding content for indexed repos |
 | `avmatrix://repo/{name}/context`        | Codebase stats, staleness check, and available tools |
 | `avmatrix://repo/{name}/clusters`       | All functional clusters with cohesion scores         |
 | `avmatrix://repo/{name}/cluster/{name}` | Cluster members and details                          |
@@ -191,12 +214,14 @@ avmatrix group status <name>     # Check staleness of repos in a group
 | `detect_impact` | Pre-commit change analysis — scope, affected processes, risk level       |
 | `generate_map`  | Architecture documentation from the knowledge graph with mermaid diagrams |
 
-**4 agent skills** installed to `.claude/skills/` automatically:
+**6 core skills** installed repo-locally under `.claude/skills/avmatrix/` during `analyze`:
 
 - **Exploring** — Navigate unfamiliar code using the knowledge graph
 - **Debugging** — Trace bugs through call chains
 - **Impact Analysis** — Analyze blast radius before changes
 - **Refactoring** — Plan safe refactors using dependency mapping
+- **Guide** — Tool/resource/schema reference for AVmatrix itself
+- **CLI** — Index, status, clean, serve, wiki capability commands
 
 **Repo-specific skills** generated with `--skills`:
 
@@ -250,41 +275,49 @@ flowchart TD
 
 **How it works:** Each `avmatrix analyze` stores the index in `.avmatrix/` inside the repo (portable, gitignored) and registers a pointer in `~/.avmatrix/registry.json`. When an AI agent starts, the MCP server reads the registry and can serve any indexed repo. LadybugDB connections are opened lazily on first query and evicted after 5 minutes of inactivity (max 5 concurrent). If only one repo is indexed, the `repo` parameter is optional on all tools — agents don't need to change anything.
 
+Per-repo indexing settings live alongside the index in `.avmatrix/settings.json`. The current repo-local setting is `maxExecutionFlows`, which acts as the cap for materialized execution flows during analysis.
+
 ---
 
-## Web UI (browser-based)
+## Web UI (local frontend + local backend)
 
-A fully client-side graph explorer and AI chat. No server, no install — your code never leaves the browser.
+A local browser frontend for the same runtime core used by the CLI and MCP server. The active flow is:
 
-**Try it now:** [avmatrix.vercel.app](https://avmatrix.vercel.app) — drag & drop a ZIP and start exploring.
+1. start `avmatrix serve`
+2. open the web UI
+3. let it auto-detect `http://localhost:4747`
+4. pick an indexed repo or start a local analyze job
+5. browse the graph and use the local chat/session runtime
 
 <img width="2550" height="1343" alt="avmatrix_img" src="https://github.com/user-attachments/assets/cc5d637d-e0e5-48e6-93ff-5bcfdb929285" />
 
 Or run locally:
 
 ```bash
-git clone https://github.com/abhigyanpatwari/avmatrix.git
-cd avmatrix/avmatrix-shared && npm install && npm run build
+git clone https://github.com/tamnguyendinh/AVmatrix.git
+cd AVmatrix/avmatrix-shared && npm install && npm run build
+cd ../avmatrix && npm install
 cd ../avmatrix-web && npm install
+
+# terminal 1
+cd ../avmatrix
+npm run serve
+
+# terminal 2
+cd ../avmatrix-web
 npm run dev
 ```
 
 ## Docker
 
-The official Docker setup ships **two signed images** orchestrated by `docker-compose.yaml`:
+The repo ships a two-container Docker stack in `docker-compose.yaml` plus matching image-build workflows. The current compose defaults and `.env.example` use these image names:
 
 | Image                                              | Purpose                                                                |
 | -------------------------------------------------- | ---------------------------------------------------------------------- |
-| `ghcr.io/abhigyanpatwari/avmatrix:latest`          | CLI / `avmatrix serve` backend (HTTP API on port `4747`, MCP, indexer) |
-| `ghcr.io/abhigyanpatwari/avmatrix-web:latest`      | Static web UI (port `4173`)                                            |
+| `ghcr.io/abhigyanpatwari/avmatrix:latest`     | CLI / `avmatrix serve` backend (HTTP API on port `4747`, MCP, indexer) |
+| `ghcr.io/abhigyanpatwari/avmatrix-web:latest` | Static web UI (port `4173`) |
 
-> **Heads-up — image rename.** Earlier releases published the web UI under
-> `ghcr.io/abhigyanpatwari/avmatrix`. Starting with the introduction of the
-> bundled backend, that slug now hosts the CLI/server image and the UI moved
-> to `ghcr.io/abhigyanpatwari/avmatrix-web`. The previous tags remain
-> available for pulling, but new versions are only published under the new
-> slugs. Update your `docker run` / compose files accordingly (or just adopt
-> the bundled compose).
+> **Current codebase note:** the local CLI keeps `serve` loopback-only by default, while `Dockerfile.cli` runs `serve --host 0.0.0.0` for container exposure. Treat Docker as a distinct deployment path from the local CLI flow and verify it in your environment.
 
 ### One-command setup
 
@@ -414,13 +447,11 @@ clusters actually need.
 ### Files
 
 - [Dockerfile.web](Dockerfile.web) — builds `avmatrix-shared` and `avmatrix-web`, then serves the production frontend.
-- [Dockerfile.cli](Dockerfile.cli) — builds the CLI/server (with its native deps) and runs `avmatrix serve --host 0.0.0.0`.
+- [Dockerfile.cli](Dockerfile.cli) — builds the CLI/server image and starts `avmatrix serve --host 0.0.0.0 --port 4747`.
 - [docker-compose.yaml](docker-compose.yaml) — starts both signed images side by side.
 - [.env.example](.env.example) — overrides for image names, container names, ports, and the workspace mount.
 
-The web UI uses the same indexing pipeline as the CLI but runs entirely in WebAssembly (Tree-sitter WASM, LadybugDB WASM, in-browser embeddings). It's great for quick exploration but limited by browser memory for larger repos.
-
-**Local Backend Mode:** Run `avmatrix serve` and open the web UI locally — it auto-detects the server and shows all your indexed repos, with full AI chat support. No need to re-upload or re-index. The agent's tools (Cypher queries, search, code navigation) route through the backend HTTP API automatically.
+In the active local-runtime path, the web UI is a frontend over the backend HTTP API. The browser auto-detects the local backend, shows indexed repos, and routes graph operations and session chat through `avmatrix serve`.
 
 ---
 
@@ -612,66 +643,55 @@ ORDER BY r.confidence DESC
 
 ---
 
-## Wiki Generation
+## Wiki Capability
 
-Generate LLM-powered documentation from your knowledge graph:
+In the current local-only build, `avmatrix wiki` is a gated capability check, not a full documentation generator.
 
 ```bash
-# Requires an LLM API key (OPENAI_API_KEY, etc.)
 avmatrix wiki
-
-# Use a custom model or provider
-avmatrix wiki --model gpt-4o
-avmatrix wiki --base-url https://api.anthropic.com/v1
-
-# Force full regeneration
-avmatrix wiki --force
+avmatrix wiki-mode
+avmatrix wiki-mode off
+avmatrix wiki-mode local
 ```
 
-The wiki generator reads the indexed graph structure, groups files into modules via LLM, generates per-module documentation pages, and creates an overview page — all with cross-references to the knowledge graph.
+Current behavior:
+
+- `avmatrix wiki` reports whether wiki capability is available in this build
+- `avmatrix wiki-mode local` reserves the local wiki mode flag for a future local engine
+- there is **no remote fallback** in the active local-only runtime path
 
 ---
 
 ## Tech Stack
 
-| Layer                     | CLI                                   | Web                                     |
-| ------------------------- | ------------------------------------- | --------------------------------------- |
-| **Runtime**         | Node.js (native)                      | Browser (WASM)                          |
-| **Parsing**         | Tree-sitter native bindings           | Tree-sitter WASM                        |
-| **Database**        | LadybugDB native                         | LadybugDB WASM                             |
-| **Embeddings**      | HuggingFace transformers.js (GPU/CPU) | transformers.js (WebGPU/WASM)           |
-| **Search**          | BM25 + semantic + RRF                 | BM25 + semantic + RRF                   |
-| **Agent Interface** | MCP (stdio)                           | LangChain ReAct agent                   |
-| **Visualization**   | —                                    | Sigma.js + Graphology (WebGL)           |
-| **Frontend**        | —                                    | React 18, TypeScript, Vite, Tailwind v4 |
-| **Clustering**      | Graphology                            | Graphology                              |
-| **Concurrency**     | Worker threads + async                | Web Workers + Comlink                   |
+- **`avmatrix/`** — Node.js CLI, indexing pipeline, MCP server, HTTP API, LadybugDB integration, local session runtime
+- **`avmatrix-web/`** — React 18 + Vite frontend, Sigma.js graph visualization, backend HTTP client, local chat/session UI
+- **`avmatrix-shared/`** — shared types and constants used by the CLI/server and the web app
+- **Core parsing/indexing** — Tree-sitter native parsers, graph construction, clustering, process detection, hybrid search
+- **Primary runtime path** — local backend on `http://localhost:4747`, with the browser acting as a frontend over that backend
+- **Chat runtime path** — local session bridge in `avmatrix serve`, backed by the Codex session adapter in the current codebase
 
 ---
 
-## Roadmap
+## Planning
 
-### Actively Building
+Current implementation and design work is tracked in [`docs/plans/`](docs/plans/).
 
-- [ ] **LLM Cluster Enrichment** — Semantic cluster names via LLM API
-- [ ] **AST Decorator Detection** — Parse @Controller, @Get, etc.
-- [ ] **Incremental Indexing** — Only re-index changed files
+Themes visible in the current codebase:
 
-### Recently Completed
-
-- [X] Constructor-Inferred Type Resolution, `self`/`this` Receiver Mapping
-- [X] Wiki Generation, Multi-File Rename, Git-Diff Impact Analysis
-- [X] Process-Grouped Search, 360-Degree Context, Claude Code Hooks
-- [X] Multi-Repo MCP, Zero-Config Setup, 14 Language Support
-- [X] Community Detection, Process Detection, Confidence Scoring
-- [X] Hybrid Search, Vector Index
+- local-first web chat/runtime UX over `avmatrix serve`
+- MCP reliability, startup, and tool-contract hardening
+- route / tool / API impact analysis
+- execution-flow indexing and repo-local settings in `.avmatrix/settings.json`
 
 ---
 
 ## Security & Privacy
 
-- **CLI**: Everything runs locally on your machine. No network calls. Index stored in `.avmatrix/` (gitignored). Global registry at `~/.avmatrix/` stores only paths and metadata.
-- **Web**: Everything runs in your browser. No code uploaded to any server. API keys stored in localStorage only.
+- **CLI / MCP / HTTP API**: local-first. Index data is stored in repo-local `.avmatrix/`. Global registry and runtime config live under `~/.avmatrix/`.
+- **Web UI**: the active path is a local browser frontend connected to `http://localhost:4747`; repository data stays on your machine.
+- **Chat runtime**: the current local session path is served by the backend runtime controller and Codex session adapter, not a hosted chat service.
+- **Browser storage**: the web app stores lightweight local UI/runtime preferences in browser storage. The indexed graph and repo files stay in the local backend/runtime path.
 - Open source — audit the code yourself.
 
 ---
