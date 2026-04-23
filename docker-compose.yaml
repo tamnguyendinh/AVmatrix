@@ -1,6 +1,6 @@
 services:
   avmatrix-server:
-    image: ${SERVER_IMAGE:-ghcr.io/abhigyanpatwari/avmatrix:latest}
+    image: ${SERVER_IMAGE:?Set SERVER_IMAGE in .env or your shell environment}
     container_name: ${SERVER_CONTAINER_NAME:-avmatrix-server}
     # Map the server to the same host port the web UI expects by default
     # (http://localhost:4747). The browser runs on the host, so the UI's
@@ -26,7 +26,7 @@ services:
       start_period: 15s
 
   avmatrix-web:
-    image: ${WEB_IMAGE:-ghcr.io/abhigyanpatwari/avmatrix-web:latest}
+    image: ${WEB_IMAGE:?Set WEB_IMAGE in .env or your shell environment}
     container_name: ${WEB_CONTAINER_NAME:-avmatrix-web}
     ports:
       - '${WEB_HOST_PORT:-4173}:4173'

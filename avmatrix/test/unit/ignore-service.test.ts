@@ -334,7 +334,7 @@ describe('createIgnoreFilter', () => {
   });
 
   it('childrenIgnored respects negation patterns (exclude-all + whitelist)', async () => {
-    // Reproduces https://github.com/abhigyanpatwari/AVmatrix/issues/596
+    // Reproduces https://github.com/tamnguyendinh/AVmatrix/issues/596
     // Pattern: `*` (exclude all) + `!iOS/` + `!iOS/**` (whitelist iOS)
     await fs.writeFile(
       path.join(tmpDir, '.avmatrixignore'),

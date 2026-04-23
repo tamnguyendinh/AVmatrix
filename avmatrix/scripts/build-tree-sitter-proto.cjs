@@ -13,7 +13,7 @@
  *     ENOTEMPTY: directory not empty, rmdir
  *       '.../avmatrix/vendor/tree-sitter-proto/node_modules/node-addon-api'
  *
- *   (See https://github.com/abhigyanpatwari/AVmatrix/issues/836.)
+ *   (See https://github.com/tamnguyendinh/AVmatrix/issues/836.)
  *
  *   We stripped `dependencies` and the `install` script from the vendored
  *   package.json, hoisted `node-addon-api` and `node-gyp-build` into

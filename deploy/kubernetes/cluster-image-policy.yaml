@@ -1,7 +1,7 @@
 # Sigstore policy-controller ClusterImagePolicy for avmatrix container images.
 #
 # This enforces — at admission time — that every Pod pulling a
-# `ghcr.io/abhigyanpatwari/avmatrix` or `avmatrix-web` image is using a build
+# `ghcr.io/tamnguyendinh/avmatrix` or `avmatrix-web` image is using a build
 # that was Cosign-keyless-signed by this repository's `docker.yml` workflow
 # running from a `vX.Y.Z` git tag. Unsigned images, images signed by other
 # workflows, and images signed from unprotected refs (e.g. `main`, PR branches)
@@ -24,7 +24,7 @@
 #
 #      kubectl apply -f deploy/kubernetes/cluster-image-policy.yaml
 #
-# After this, `kubectl run --image=ghcr.io/abhigyanpatwari/avmatrix:<tag>` in
+# After this, `kubectl run --image=ghcr.io/tamnguyendinh/avmatrix:<tag>` in
 # any opted-in namespace will only succeed if the image carries a valid
 # Sigstore signature with the pinned identity.
 #
@@ -41,7 +41,7 @@ spec:
   # `avmatrix:<tag>`, `avmatrix@sha256:...`, `avmatrix-web:<tag>`, and
   # `avmatrix-web@sha256:...` reference.
   images:
-    - glob: 'ghcr.io/abhigyanpatwari/avmatrix*'
+    - glob: 'ghcr.io/tamnguyendinh/avmatrix*'
   authorities:
     - name: avmatrix-cosign-keyless
       keyless:
@@ -56,7 +56,7 @@ spec:
           #   * signatures from non-tag refs (main, PRs, release branches)
           #   * signatures from arbitrary non-semver tags
           - issuer: https://token.actions.githubusercontent.com
-            subjectRegExp: ^https://github\.com/abhigyanpatwari/avmatrix/\.github/workflows/docker\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$
+            subjectRegExp: ^https://github\.com/tamnguyendinh/avmatrix/\.github/workflows/docker\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$
       # Cross-check the signature against the public Rekor transparency log,
       # so an attacker who briefly compromised Fulcio cannot retroactively
       # mint a signature without leaving a public, append-only audit record.

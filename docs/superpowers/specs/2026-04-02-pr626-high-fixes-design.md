@@ -1,8 +1,8 @@
 # PR #626 HIGH-Priority Fixes Design
 
 **Date:** 2026-04-02
-**PR:** abhigyanpatwari/AVmatrix#626 — Intra-repo service communication tracking
-**Scope:** 4 HIGH-priority issues identified by abhigyanpatwari and xkonjin
+**PR:** tamnguyendinh/AVmatrix#626 — Intra-repo service communication tracking
+**Scope:** 4 HIGH-priority issues identified by tamnguyendinh and xkonjin
 **Approach:** Minimal targeted fixes (option A) — no refactoring, no scope creep
 
 ---
@@ -24,7 +24,7 @@ Add `validateGroupName(name: string): void` that enforces `/^[a-zA-Z0-9][a-zA-Z0
 
 ### Why regex over path.resolve + startsWith
 
-- abhigyanpatwari explicitly requested `[a-zA-Z0-9_-]`
+- tamnguyendinh explicitly requested `[a-zA-Z0-9_-]`
 - Stricter: disallows spaces, dots, Unicode edge cases
 - Simpler to reason about
 

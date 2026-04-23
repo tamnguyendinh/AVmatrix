@@ -251,8 +251,8 @@ Release-candidate versions follow the standard semver prerelease format
 `X.Y.Z-rc.N`, where `X.Y.Z` is the next stable target (bumped from the
 current `latest` by patch by default; `minor` or `major` when kicking off a
 bigger cycle) and `N` increments per published rc. Example sequence:
-`1.6.2-rc.1`, `1.6.2-rc.2`, …, then once `1.6.2` ships stable,
-`1.6.3-rc.1`. See the [Releases page](https://github.com/tamnguyendinh/AVmatrix/releases)
+`1.0.0-rc.1`, `1.0.0-rc.2`, …, then once `1.0.0` ships stable,
+`1.0.1-rc.1`. See the [Releases page](https://github.com/tamnguyendinh/AVmatrix/releases)
 for the full list; stable `latest` is unaffected.
 
 ## Troubleshooting

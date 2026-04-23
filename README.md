@@ -13,15 +13,143 @@ Indexes any codebase into a knowledge graph — every dependency, call chain, cl
 
 ## Two Ways to Use avmatrix
 
-|                   | **CLI + MCP**                                                  | **Web UI**                                                                  |
-| ----------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| **What**          | Local indexer, MCP server, direct graph tools                  | Local browser frontend for `avmatrix serve`                                 |
-| **For**           | Daily development with Claude Code, Codex, Cursor, OpenCode    | Graph browsing, repo switching, local chat/session UX                       |
-| **Scale**         | Full repos, any size                                           | Uses backend indexes, so practical limits are the local backend machine     |
-| **Install**       | Build from source, then `npm link` in `avmatrix/`             | Run `avmatrix serve` plus `avmatrix-web`, or use the Docker stack           |
-| **Storage**       | LadybugDB native in repo-local `.avmatrix/`                    | Uses backend data from the same repo-local `.avmatrix/`                     |
-| **Parsing**       | Tree-sitter native bindings                                    | Reads backend graph over HTTP                                               |
-| **Privacy**       | Local-first                                                    | Local-first                                                                 |
+### CLI + MCP
+
+Use this path for daily development with Claude Code, Codex, Cursor, OpenCode, or any MCP-compatible workflow. This is the main AVmatrix path: local indexing, local MCP server, and direct graph tools over repo-local `.avmatrix/` data.
+
+Run it from scratch:
+
+1. Open a terminal window.
+   On Windows, this can be PowerShell, Windows Terminal, or `cmd`.
+
+2. In that terminal, clone the AVmatrix repository and move into it:
+
+   ```bash
+   git clone https://github.com/tamnguyendinh/AVmatrix.git
+   cd AVmatrix
+   ```
+
+   Expected result: your terminal is now inside the AVmatrix source tree.
+
+3. In the same terminal, move into `avmatrix-shared`, install dependencies, and build the shared package:
+
+   ```bash
+   cd avmatrix-shared
+   npm install
+   npm run build
+   ```
+
+   Expected result: the shared package builds successfully and the terminal returns to a prompt.
+
+4. Still in the same terminal, move into `avmatrix`, install dependencies, link the CLI into your machine PATH, and verify it:
+
+   ```bash
+   cd ../avmatrix
+   npm install
+   npm link
+   avmatrix --version
+   ```
+
+   Expected result: `avmatrix --version` prints a version string. That means the CLI is now available as the `avmatrix` command in your terminal.
+
+5. Keep using the same terminal. Move to the repository you actually want to index:
+
+   ```bash
+   cd F:\\path\\to\\your\\repo
+   ```
+
+   Replace `F:\\path\\to\\your\\repo` with the real path to your codebase.
+
+6. In that target repo, run the index command:
+
+   ```bash
+   avmatrix analyze .
+   ```
+
+   Expected result: AVmatrix scans the repository and creates a local `.avmatrix/` folder inside that repo. That folder contains the repo-local graph/index data.
+
+7. If you want Claude Code, Codex, Cursor, OpenCode, or another supported editor/agent to use this local MCP server too, run:
+
+   ```bash
+   avmatrix setup
+   ```
+
+   Expected result: AVmatrix adds or updates the MCP/editor integration files for the tools you choose.
+
+After these steps:
+
+- the `avmatrix` command works in your terminal
+- your target repo has a local `.avmatrix/` index
+- MCP/editor integrations can use the same repo-local graph data
+
+Technical notes:
+
+- scale: full repos, any size
+- storage: LadybugDB native in repo-local `.avmatrix/`
+- parsing: Tree-sitter native bindings
+- privacy: local-first
+
+### Web UI
+
+Use this path when you want graph browsing, repo switching, and local chat/session UX in the browser. The Web UI is a local frontend for `avmatrix serve`; it reads graph data from the backend over HTTP.
+
+Run it locally:
+
+1. Open **Terminal 1**.
+   In that first terminal, start the AVmatrix backend:
+
+   ```bash
+   cd AVmatrix/avmatrix
+   node dist/cli/index.js serve
+   ```
+
+   If you already ran `npm link` earlier, you can use this equivalent command instead:
+
+   ```bash
+   avmatrix serve
+   ```
+
+   Expected result: the backend starts and listens on `http://localhost:4747`.
+
+2. Open **Terminal 2**.
+   In that second terminal, start the web frontend:
+
+   ```bash
+   cd AVmatrix/avmatrix-web
+   npm install
+   npm run dev
+   ```
+
+   Expected result: the frontend dev server starts and prints a local URL such as `http://localhost:5173`.
+
+3. Open your browser and go to:
+
+   ```text
+   http://localhost:5173
+   ```
+
+4. Wait for the UI to detect the backend at:
+
+   ```text
+   http://localhost:4747
+   ```
+
+5. In the UI, either:
+   - choose a repo that is already indexed, or
+   - use the UI analyze flow to index a local repo
+
+After these steps:
+
+- the browser UI is connected to the local backend
+- you can browse indexed repos and use local chat/session features
+- graph data still comes from the same repo-local `.avmatrix/` indexes
+
+Technical notes:
+
+- scale: uses backend indexes, so practical limits are the local backend machine
+- storage: backend data from the same repo-local `.avmatrix/`
+- parsing: backend graph over HTTP
+- privacy: local-first
 
 > **Bridge mode:** `avmatrix serve` is the bridge. The web UI auto-detects `http://localhost:4747`, lists indexed repos, can start local analyze jobs, and uses the same runtime core as MCP.
 
@@ -39,19 +167,34 @@ Indexes any codebase into a knowledge graph — every dependency, call chain, cl
 
 The CLI indexes your repository and runs an MCP server that gives AI agents deep codebase awareness.
 
-### Quick Start
+### Install AVmatrix CLI From Source
 
 ```bash
-# 1. Build and link the local CLI once
 git clone https://github.com/tamnguyendinh/AVmatrix.git
 cd AVmatrix/avmatrix-shared && npm install && npm run build
 cd ../avmatrix && npm install && npm link
+avmatrix --version
+```
 
-# 2. Index your target repo
+This is the current supported install path described by the source tree: build `avmatrix-shared`, then link the local `avmatrix` CLI into your `PATH`.
+
+If you do not want to link the CLI globally, you can run it directly from the built package:
+
+```bash
+cd AVmatrix/avmatrix
+node dist/cli/index.js --version
+node dist/cli/index.js serve
+node dist/cli/index.js analyze /path/to/repo
+```
+
+### First Run
+
+```bash
+# 1. Index your target repo
 cd /path/to/your/repo
 avmatrix analyze
 
-# 3. Optional one-time editor setup
+# 2. Optional one-time editor setup
 avmatrix setup
 ```
 
@@ -59,11 +202,23 @@ avmatrix setup
 
 `setup` is the global editor step. It writes MCP config for supported editors, installs global skills where supported, and registers Claude Code hooks.
 
-The manual MCP snippets below assume the local `avmatrix` CLI is already on your `PATH`. In the current source tree, the canonical way to do that is `npm link` from `AVmatrix/avmatrix` after building `avmatrix-shared`.
-
 ### MCP local Setup
 
 `avmatrix setup` auto-detects your editors and writes the correct global MCP config. You only need to run it once.
+
+### If You Are Already Inside Claude Code Or Codex
+
+If you are already chatting directly with Claude Code or Codex, the simplest non-manual path is: tell the agent to run `avmatrix setup` in a terminal.
+
+Examples:
+
+- In Claude Code: `Run avmatrix setup in terminal, then verify AVmatrix MCP is configured for Claude Code.`
+- In Codex: `Run avmatrix setup in terminal, then verify AVmatrix MCP is configured for Codex.`
+
+If you want the setup to target only the current tool instead of all detected editors, tell the agent to run the direct MCP command for that tool:
+
+- Claude Code: `claude mcp add avmatrix -- avmatrix mcp`
+- Codex: `codex mcp add avmatrix -- avmatrix mcp`
 
 ### Editor Support
 
@@ -77,19 +232,30 @@ The manual MCP snippets below assume the local `avmatrix` CLI is already on your
 
 > **Claude Code** currently has the deepest integration: MCP + global skills + PreToolUse/PostToolUse hooks.
 
-If you prefer manual configuration:
+If you prefer manual configuration after completing the install steps above:
 
-**Claude Code** (`~/.claude.json` or via `claude mcp add`):
+**Claude Code** (`~/.claude.json`, hoặc dùng `claude mcp add`):
+
+```json
+{
+  "mcpServers": {
+    "avmatrix": {
+      "command": "avmatrix",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+Hoặc dùng lệnh:
 
 ```bash
-# First install the local CLI onto PATH (for example: `cd avmatrix && npm link`)
 claude mcp add avmatrix -- avmatrix mcp
 ```
 
 **Codex** (full support — MCP + skills):
 
 ```bash
-# First install the local CLI onto PATH (for example: `cd avmatrix && npm link`)
 codex mcp add avmatrix -- avmatrix mcp
 ```
 
@@ -291,7 +457,9 @@ A local browser frontend for the same runtime core used by the CLI and MCP serve
 
 <img width="2550" height="1343" alt="avmatrix_img" src="https://github.com/user-attachments/assets/cc5d637d-e0e5-48e6-93ff-5bcfdb929285" />
 
-Or run locally:
+### Run locally
+
+Open **two terminals**:
 
 ```bash
 git clone https://github.com/tamnguyendinh/AVmatrix.git
@@ -301,28 +469,45 @@ cd ../avmatrix-web && npm install
 
 # terminal 1
 cd ../avmatrix
-npm run serve
+node dist/cli/index.js serve
 
 # terminal 2
 cd ../avmatrix-web
 npm run dev
 ```
 
+Then:
+
+1. open `http://localhost:5173`
+2. wait for the UI to detect `http://localhost:4747`
+3. if you already indexed repos, pick one from the landing screen
+4. if you have not indexed a repo yet, either:
+   - run `avmatrix analyze` in that repo first, or
+   - use the UI analyze flow and paste the absolute local path to the repo
+
+If you already linked the CLI with `npm link`, `avmatrix serve` is equivalent to `node dist/cli/index.js serve`.
+
 ## Docker
 
-The repo ships a two-container Docker stack in `docker-compose.yaml` plus matching image-build workflows. The current compose defaults and `.env.example` use these image names:
+The repo ships a two-container Docker stack in `docker-compose.yaml`.
 
-| Image                                              | Purpose                                                                |
-| -------------------------------------------------- | ---------------------------------------------------------------------- |
-| `ghcr.io/abhigyanpatwari/avmatrix:latest`     | CLI / `avmatrix serve` backend (HTTP API on port `4747`, MCP, indexer) |
-| `ghcr.io/abhigyanpatwari/avmatrix-web:latest` | Static web UI (port `4173`) |
+Before you run it:
+
+1. copy `.env.example` to `.env`
+2. open `.env`
+3. set `SERVER_IMAGE` to the exact backend image tag you want to run
+4. set `WEB_IMAGE` to the exact frontend image tag you want to run
+
+Do not assume a hardcoded GHCR path from this README. The Docker image names depend on the registry and repository owner that publish them.
 
 > **Current codebase note:** the local CLI keeps `serve` loopback-only by default, while `Dockerfile.cli` runs `serve --host 0.0.0.0` for container exposure. Treat Docker as a distinct deployment path from the local CLI flow and verify it in your environment.
 
 ### One-command setup
 
 ```bash
-docker compose up -d
+cp .env.example .env
+# Edit SERVER_IMAGE and WEB_IMAGE in .env
+docker compose --env-file .env up -d
 ```
 
 This starts the server on `http://localhost:4747` and the web UI on
@@ -336,24 +521,27 @@ your host machine indexable, set `WORKSPACE_DIR` before bringing the stack up:
 ```bash
 WORKSPACE_DIR=$HOME/code docker compose up -d
 # Inside the server container the directory is mounted read-only at /workspace.
-docker compose exec avmatrix-server avmatrix index /workspace/my-repo
+docker compose exec avmatrix-server avmatrix analyze /workspace/my-repo
 ```
 
 ### Direct `docker run`
 
 ```bash
+export SERVER_IMAGE=ghcr.io/<your-owner>/avmatrix:1.0.0
+export WEB_IMAGE=ghcr.io/<your-owner>/avmatrix-web:1.0.0
+
 # Server
 docker run --rm -d \
   --name avmatrix-server \
   -p 4747:4747 \
   -v avmatrix-data:/data/avmatrix \
-  ghcr.io/abhigyanpatwari/avmatrix:latest
+  "$SERVER_IMAGE"
 
 # Web UI
 docker run --rm -d \
   --name avmatrix-web \
   -p 4173:4173 \
-  ghcr.io/abhigyanpatwari/avmatrix-web:latest
+  "$WEB_IMAGE"
 ```
 
 Optional env file (override image tags, container names, ports, workspace dir):
@@ -370,9 +558,9 @@ The Docker images are version-locked to the npm package:
 - Stable images are **only published from `vX.Y.Z` git tags** (via `docker.yml`
   triggered directly by the tag push), and the workflow refuses to build unless
   the tag exactly matches `avmatrix/package.json`'s version. So
-  `ghcr.io/abhigyanpatwari/avmatrix:1.6.2` is byte-for-byte the same release
-  as `npm install avmatrix@1.6.2` — no drift, no floating builds from `main`.
-- Release-candidate images (e.g. `:1.7.0-rc.1`) are published alongside each
+  `ghcr.io/<your-owner>/avmatrix:1.0.0` is byte-for-byte the same release
+  as `npm install avmatrix@1.0.0` — no drift, no floating builds from `main`.
+- Release-candidate images (e.g. `:1.0.0-rc.1`) are published alongside each
   RC npm release. They are built by `release-candidate.yml` calling `docker.yml`
   as a reusable workflow after the RC tag is created and pushed.
 - `:latest` is auto-promoted only from non-prerelease tags by the Docker
@@ -383,36 +571,7 @@ workflow's GitHub OIDC identity, and shipped with build provenance and SBOM
 attestations. **This is your protection against supply-chain attacks**: even if
 an attacker republishes a same-named image elsewhere (or somehow pushes to a
 typo-squatted registry), they cannot forge a Cosign signature tied to
-`abhigyanpatwari/avmatrix`'s `docker.yml`. Always verify before pulling into
-sensitive environments:
-
-**Stable releases** — signed from the `v*` tag ref:
-
-```bash
-cosign verify ghcr.io/abhigyanpatwari/avmatrix:1.6.2 \
-  --certificate-identity-regexp '^https://github\.com/abhigyanpatwari/avmatrix/\.github/workflows/docker\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$' \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com
-```
-
-The regex pins the certificate identity to this repo's `docker.yml` workflow
-**run from a `v*` tag** — rejecting unsigned images, images signed by other
-workflows, and images signed from unprotected refs.
-
-**Release candidates** — signed from `refs/heads/main` (the caller's ref when
-`release-candidate.yml` invokes `docker.yml` as a reusable workflow):
-
-```bash
-cosign verify ghcr.io/abhigyanpatwari/avmatrix:1.7.0-rc.1 \
-  --certificate-identity 'https://github.com/abhigyanpatwari/avmatrix/.github/workflows/docker.yml@refs/heads/main' \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com
-```
-
-You can also inspect the build provenance and SBOM:
-
-```bash
-cosign download attestation ghcr.io/abhigyanpatwari/avmatrix:1.6.2 \
-  --predicate-type https://slsa.dev/provenance/v1
-```
+this repository's `docker.yml`.
 
 #### Kubernetes: enforce signatures at admission
 
@@ -420,7 +579,7 @@ For Kubernetes deployments, ship the bundled
 [`ClusterImagePolicy`](deploy/kubernetes/cluster-image-policy.yaml) so the
 [Sigstore policy-controller][policy-controller] rejects any avmatrix pod whose
 image is not signed by this repo's `docker.yml` running from a `vX.Y.Z` tag —
-the same identity the `cosign verify` snippet above pins.
+the same signed-release identity enforced by the workflow and policy.
 
 ```bash
 # 1. Install the controller (one-time, cluster-wide)
@@ -436,7 +595,7 @@ kubectl apply -f deploy/kubernetes/cluster-image-policy.yaml
 ```
 
 After this, attempting to deploy an unsigned image — or one signed by anything
-other than `abhigyanpatwari/avmatrix`'s `docker.yml` at a `v*` tag — fails the
+other than this repository's `docker.yml` at a `v*` tag — fails the
 admission webhook before a pod is ever created. This turns the verifiable
 signature into an enforced policy, which is the supply-chain control most
 clusters actually need.
