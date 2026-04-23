@@ -34,6 +34,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle>((_, ref) => {
     selectedNode: appSelectedNode,
     visibleLabels,
     visibleEdgeTypes,
+    areGraphLinksVisible,
     openCodePanel,
     depthFilter,
     highlightedNodeIds,
@@ -43,6 +44,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle>((_, ref) => {
     blastRadiusNodeIds,
     isAIHighlightsEnabled,
     toggleAIHighlights,
+    toggleGraphLinksVisible,
     clearAIToolHighlights,
     clearAICitationHighlights,
     clearBlastRadius,
@@ -148,6 +150,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle>((_, ref) => {
     blastRadiusNodeIds: effectiveBlastRadiusNodeIds,
     animatedNodes: effectiveAnimatedNodes,
     visibleEdgeTypes,
+    areGraphLinksVisible,
   });
 
   // Expose focusNode to parent via ref
@@ -341,6 +344,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle>((_, ref) => {
 
       <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
         <button
+          type="button"
           onClick={handleToggleAIHighlights}
           className={
             isAIHighlightsEnabled
@@ -368,10 +372,17 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle>((_, ref) => {
 
         <button
           type="button"
-          disabled
-          className="flex h-10 w-10 cursor-not-allowed items-center justify-center rounded-lg border-[2px] border-workspace-border-default bg-workspace-surface text-workspace-text-muted opacity-60"
-          title="Turn on/off all graph links"
-          aria-label="Turn on/off all graph links"
+          onClick={toggleGraphLinksVisible}
+          aria-pressed={areGraphLinksVisible}
+          className={
+            areGraphLinksVisible
+              ? 'flex h-10 w-10 items-center justify-center rounded-lg border-[2px] border-workspace-border-strong bg-workspace-surface text-workspace-text-primary transition-colors hover:bg-workspace-inset'
+              : 'flex h-10 w-10 items-center justify-center rounded-lg border-[2px] border-workspace-border-default bg-workspace-surface text-workspace-text-secondary transition-colors hover:bg-workspace-inset hover:text-workspace-text-primary'
+          }
+          title={areGraphLinksVisible ? 'Turn off all graph links' : 'Turn on all graph links'}
+          aria-label={
+            areGraphLinksVisible ? 'Turn off all graph links' : 'Turn on all graph links'
+          }
           data-testid="graph-links-toggle"
         >
           <GitBranch className="h-4 w-4" />

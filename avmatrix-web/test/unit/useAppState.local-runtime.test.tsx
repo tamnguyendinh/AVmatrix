@@ -156,4 +156,34 @@ describe('useAppState.local-runtime', () => {
       'Function:src/foo.ts:saveFoo',
     ]);
   });
+
+  it('defaults graph links to visible and persists toggle state', async () => {
+    renderHarness();
+    await waitFor(() => expect(appState).not.toBeNull());
+
+    expect(appState!.areGraphLinksVisible).toBe(true);
+
+    await act(async () => {
+      appState!.toggleGraphLinksVisible();
+    });
+
+    expect(appState!.areGraphLinksVisible).toBe(false);
+    expect(localStorage.getItem('avmatrix.graphLinksVisible')).toBe('false');
+
+    await act(async () => {
+      appState!.setGraphLinksVisible(true);
+    });
+
+    expect(appState!.areGraphLinksVisible).toBe(true);
+    expect(localStorage.getItem('avmatrix.graphLinksVisible')).toBe('true');
+  });
+
+  it('hydrates graph links visibility from localStorage', async () => {
+    localStorage.setItem('avmatrix.graphLinksVisible', 'false');
+
+    renderHarness();
+    await waitFor(() => expect(appState).not.toBeNull());
+
+    expect(appState!.areGraphLinksVisible).toBe(false);
+  });
 });

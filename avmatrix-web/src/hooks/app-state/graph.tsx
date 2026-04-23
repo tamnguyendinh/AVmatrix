@@ -2,6 +2,10 @@ import { createContext, useContext, useCallback, useMemo, useState, ReactNode } 
 import type { GraphNode, NodeLabel } from 'avmatrix-shared';
 import type { KnowledgeGraph } from '../../core/graph/types';
 import { DEFAULT_VISIBLE_LABELS, DEFAULT_VISIBLE_EDGES, type EdgeType } from '../../lib/constants';
+import {
+  readGraphLinksVisibilityPreference,
+  writeGraphLinksVisibilityPreference,
+} from '../../lib/graph-links-visibility';
 
 interface GraphStateContextValue {
   graph: KnowledgeGraph | null;
@@ -12,6 +16,9 @@ interface GraphStateContextValue {
   toggleLabelVisibility: (label: NodeLabel) => void;
   visibleEdgeTypes: EdgeType[];
   toggleEdgeVisibility: (edgeType: EdgeType) => void;
+  areGraphLinksVisible: boolean;
+  setGraphLinksVisible: (visible: boolean) => void;
+  toggleGraphLinksVisible: () => void;
   depthFilter: number | null;
   setDepthFilter: (depth: number | null) => void;
   highlightedNodeIds: Set<string>;
@@ -25,6 +32,9 @@ export const GraphStateProvider = ({ children }: { children: ReactNode }) => {
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [visibleLabels, setVisibleLabels] = useState<NodeLabel[]>(DEFAULT_VISIBLE_LABELS);
   const [visibleEdgeTypes, setVisibleEdgeTypes] = useState<EdgeType[]>(DEFAULT_VISIBLE_EDGES);
+  const [areGraphLinksVisible, setGraphLinksVisibleState] = useState<boolean>(() =>
+    readGraphLinksVisibilityPreference(),
+  );
   const [depthFilter, setDepthFilter] = useState<number | null>(null);
   const [highlightedNodeIds, setHighlightedNodeIds] = useState<Set<string>>(new Set());
 
@@ -40,6 +50,19 @@ export const GraphStateProvider = ({ children }: { children: ReactNode }) => {
     );
   }, []);
 
+  const setGraphLinksVisible = useCallback((visible: boolean) => {
+    setGraphLinksVisibleState(visible);
+    writeGraphLinksVisibilityPreference(visible);
+  }, []);
+
+  const toggleGraphLinksVisible = useCallback(() => {
+    setGraphLinksVisibleState((prev) => {
+      const next = !prev;
+      writeGraphLinksVisibilityPreference(next);
+      return next;
+    });
+  }, []);
+
   const value = useMemo<GraphStateContextValue>(
     () => ({
       graph,
@@ -50,12 +73,25 @@ export const GraphStateProvider = ({ children }: { children: ReactNode }) => {
       toggleLabelVisibility,
       visibleEdgeTypes,
       toggleEdgeVisibility,
+      areGraphLinksVisible,
+      setGraphLinksVisible,
+      toggleGraphLinksVisible,
       depthFilter,
       setDepthFilter,
       highlightedNodeIds,
       setHighlightedNodeIds,
     }),
-    [graph, selectedNode, visibleLabels, visibleEdgeTypes, depthFilter, highlightedNodeIds],
+    [
+      graph,
+      selectedNode,
+      visibleLabels,
+      visibleEdgeTypes,
+      areGraphLinksVisible,
+      setGraphLinksVisible,
+      toggleGraphLinksVisible,
+      depthFilter,
+      highlightedNodeIds,
+    ],
   );
 
   return <GraphStateContext.Provider value={value}>{children}</GraphStateContext.Provider>;

@@ -5,4 +5,5 @@ import '@testing-library/jest-dom/vitest';
 beforeEach(() => {
   sessionStorage.removeItem('avmatrix-llm-settings');
   localStorage.removeItem('avmatrix-llm-settings'); // legacy key (migration)
+  localStorage.removeItem('avmatrix.graphLinksVisible');
 });

@@ -97,6 +97,9 @@ interface AppState {
   toggleLabelVisibility: (label: NodeLabel) => void;
   visibleEdgeTypes: EdgeType[];
   toggleEdgeVisibility: (edgeType: EdgeType) => void;
+  areGraphLinksVisible: boolean;
+  setGraphLinksVisible: (visible: boolean) => void;
+  toggleGraphLinksVisible: () => void;
 
   // Depth filter (N hops from selection)
   depthFilter: number | null;
@@ -192,6 +195,9 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
     toggleLabelVisibility,
     visibleEdgeTypes,
     toggleEdgeVisibility,
+    areGraphLinksVisible,
+    setGraphLinksVisible,
+    toggleGraphLinksVisible,
     depthFilter,
     setDepthFilter,
     highlightedNodeIds,
@@ -917,6 +923,9 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
     toggleLabelVisibility,
     visibleEdgeTypes,
     toggleEdgeVisibility,
+    areGraphLinksVisible,
+    setGraphLinksVisible,
+    toggleGraphLinksVisible,
     depthFilter,
     setDepthFilter,
     highlightedNodeIds,
