@@ -106,6 +106,9 @@ export class ClientDisconnectedError extends Error {
   }
 }
 
+const GRAPH_STREAM_TARGET_CHUNK_BYTES = 64 * 1024;
+const GRAPH_STREAM_TARGET_CHUNK_RECORDS = 128;
+
 export const isIgnorableGraphQueryError = (err: unknown): boolean => {
   const message = err instanceof Error ? err.message : String(err);
   return (
@@ -171,10 +174,18 @@ export const writeNdjsonRecord = async (
   record: GraphStreamRecord,
   signal?: AbortSignal,
 ): Promise<void> => {
+  await writeNdjsonChunk(res, JSON.stringify(record) + '\n', signal);
+};
+
+export const writeNdjsonChunk = async (
+  res: express.Response,
+  chunk: string,
+  signal?: AbortSignal,
+): Promise<void> => {
   ensureStreamIsWritable(res, signal);
 
   try {
-    const canContinue = res.write(JSON.stringify(record) + '\n');
+    const canContinue = res.write(chunk);
     if (!canContinue) {
       await waitForDrain(res, signal);
     }
@@ -184,6 +195,33 @@ export const writeNdjsonRecord = async (
     }
     throw err;
   }
+};
+
+const createGraphStreamBatchWriter = (res: express.Response, signal?: AbortSignal) => {
+  let bufferedChunk = '';
+  let bufferedRecords = 0;
+
+  const flush = async (): Promise<void> => {
+    if (bufferedChunk.length === 0) return;
+    const chunk = bufferedChunk;
+    bufferedChunk = '';
+    bufferedRecords = 0;
+    await writeNdjsonChunk(res, chunk, signal);
+  };
+
+  const write = async (record: GraphStreamRecord): Promise<void> => {
+    bufferedChunk += JSON.stringify(record) + '\n';
+    bufferedRecords += 1;
+
+    if (
+      bufferedRecords >= GRAPH_STREAM_TARGET_CHUNK_RECORDS ||
+      bufferedChunk.length >= GRAPH_STREAM_TARGET_CHUNK_BYTES
+    ) {
+      await flush();
+    }
+  };
+
+  return { write, flush };
 };
 
 const buildGraph = async (
@@ -285,18 +323,19 @@ export const streamGraphNdjson = async (
   includeContent = false,
   signal?: AbortSignal,
 ): Promise<void> => {
+  const writer = createGraphStreamBatchWriter(res, signal);
+
   for (const table of NODE_TABLES) {
     try {
       await streamQuery(getNodeQuery(table, includeContent), async (row) => {
-        await writeNdjsonRecord(
-          res,
+        await writer.write(
           {
             type: 'node',
             data: mapGraphNodeRow(table, row, includeContent),
           },
-          signal,
         );
       });
+      await writer.flush();
     } catch (err) {
       if (!isIgnorableGraphQueryError(err)) {
         throw err;
@@ -305,15 +344,14 @@ export const streamGraphNdjson = async (
   }
 
   await streamQuery(GRAPH_RELATIONSHIP_QUERY, async (row) => {
-    await writeNdjsonRecord(
-      res,
+    await writer.write(
       {
         type: 'relationship',
         data: mapGraphRelationshipRow(row),
       },
-      signal,
     );
   });
+  await writer.flush();
 };
 
 /**
@@ -713,7 +751,9 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
 
         res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
         res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('X-Accel-Buffering', 'no');
         res.flushHeaders();
+        await writeNdjsonChunk(res, '\n', abortController.signal);
 
         req.once('aborted', abortStreaming);
         res.once('finish', markFinished);

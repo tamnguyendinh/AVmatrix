@@ -62,7 +62,7 @@ describe('streamGraphNdjson', () => {
       settled = true;
     });
 
-    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     expect(writes).toHaveLength(1);
     expect(settled).toBe(false);
 
@@ -91,7 +91,7 @@ describe('streamGraphNdjson', () => {
     await expect(streamGraphNdjson(response, false, controller.signal)).rejects.toBeInstanceOf(
       ClientDisconnectedError,
     );
-    expect(response.write).toHaveBeenCalledTimes(1);
+    expect(response.write).not.toHaveBeenCalled();
   });
 
   it('rethrows non-missing table errors', async () => {
@@ -231,5 +231,46 @@ describe('streamGraphNdjson', () => {
         },
       },
     });
+  });
+
+  it('batches large graph streams into fewer writes', async () => {
+    lbugMocks.streamQuery.mockImplementation(
+      async (query: string, onRow: (row: any) => Promise<void>) => {
+        if (query.includes('MATCH (n:`File`)')) {
+          for (let index = 0; index < 300; index += 1) {
+            await onRow({
+              id: `File:src/file-${index}.ts`,
+              name: `file-${index}.ts`,
+              filePath: `src/file-${index}.ts`,
+            });
+          }
+          return 300;
+        }
+        if (query.includes('CodeRelation')) {
+          await onRow({
+            sourceId: 'File:src/file-0.ts',
+            targetId: 'Function:src/file-0.ts:main',
+            type: 'CONTAINS',
+          });
+          return 1;
+        }
+        return 0;
+      },
+    );
+
+    const writes: string[] = [];
+    const response = createMockResponse((chunk) => {
+      writes.push(chunk);
+      return true;
+    });
+
+    await expect(streamGraphNdjson(response, false)).resolves.toBeUndefined();
+
+    const totalLines = writes
+      .flatMap((chunk) => chunk.split('\n'))
+      .filter((line) => line.trim().length > 0);
+
+    expect(totalLines).toHaveLength(301);
+    expect(writes.length).toBeLessThan(301);
   });
 });
