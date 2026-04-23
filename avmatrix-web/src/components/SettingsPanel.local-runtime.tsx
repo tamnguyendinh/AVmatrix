@@ -28,23 +28,23 @@ const availabilityTone: Record<
   { badge: string; panel: string; label: string }
 > = {
   ready: {
-    badge: 'bg-green-400',
-    panel: 'border-green-500/30 bg-green-500/10 text-green-200',
+    badge: 'bg-success',
+    panel: 'border-success bg-base text-text-primary',
     label: 'Ready',
   },
   not_installed: {
-    badge: 'bg-amber-400',
-    panel: 'border-amber-500/30 bg-amber-500/10 text-amber-200',
+    badge: 'bg-warning',
+    panel: 'border-warning bg-base text-text-primary',
     label: 'Not installed',
   },
   not_signed_in: {
-    badge: 'bg-amber-400',
-    panel: 'border-amber-500/30 bg-amber-500/10 text-amber-200',
+    badge: 'bg-warning',
+    panel: 'border-warning bg-base text-text-primary',
     label: 'Sign-in required',
   },
   error: {
-    badge: 'bg-red-400',
-    panel: 'border-red-500/30 bg-red-500/10 text-red-200',
+    badge: 'bg-error',
+    panel: 'border-error bg-base text-text-primary',
     label: 'Unavailable',
   },
 };
@@ -70,9 +70,9 @@ const formatRuntimeEnvironment = (status?: SessionStatusResponse | null): string
 };
 
 const DetailRow = ({ label, value }: { label: string; value: string }) => (
-  <div className="rounded-lg border border-border-subtle bg-elevated px-3 py-2">
-    <p className="text-[11px] tracking-wide text-text-muted uppercase">{label}</p>
-    <p className="mt-1 text-sm text-text-primary">{value}</p>
+  <div className="rounded-lg border-[2px] border-border-default bg-base px-3 py-2">
+    <p className="press-eyebrow text-text-secondary">{label}</p>
+    <p className="mt-1 font-mono text-sm text-text-primary">{value}</p>
   </div>
 );
 
@@ -149,22 +149,23 @@ export const SettingsPanel = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative mx-4 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-border-subtle bg-surface shadow-2xl">
-        <div className="flex items-center justify-between border-b border-border-subtle bg-elevated/50 px-6 py-4">
+      <div className="press-panel relative mx-4 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden shadow-[var(--shadow-dropdown)]">
+        <div className="flex items-center justify-between border-b-[3px] border-border-default bg-base px-6 py-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/20">
-              <Brain className="h-5 w-5 text-accent" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border-[3px] border-border-strong bg-inset">
+              <Brain className="h-5 w-5 text-border-strong" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-text-primary">Session Settings</h2>
-              <p className="text-xs text-text-muted">
+              <p className="press-eyebrow">Session desk</p>
+              <h2 className="press-title text-2xl">Session Settings</h2>
+              <p className="font-reading text-sm text-text-secondary">
                 Configure your local Codex / Claude Code session runtime
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-hover hover:text-text-primary"
+            className="press-ghost-button rounded-lg p-2 text-text-muted"
           >
             <X className="h-5 w-5" />
           </button>
@@ -173,13 +174,13 @@ export const SettingsPanel = ({
         <div className="flex-1 space-y-6 overflow-y-auto p-6">
           {backendUrl !== undefined && onBackendUrlChange && (
             <div className="space-y-3">
-              <label className="block text-sm font-medium text-text-secondary">Local Server</label>
+              <label className="press-eyebrow block text-text-secondary">Local Server</label>
               <div className="space-y-2">
                 <div className="mb-2 flex items-center gap-2">
                   <Server className="h-4 w-4 text-text-muted" />
-                  <span className="text-sm text-text-secondary">Backend URL</span>
+                  <span className="font-reading text-sm text-text-secondary">Backend URL</span>
                   <span
-                    className={`h-2 w-2 rounded-full ${isBackendConnected ? 'bg-green-400' : 'bg-red-400'}`}
+                    className={`h-2 w-2 rounded-full ${isBackendConnected ? 'bg-success' : 'bg-error'}`}
                   />
                   <span className="text-xs text-text-muted">
                     {isBackendConnected ? 'Connected' : 'Not connected'}
@@ -191,10 +192,10 @@ export const SettingsPanel = ({
                   value={backendUrl}
                   onChange={(e) => onBackendUrlChange(e.target.value)}
                   placeholder="http://localhost:4747"
-                  className="w-full rounded-xl border border-border-subtle bg-elevated px-4 py-3 font-mono text-sm text-text-primary transition-all outline-none placeholder:text-text-muted focus:border-accent focus:ring-2 focus:ring-accent/20"
+                  className="w-full rounded-xl border-[2px] border-border-default bg-inset px-4 py-3 font-mono text-sm text-text-primary transition-all outline-none placeholder:text-text-muted focus:border-border-strong"
                 />
-                <p className="text-xs text-text-muted">
-                  Run <code className="rounded bg-elevated px-1 py-0.5">avmatrix serve</code> to
+                <p className="font-reading text-xs text-text-secondary">
+                  Run <code className="rounded border border-border-subtle bg-surface px-1 py-0.5 font-mono">avmatrix serve</code> to
                   host the local runtime bridge on this machine.
                 </p>
               </div>
@@ -202,30 +203,30 @@ export const SettingsPanel = ({
           )}
 
           <div className="space-y-3">
-            <label className="block text-sm font-medium text-text-secondary">Session Runtime</label>
+            <label className="press-eyebrow block text-text-secondary">Session Runtime</label>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="flex items-center gap-3 rounded-xl border-2 border-accent bg-accent/10 p-4 text-text-primary">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/20 text-lg">
+              <div className="flex items-center gap-3 rounded-xl border-[3px] border-border-strong bg-base p-4 text-text-primary">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg border-[2px] border-border-default bg-surface text-lg">
                   🧠
                 </div>
                 <div className="min-w-0">
-                  <p className="font-medium">{getLocalRuntimeProviderDisplayName('codex')}</p>
-                  <p className="text-xs text-text-muted">Active in Phase 2</p>
+                  <p className="font-mono font-medium">{getLocalRuntimeProviderDisplayName('codex')}</p>
+                  <p className="font-reading text-xs text-text-secondary">Active in Phase 2</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 rounded-xl border-2 border-border-subtle bg-elevated p-4 text-text-secondary opacity-70">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface text-lg">
+              <div className="flex items-center gap-3 rounded-xl border-[3px] border-border-default bg-surface p-4 text-text-secondary opacity-70">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg border-[2px] border-border-subtle bg-base text-lg">
                   ✨
                 </div>
                 <div className="min-w-0">
-                  <p className="font-medium">Claude Code</p>
-                  <p className="text-xs text-text-muted">Adapter slot reserved</p>
+                  <p className="font-mono font-medium">Claude Code</p>
+                  <p className="font-reading text-xs text-text-secondary">Adapter slot reserved</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="rounded-xl border border-accent/20 bg-accent/5 p-3 text-xs text-accent/90">
+          <div className="rounded-xl border-[2px] border-border-default bg-base p-3 font-reading text-xs text-text-secondary">
             No API keys are stored here. AVmatrix uses your local session runtime and the account
             already signed in on this machine.
           </div>
@@ -233,8 +234,8 @@ export const SettingsPanel = ({
           <div className="animate-fade-in space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-text-primary">Codex Account</h3>
-                <p className="text-xs text-text-muted">
+                <h3 className="press-title text-xl">Codex Account</h3>
+                <p className="font-reading text-xs text-text-secondary">
                   Local session status for the current browser + CLI workflow.
                 </p>
               </div>
@@ -242,7 +243,7 @@ export const SettingsPanel = ({
                 type="button"
                 onClick={() => void refreshStatus()}
                 disabled={isCheckingStatus}
-                className="rounded-xl border border-border-subtle bg-elevated px-3 py-2 text-text-secondary transition-colors hover:border-accent/50 hover:text-text-primary disabled:opacity-50"
+                className="press-outline-button rounded-xl px-3 py-2 text-text-secondary disabled:opacity-50"
                 title="Check connection"
               >
                 {isCheckingStatus ? (
@@ -253,10 +254,10 @@ export const SettingsPanel = ({
               </button>
             </div>
 
-            <div className={`rounded-xl border p-4 ${statusError ? 'border-red-500/30 bg-red-500/10 text-red-200' : tone.panel}`}>
+            <div className={`rounded-xl border-[3px] p-4 ${statusError ? 'border-error bg-base text-text-primary' : tone.panel}`}>
               <div className="flex items-start gap-3">
                 <div
-                  className={`mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full ${statusError ? 'bg-red-400' : tone.badge}`}
+                  className={`mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full ${statusError ? 'bg-error' : tone.badge}`}
                 />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium">
@@ -272,7 +273,7 @@ export const SettingsPanel = ({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-text-secondary">Model</label>
+              <label className="press-eyebrow text-text-secondary">Model</label>
               <select
                 aria-label="Model"
                 value={settings.codex?.model ?? 'codex-account'}
@@ -283,7 +284,7 @@ export const SettingsPanel = ({
                     codex: { ...prev.codex, model: e.target.value },
                   }))
                 }
-                className="w-full rounded-xl border border-border-subtle bg-elevated px-4 py-3 font-mono text-sm text-text-primary transition-all outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                className="w-full rounded-xl border-[2px] border-border-default bg-inset px-4 py-3 font-mono text-sm text-text-primary transition-all outline-none focus:border-border-strong"
               >
                 {codexModels.map((model) => (
                   <option key={model} value={model}>
@@ -291,7 +292,7 @@ export const SettingsPanel = ({
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-text-muted">
+              <p className="font-reading text-xs text-text-secondary">
                 The browser stores only the local runtime preference. Authentication stays in the
                 Codex CLI session.
               </p>
@@ -299,7 +300,7 @@ export const SettingsPanel = ({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-text-secondary">Temperature</label>
+                <label className="press-eyebrow text-text-secondary">Temperature</label>
                 <input
                   type="number"
                   aria-label="Temperature"
@@ -317,12 +318,12 @@ export const SettingsPanel = ({
                       },
                     }))
                   }
-                  className="w-full rounded-xl border border-border-subtle bg-elevated px-4 py-3 font-mono text-sm text-text-primary transition-all outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                  className="w-full rounded-xl border-[2px] border-border-default bg-inset px-4 py-3 font-mono text-sm text-text-primary transition-all outline-none focus:border-border-strong"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-text-secondary">Max Tokens</label>
+                <label className="press-eyebrow text-text-secondary">Max Tokens</label>
                 <input
                   type="number"
                   aria-label="Max Tokens"
@@ -340,7 +341,7 @@ export const SettingsPanel = ({
                     }))
                   }
                   placeholder="Optional"
-                  className="w-full rounded-xl border border-border-subtle bg-elevated px-4 py-3 font-mono text-sm text-text-primary transition-all outline-none placeholder:text-text-muted focus:border-accent focus:ring-2 focus:ring-accent/20"
+                  className="w-full rounded-xl border-[2px] border-border-default bg-inset px-4 py-3 font-mono text-sm text-text-primary transition-all outline-none placeholder:text-text-muted focus:border-border-strong"
                 />
               </div>
             </div>
@@ -371,15 +372,15 @@ export const SettingsPanel = ({
             </div>
 
             {sessionStatus?.repo?.state === 'index_required' && (
-              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+              <div className="rounded-xl border-[3px] border-warning bg-surface p-3 font-reading text-xs text-warning">
                 Analyze the current repository from the repository menu before starting a chat
                 session. The runtime will not auto-index from the chat path.
               </div>
             )}
 
             {sessionStatus?.executablePath && (
-              <div className="rounded-xl border border-border-subtle bg-elevated/50 p-3">
-                <p className="text-[11px] tracking-wide text-text-muted uppercase">Executable</p>
+              <div className="rounded-xl border-[2px] border-border-default bg-base p-3">
+                <p className="press-eyebrow text-text-muted">Executable</p>
                 <p className="mt-1 break-all font-mono text-xs text-text-secondary">
                   {sessionStatus.executablePath}
                 </p>
@@ -387,12 +388,12 @@ export const SettingsPanel = ({
             )}
           </div>
 
-          <div className="rounded-xl border border-border-subtle bg-elevated/50 p-4">
+          <div className="rounded-xl border-[3px] border-border-default bg-base p-4">
             <div className="flex gap-3">
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-500/20 text-green-400">
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border-[2px] border-border-default bg-surface text-success">
                 🔒
               </div>
-              <div className="text-xs leading-relaxed text-text-muted">
+              <div className="font-reading text-xs leading-relaxed text-text-secondary">
                 <span className="font-medium text-text-secondary">Privacy:</span> AVmatrix keeps
                 only lightweight UI settings in browser storage. Repository data stays on this
                 machine, and no AVmatrix-hosted proxy is involved in the session path.
@@ -401,16 +402,16 @@ export const SettingsPanel = ({
           </div>
         </div>
 
-        <div className="flex items-center justify-between border-t border-border-subtle bg-elevated/30 px-6 py-4">
+        <div className="flex items-center justify-between border-t-[3px] border-border-default bg-base px-6 py-4">
           <div className="flex items-center gap-2 text-sm">
             {saveStatus === 'saved' && (
-              <span className="flex animate-fade-in items-center gap-1.5 text-green-400">
+              <span className="flex animate-fade-in items-center gap-1.5 text-success">
                 <Check className="h-4 w-4" />
                 Settings saved
               </span>
             )}
             {saveStatus === 'error' && (
-              <span className="flex animate-fade-in items-center gap-1.5 text-red-400">
+              <span className="flex animate-fade-in items-center gap-1.5 text-error">
                 <AlertCircle className="h-4 w-4" />
                 Failed to save
               </span>
@@ -419,13 +420,13 @@ export const SettingsPanel = ({
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm text-text-secondary transition-colors hover:text-text-primary"
+              className="press-ghost-button px-4 py-2 text-sm text-text-secondary"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
-              className="rounded-lg bg-accent px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-dim"
+              className="press-filled-button rounded-lg px-5 py-2 text-sm font-medium"
             >
               Save Settings
             </button>

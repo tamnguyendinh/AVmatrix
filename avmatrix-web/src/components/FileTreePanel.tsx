@@ -48,7 +48,7 @@ const buildFileTree = (nodes: GraphNode[]): TreeNode[] => {
     let currentPath = '';
     let currentLevel = root;
 
-    parts.forEach((part, index) => {
+    parts.forEach((part: string, index: number) => {
       currentPath = currentPath ? `${currentPath}/${part}` : part;
 
       let existing = pathMap.get(currentPath);
@@ -126,7 +126,7 @@ const TreeItem = ({
     <div>
       <button
         onClick={handleClick}
-        className={`relative flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-sm transition-colors hover:bg-hover ${isSelected ? 'border-l-2 border-amber-400 bg-amber-500/15 text-amber-300' : 'border-l-2 border-transparent text-text-secondary hover:text-text-primary'} ${matchesSearch ? 'bg-accent/10' : ''} `}
+        className={`relative flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-left text-sm transition-colors hover:bg-base ${isSelected ? 'border-l-[3px] border-border-strong bg-base text-text-primary' : 'border-l-[3px] border-transparent text-text-secondary hover:text-text-primary'} ${matchesSearch ? 'bg-base' : ''} `}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
       >
         {/* Expand/collapse icon */}
@@ -299,10 +299,10 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
 
   if (isCollapsed) {
     return (
-      <div className="flex h-full w-12 flex-col items-center gap-2 border-r border-border-subtle bg-surface py-3">
+      <div className="flex h-full w-12 flex-shrink-0 flex-col items-center gap-2 border-r-[3px] border-border-default bg-surface py-3">
         <button
           onClick={() => setIsCollapsed(false)}
-          className="rounded p-2 text-text-secondary transition-colors hover:bg-hover hover:text-text-primary"
+          className="press-ghost-button rounded p-2 text-text-secondary"
           title="Expand Panel"
         >
           <PanelLeft className="h-5 w-5" />
@@ -313,7 +313,7 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
             setIsCollapsed(false);
             setActiveTab('files');
           }}
-          className={`rounded p-2 transition-colors ${activeTab === 'files' ? 'bg-accent/10 text-accent' : 'text-text-secondary hover:bg-hover hover:text-text-primary'}`}
+          className={`rounded p-2 transition-colors ${activeTab === 'files' ? 'bg-base text-text-primary' : 'text-text-secondary hover:bg-base hover:text-text-primary'}`}
           title="File Explorer"
         >
           <Folder className="h-5 w-5" />
@@ -323,7 +323,7 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
             setIsCollapsed(false);
             setActiveTab('filters');
           }}
-          className={`rounded p-2 transition-colors ${activeTab === 'filters' ? 'bg-accent/10 text-accent' : 'text-text-secondary hover:bg-hover hover:text-text-primary'}`}
+          className={`rounded p-2 transition-colors ${activeTab === 'filters' ? 'bg-base text-text-primary' : 'text-text-secondary hover:bg-base hover:text-text-primary'}`}
           title="Filters"
         >
           <Filter className="h-5 w-5" />
@@ -333,26 +333,25 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
   }
 
   return (
-    <div className="flex h-full w-64 animate-slide-in flex-col border-r border-border-subtle bg-surface">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-border-subtle px-3 py-2">
+    <div className="flex h-full w-[13rem] min-w-[12rem] flex-shrink-0 animate-slide-in flex-col border-r-[3px] border-border-default bg-surface">
+      <div className="flex items-center justify-between border-b-[3px] border-border-default px-3 py-3">
         <div className="flex items-center gap-1">
           <button
             onClick={() => setActiveTab('files')}
-            className={`rounded px-2 py-1 text-xs transition-colors ${
+            className={`rounded px-2 py-1 font-mono text-xs transition-colors ${
               activeTab === 'files'
-                ? 'bg-accent/20 text-accent'
-                : 'text-text-secondary hover:bg-hover hover:text-text-primary'
+                ? 'bg-base text-text-primary'
+                : 'text-text-secondary hover:bg-base hover:text-text-primary'
             }`}
           >
             Explorer
           </button>
           <button
             onClick={() => setActiveTab('filters')}
-            className={`rounded px-2 py-1 text-xs transition-colors ${
+            className={`rounded px-2 py-1 font-mono text-xs transition-colors ${
               activeTab === 'filters'
-                ? 'bg-accent/20 text-accent'
-                : 'text-text-secondary hover:bg-hover hover:text-text-primary'
+                ? 'bg-base text-text-primary'
+                : 'text-text-secondary hover:bg-base hover:text-text-primary'
             }`}
           >
             Filters
@@ -360,7 +359,7 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
         </div>
         <button
           onClick={() => setIsCollapsed(true)}
-          className="rounded p-1 text-text-muted transition-colors hover:bg-hover hover:text-text-primary"
+          className="press-ghost-button rounded p-1 text-text-muted"
           title="Collapse Panel"
         >
           <PanelLeftClose className="h-4 w-4" />
@@ -370,7 +369,7 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
       {activeTab === 'files' && (
         <>
           {/* Search */}
-          <div className="border-b border-border-subtle px-3 py-2">
+          <div className="border-b border-border-subtle px-3 py-3">
             <div className="relative">
               <Search className="absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
               <input
@@ -378,7 +377,7 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
                 placeholder="Search files..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded border border-border-subtle bg-elevated py-1.5 pr-3 pl-8 text-xs text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
+                className="w-full rounded border-[2px] border-border-default bg-inset py-2 pr-3 pl-8 font-mono text-xs text-text-primary placeholder:text-text-muted focus:border-border-strong focus:outline-none"
               />
             </div>
           </div>
@@ -408,7 +407,7 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
       {activeTab === 'filters' && (
         <div className="scrollbar-thin flex-1 overflow-y-auto p-3">
           <div className="mb-3">
-            <h3 className="mb-2 text-xs font-medium tracking-wide text-text-secondary uppercase">
+            <h3 className="press-eyebrow mb-2 text-text-secondary">
               Node Types
             </h3>
             <p className="mb-3 text-[11px] text-text-muted">
@@ -427,8 +426,8 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
                   onClick={() => toggleLabelVisibility(label)}
                   className={`flex items-center gap-2.5 rounded px-2 py-1.5 text-left transition-colors ${
                     isVisible
-                      ? 'bg-elevated text-text-primary'
-                      : 'text-text-muted hover:bg-hover hover:text-text-secondary'
+                      ? 'bg-base text-text-primary'
+                      : 'text-text-muted hover:bg-base hover:text-text-secondary'
                   } `}
                 >
                   <div
@@ -438,17 +437,17 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
                     <Icon className="h-3 w-3" style={{ color: NODE_COLORS[label] }} />
                   </div>
                   <span className="flex-1 text-xs">{label}</span>
-                  <div
-                    className={`h-2 w-2 rounded-full transition-colors ${isVisible ? 'bg-accent' : 'bg-border-subtle'}`}
-                  />
-                </button>
+                    <div
+                      className={`h-2 w-2 rounded-full transition-colors ${isVisible ? 'bg-border-strong' : 'bg-border-subtle'}`}
+                    />
+                  </button>
               );
             })}
           </div>
 
           {/* Edge Type Toggles */}
           <div className="mt-6 border-t border-border-subtle pt-4">
-            <h3 className="mb-2 text-xs font-medium tracking-wide text-text-secondary uppercase">
+            <h3 className="press-eyebrow mb-2 text-text-secondary">
               Edge Types
             </h3>
             <p className="mb-3 text-[11px] text-text-muted">
@@ -466,8 +465,8 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
                     onClick={() => toggleEdgeVisibility(edgeType)}
                     className={`flex items-center gap-2.5 rounded px-2 py-1.5 text-left transition-colors ${
                       isVisible
-                        ? 'bg-elevated text-text-primary'
-                        : 'text-text-muted hover:bg-hover hover:text-text-secondary'
+                        ? 'bg-base text-text-primary'
+                        : 'text-text-muted hover:bg-base hover:text-text-secondary'
                     } `}
                   >
                     <div
@@ -476,7 +475,7 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
                     />
                     <span className="flex-1 text-xs">{info.label}</span>
                     <div
-                      className={`h-2 w-2 rounded-full transition-colors ${isVisible ? 'bg-accent' : 'bg-border-subtle'}`}
+                      className={`h-2 w-2 rounded-full transition-colors ${isVisible ? 'bg-border-strong' : 'bg-border-subtle'}`}
                     />
                   </button>
                 );
@@ -486,7 +485,7 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
 
           {/* Depth Filter */}
           <div className="mt-6 border-t border-border-subtle pt-4">
-            <h3 className="mb-2 text-xs font-medium tracking-wide text-text-secondary uppercase">
+            <h3 className="press-eyebrow mb-2 text-text-secondary">
               <Target className="mr-1.5 inline h-3 w-3" />
               Focus Depth
             </h3>
@@ -505,10 +504,10 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
                 <button
                   key={label}
                   onClick={() => setDepthFilter(value)}
-                  className={`rounded px-2 py-1 text-xs transition-colors ${
+                  className={`rounded px-2 py-1 font-mono text-xs transition-colors ${
                     depthFilter === value
-                      ? 'bg-accent text-white'
-                      : 'bg-elevated text-text-secondary hover:bg-hover hover:text-text-primary'
+                      ? 'bg-accent text-text-inverse'
+                      : 'bg-base text-text-secondary hover:bg-surface hover:text-text-primary'
                   } `}
                 >
                   {label}
@@ -517,13 +516,13 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
             </div>
 
             {depthFilter !== null && !selectedNode && (
-              <p className="mt-2 text-[10px] text-amber-400">Select a node to apply depth filter</p>
+              <p className="mt-2 text-[10px] text-warning">Select a node to apply depth filter</p>
             )}
           </div>
 
           {/* Legend */}
           <div className="mt-6 border-t border-border-subtle pt-4">
-            <h3 className="mb-3 text-xs font-medium tracking-wide text-text-secondary uppercase">
+            <h3 className="press-eyebrow mb-3 text-text-secondary">
               Color Legend
             </h3>
             <div className="grid grid-cols-2 gap-2">
@@ -556,8 +555,8 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
 
       {/* Stats footer */}
       {graph && (
-        <div className="border-t border-border-subtle bg-elevated/50 px-3 py-2">
-          <div className="flex items-center justify-between text-[10px] text-text-muted">
+        <div className="border-t border-border-subtle bg-base px-3 py-2">
+          <div className="flex items-center justify-between font-mono text-[10px] text-text-secondary">
             <span>{graph.nodes.length} nodes</span>
             <span>{graph.relationships.length} edges</span>
           </div>

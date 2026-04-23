@@ -5,7 +5,7 @@ import { DropZone } from './components/DropZone';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import { Header } from './components/Header';
 import { GraphCanvas, GraphCanvasHandle } from './components/GraphCanvas';
-import { RightPanel } from './components/RightPanel';
+import { RightPanelResizable } from './components/RightPanel.resizable';
 import { SettingsPanel } from './components/SettingsPanel.local-runtime';
 import { StatusBar } from './components/StatusBar';
 import { FileTreePanel } from './components/FileTreePanel';
@@ -258,7 +258,7 @@ const AppContentBody = () => {
 
   // Exploring view
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-void">
+    <div className="press-shell flex h-[100dvh] min-h-[100dvh] min-w-0 flex-col overflow-hidden">
       <Header
         onFocusNode={handleFocusNode}
         availableRepos={availableRepos}
@@ -296,12 +296,12 @@ const AppContentBody = () => {
         }}
       />
 
-      <main className="flex min-h-0 flex-1">
+      <main className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-base">
         {/* Left Panel - File Tree */}
         <FileTreePanel onFocusNode={handleFocusNode} />
 
         {/* Graph area - takes remaining space */}
-        <div className="relative min-w-0 flex-1">
+        <div className="relative min-w-0 flex-1 overflow-hidden bg-workspace-base">
           <GraphCanvas ref={graphCanvasRef} />
 
           {/* Code References Panel (overlay) - does NOT resize the graph, it overlaps on top */}
@@ -314,7 +314,7 @@ const AppContentBody = () => {
 
         {/* Right Panel - Code & Chat (tabbed) */}
         {isRightPanelOpen && (
-          <RightPanel
+          <RightPanelResizable
             isOpen={isRightPanelOpen}
             onClose={() => setRightPanelOpen(false)}
             onRequestAnalyze={requestRepoAnalyzeDialog}
@@ -325,7 +325,7 @@ const AppContentBody = () => {
       <StatusBar />
 
       {serverDisconnected && (
-        <div className="fixed bottom-12 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-yellow-500/30 bg-yellow-900/80 px-4 py-2 text-sm text-yellow-200 shadow-lg backdrop-blur">
+        <div className="fixed bottom-12 left-1/2 z-50 -translate-x-1/2 rounded-lg border-[3px] border-workspace-border-strong bg-workspace-surface px-4 py-2 text-sm text-workspace-text-primary">
           Server connection lost — reconnecting&hellip;
         </div>
       )}

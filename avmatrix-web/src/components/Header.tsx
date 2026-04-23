@@ -162,18 +162,19 @@ export const Header = ({
   };
 
   return (
-    <header className="flex items-center justify-between border-b border-dashed border-border-subtle bg-deep px-5 py-3">
+    <header className="flex min-h-[72px] items-center justify-between border-b-[3px] border-border-default bg-surface px-5 py-4">
       {/* Left section */}
       <div className="flex items-center gap-4">
-        {/* Logo */}
         <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-accent to-node-interface text-sm font-bold text-white shadow-glow">
-            ◇
+          <div className="flex h-10 w-10 items-center justify-center rounded-md border-[3px] border-border-strong bg-base text-sm font-bold text-text-primary">
+            ✦
           </div>
-          <span className="text-[15px] font-semibold tracking-tight">AVmatrix</span>
+          <div>
+            <div className="press-eyebrow">Vol. XII · Editorial graph</div>
+            <div className="press-title text-lg">AVmatrix</div>
+          </div>
         </div>
 
-        {/* Project badge + repo dropdown */}
         {projectName && (
           <div className="relative" ref={repoDropdownRef}>
             <button
@@ -181,13 +182,13 @@ export const Header = ({
                 setIsRepoDropdownOpen((prev) => !prev);
                 setShowAnalyzer(false);
               }}
-              className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-all ${
+              className={`flex cursor-pointer items-center gap-2 rounded-md border-[2px] px-3 py-2 font-mono text-sm transition-all ${
                 isRepoDropdownOpen
-                  ? 'border-accent/40 bg-accent/10 text-text-primary'
-                  : 'border-border-subtle bg-surface text-text-secondary hover:border-border-default hover:bg-hover'
+                  ? 'border-border-strong bg-inset text-text-primary'
+                  : 'border-border-default bg-base text-text-secondary hover:border-border-strong'
               } `}
             >
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-node-function" />
+              <span className="h-1.5 w-1.5 rounded-full bg-border-strong" />
               <span className="max-w-[160px] truncate">{projectName}</span>
               <ChevronDown
                 className={`h-3 w-3 text-text-muted transition-transform duration-200 ${isRepoDropdownOpen ? 'rotate-180' : ''}`}
@@ -195,7 +196,7 @@ export const Header = ({
             </button>
 
             {isRepoDropdownOpen && (
-              <div className="absolute top-full left-0 z-50 mt-1.5 w-80 animate-slide-up overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-xl">
+              <div className="press-panel absolute top-full left-0 z-50 mt-2 w-80 animate-slide-up overflow-hidden shadow-[var(--shadow-dropdown)]">
                 {showAnalyzer ? (
                   <div className="p-4">
                     <RepoAnalyzer
@@ -213,16 +214,16 @@ export const Header = ({
                     {/* Repo list */}
                     {availableRepos.length > 0 && (
                       <div>
-                        <div className="px-3 pt-2.5 pb-1.5 text-[10px] font-medium tracking-wider text-text-muted uppercase">
+                        <div className="press-eyebrow px-3 pt-3 pb-2">
                           Repositories
                         </div>
                         {availableRepos.map((repo) => (
                           <div
                             key={repo.name}
-                            className={`group flex items-center gap-2 px-4 py-2 transition-colors ${
+                            className={`group flex items-center gap-2 px-4 py-3 transition-colors ${
                               repo.name === projectName
-                                ? 'border-l-2 border-accent bg-accent/10'
-                                : 'hover:bg-hover'
+                                ? 'border-l-[3px] border-border-strong bg-base'
+                                : 'hover:bg-base'
                             }`}
                           >
                             <button
@@ -232,12 +233,12 @@ export const Header = ({
                               }}
                               className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left"
                             >
-                              <FolderOpen className="h-3.5 w-3.5 shrink-0 text-node-folder" />
+                              <FolderOpen className="h-3.5 w-3.5 shrink-0 text-border-strong" />
                               <span className="flex-1 truncate font-mono text-sm text-text-primary">
                                 {repo.name}
                               </span>
                               {repo.name === projectName && (
-                                <span className="shrink-0 font-mono text-[10px] text-accent">
+                                <span className="press-badge shrink-0 border-border-strong bg-base px-1.5 py-0.5 text-[10px] text-text-primary normal-case tracking-normal">
                                   active
                                 </span>
                               )}
@@ -283,8 +284,8 @@ export const Header = ({
                               disabled={!!reanalyzing}
                               className={`cursor-pointer rounded p-1 transition-all ${
                                 reanalyzing === repo.name
-                                  ? 'text-accent'
-                                  : 'text-text-muted/0 group-hover:text-text-muted hover:!text-accent'
+                                  ? 'text-border-strong'
+                                  : 'text-text-muted/0 group-hover:text-text-muted hover:!text-border-strong'
                               }`}
                               title={
                                 reanalyzing === repo.name
@@ -334,16 +335,16 @@ export const Header = ({
 
                     {/* Re-analyze progress bar */}
                     {reanalyzing && reanalyzeProgress && (
-                      <div className="border-t border-border-subtle bg-accent/5 px-4 py-2.5">
+                      <div className="border-t border-border-subtle bg-base px-4 py-2.5">
                         <div className="mb-1.5 flex items-center gap-2">
-                          <Loader2 className="h-3 w-3 shrink-0 animate-spin text-accent" />
+                          <Loader2 className="h-3 w-3 shrink-0 animate-spin text-border-strong" />
                           <span className="truncate text-xs text-text-secondary">
                             Re-analyzing {reanalyzing}: {reanalyzeProgress.message}
                           </span>
                         </div>
-                        <div className="h-1 overflow-hidden rounded-full bg-elevated">
+                        <div className="h-1 overflow-hidden rounded-full bg-inset">
                           <div
-                            className="h-full rounded-full bg-accent transition-all duration-300"
+                            className="h-full rounded-full bg-border-strong transition-all duration-300"
                             style={{ width: `${Math.max(2, reanalyzeProgress.percent)}%` }}
                           />
                         </div>
@@ -361,10 +362,10 @@ export const Header = ({
                       <button
                         onClick={() => setShowAnalyzer(true)}
                         disabled={!!reanalyzing}
-                        className="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-hover disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-base disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        <Sparkles className="h-3.5 w-3.5 shrink-0 text-accent" />
-                        <span className="text-sm text-text-secondary">
+                        <Sparkles className="h-3.5 w-3.5 shrink-0 text-border-strong" />
+                        <span className="font-reading text-sm text-text-secondary">
                           Analyze a new repository...
                         </span>
                       </button>
@@ -379,7 +380,7 @@ export const Header = ({
 
       {/* Center - Search */}
       <div className="relative mx-6 max-w-md flex-1" ref={searchRef}>
-        <div className="flex items-center gap-2.5 rounded-lg border border-border-subtle bg-surface px-3.5 py-2 transition-all focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20">
+        <div className="press-inset flex items-center gap-2.5 px-3.5 py-2 transition-all focus-within:border-border-strong">
           <Search className="h-4 w-4 flex-shrink-0 text-text-muted" />
           <input
             ref={inputRef}
@@ -393,18 +394,17 @@ export const Header = ({
             }}
             onFocus={() => setIsSearchOpen(true)}
             onKeyDown={handleKeyDown}
-            className="flex-1 border-none bg-transparent text-sm text-text-primary outline-none placeholder:text-text-muted"
+            className="flex-1 border-none bg-transparent font-mono text-sm text-text-primary outline-none placeholder:text-text-muted"
           />
-          <kbd className="rounded border border-border-subtle bg-elevated px-1.5 py-0.5 font-mono text-[10px] text-text-muted">
+          <kbd className="rounded border border-border-default bg-base px-1.5 py-0.5 font-mono text-[10px] text-text-secondary">
             ⌘K
           </kbd>
         </div>
 
-        {/* Search Results Dropdown */}
         {isSearchOpen && searchQuery.trim() && (
-          <div className="absolute top-full right-0 left-0 z-50 mt-1 overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-xl">
+          <div className="press-panel absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden shadow-[var(--shadow-dropdown)]">
             {searchResults.length === 0 ? (
-              <div className="px-4 py-3 text-sm text-text-muted">
+              <div className="px-4 py-3 font-reading text-sm text-text-muted">
                 No nodes found for &ldquo;{searchQuery}&rdquo;
               </div>
             ) : (
@@ -415,8 +415,8 @@ export const Header = ({
                     onClick={() => handleSelectNode(node)}
                     className={`flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors ${
                       index === selectedIndex
-                        ? 'bg-accent/20 text-text-primary'
-                        : 'text-text-secondary hover:bg-hover'
+                        ? 'bg-base text-text-primary'
+                        : 'text-text-secondary hover:bg-base'
                     }`}
                   >
                     <span
@@ -426,7 +426,7 @@ export const Header = ({
                     <span className="flex-1 truncate text-sm font-medium">
                       {node.properties.name}
                     </span>
-                    <span className="rounded bg-elevated px-2 py-0.5 text-xs text-text-muted">
+                    <span className="rounded border border-border-default bg-base px-2 py-0.5 font-mono text-xs text-text-secondary">
                       {node.label}
                     </span>
                   </button>
@@ -439,34 +439,29 @@ export const Header = ({
 
       {/* Right section */}
       <div className="flex items-center gap-2">
-        {/* AVmatrix help / about */}
         <button
           type="button"
           onClick={() => setHelpDialogBoxOpen(true)}
-          className="group flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 px-3.5 py-2 text-sm font-medium text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:from-purple-500 hover:to-pink-500 hover:shadow-xl"
+          className="press-outline-button group flex items-center gap-2 px-3.5 py-2 text-sm font-medium"
           title="About AVmatrix"
         >
-          <Sparkles className="h-4 w-4" />
+          <Sparkles className="h-4 w-4 text-border-strong" />
           <span className="hidden sm:inline">About AVmatrix</span>
-          <HelpCircle className="h-3.5 w-3.5 transition-all group-hover:text-yellow-300" />
-          <span className="hidden sm:inline">✨</span>
+          <HelpCircle className="h-3.5 w-3.5 transition-all group-hover:text-border-strong" />
         </button>
 
-        {/* Stats */}
         {graph && (
-          <div className="mr-2 flex items-center gap-4 text-xs text-text-muted">
+          <div className="press-eyebrow mr-2 flex items-center gap-4 text-text-secondary normal-case tracking-normal">
             <span>{nodeCount} nodes</span>
             <span>{edgeCount} edges</span>
           </div>
         )}
 
-        {/* Embedding Status */}
         <EmbeddingStatus />
 
-        {/* Icon buttons */}
         <button
           onClick={() => setSettingsPanelOpen(true)}
-          className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-hover hover:text-text-primary"
+          className="press-ghost-button flex h-9 w-9 cursor-pointer items-center justify-center text-text-secondary"
           title="Session Settings"
         >
           <Settings className="h-4.5 w-4.5" />
@@ -474,22 +469,21 @@ export const Header = ({
         <button
           title="Help"
           onClick={() => setHelpDialogBoxOpen(true)}
-          className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-hover hover:text-text-primary"
+          className="press-ghost-button flex h-9 w-9 cursor-pointer items-center justify-center text-text-secondary"
         >
           <HelpCircle className="h-4.5 w-4.5" />
         </button>
 
-        {/* AI Button */}
         <button
           onClick={openChatPanel}
-          className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-all ${
+          className={`press-filled-button flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium ${
             isRightPanelOpen && rightPanelTab === 'chat'
-              ? 'bg-accent text-white shadow-glow'
-              : 'bg-gradient-to-r from-accent to-accent-dim text-white shadow-glow hover:-translate-y-0.5 hover:shadow-lg'
+              ? 'bg-accent-dim text-text-inverse'
+              : 'text-text-inverse'
           } `}
         >
           <Sparkles className="h-4 w-4" />
-          <span>Nexus AI</span>
+          <span>Desk Chat</span>
         </button>
       </div>
     </header>

@@ -21,7 +21,7 @@ const customTheme = {
   'code[class*="language-"]': {
     ...vscDarkPlus['code[class*="language-"]'],
     background: 'transparent',
-    fontFamily: '"JetBrains Mono", "Fira Code", monospace',
+    fontFamily: '"IBM Plex Mono", "Fira Code", monospace',
   },
 };
 
@@ -117,8 +117,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           const baseParams =
             'code-ref-btn inline-flex items-center px-2 py-0.5 rounded-md font-mono text-[12px] !no-underline hover:!no-underline transition-colors';
           const colorParams = isNodeRef
-            ? 'border border-amber-300/55 bg-amber-400/10 !text-amber-200 visited:!text-amber-200 hover:bg-amber-400/15 hover:border-amber-200/70'
-            : 'border border-cyan-300/55 bg-cyan-400/10 !text-cyan-200 visited:!text-cyan-200 hover:bg-cyan-400/15 hover:border-cyan-200/70';
+            ? 'border-2 border-border-strong bg-base !text-text-primary visited:!text-text-primary hover:bg-surface'
+            : 'border-2 border-border-default bg-surface !text-text-primary visited:!text-text-primary hover:border-border-strong hover:bg-base';
 
           return (
             <a
@@ -137,7 +137,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         return (
           <a
             href={hrefStr}
-            className="text-accent underline underline-offset-2 hover:text-purple-300"
+            className="text-border-strong underline underline-offset-2 hover:text-accent-dim"
             target="_blank"
             rel="noopener noreferrer"
             {...props}
@@ -170,10 +170,10 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             customStyle={{
               margin: 0,
               padding: '14px 16px',
-              borderRadius: '8px',
+              borderRadius: '12px',
               fontSize: '13px',
               background: '#0a0a10',
-              border: '1px solid #1e1e2a',
+              border: '2px solid #7b634a',
             }}
           >
             {codeContent}
@@ -204,11 +204,11 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         <div className="mt-2 flex justify-end">
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 rounded border border-transparent px-2 py-1 text-xs text-text-muted transition-all hover:border-border-subtle hover:bg-surface hover:text-text-primary"
+            className="press-outline-button flex items-center gap-1.5 px-2 py-1 text-xs text-text-secondary"
             title="Copy to clipboard"
           >
             {copied ? (
-              <Check className="h-3.5 w-3.5 text-emerald-400" />
+              <Check className="h-3.5 w-3.5 text-success" />
             ) : (
               <Copy className="h-3.5 w-3.5" />
             )}

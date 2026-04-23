@@ -186,12 +186,12 @@ export const QueryFAB = () => {
     return (
       <button
         onClick={() => setIsExpanded(true)}
-        className="group absolute bottom-4 left-4 z-20 flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 px-4 py-2.5 text-sm font-medium text-white shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_30px_rgba(6,182,212,0.6)]"
+        className="workspace-outline-button group absolute bottom-4 left-4 z-20 flex items-center gap-2 rounded-xl bg-workspace-surface px-4 py-2.5 font-mono text-sm font-medium text-workspace-text-primary transition-all duration-200 hover:-translate-y-0.5"
       >
         <Terminal className="h-4 w-4" />
         <span>Query</span>
         {queryResult && queryResult.nodeIds.length > 0 && (
-          <span className="ml-1 rounded-md bg-white/20 px-1.5 py-0.5 text-xs font-semibold">
+          <span className="ml-1 rounded-md border border-workspace-border-default bg-workspace-base px-1.5 py-0.5 text-xs font-semibold">
             {queryResult.nodeIds.length}
           </span>
         )}
@@ -202,18 +202,20 @@ export const QueryFAB = () => {
   return (
     <div
       ref={panelRef}
-      className="absolute bottom-4 left-4 z-20 w-[480px] max-w-[calc(100%-2rem)] animate-fade-in rounded-xl border border-cyan-500/30 bg-deep/95 shadow-[0_0_40px_rgba(6,182,212,0.2)] backdrop-blur-md"
+      className="workspace-panel absolute bottom-4 left-4 z-20 w-[480px] max-w-[calc(100%-2rem)] animate-fade-in backdrop-blur-md"
     >
-      <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3">
+      <div className="flex items-center justify-between border-b-[3px] border-workspace-border-default px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-teal-500">
-            <Terminal className="h-4 w-4 text-white" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg border-[2px] border-workspace-border-default bg-workspace-base">
+            <Terminal className="h-4 w-4 text-workspace-text-primary" />
           </div>
-          <span className="text-sm font-medium">Cypher Query</span>
+          <span className="font-mono text-sm font-medium text-workspace-text-primary">
+            Cypher Query
+          </span>
         </div>
         <button
           onClick={handleClose}
-          className="rounded-md p-1.5 text-text-muted transition-colors hover:bg-hover hover:text-text-primary"
+          className="workspace-outline-button rounded-md p-1.5 text-workspace-text-secondary hover:text-workspace-text-primary"
         >
           <X className="h-4 w-4" />
         </button>
@@ -228,7 +230,7 @@ export const QueryFAB = () => {
             onKeyDown={handleKeyDown}
             placeholder="MATCH (n:Function) RETURN n.name, n.filePath LIMIT 10"
             rows={3}
-            className="w-full resize-none rounded-lg border border-border-subtle bg-surface px-3 py-2.5 font-mono text-sm text-text-primary transition-all outline-none placeholder:text-text-muted focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20"
+            className="w-full resize-none rounded-lg border-[2px] border-workspace-border-default bg-workspace-inset px-3 py-2.5 font-mono text-sm text-workspace-text-primary transition-all outline-none placeholder:text-workspace-text-muted focus:border-workspace-border-strong"
           />
         </div>
 
@@ -236,7 +238,7 @@ export const QueryFAB = () => {
           <div className="relative">
             <button
               onClick={() => setShowExamples(!showExamples)}
-              className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-hover hover:text-text-primary"
+              className="workspace-outline-button flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs text-workspace-text-secondary hover:text-workspace-text-primary"
             >
               <Sparkles className="h-3.5 w-3.5" />
               <span>Examples</span>
@@ -246,12 +248,12 @@ export const QueryFAB = () => {
             </button>
 
             {showExamples && (
-              <div className="absolute bottom-full left-0 mb-2 w-64 animate-fade-in rounded-lg border border-border-subtle bg-surface py-1 shadow-xl">
+              <div className="workspace-panel absolute bottom-full left-0 mb-2 w-64 animate-fade-in py-1 shadow-[var(--shadow-dropdown)]">
                 {EXAMPLE_QUERIES.map((example) => (
                   <button
                     key={example.label}
                     onClick={() => handleSelectExample(example.query)}
-                    className="w-full px-3 py-2 text-left text-sm text-text-secondary transition-colors hover:bg-hover hover:text-text-primary"
+                    className="w-full px-3 py-2 text-left font-mono text-sm text-workspace-text-secondary transition-colors hover:bg-workspace-base hover:text-workspace-text-primary"
                   >
                     {example.label}
                   </button>
@@ -264,7 +266,7 @@ export const QueryFAB = () => {
             {query && (
               <button
                 onClick={handleClear}
-                className="rounded-md px-3 py-1.5 text-xs text-text-secondary transition-colors hover:bg-hover hover:text-text-primary"
+                className="workspace-outline-button rounded-md px-3 py-1.5 text-xs text-workspace-text-secondary hover:text-workspace-text-primary"
               >
                 Clear
               </button>
@@ -272,7 +274,7 @@ export const QueryFAB = () => {
             <button
               onClick={handleRunQuery}
               disabled={!query.trim() || isRunning}
-              className="flex items-center gap-1.5 rounded-md bg-gradient-to-r from-cyan-500 to-teal-500 px-4 py-1.5 text-sm font-medium text-white shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all hover:shadow-[0_0_20px_rgba(6,182,212,0.5)] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+              className="workspace-outline-button flex items-center gap-1.5 rounded-md border-workspace-border-strong bg-workspace-surface px-4 py-1.5 font-mono text-sm font-medium text-workspace-text-primary transition-all disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
             >
               {isRunning ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -280,45 +282,45 @@ export const QueryFAB = () => {
                 <Play className="h-3.5 w-3.5" />
               )}
               <span>Run</span>
-              <kbd className="ml-1 rounded bg-white/20 px-1 py-0.5 text-[10px]">⌘↵</kbd>
+                <kbd className="ml-1 rounded border border-workspace-border-default bg-workspace-base px-1 py-0.5 text-[10px]">⌘↵</kbd>
             </button>
           </div>
         </div>
       </div>
 
       {error && (
-        <div className="border-t border-red-500/20 bg-red-500/10 px-4 py-2">
-          <p className="font-mono text-xs text-red-400">{error}</p>
+        <div className="border-t border-error bg-workspace-base px-4 py-2">
+          <p className="font-mono text-xs text-error">{error}</p>
         </div>
       )}
 
       {queryResult && !error && (
-        <div className="border-t border-cyan-500/20">
-          <div className="flex items-center justify-between bg-cyan-500/5 px-4 py-2.5">
-            <div className="flex items-center gap-3 text-xs">
-              <span className="text-text-secondary">
-                <span className="font-semibold text-cyan-400">{queryResult.rows.length}</span> rows
+        <div className="border-t border-workspace-border-default">
+          <div className="flex items-center justify-between bg-workspace-base px-4 py-2.5">
+            <div className="flex items-center gap-3 font-mono text-xs">
+              <span className="text-workspace-text-secondary">
+                <span className="font-semibold text-workspace-text-primary">{queryResult.rows.length}</span> rows
               </span>
               {queryResult.nodeIds.length > 0 && (
-                <span className="text-text-secondary">
-                  <span className="font-semibold text-cyan-400">{queryResult.nodeIds.length}</span>{' '}
+                <span className="text-workspace-text-secondary">
+                  <span className="font-semibold text-workspace-text-primary">{queryResult.nodeIds.length}</span>{' '}
                   highlighted
                 </span>
               )}
-              <span className="text-text-muted">{queryResult.executionTime.toFixed(1)}ms</span>
+              <span className="text-workspace-text-muted">{queryResult.executionTime.toFixed(1)}ms</span>
             </div>
             <div className="flex items-center gap-2">
               {queryResult.nodeIds.length > 0 && (
                 <button
                   onClick={clearQueryHighlights}
-                  className="text-xs text-text-muted transition-colors hover:text-text-primary"
+                  className="font-mono text-xs text-workspace-text-muted transition-colors hover:text-workspace-text-primary"
                 >
                   Clear
                 </button>
               )}
               <button
                 onClick={() => setShowResults(!showResults)}
-                className="flex items-center gap-1 text-xs text-text-muted transition-colors hover:text-text-primary"
+                className="flex items-center gap-1 font-mono text-xs text-workspace-text-muted transition-colors hover:text-workspace-text-primary"
               >
                 <Table className="h-3 w-3" />
                 {showResults ? (
@@ -331,14 +333,14 @@ export const QueryFAB = () => {
           </div>
 
           {showResults && queryResult.rows.length > 0 && (
-            <div className="scrollbar-thin max-h-48 overflow-auto border-t border-border-subtle">
-              <table className="w-full text-xs">
-                <thead className="sticky top-0 bg-surface">
+            <div className="scrollbar-thin max-h-48 overflow-auto border-t border-workspace-border-subtle">
+              <table className="w-full font-mono text-xs">
+                <thead className="sticky top-0 bg-workspace-surface">
                   <tr>
                     {Object.keys(queryResult.rows[0]).map((key) => (
                       <th
                         key={key}
-                        className="border-b border-border-subtle px-3 py-2 text-left font-medium text-text-muted"
+                        className="border-b border-workspace-border-subtle px-3 py-2 text-left font-medium text-workspace-text-muted"
                       >
                         {key}
                       </th>
@@ -347,11 +349,11 @@ export const QueryFAB = () => {
                 </thead>
                 <tbody>
                   {queryResult.rows.slice(0, 50).map((row, i) => (
-                    <tr key={i} className="transition-colors hover:bg-hover/50">
+                    <tr key={i} className="transition-colors hover:bg-workspace-base/50">
                       {Object.values(row).map((val, j) => (
                         <td
                           key={j}
-                          className="max-w-[200px] truncate border-b border-border-subtle/50 px-3 py-1.5 font-mono text-text-secondary"
+                          className="max-w-[200px] truncate border-b border-workspace-border-subtle/50 px-3 py-1.5 font-mono text-workspace-text-secondary"
                         >
                           {typeof val === 'object' ? JSON.stringify(val) : String(val ?? '')}
                         </td>
@@ -361,7 +363,7 @@ export const QueryFAB = () => {
                 </tbody>
               </table>
               {queryResult.rows.length > 50 && (
-                <div className="border-t border-border-subtle bg-surface px-3 py-2 text-xs text-text-muted">
+                <div className="border-t border-workspace-border-subtle bg-workspace-surface px-3 py-2 font-mono text-xs text-workspace-text-muted">
                   Showing 50 of {queryResult.rows.length} rows
                 </div>
               )}

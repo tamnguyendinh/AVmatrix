@@ -48,19 +48,17 @@ export const WebGPUFallbackDialog = ({
 
       {/* Dialog */}
       <div
-        className={`relative mx-4 w-full max-w-md overflow-hidden rounded-2xl border border-border-subtle bg-surface shadow-2xl transition-all duration-200 ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
+        className={`press-panel relative mx-4 w-full max-w-md overflow-hidden shadow-[var(--shadow-dropdown)] transition-all duration-200 ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
       >
-        {/* Header with scratching emoji */}
-        <div className="relative border-b border-border-subtle bg-gradient-to-r from-amber-500/20 to-orange-500/20 px-6 py-5">
+        <div className="relative border-b-[3px] border-border-default bg-base px-6 py-5">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-1 text-text-muted transition-colors hover:text-text-primary"
+            className="press-ghost-button absolute top-4 right-4 p-1 text-text-muted"
           >
             <X className="h-5 w-5" />
           </button>
 
           <div className="flex items-center gap-4">
-            {/* Animated emoji */}
             <div
               className={`text-5xl ${isAnimating ? 'animate-bounce' : ''}`}
               onAnimationEnd={() => setIsAnimating(false)}
@@ -69,28 +67,28 @@ export const WebGPUFallbackDialog = ({
               🤔
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-text-primary">WebGPU said "nope"</h2>
-              <p className="mt-0.5 text-sm text-text-muted">
+              <p className="press-eyebrow">Semantic search fallback</p>
+              <h2 className="press-title text-2xl">WebGPU said "nope"</h2>
+              <p className="mt-0.5 font-reading text-sm text-text-secondary">
                 Your browser doesn't support GPU acceleration
               </p>
             </div>
           </div>
         </div>
 
-        {/* Content */}
         <div className="space-y-4 px-6 py-5">
-          <p className="text-sm leading-relaxed text-text-secondary">
+          <p className="press-reading text-text-secondary">
             Couldn't create embeddings with WebGPU, so semantic search (Graph RAG) won't be as
             smart. The graph still works fine though!
           </p>
 
-          <div className="rounded-lg border border-border-subtle bg-elevated/50 p-4">
-            <p className="text-sm text-text-secondary">
+          <div className="press-panel rounded-lg p-4">
+            <p className="font-reading text-sm text-text-secondary">
               <span className="font-medium text-text-primary">Your options:</span>
             </p>
-            <ul className="mt-2 space-y-1.5 text-sm text-text-muted">
+            <ul className="mt-2 space-y-1.5 font-reading text-sm text-text-secondary">
               <li className="flex items-start gap-2">
-                <Snail className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-400" />
+                <Snail className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
                 <span>
                   <strong className="text-text-secondary">Use CPU</strong> — Works but{' '}
                   {isSmallCodebase ? 'a bit' : 'way'} slower
@@ -103,7 +101,7 @@ export const WebGPUFallbackDialog = ({
                 </span>
               </li>
               <li className="flex items-start gap-2">
-                <SkipForward className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-400" />
+                <SkipForward className="mt-0.5 h-4 w-4 flex-shrink-0 text-info" />
                 <span>
                   <strong className="text-text-secondary">Skip it</strong> — Graph works, just no AI
                   semantic search
@@ -119,14 +117,15 @@ export const WebGPUFallbackDialog = ({
             </p>
           )}
 
-          <p className="text-xs text-text-muted">💡 Tip: Try Chrome or Edge for WebGPU support</p>
+          <p className="font-reading text-xs text-text-secondary">
+            💡 Tip: Try Chrome or Edge for WebGPU support
+          </p>
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-3 border-t border-border-subtle bg-elevated/30 px-6 py-4">
+        <div className="flex gap-3 border-t-[3px] border-border-default bg-base px-6 py-4">
           <button
             onClick={onSkip}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-border-subtle bg-surface px-4 py-2.5 text-sm font-medium text-text-secondary transition-all hover:bg-hover hover:text-text-primary"
+            className="press-outline-button flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-text-secondary"
           >
             <SkipForward className="h-4 w-4" />
             Skip Embeddings
@@ -135,8 +134,8 @@ export const WebGPUFallbackDialog = ({
             onClick={onUseCPU}
             className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
               isSmallCodebase
-                ? 'bg-node-function text-white hover:bg-node-function/90'
-                : 'border border-amber-500/30 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
+                ? 'press-filled-button'
+                : 'press-outline-button border-warning text-warning hover:bg-warning/10'
             }`}
           >
             <Snail className="h-4 w-4" />

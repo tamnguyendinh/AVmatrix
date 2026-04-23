@@ -17,26 +17,24 @@ interface ProcessFlowModalProps {
   isFullScreen?: boolean;
 }
 
-// Initialize mermaid with cyan/purple theme matching avmatrix
-// Initialize mermaid with cyan/purple theme matching avmatrix
 mermaid.initialize({
   startOnLoad: false,
   suppressErrorRendering: true, // Try to suppress if supported
   maxTextSize: 900000, // Increase from default 50000 to handle large combined diagrams
   theme: 'base',
   themeVariables: {
-    primaryColor: '#1e293b', // node bg
-    primaryTextColor: '#f1f5f9',
-    primaryBorderColor: '#22d3ee',
-    lineColor: '#94a3b8',
-    secondaryColor: '#1e293b',
-    tertiaryColor: '#0f172a',
-    mainBkg: '#1e293b', // background
-    nodeBorder: '#22d3ee',
-    clusterBkg: '#1e293b',
-    clusterBorder: '#475569',
-    titleColor: '#f1f5f9',
-    edgeLabelBackground: '#0f172a',
+    primaryColor: '#e4dccf',
+    primaryTextColor: '#1b1815',
+    primaryBorderColor: '#2f2822',
+    lineColor: '#6a5c4f',
+    secondaryColor: '#eee7db',
+    tertiaryColor: '#dcd2c3',
+    mainBkg: '#e4dccf',
+    nodeBorder: '#2f2822',
+    clusterBkg: '#eee7db',
+    clusterBorder: '#6a5c4f',
+    titleColor: '#1b1815',
+    edgeLabelBackground: '#eee7db',
   },
   flowchart: {
     curve: 'basis',
@@ -227,28 +225,23 @@ export const ProcessFlowModal = ({
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-50 flex animate-fade-in items-center justify-center bg-black/20"
+      className="fixed inset-0 z-50 flex animate-fade-in items-center justify-center bg-overlay/60"
       onClick={handleBackdropClick}
       data-testid="process-modal"
     >
-      {/* Glassmorphism Modal */}
       <div
-        className={`animate-scale-in relative flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-900/60 shadow-2xl shadow-cyan-500/10 backdrop-blur-2xl ${
+        className={`press-panel animate-scale-in relative flex flex-col overflow-hidden shadow-[var(--shadow-dropdown)] ${
           isFullScreen ? 'h-[95vh] w-[98%] max-w-none' : 'max-h-[90vh] w-[95%] max-w-5xl'
         }`}
       >
-        {/* Subtle gradient overlay for extra glass feel */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
-
-        {/* Header */}
-        <div className="relative z-10 border-b border-white/10 px-6 py-5">
-          <h2 className="text-lg font-semibold text-white">Process: {process.label}</h2>
+        <div className="relative z-10 border-b-[3px] border-border-default bg-base px-6 py-5">
+          <p className="press-eyebrow">Process flow</p>
+          <h2 className="press-title text-2xl">Process: {process.label}</h2>
         </div>
 
-        {/* Diagram */}
         <div
           ref={scrollContainerRef}
-          className={`relative z-10 flex flex-1 items-center justify-center overflow-hidden p-8 ${isFullScreen ? 'min-h-[70vh]' : 'min-h-[400px]'}`}
+          className={`relative z-10 flex flex-1 items-center justify-center overflow-hidden bg-base p-8 ${isFullScreen ? 'min-h-[70vh]' : 'min-h-[400px]'}`}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
@@ -257,30 +250,28 @@ export const ProcessFlowModal = ({
         >
           <div
             ref={diagramRef}
-            className="h-fit w-fit origin-center transition-transform [&_.edgePath_.path]:stroke-slate-400 [&_.edgePath_.path]:stroke-2 [&_.marker]:fill-slate-400"
+            className="h-fit w-fit origin-center transition-transform [&_.edgePath_.path]:stroke-border-default [&_.edgePath_.path]:stroke-2 [&_.marker]:fill-border-default"
             style={{
               transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             }}
           />
         </div>
 
-        {/* Footer Actions */}
-        <div className="relative z-10 flex items-center justify-center gap-3 border-t border-white/10 bg-slate-900/50 px-6 py-4">
-          {/* Zoom controls */}
-          <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
+        <div className="relative z-10 flex items-center justify-center gap-3 border-t-[3px] border-border-default bg-surface px-6 py-4">
+          <div className="flex items-center gap-1 rounded-lg border-[2px] border-border-default bg-base p-1">
             <button
               onClick={handleZoomOut}
-              className="rounded-md p-2 text-slate-300 transition-all hover:bg-white/10 hover:text-white"
+              className="press-ghost-button rounded-md p-2 text-text-secondary"
               title="Zoom out (-)"
             >
               <ZoomOut className="h-4 w-4" />
             </button>
-            <span className="min-w-[3rem] px-2 text-center font-mono text-xs text-slate-400">
+            <span className="min-w-[3rem] px-2 text-center font-mono text-xs text-text-secondary">
               {Math.round(zoom * 100)}%
             </span>
             <button
               onClick={handleZoomIn}
-              className="rounded-md p-2 text-slate-300 transition-all hover:bg-white/10 hover:text-white"
+              className="press-ghost-button rounded-md p-2 text-text-secondary"
               title="Zoom in (+)"
             >
               <ZoomIn className="h-4 w-4" />
@@ -288,7 +279,7 @@ export const ProcessFlowModal = ({
           </div>
           <button
             onClick={resetView}
-            className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-slate-300 transition-all hover:bg-white/10 hover:text-white"
+            className="press-outline-button flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium"
             title="Reset zoom and pan"
           >
             Reset View
@@ -296,7 +287,7 @@ export const ProcessFlowModal = ({
           {onFocusInGraph && (
             <button
               onClick={handleFocusInGraph}
-              className="flex items-center gap-2 rounded-lg bg-cyan-400 px-5 py-2.5 text-sm font-medium text-slate-900 shadow-lg shadow-cyan-500/20 transition-all hover:bg-cyan-300"
+              className="press-filled-button flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium"
             >
               <Focus className="h-4 w-4" />
               Toggle Focus
@@ -304,14 +295,14 @@ export const ProcessFlowModal = ({
           )}
           <button
             onClick={handleCopyMermaid}
-            className="flex items-center gap-2 rounded-lg bg-purple-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-purple-500/20 transition-all hover:bg-purple-500"
+            className="press-outline-button flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium"
           >
             <Copy className="h-4 w-4" />
             Copy Mermaid
           </button>
           <button
             onClick={onClose}
-            className="rounded-lg border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium text-slate-300 transition-all hover:bg-white/10 hover:text-white"
+            className="press-ghost-button rounded-lg px-5 py-2.5 text-sm font-medium"
           >
             Close
           </button>

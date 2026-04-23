@@ -7,24 +7,24 @@ const ProcessFlowModal = lazy(() =>
   import('./ProcessFlowModal').then((m) => ({ default: m.ProcessFlowModal })),
 );
 
-// Initialize mermaid with cyan theme matching ProcessFlowModal
+// Initialize mermaid with the warm dark workspace palette used by the process modal
 mermaid.initialize({
   startOnLoad: false,
   maxTextSize: 900000,
   theme: 'base',
   themeVariables: {
-    primaryColor: '#1e293b', // node bg - slate
-    primaryTextColor: '#f1f5f9',
-    primaryBorderColor: '#22d3ee', // cyan
-    lineColor: '#94a3b8',
-    secondaryColor: '#1e293b',
-    tertiaryColor: '#0f172a',
-    mainBkg: '#1e293b',
-    nodeBorder: '#22d3ee', // cyan
-    clusterBkg: '#1e293b',
-    clusterBorder: '#475569',
-    titleColor: '#f1f5f9',
-    edgeLabelBackground: '#0f172a',
+    primaryColor: '#29231f',
+    primaryTextColor: '#eee7db',
+    primaryBorderColor: '#9a7e63',
+    lineColor: '#9a7e63',
+    secondaryColor: '#312a25',
+    tertiaryColor: '#1f1b18',
+    mainBkg: '#29231f',
+    nodeBorder: '#7b634a',
+    clusterBkg: '#312a25',
+    clusterBorder: '#5b4837',
+    titleColor: '#eee7db',
+    edgeLabelBackground: '#1f1b18',
   },
   flowchart: {
     curve: 'basis',
@@ -40,7 +40,7 @@ mermaid.initialize({
     noteMargin: 10,
     messageMargin: 35,
   },
-  fontFamily: '"JetBrains Mono", "Fira Code", monospace',
+  fontFamily: '"IBM Plex Mono", "Fira Code", monospace',
   fontSize: 13,
   suppressErrorRendering: true,
 });
@@ -130,15 +130,15 @@ export const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
   return (
     <>
       <div className="group relative my-3">
-        <div className="relative overflow-hidden rounded-xl border border-border-subtle bg-gradient-to-b from-surface to-elevated">
+        <div className="press-panel relative overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-border-subtle bg-surface/60 px-3 py-2">
-            <span className="text-[10px] font-medium tracking-wider text-text-muted uppercase">
+          <div className="flex items-center justify-between border-b-[2px] border-border-default bg-base px-3 py-2">
+            <span className="press-eyebrow text-text-secondary">
               Diagram
             </span>
             <button
               onClick={() => setShowModal(true)}
-              className="rounded p-1 text-text-muted transition-colors hover:bg-hover hover:text-text-primary"
+              className="press-ghost-button rounded p-1 text-text-secondary"
               title="Expand"
             >
               <Maximize2 className="h-3.5 w-3.5" />
@@ -148,7 +148,7 @@ export const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
           {/* Diagram container */}
           <div
             ref={containerRef}
-            className="flex max-h-[400px] items-center justify-center overflow-auto p-4"
+            className="workspace-shell flex max-h-[400px] items-center justify-center overflow-auto p-4"
             dangerouslySetInnerHTML={{
               __html: DOMPurify.sanitize(svg, {
                 USE_PROFILES: { svg: true, svgFilters: true },
@@ -161,7 +161,7 @@ export const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
 
       {/* Use ProcessFlowModal for expansion */}
       {showModal && processData && (
-        <Suspense fallback={<div className="p-4 text-sm text-text-muted">Loading diagram…</div>}>
+        <Suspense fallback={<div className="p-4 text-sm text-text-secondary">Loading diagram…</div>}>
           <ProcessFlowModal process={processData} onClose={() => setShowModal(false)} />
         </Suspense>
       )}

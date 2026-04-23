@@ -62,10 +62,10 @@ export const EmbeddingStatus = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleStartEmbeddings()}
-            className="group flex items-center gap-2 rounded-lg border border-border-subtle bg-surface px-3 py-1.5 text-sm text-text-secondary transition-all hover:border-accent/50 hover:bg-hover hover:text-text-primary"
+            className="press-outline-button group flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-text-secondary"
             title="Generate embeddings for semantic search"
           >
-            <Brain className="h-4 w-4 text-node-interface transition-colors group-hover:text-accent" />
+            <Brain className="h-4 w-4 text-border-strong transition-colors group-hover:text-border-strong" />
             <span className="hidden sm:inline">Enable Semantic Search</span>
             <Zap className="h-3 w-3 text-text-muted" />
           </button>
@@ -80,13 +80,13 @@ export const EmbeddingStatus = () => {
     const downloadPercent = embeddingProgress?.percent ?? 0;
     return (
       <>
-        <div className="flex items-center gap-2.5 rounded-lg border border-accent/30 bg-surface px-3 py-1.5 text-sm">
-          <Loader2 className="h-4 w-4 animate-spin text-accent" />
+        <div className="press-panel flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm">
+          <Loader2 className="h-4 w-4 animate-spin text-border-strong" />
           <div className="flex flex-col gap-0.5">
             <span className="text-xs text-text-secondary">Loading AI model...</span>
-            <div className="h-1 w-24 overflow-hidden rounded-full bg-elevated">
+            <div className="h-1 w-24 overflow-hidden rounded-full bg-inset">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-accent to-node-interface transition-all duration-300"
+                className="h-full rounded-full bg-border-strong transition-all duration-300"
                 style={{ width: `${downloadPercent}%` }}
               />
             </div>
@@ -104,15 +104,15 @@ export const EmbeddingStatus = () => {
     const percent = embeddingProgress?.percent ?? 0;
 
     return (
-      <div className="flex items-center gap-2.5 rounded-lg border border-node-function/30 bg-surface px-3 py-1.5 text-sm">
+      <div className="press-panel flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm">
         <Loader2 className="h-4 w-4 animate-spin text-node-function" />
         <div className="flex flex-col gap-0.5">
           <span className="text-xs text-text-secondary">
             Embedding {processed}/{total} nodes
           </span>
-          <div className="h-1 w-24 overflow-hidden rounded-full bg-elevated">
+          <div className="h-1 w-24 overflow-hidden rounded-full bg-inset">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-node-function to-accent transition-all duration-300"
+              className="h-full rounded-full bg-border-strong transition-all duration-300"
               style={{ width: `${percent}%` }}
             />
           </div>
@@ -124,8 +124,8 @@ export const EmbeddingStatus = () => {
   // Indexing
   if (embeddingStatus === 'indexing') {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-node-interface/30 bg-surface px-3 py-1.5 text-sm text-text-secondary">
-        <Loader2 className="h-4 w-4 animate-spin text-node-interface" />
+      <div className="press-panel flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-text-secondary">
+        <Loader2 className="h-4 w-4 animate-spin text-border-strong" />
         <span className="text-xs">Creating vector index...</span>
       </div>
     );
@@ -135,7 +135,7 @@ export const EmbeddingStatus = () => {
   if (embeddingStatus === 'ready') {
     return (
       <div
-        className="flex items-center gap-2 rounded-lg border border-node-function/30 bg-node-function/10 px-3 py-1.5 text-sm text-node-function"
+        className="press-panel flex items-center gap-2 rounded-lg border-success bg-base px-3 py-1.5 text-sm text-success"
         title="Semantic search is ready! Use natural language in the AI chat."
       >
         <Check className="h-4 w-4" />
@@ -150,7 +150,7 @@ export const EmbeddingStatus = () => {
       <>
         <button
           onClick={() => handleStartEmbeddings()}
-          className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm text-red-400 transition-colors hover:bg-red-500/20"
+          className="press-outline-button flex items-center gap-2 rounded-lg border-error px-3 py-1.5 text-sm text-error hover:bg-error/10"
           title="Embedding failed. Click to retry."
         >
           <AlertCircle className="h-4 w-4" />

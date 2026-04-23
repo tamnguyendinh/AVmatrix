@@ -324,11 +324,12 @@ export const ProcessesPanel = () => {
   if (totalCount === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center p-6 text-center">
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-surface">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl border-[3px] border-border-default bg-base">
           <GitBranch className="h-7 w-7 text-text-muted" />
         </div>
-        <h3 className="mb-2 text-base font-medium text-text-primary">No Processes Detected</h3>
-        <p className="max-w-xs text-sm text-text-secondary">
+        <p className="press-eyebrow mb-2">Process desk</p>
+        <h3 className="press-title mb-2 text-2xl">No Processes Detected</h3>
+        <p className="press-reading max-w-xs text-center text-text-secondary">
           Processes are execution flows traced from entry points. Load a codebase to see detected
           processes.
         </p>
@@ -338,22 +339,21 @@ export const ProcessesPanel = () => {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header with search */}
-      <div className="border-b border-border-subtle p-3">
+      <div className="border-b-[3px] border-border-default bg-base p-3">
         <div className="mb-2 flex items-center gap-2">
-          <div className="flex flex-1 items-center gap-2 rounded-lg border border-border-subtle bg-elevated px-3 py-2 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20">
+          <div className="press-inset flex flex-1 items-center gap-2 px-3 py-2 focus-within:border-border-strong">
             <Search className="h-4 w-4 text-text-muted" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter processes..."
-              className="flex-1 border-none bg-transparent text-sm text-text-primary outline-none placeholder:text-text-muted"
+              className="flex-1 border-none bg-transparent font-mono text-sm text-text-primary outline-none placeholder:text-text-muted"
             />
           </div>
         </div>
         <div
-          className="flex items-center gap-2 text-xs text-text-muted"
+          className="press-eyebrow flex items-center gap-2 text-text-secondary normal-case tracking-normal"
           data-testid="process-list-loaded"
         >
           <span>{totalCount} processes detected</span>
@@ -362,28 +362,29 @@ export const ProcessesPanel = () => {
 
       {/* Process list */}
       <div className="scrollbar-thin flex-1 overflow-y-auto">
-        {/* View All Processes Card */}
         <div className="px-4 py-3">
           <button
             onClick={handleViewAllProcesses}
             disabled={loadingProcess !== null}
-            className="group flex w-full items-center gap-3 rounded-xl border border-border-subtle bg-elevated/40 p-3 text-left shadow-sm transition-all hover:border-cyan-500/30 hover:bg-elevated/80 hover:shadow-cyan-900/10"
+            className="press-panel group flex w-full items-center gap-3 p-4 text-left transition-all hover:border-border-strong"
           >
-            <div className="rounded-lg bg-cyan-500/10 p-2 transition-colors group-hover:bg-cyan-500/20">
-              <Layers className="h-5 w-5 text-cyan-400" />
+            <div className="rounded-lg border-[2px] border-border-default bg-base p-2 transition-colors group-hover:border-border-strong">
+              <Layers className="h-5 w-5 text-border-strong" />
             </div>
             <div className="flex-1">
-              <h4 className="text-sm font-medium text-text-primary group-hover:text-cyan-200">
+              <h4 className="font-mono text-sm font-medium text-text-primary">
                 Full Process Map
               </h4>
-              <p className="text-xs text-text-muted">View combined map of {totalCount} processes</p>
+              <p className="font-reading text-xs text-text-secondary">
+                View combined map of {totalCount} processes
+              </p>
             </div>
             {loadingProcess === 'all' ? (
               <span className="mr-1 animate-spin">
-                <Sparkles className="h-4 w-4 text-cyan-400" />
+                <Sparkles className="h-4 w-4 text-border-strong" />
               </span>
             ) : (
-              <Eye className="h-4 w-4 text-text-muted group-hover:text-cyan-400" />
+              <Eye className="h-4 w-4 text-text-muted group-hover:text-border-strong" />
             )}
           </button>
         </div>
@@ -393,16 +394,16 @@ export const ProcessesPanel = () => {
           <div className="border-b border-border-subtle">
             <button
               onClick={() => toggleSection('cross')}
-              className="flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors hover:bg-hover"
+              className="flex w-full items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-base"
             >
               {expandedSections.has('cross') ? (
                 <ChevronDown className="h-4 w-4 text-text-muted" />
               ) : (
                 <ChevronRight className="h-4 w-4 text-text-muted" />
               )}
-              <Zap className="h-4 w-4 text-amber-400" />
-              <span className="text-sm font-medium text-text-primary">Cross-Community</span>
-              <span className="ml-auto rounded-full bg-surface px-2 py-0.5 text-xs text-text-muted">
+              <Zap className="h-4 w-4 text-warning" />
+              <span className="font-mono text-sm font-medium text-text-primary">Cross-Community</span>
+              <span className="press-badge ml-auto border-border-default bg-base px-2 py-0.5 text-xs text-text-secondary normal-case tracking-normal">
                 {filteredProcesses.cross.length}
               </span>
             </button>
@@ -430,16 +431,16 @@ export const ProcessesPanel = () => {
           <div>
             <button
               onClick={() => toggleSection('intra')}
-              className="flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors hover:bg-hover"
+              className="flex w-full items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-base"
             >
               {expandedSections.has('intra') ? (
                 <ChevronDown className="h-4 w-4 text-text-muted" />
               ) : (
                 <ChevronRight className="h-4 w-4 text-text-muted" />
               )}
-              <Home className="h-4 w-4 text-emerald-400" />
-              <span className="text-sm font-medium text-text-primary">Intra-Community</span>
-              <span className="ml-auto rounded-full bg-surface px-2 py-0.5 text-xs text-text-muted">
+              <Home className="h-4 w-4 text-success" />
+              <span className="font-mono text-sm font-medium text-text-primary">Intra-Community</span>
+              <span className="press-badge ml-auto border-border-default bg-base px-2 py-0.5 text-xs text-text-secondary normal-case tracking-normal">
                 {filteredProcesses.intra.length}
               </span>
             </button>
@@ -494,20 +495,20 @@ const ProcessItem = ({
 }: ProcessItemProps) => {
   // Determine row styling - focused gets special highlight
   const rowClass = isFocused
-    ? 'bg-amber-950/40 border border-amber-500/50 ring-1 ring-amber-400/30'
+    ? 'bg-base border-[2px] border-border-strong'
     : isSelected
-      ? 'bg-cyan-950/40 border border-cyan-500/50 ring-1 ring-cyan-400/30'
+      ? 'bg-base border-[2px] border-border-default'
       : '';
 
   return (
     <div
       data-testid="process-row"
-      className={`group mx-2 flex items-center gap-2 rounded-lg px-4 py-2 transition-all hover:bg-hover ${rowClass}`}
+      className={`group mx-2 flex items-center gap-2 rounded-lg px-4 py-3 transition-all hover:bg-base ${rowClass}`}
     >
       <GitBranch className="h-4 w-4 flex-shrink-0 text-text-muted" />
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm text-text-primary">{process.label}</div>
-        <div className="flex items-center gap-2 text-xs text-text-muted">
+        <div className="truncate font-mono text-sm text-text-primary">{process.label}</div>
+        <div className="flex items-center gap-2 font-mono text-xs text-text-secondary">
           <span>{process.stepCount} steps</span>
           {process.clusters.length > 0 && (
             <>
@@ -522,8 +523,8 @@ const ProcessItem = ({
         onClick={onToggleFocus}
         className={`rounded-md p-1.5 transition-all ${
           isFocused
-            ? 'animate-pulse border border-amber-400/40 bg-amber-500/20 text-amber-400 opacity-100 hover:bg-amber-500/30 hover:text-amber-300'
-            : 'border border-white/10 bg-white/5 text-text-muted opacity-0 group-hover:opacity-100 hover:border-cyan-400/40 hover:bg-cyan-500/20 hover:text-cyan-400'
+            ? 'border-[2px] border-border-strong bg-base text-border-strong opacity-100'
+            : 'border-[2px] border-border-default bg-surface text-text-muted opacity-0 group-hover:opacity-100 hover:border-border-strong hover:text-border-strong'
         }`}
         title={isFocused ? 'Click to remove highlight from graph' : 'Click to highlight in graph'}
         data-testid="process-highlight-button"
@@ -534,10 +535,10 @@ const ProcessItem = ({
         onClick={onView}
         disabled={isLoading}
         data-testid="process-view-button"
-        className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium shadow-sm transition-all disabled:opacity-50 ${
+        className={`flex items-center gap-1.5 rounded-md border-[2px] px-2.5 py-1.5 font-mono text-xs font-medium transition-all disabled:opacity-50 ${
           isSelected
-            ? 'border border-cyan-400/60 bg-cyan-900/60 text-cyan-300 opacity-100'
-            : 'border border-cyan-500/30 bg-cyan-950/30 text-cyan-400 opacity-0 shadow-cyan-900/20 group-hover:opacity-100 hover:border-cyan-400/50 hover:bg-cyan-900/50 hover:text-cyan-300'
+            ? 'border-border-strong bg-accent text-text-inverse opacity-100'
+            : 'border-border-default bg-base text-text-secondary opacity-0 group-hover:opacity-100 hover:border-border-strong hover:text-text-primary'
         }`}
       >
         {isLoading ? (

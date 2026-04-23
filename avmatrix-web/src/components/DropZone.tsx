@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Loader2, Check, Sparkles } from '@/lib/lucide-icons';
+import { Loader2, Check } from '@/lib/lucide-icons';
 import {
   connectToServer,
   fetchRepos,
@@ -62,33 +62,29 @@ function Crossfade({ activeKey, children }: { activeKey: string; children: React
 function SuccessCard() {
   return (
     <div
-      className="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-surface p-7"
+      className="press-panel-strong press-ruled relative overflow-hidden p-8"
       role="status"
       aria-live="polite"
     >
-      {/* Success glow */}
-      <div className="pointer-events-none absolute -top-20 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-emerald-500/8 blur-3xl" />
-
       <div className="relative">
-        {/* Animated check icon */}
-        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 shadow-[0_0_30px_rgba(16,185,129,0.15)]">
-          <Check className="h-8 w-8 text-emerald-400" />
+        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-xl border-[3px] border-border-strong bg-inset">
+          <Check className="h-8 w-8 text-success" />
         </div>
 
-        <h2 className="mb-2 text-center text-lg font-semibold text-emerald-400">
+        <p className="press-eyebrow mb-2 text-center">Local bridge detected</p>
+        <h2 className="press-title mb-2 text-center text-2xl">
           Server Connected
         </h2>
-        <p className="text-center text-sm leading-relaxed text-text-secondary">
+        <p className="mx-auto text-center text-base leading-relaxed font-reading text-text-secondary">
           Preparing your code knowledge graph...
         </p>
 
-        {/* Subtle progress hint */}
         <div className="mt-6 flex items-center justify-center gap-2">
           <div className="flex gap-1">
             {[0, 1, 2].map((i) => (
               <div
                 key={i}
-                className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400/60"
+                className="h-1.5 w-1.5 animate-pulse rounded-full bg-border-strong"
                 style={{ animationDelay: `${i * 200}ms` }}
               />
             ))}
@@ -102,30 +98,22 @@ function SuccessCard() {
 function LoadingCard({ message }: { message: string }) {
   return (
     <div
-      className="relative overflow-hidden rounded-3xl border border-accent/20 bg-surface p-7"
+      className="press-panel relative overflow-hidden p-8"
       role="status"
       aria-live="polite"
     >
-      {/* Loading glow */}
-      <div className="pointer-events-none absolute -top-20 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-accent/8 blur-3xl" />
-
       <div className="relative">
-        {/* Spinner */}
-        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-accent/30 bg-gradient-to-br from-accent/20 to-accent-dim/10 shadow-glow-soft">
-          <Loader2 className="h-8 w-8 animate-spin text-accent" />
+        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-xl border-[3px] border-border-default bg-inset">
+          <Loader2 className="h-8 w-8 animate-spin text-border-strong" />
         </div>
 
-        <h2 className="mb-2 text-center text-lg font-semibold text-text-primary">
+        <p className="press-eyebrow mb-2 text-center">Connecting</p>
+        <h2 className="press-title mb-2 text-center text-2xl">
           {message || 'Connecting...'}
         </h2>
-        <p className="text-center text-sm leading-relaxed text-text-secondary">
+        <p className="mx-auto text-center text-base leading-relaxed font-reading text-text-secondary">
           This may take a moment for large repositories
         </p>
-
-        {/* Decorative sparkle */}
-        <div className="mt-5 flex items-center justify-center">
-          <Sparkles className="h-4 w-4 text-accent/30" />
-        </div>
       </div>
     </div>
   );
@@ -281,17 +269,11 @@ export const DropZone = ({ onServerConnect }: DropZoneProps) => {
   const displayPhase = !initialProbeComplete ? null : phase;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-void p-8">
-      {/* Background gradient effects */}
-      <div className="pointer-events-none fixed inset-0">
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
-        <div className="absolute right-1/4 bottom-1/4 h-96 w-96 rounded-full bg-node-interface/10 blur-3xl" />
-      </div>
+    <div className="press-shell press-ruled flex min-h-screen items-center justify-center p-8">
 
       <div className="relative w-full max-w-lg">
-        {/* Error — floats above the card */}
         {error && (
-          <div className="mb-4 animate-fade-in rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-center text-sm text-red-400">
+          <div className="mb-4 animate-fade-in rounded-xl border-[3px] border-error bg-surface p-3 text-center text-sm text-error">
             {error}
           </div>
         )}

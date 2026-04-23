@@ -14,11 +14,17 @@ vi.mock('../../src/components/ChatPanel', () => ({
   ChatPanel: (props: { onRequestAnalyze: () => void }) => mockChatPanel(props),
 }));
 
-import { RightPanel } from '../../src/components/RightPanel';
+import { RightPanelResizable } from '../../src/components/RightPanel.resizable';
 
-describe('RightPanel.local-runtime', () => {
+describe('RightPanelResizable.local-runtime', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      writable: true,
+      value: 1600,
+    });
   });
 
   it('renders the chat shell and forwards analyze requests to ChatPanel', () => {
@@ -26,7 +32,11 @@ describe('RightPanel.local-runtime', () => {
 
     render(
       <AppStateProvider>
-        <RightPanel isOpen={true} onClose={vi.fn()} onRequestAnalyze={onRequestAnalyze} />
+        <RightPanelResizable
+          isOpen={true}
+          onClose={vi.fn()}
+          onRequestAnalyze={onRequestAnalyze}
+        />
       </AppStateProvider>,
     );
 
@@ -37,11 +47,31 @@ describe('RightPanel.local-runtime', () => {
   it('switches between chat and processes tabs without changing the shell UI', () => {
     render(
       <AppStateProvider>
-        <RightPanel isOpen={true} onClose={vi.fn()} onRequestAnalyze={vi.fn()} />
+        <RightPanelResizable isOpen={true} onClose={vi.fn()} onRequestAnalyze={vi.fn()} />
       </AppStateProvider>,
     );
 
     fireEvent.click(screen.getByRole('button', { name: /Processes/i }));
     expect(screen.getAllByText('Processes')).toHaveLength(2);
+  });
+
+  it('resizes the panel from the drag handle and persists width', () => {
+    const { container } = render(
+      <AppStateProvider>
+        <RightPanelResizable isOpen={true} onClose={vi.fn()} onRequestAnalyze={vi.fn()} />
+      </AppStateProvider>,
+    );
+
+    const panel = container.querySelector('aside');
+    expect(panel).not.toBeNull();
+    expect(panel?.style.width).toBe('520px');
+
+    const resizeHandle = screen.getByTitle('Drag to resize panel');
+    fireEvent.mouseDown(resizeHandle, { clientX: 900 });
+    fireEvent.mouseMove(window, { clientX: 980 });
+    fireEvent.mouseUp(window);
+
+    expect(panel?.style.width).toBe('440px');
+    expect(window.localStorage.getItem('avmatrix.rightPanelWidth')).toBe('440');
   });
 });

@@ -57,23 +57,23 @@ const getStatusDisplay = (status: ToolCallInfo['status']) => {
     case 'running':
       return {
         icon: <Loader2 className="h-3.5 w-3.5 animate-spin" />,
-        color: 'text-amber-400',
-        bgColor: 'bg-amber-500/10',
-        borderColor: 'border-amber-500/30',
+        color: 'text-warning',
+        bgColor: 'bg-base',
+        borderColor: 'border-warning',
       };
     case 'completed':
       return {
         icon: <Check className="h-3.5 w-3.5" />,
-        color: 'text-emerald-400',
-        bgColor: 'bg-emerald-500/10',
-        borderColor: 'border-emerald-500/30',
+        color: 'text-success',
+        bgColor: 'bg-base',
+        borderColor: 'border-success',
       };
     case 'error':
       return {
         icon: <AlertCircle className="h-3.5 w-3.5" />,
-        color: 'text-rose-400',
-        bgColor: 'bg-rose-500/10',
-        borderColor: 'border-rose-500/30',
+        color: 'text-error',
+        bgColor: 'bg-base',
+        borderColor: 'border-error',
       };
     default:
       return {
@@ -90,7 +90,6 @@ const getStatusDisplay = (status: ToolCallInfo['status']) => {
  */
 const getToolDisplayName = (name: string): string => {
   const names: Record<string, string> = {
-    // Current 7-tool architecture
     search: '🔍 Search Code',
     cypher: '🔗 Cypher Query',
     grep: '🔎 Pattern Search',
@@ -109,9 +108,8 @@ export const ToolCallCard = ({ toolCall, defaultExpanded = false }: ToolCallCard
 
   return (
     <div
-      className={`rounded-lg border ${status.borderColor} ${status.bgColor} overflow-hidden transition-all`}
+      className={`overflow-hidden rounded-xl border-2 ${status.borderColor} ${status.bgColor} transition-all`}
     >
-      {/* Header - always visible */}
       <div
         role="button"
         tabIndex={0}
@@ -122,47 +120,41 @@ export const ToolCallCard = ({ toolCall, defaultExpanded = false }: ToolCallCard
             setIsExpanded(!isExpanded);
           }
         }}
-        className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left transition-colors select-none hover:bg-white/5"
+        className="flex w-full cursor-pointer items-center gap-2 px-3 py-3 text-left transition-colors select-none hover:bg-base/60"
       >
-        {/* Expand/collapse icon */}
         <span className="text-text-muted">
           {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </span>
 
-        {/* Tool name */}
-        <span className="flex-1 text-sm font-medium text-text-primary">
+        <span className="flex-1 font-mono text-sm font-medium text-text-primary">
           {getToolDisplayName(toolCall.name)}
         </span>
 
-        {/* Status indicator */}
-        <span className={`flex items-center gap-1 text-xs ${status.color}`}>
+        <span className={`press-badge flex items-center gap-1 border-current bg-transparent px-2 py-1 text-xs normal-case tracking-normal ${status.color}`}>
           {status.icon}
           <span className="capitalize">{toolCall.status}</span>
         </span>
       </div>
 
-      {/* Expanded content */}
       {isExpanded && (
         <div className="border-t border-border-subtle/50">
-          {/* Arguments/Query */}
           {formattedArgs && (
-            <div className="border-b border-border-subtle/50 px-3 py-2">
-              <div className="mb-1.5 text-[10px] tracking-wider text-text-muted uppercase">
+            <div className="border-b border-border-subtle/50 px-3 py-3">
+              <div className="press-eyebrow mb-1.5 text-text-muted">
                 {toolCall.name === 'cypher' ? 'Query' : 'Input'}
               </div>
-              <pre className="overflow-x-auto rounded bg-surface/50 p-2 font-mono text-xs whitespace-pre-wrap text-text-secondary">
+              <pre className="overflow-x-auto rounded-lg border border-border-subtle bg-base p-3 font-mono text-xs whitespace-pre-wrap text-text-secondary">
                 {formattedArgs}
               </pre>
             </div>
           )}
 
-          {/* Result */}
           {toolCall.result && (
-            <div className="px-3 py-2">
-              <div className="mb-1.5 text-[10px] tracking-wider text-text-muted uppercase">
+            <div className="px-3 py-3">
+              <div className="press-eyebrow mb-1.5 text-text-muted">
                 Result
               </div>
-              <div className="max-h-[400px] overflow-y-auto rounded bg-surface/50">
+              <div className="max-h-[400px] overflow-y-auto rounded-lg border border-border-subtle bg-base">
                 <pre className="p-2 font-mono text-xs whitespace-pre-wrap text-text-secondary">
                   {toolCall.result.length > 3000
                     ? toolCall.result.slice(0, 3000) + '\n\n... (truncated)'
@@ -172,7 +164,6 @@ export const ToolCallCard = ({ toolCall, defaultExpanded = false }: ToolCallCard
             </div>
           )}
 
-          {/* Loading state for in-progress */}
           {toolCall.status === 'running' && !toolCall.result && (
             <div className="flex items-center gap-2 px-3 py-3 text-xs text-text-muted">
               <Loader2 className="h-3 w-3 animate-spin" />

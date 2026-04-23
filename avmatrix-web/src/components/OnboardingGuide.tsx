@@ -33,10 +33,10 @@ function CopyButton({ text }: { text: string }) {
     <button
       onClick={handleCopy}
       aria-label={copied ? 'Copied!' : 'Copy to clipboard'}
-      className={`shrink-0 cursor-pointer rounded-md px-2 py-1 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:outline-none ${
+      className={`press-ghost-button shrink-0 cursor-pointer px-2 py-1 focus-visible:outline-none ${
         copied
-          ? 'bg-emerald-400/10 text-emerald-400'
-          : 'text-text-muted hover:bg-white/5 hover:text-text-primary'
+          ? 'border-border-default bg-surface text-success'
+          : 'text-text-muted'
       } `}
     >
       {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
@@ -57,25 +57,19 @@ function TerminalWindow({
 }) {
   return (
     <div
-      className={`overflow-hidden rounded-xl border transition-all duration-300 ${
-        isActive
-          ? 'border-accent/40 shadow-glow-soft'
-          : 'border-border-default hover:border-accent/20 hover:shadow-glow-soft'
-      } `}
+      className={`press-panel overflow-hidden transition-all duration-300 ${isActive ? 'border-border-strong' : ''} `}
     >
-      {/* Title bar */}
-      <div className="flex items-center gap-2 border-b border-border-subtle bg-deep px-4 py-2.5">
+      <div className="flex items-center gap-2 border-b border-border-subtle bg-base px-4 py-2.5">
         <div className="flex gap-1.5">
-          <div className="h-2.5 w-2.5 rounded-full bg-red-500/60" />
-          <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/60" />
-          <div className="h-2.5 w-2.5 rounded-full bg-emerald-500/60" />
+          <div className="h-2.5 w-2.5 rounded-full bg-border-strong" />
+          <div className="h-2.5 w-2.5 rounded-full bg-border-default" />
+          <div className="h-2.5 w-2.5 rounded-full bg-border-subtle" />
         </div>
-        <span className="flex-1 text-center font-mono text-[11px] text-text-muted">{label}</span>
+        <span className="press-eyebrow flex-1 text-center">{label}</span>
         <CopyButton text={command} />
       </div>
-      {/* Command body */}
-      <div className="flex items-center gap-3 bg-void px-4 py-3.5 font-mono text-sm">
-        <span className="text-accent/60 select-none" aria-hidden="true">
+      <div className="flex items-center gap-3 bg-inset px-4 py-3.5 font-mono text-sm">
+        <span className="text-border-strong select-none" aria-hidden="true">
           $
         </span>
         <code className="flex-1 overflow-x-auto tracking-wide whitespace-nowrap text-text-primary">
@@ -94,22 +88,22 @@ function StepDot({ state, number }: { state: StepState; number: number }) {
   if (state === 'done') {
     return (
       <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-emerald-500/50 bg-emerald-500/20">
-        <Check className="h-3 w-3 text-emerald-400" />
+        <Check className="h-3 w-3 text-success" />
       </div>
     );
   }
   if (state === 'active') {
-    return (
-      <div className="relative flex h-6 w-6 shrink-0 items-center justify-center">
-        <div className="absolute inset-0 animate-ping rounded-full border border-accent/30" />
-        <div className="flex h-6 w-6 items-center justify-center rounded-full border border-accent/60 bg-accent/20">
-          <span className="text-[10px] leading-none font-semibold text-accent">{number}</span>
+      return (
+        <div className="relative flex h-6 w-6 shrink-0 items-center justify-center">
+        <div className="absolute inset-0 animate-ping rounded-full border border-border-default/40" />
+        <div className="flex h-6 w-6 items-center justify-center rounded-full border border-border-strong bg-inset">
+          <span className="text-[10px] leading-none font-semibold text-border-strong">{number}</span>
         </div>
       </div>
     );
   }
   return (
-    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border-subtle bg-elevated">
+    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border-subtle bg-surface">
       <span className="text-[10px] leading-none font-semibold text-text-muted">{number}</span>
     </div>
   );
@@ -141,7 +135,7 @@ function StepRow({
             <span
               className={`text-sm font-medium transition-colors duration-200 ${
                 state === 'done'
-                  ? 'text-emerald-400'
+                  ? 'text-success'
                   : state === 'active'
                     ? 'text-text-primary'
                     : 'text-text-muted'
@@ -150,9 +144,9 @@ function StepRow({
               {title}
             </span>
             {state === 'done' && (
-              <span className="animate-fade-in font-mono text-[10px] tracking-wider text-emerald-400/60 uppercase">
-                done
-              </span>
+                <span className="animate-fade-in font-mono text-[10px] tracking-wider text-success uppercase">
+                  done
+                </span>
             )}
           </div>
           {description && (
@@ -170,14 +164,14 @@ function StepRow({
 function PollingBar() {
   return (
     <div
-      className="flex animate-fade-in items-center gap-3 rounded-xl border border-accent/15 bg-accent/5 px-4 py-3"
+      className="press-panel flex animate-fade-in items-center gap-3 px-4 py-3"
       aria-live="polite"
       role="status"
     >
       <div className="relative shrink-0">
-        <Zap className="h-4 w-4 text-accent/70" />
+        <Zap className="h-4 w-4 text-border-strong" />
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="h-5 w-5 animate-pulse rounded-full border border-accent/25" />
+          <div className="h-5 w-5 animate-pulse rounded-full border border-border-strong/40" />
         </div>
       </div>
 
@@ -211,24 +205,17 @@ export const OnboardingGuide = ({ isPolling }: OnboardingGuideProps) => {
   const step3State: StepState = 'waiting';
 
   return (
-    <div className="relative animate-fade-in overflow-hidden rounded-3xl border border-border-default bg-surface p-7">
-      {/* Ambient background glows */}
-      <div className="pointer-events-none absolute -top-28 -right-28 h-72 w-72 rounded-full bg-accent/6 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-node-function/6 blur-3xl" />
-
-      {/* ── Headline ─────────────────────────────────────────────── */}
+    <div className="press-panel press-ruled relative animate-fade-in overflow-hidden p-8">
       <div className="relative mb-6">
         <div className="text-center">
-          <div className="mb-2 inline-flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-accent/70" />
-            <span className="text-[11px] font-medium tracking-widest text-accent/80 uppercase">
-              AVmatrix
-            </span>
-          </div>
-          <h2 className="text-lg leading-snug font-semibold text-text-primary">
+          <p className="press-eyebrow mb-3 inline-flex items-center gap-1.5">
+            <Sparkles className="h-3.5 w-3.5 text-border-strong" />
+            <span>Vol. XII · Local bridge</span>
+          </p>
+          <h2 className="press-title text-3xl leading-snug">
             Start AVmatrix locally
           </h2>
-          <p className="mx-auto mt-1 max-w-xs text-sm leading-relaxed text-text-secondary">
+          <p className="press-reading mx-auto mt-3 text-center text-text-secondary">
             {isDev
               ? 'Start the local bridge in a separate terminal. The browser stays local and auto-connects when it is ready.'
               : 'One local command is all it takes. The browser connects automatically.'}
@@ -236,15 +223,12 @@ export const OnboardingGuide = ({ isPolling }: OnboardingGuideProps) => {
         </div>
       </div>
 
-      {/* ── Step-by-step flow ───────────────────────────────────────── */}
       <div className="relative space-y-5">
-        {/* Vertical connector line behind the dots */}
         <div
           className="pointer-events-none absolute top-6 bottom-6 left-[11px] w-px bg-border-subtle"
           aria-hidden="true"
         />
 
-        {/* Step 1 — Copy the command */}
         <StepRow
           state={step1State}
           number={1}
@@ -253,7 +237,6 @@ export const OnboardingGuide = ({ isPolling }: OnboardingGuideProps) => {
         >
           <TerminalWindow command={primary} label={termLabel} isActive={step1State === 'active'} />
 
-          {/* Secondary global-install option — production only */}
           {!isDev && (
             <>
               <div className="my-3 flex items-center gap-3">
@@ -293,16 +276,15 @@ export const OnboardingGuide = ({ isPolling }: OnboardingGuideProps) => {
         />
       </div>
 
-      {/* ── Prerequisite footnote ────────────────────────────────────── */}
-      <div className="mt-6 flex items-center justify-center gap-1.5 border-t border-border-subtle pt-5 text-xs text-text-muted">
-        <Server className="h-3 w-3 shrink-0" />
+      <div className="mt-6 flex items-center justify-center gap-1.5 border-t border-border-subtle pt-5 text-xs text-text-secondary">
+        <Server className="h-3 w-3 shrink-0 text-border-strong" />
         <span>
           Requires{' '}
           <a
             href="https://nodejs.org"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-accent transition-colors hover:text-accent/80 hover:underline"
+            className="text-border-strong transition-colors hover:text-accent-dim hover:underline"
           >
             Node.js {REQUIRED_NODE_VERSION}+
           </a>

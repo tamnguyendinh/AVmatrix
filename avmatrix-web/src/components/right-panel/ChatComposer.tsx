@@ -72,8 +72,8 @@ export const ChatComposer = memo(function ChatComposer({
   );
 
   return (
-    <div className="border-t border-border-subtle bg-surface p-3">
-      <div className="flex items-end gap-2 rounded-xl border border-border-subtle bg-elevated px-3 py-2 transition-all focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20">
+    <div className="border-t border-border-subtle bg-base p-3">
+      <div className="press-panel flex items-end gap-2 px-3 py-2 transition-all focus-within:border-border-strong">
         <textarea
           ref={textareaRef}
           value={chatInput}
@@ -81,12 +81,12 @@ export const ChatComposer = memo(function ChatComposer({
           onKeyDown={handleKeyDown}
           placeholder="Ask about the codebase..."
           rows={1}
-          className="scrollbar-thin min-h-[36px] flex-1 resize-none border-none bg-transparent text-sm text-text-primary outline-none placeholder:text-text-muted"
+          className="scrollbar-thin min-h-[36px] flex-1 resize-none border-none bg-transparent font-reading text-sm text-text-primary outline-none placeholder:text-text-muted"
           style={{ height: '36px', overflowY: 'hidden' }}
         />
         <button
           onClick={onClearChat}
-          className="px-2 py-1 text-xs text-text-muted transition-colors hover:text-text-primary"
+          className="press-ghost-button px-2 py-1 font-mono text-xs text-text-secondary"
           title="Clear chat"
         >
           Clear
@@ -94,7 +94,7 @@ export const ChatComposer = memo(function ChatComposer({
         {isChatLoading ? (
           <button
             onClick={onStopResponse}
-            className="flex h-9 w-9 items-center justify-center rounded-md bg-red-500/80 text-white transition-all hover:bg-red-500"
+            className="press-outline-button flex h-9 w-9 items-center justify-center border-error bg-surface text-error transition-all hover:bg-error/10"
             title="Stop response"
           >
             <Square className="h-3.5 w-3.5 fill-current" />
@@ -103,7 +103,7 @@ export const ChatComposer = memo(function ChatComposer({
           <button
             onClick={() => void handleSendMessage()}
             disabled={!chatInput.trim() || isAgentInitializing}
-            className="flex h-9 w-9 items-center justify-center rounded-md bg-accent text-white transition-all hover:bg-accent-dim disabled:cursor-not-allowed disabled:opacity-50"
+            className="press-filled-button flex h-9 w-9 items-center justify-center disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Send className="h-3.5 w-3.5" />
           </button>

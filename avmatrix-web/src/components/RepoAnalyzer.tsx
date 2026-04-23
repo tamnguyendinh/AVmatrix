@@ -55,10 +55,10 @@ function AnalyzeButton({
     <button
       onClick={onClick}
       disabled={!canSubmit || isLoading}
-      className={` ${sizeClass} flex items-center justify-center gap-2.5 rounded-xl font-medium transition-all duration-200 ${
+      className={`press-filled-button ${sizeClass} flex items-center justify-center gap-2.5 ${
         canSubmit && !isLoading
-          ? 'cursor-pointer bg-accent text-white shadow-glow-soft hover:-translate-y-0.5 hover:bg-accent/90 hover:shadow-glow'
-          : 'cursor-not-allowed border border-border-subtle bg-elevated text-text-muted'
+          ? 'cursor-pointer'
+          : 'cursor-not-allowed border-border-subtle bg-inset text-text-muted'
       } `}
     >
       {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
@@ -77,14 +77,14 @@ function DoneState({ repoName }: { repoName: string }) {
       role="status"
       aria-live="polite"
     >
-      <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
-        <Check className="h-6 w-6 text-emerald-400" />
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl border-[3px] border-border-strong bg-inset">
+        <Check className="h-6 w-6 text-success" />
       </div>
       <div className="text-center">
-        <p className="text-sm font-medium text-emerald-400">Analysis complete</p>
+        <p className="press-eyebrow text-success">Analysis complete</p>
         <p className="mt-0.5 font-mono text-xs text-text-muted">{repoName}</p>
       </div>
-      <p className="text-xs text-text-secondary">Loading graph...</p>
+      <p className="text-xs font-reading text-text-secondary">Loading graph...</p>
     </div>
   );
 }
@@ -198,17 +198,17 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
         <div className="space-y-2">
           <label
             htmlFor={`${inputId}-local`}
-            className="block text-xs font-medium tracking-wider text-text-secondary uppercase"
+            className="press-eyebrow block"
           >
             Local Folder Path
           </label>
           <div
-            className={`flex items-center gap-3 rounded-xl border bg-void px-4 py-3.5 transition-all duration-200 ${
+            className={`press-inset flex items-center gap-3 px-4 py-3.5 transition-all duration-200 ${
               validationError && phase === 'error'
-                ? 'border-red-500/50'
+                ? 'border-error'
                 : isLikelyAbsoluteLocalPath(localPath)
-                  ? 'border-accent/50 shadow-[0_0_0_3px_rgba(124,58,237,0.08)]'
-                  : 'border-border-default focus-within:border-accent/40'
+                  ? 'border-border-strong shadow-focus'
+                  : 'focus-within:border-border-strong'
             } `}
           >
             <FolderOpen className="h-4 w-4 shrink-0 text-text-muted" />
@@ -233,7 +233,7 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
               className="flex-1 border-none bg-transparent font-mono text-sm text-text-primary outline-none placeholder:text-text-muted disabled:opacity-50"
             />
             {isLikelyAbsoluteLocalPath(localPath) && (
-              <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+              <Check className="h-3.5 w-3.5 shrink-0 text-success" />
             )}
           </div>
           {/* Native folder picker + Browse button — below the input */}
@@ -257,7 +257,7 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
             type="button"
             onClick={() => folderInputRef.current?.click()}
             disabled={isLoading}
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-border-subtle bg-elevated px-3 py-2 text-xs font-medium text-text-secondary transition-all duration-150 hover:bg-hover hover:text-text-primary disabled:opacity-50"
+            className="press-outline-button flex w-full cursor-pointer items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-text-secondary disabled:opacity-50"
           >
             <FolderOpen className="h-3.5 w-3.5" />
             Folder picker hint
@@ -271,7 +271,7 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
 
       {/* Error message */}
       {(phase === 'error' || (phase === 'input' && validationError)) && validationError && (
-        <p className="flex animate-fade-in items-center gap-1.5 text-xs text-red-400">
+        <p className="flex animate-fade-in items-center gap-1.5 text-xs text-error">
           <AlertCircle className="h-3 w-3 shrink-0" />
           {validationError}
         </p>
@@ -305,14 +305,14 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
               setValidationError(null);
               setPhase('input');
             }}
-            className="flex-1 cursor-pointer rounded-xl border border-border-subtle bg-elevated px-4 py-2.5 text-sm text-text-secondary transition-all duration-200 hover:bg-hover hover:text-text-primary"
+            className="press-outline-button flex-1 cursor-pointer px-4 py-2.5 text-sm text-text-secondary"
           >
             Try again
           </button>
           {onCancel && (
             <button
               onClick={onCancel}
-              className="cursor-pointer px-4 py-2.5 text-sm text-text-muted transition-colors hover:text-text-secondary"
+              className="press-ghost-button cursor-pointer px-4 py-2.5 text-sm text-text-secondary"
             >
               Dismiss
             </button>
@@ -324,7 +324,7 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
       {phase === 'analyzing' && variant === 'sheet' && onCancel && (
         <button
           onClick={onCancel}
-          className="w-full cursor-pointer py-1 text-xs text-text-muted transition-colors hover:text-text-secondary"
+          className="press-ghost-button w-full cursor-pointer py-1 text-xs text-text-secondary"
         >
           Hide (analysis continues in background)
         </button>

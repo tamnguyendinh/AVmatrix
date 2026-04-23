@@ -25,46 +25,40 @@ interface AnalyzeOnboardingProps {
 
 export const AnalyzeOnboarding = ({ onComplete }: AnalyzeOnboardingProps) => {
   return (
-    <div className="relative animate-fade-in overflow-hidden rounded-3xl border border-border-default bg-surface p-7">
-      {/* Ambient glows — mirrors OnboardingGuide aesthetic */}
-      <div className="pointer-events-none absolute -top-28 -right-28 h-72 w-72 rounded-full bg-accent/6 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-node-function/6 blur-3xl" />
-
-      {/* Header */}
+    <div className="press-panel press-ruled relative animate-fade-in overflow-hidden p-8">
       <div className="relative mb-6">
         <div className="text-center">
-          {/* Eyebrow */}
-          <div className="mb-2 inline-flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-accent/70" />
-            <span className="text-[11px] font-medium tracking-widest text-accent/80 uppercase">
+          <div className="mb-3 flex justify-center">
+            <span className="press-badge border-border-default bg-base text-text-primary">
               AVmatrix
             </span>
           </div>
+          <p className="press-eyebrow mb-3 inline-flex items-center gap-1.5">
+            <Sparkles className="h-3.5 w-3.5 text-border-strong" />
+            <span>Edition 01 · First indexing run</span>
+          </p>
 
-          {/* Icon */}
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-accent/30 bg-gradient-to-br from-accent/20 to-accent-dim/10 shadow-glow-soft">
-            <FolderOpen className="h-7 w-7 text-accent" />
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border-[3px] border-border-strong bg-inset">
+            <FolderOpen className="h-7 w-7 text-border-strong" />
           </div>
 
-          <h2 className="text-lg leading-snug font-semibold text-text-primary">
+          <h2 className="press-title text-3xl leading-snug">
             Analyze your first repository
           </h2>
-          <p className="mx-auto mt-1.5 max-w-xs text-sm leading-relaxed text-text-secondary">
+          <p className="press-reading mx-auto mt-3 text-center text-text-secondary">
             Paste an absolute local repository path and AVmatrix will parse the code and build a
             live knowledge graph — entirely on this machine.
           </p>
         </div>
       </div>
 
-      {/* Analyzer form */}
       <div className="relative">
         <RepoAnalyzer variant="onboarding" onComplete={onComplete} />
       </div>
 
-      {/* Footer hint */}
-      <p className="mt-5 text-center text-[11px] leading-relaxed text-text-muted">
-        Local repositories only &middot; Parsed by the local runtime &middot; No data leaves your
-        machine
+      <p className="mt-5 text-center font-mono text-[11px] leading-relaxed text-text-secondary">
+        Local repositories only &middot; Parsed by the AVmatrix local runtime &middot; No data
+        leaves your machine
       </p>
     </div>
   );

@@ -87,11 +87,11 @@ test.describe('Server Connection & Graph Loading', () => {
   });
 });
 
-test.describe('Nexus AI', () => {
+test.describe('Desk Chat', () => {
   test('panel opens and agent initializes without error', async ({ page }) => {
     await waitForGraphLoaded(page);
 
-    await page.getByRole('button', { name: 'Nexus AI' }).click();
+    await page.getByRole('button', { name: 'Desk Chat' }).click();
     await expect(page.getByText('Ask me anything')).toBeVisible({ timeout: 15_000 });
 
     const errorBanner = page.getByText('Database not ready');
@@ -103,7 +103,7 @@ test.describe('Processes Panel', () => {
   test('shows process list and View button works', async ({ page }) => {
     await waitForGraphLoaded(page);
 
-    await page.getByRole('button', { name: 'Nexus AI' }).click();
+    await page.getByRole('button', { name: 'Desk Chat' }).click();
     await page.getByText('Processes').click();
 
     await expect(page.locator('[data-testid="process-list-loaded"]')).toBeVisible({
@@ -123,7 +123,7 @@ test.describe('Processes Panel', () => {
   test('lightbulb highlights nodes in graph', async ({ page }) => {
     await waitForGraphLoaded(page);
 
-    await page.getByRole('button', { name: 'Nexus AI' }).click();
+    await page.getByRole('button', { name: 'Desk Chat' }).click();
     await page.getByText('Processes').click();
     await expect(page.locator('[data-testid="process-list-loaded"]')).toBeVisible({
       timeout: 15_000,
@@ -136,7 +136,7 @@ test.describe('Processes Panel', () => {
     const lightbulb = processRow.locator('[data-testid="process-highlight-button"]');
     await lightbulb.waitFor({ state: 'visible', timeout: 5_000 });
     await lightbulb.click();
-    await expect(processRow).toHaveClass(/bg-amber-950/, { timeout: 5_000 });
+    await expect(processRow).toHaveClass(/border-border-strong/, { timeout: 5_000 });
   });
 });
 

@@ -290,22 +290,22 @@ export const CodeReferencesPanel = ({ onFocusNode }: CodeReferencesPanelProps) =
 
   if (isCollapsed) {
     return (
-      <aside className="flex h-full w-12 flex-shrink-0 flex-col items-center gap-2 border-r border-border-subtle bg-surface py-3">
+      <aside className="workspace-shell flex h-full w-12 flex-shrink-0 flex-col items-center gap-2 border-r-[3px] border-workspace-border-default bg-workspace-surface py-3">
         <button
           onClick={() => setIsCollapsed(false)}
-          className="rounded p-2 text-text-secondary transition-colors hover:bg-cyan-500/10 hover:text-cyan-400"
+          className="workspace-outline-button rounded p-2 text-workspace-text-secondary hover:text-workspace-text-primary"
           title="Expand Code Panel"
         >
           <PanelLeft className="h-5 w-5" />
         </button>
         <div className="my-1 h-px w-6 bg-border-subtle" />
         {showSelectedViewer && (
-          <div className="rotate-90 text-[9px] font-medium tracking-wide whitespace-nowrap text-amber-400">
+          <div className="rotate-90 text-[9px] font-medium tracking-wide whitespace-nowrap text-workspace-text-primary">
             SELECTED
           </div>
         )}
         {showCitations && (
-          <div className="mt-4 rotate-90 text-[9px] font-medium tracking-wide whitespace-nowrap text-cyan-400">
+          <div className="mt-4 rotate-90 text-[9px] font-medium tracking-wide whitespace-nowrap text-workspace-text-primary">
             AI • {aiReferences.length}
           </div>
         )}
@@ -318,26 +318,26 @@ export const CodeReferencesPanel = ({ onFocusNode }: CodeReferencesPanelProps) =
       ref={(el) => {
         panelRef.current = el;
       }}
-      className="relative flex h-full animate-slide-in flex-col border-r border-border-subtle bg-surface/95 shadow-2xl backdrop-blur-md"
+      className="workspace-shell relative flex h-full animate-slide-in flex-col border-r-[3px] border-workspace-border-default bg-workspace-surface/95 shadow-2xl backdrop-blur-md"
       style={{ width: panelWidth }}
     >
-      {/* Resize handle */}
       <div
         onMouseDown={startResize}
-        className="absolute top-0 right-0 h-full w-2 cursor-col-resize bg-transparent transition-colors hover:bg-cyan-500/25"
+        className="absolute top-0 right-0 h-full w-2 cursor-col-resize bg-transparent transition-colors hover:bg-workspace-border-strong/25"
         title="Drag to resize"
       />
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-border-subtle bg-gradient-to-r from-elevated/60 to-surface/60 px-3 py-2.5">
+      <div className="flex items-center justify-between border-b-[3px] border-workspace-border-default bg-workspace-base px-3 py-3">
         <div className="flex items-center gap-2">
-          <Code className="h-4 w-4 text-cyan-400" />
-          <span className="text-sm font-semibold text-text-primary">Code Inspector</span>
+          <Code className="h-4 w-4 text-workspace-text-primary" />
+          <span className="font-mono text-sm font-semibold text-workspace-text-primary">
+            Code Inspector
+          </span>
         </div>
         <div className="flex items-center gap-1.5">
           {showCitations && (
             <button
               onClick={() => clearCodeReferences()}
-              className="rounded p-1.5 text-text-muted transition-colors hover:bg-red-500/10 hover:text-red-400"
+              className="workspace-outline-button rounded p-1.5 border-error text-workspace-text-secondary hover:bg-error/10 hover:text-error"
               title="Clear AI citations"
             >
               <Trash2 className="h-4 w-4" />
@@ -345,7 +345,7 @@ export const CodeReferencesPanel = ({ onFocusNode }: CodeReferencesPanelProps) =
           )}
           <button
             onClick={() => setIsCollapsed(true)}
-            className="rounded p-1.5 text-text-muted transition-colors hover:bg-hover hover:text-text-primary"
+            className="workspace-outline-button rounded p-1.5 text-workspace-text-secondary hover:text-workspace-text-primary"
             title="Collapse Panel"
           >
             <PanelLeftClose className="h-4 w-4" />
@@ -354,24 +354,23 @@ export const CodeReferencesPanel = ({ onFocusNode }: CodeReferencesPanelProps) =
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col">
-        {/* Top: Selected file viewer (when a node is selected) */}
         {showSelectedViewer && (
           <div className={`${showCitations ? 'h-[42%]' : 'flex-1'} flex min-h-0 flex-col`}>
-            <div className="flex items-center gap-2 border-b border-amber-500/20 bg-gradient-to-r from-amber-500/8 to-orange-500/5 px-3 py-2">
-              <div className="flex items-center gap-1.5 rounded-md border border-amber-500/25 bg-amber-500/15 px-2 py-0.5">
-                <MousePointerClick className="h-3 w-3 text-amber-400" />
-                <span className="text-[10px] font-semibold tracking-wide text-amber-300 uppercase">
+            <div className="flex items-center gap-2 border-b border-workspace-border-default bg-workspace-base px-3 py-2">
+              <div className="flex items-center gap-1.5 rounded-md border-[2px] border-workspace-border-default bg-workspace-surface px-2 py-0.5">
+                <MousePointerClick className="h-3 w-3 text-workspace-text-primary" />
+                <span className="text-[10px] font-semibold tracking-wide text-workspace-text-primary uppercase">
                   Selected
                 </span>
               </div>
-              <FileCode className="ml-1 h-3.5 w-3.5 text-amber-400/70" />
-              <span className="flex-1 truncate font-mono text-xs text-text-primary">
+              <FileCode className="ml-1 h-3.5 w-3.5 text-workspace-text-secondary" />
+              <span className="flex-1 truncate font-mono text-xs text-workspace-text-primary">
                 {selectedNode?.properties?.filePath?.split('/').pop() ??
                   selectedNode?.properties?.name}
               </span>
               <button
                 onClick={() => setSelectedNode(null)}
-                className="rounded p-1 text-text-muted transition-colors hover:bg-amber-500/10 hover:text-amber-400"
+                className="workspace-outline-button rounded p-1 text-workspace-text-secondary hover:text-workspace-text-primary"
                 title="Clear selection"
               >
                 <X className="h-4 w-4" />
@@ -379,7 +378,7 @@ export const CodeReferencesPanel = ({ onFocusNode }: CodeReferencesPanelProps) =
             </div>
             <div ref={selectedViewerRef} className="scrollbar-thin min-h-0 flex-1 overflow-auto">
               {isLoadingFile ? (
-                <div className="flex items-center justify-center gap-2 py-8 text-text-muted">
+                <div className="flex items-center justify-center gap-2 py-8 text-workspace-text-secondary">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span className="text-sm">Loading source...</span>
                 </div>
@@ -407,7 +406,7 @@ export const CodeReferencesPanel = ({ onFocusNode }: CodeReferencesPanelProps) =
                       style: {
                         display: 'block',
                         backgroundColor: isHighlighted ? 'rgba(6, 182, 212, 0.14)' : 'transparent',
-                        borderLeft: isHighlighted ? '3px solid #06b6d4' : '3px solid transparent',
+                        borderLeft: isHighlighted ? '3px solid #9a7e63' : '3px solid transparent',
                         paddingLeft: '12px',
                         paddingRight: '16px',
                       },
@@ -418,7 +417,7 @@ export const CodeReferencesPanel = ({ onFocusNode }: CodeReferencesPanelProps) =
                   {selectedFileContent}
                 </SyntaxHighlighter>
               ) : (
-                <div className="px-3 py-3 text-sm text-text-muted">
+                <div className="px-3 py-3 text-sm text-workspace-text-secondary">
                   {selectedIsFile ? (
                     <>
                       Code not available in memory for{' '}
@@ -435,21 +434,19 @@ export const CodeReferencesPanel = ({ onFocusNode }: CodeReferencesPanelProps) =
 
         {/* Divider between Selected viewer and AI refs (more visible) */}
         {showSelectedViewer && showCitations && (
-          <div className="h-1.5 bg-gradient-to-r from-transparent via-border-subtle to-transparent" />
+          <div className="h-1.5 bg-gradient-to-r from-transparent via-workspace-border-default to-transparent" />
         )}
 
-        {/* Bottom: AI citations list */}
         {showCitations && (
           <div className="flex min-h-0 flex-1 flex-col">
-            {/* AI Citations Section Header */}
-            <div className="flex items-center gap-2 border-b border-cyan-500/20 bg-gradient-to-r from-cyan-500/8 to-teal-500/5 px-3 py-2">
-              <div className="flex items-center gap-1.5 rounded-md border border-cyan-500/25 bg-cyan-500/15 px-2 py-0.5">
-                <Sparkles className="h-3 w-3 text-cyan-400" />
-                <span className="text-[10px] font-semibold tracking-wide text-cyan-300 uppercase">
+            <div className="flex items-center gap-2 border-b border-workspace-border-default bg-workspace-base px-3 py-2">
+              <div className="flex items-center gap-1.5 rounded-md border-[2px] border-workspace-border-default bg-workspace-surface px-2 py-0.5">
+                <Sparkles className="h-3 w-3 text-workspace-text-primary" />
+                <span className="text-[10px] font-semibold tracking-wide text-workspace-text-primary uppercase">
                   AI Citations
                 </span>
               </div>
-              <span className="ml-1 text-xs text-text-muted">
+              <span className="ml-1 text-xs text-workspace-text-secondary">
                 {aiReferences.length} reference{aiReferences.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -473,13 +470,13 @@ export const CodeReferencesPanel = ({ onFocusNode }: CodeReferencesPanelProps) =
                         refCardEls.current.set(ref.id, el);
                       }}
                       className={[
-                        'overflow-hidden rounded-xl border border-border-subtle bg-elevated transition-all',
+                        'overflow-hidden rounded-xl border-[2px] border-workspace-border-default bg-workspace-inset transition-all',
                         isGlowing
-                          ? 'animate-pulse shadow-[0_0_0_6px_rgba(34,211,238,0.14)] ring-2 ring-cyan-300/70'
+                          ? 'animate-pulse shadow-[0_0_0_6px_rgba(154,126,99,0.14)] ring-2 ring-workspace-border-strong/70'
                           : '',
                       ].join(' ')}
                     >
-                      <div className="flex items-start gap-2 border-b border-border-subtle bg-surface/40 px-3 py-2">
+                      <div className="flex items-start gap-2 border-b border-workspace-border-default bg-workspace-base px-3 py-2">
                         <span
                           className="mt-0.5 flex-shrink-0 rounded px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase"
                           style={{ backgroundColor: nodeColor, color: '#06060a' }}
@@ -488,44 +485,44 @@ export const CodeReferencesPanel = ({ onFocusNode }: CodeReferencesPanelProps) =
                           {ref.label ?? 'Code'}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <div className="truncate text-xs font-medium text-text-primary">
+                          <div className="truncate text-xs font-medium text-workspace-text-primary">
                             {ref.name ?? ref.filePath.split('/').pop() ?? ref.filePath}
                           </div>
-                          <div className="truncate font-mono text-[11px] text-text-muted">
+                          <div className="truncate font-mono text-[11px] text-workspace-text-secondary">
                             {ref.filePath}
                             {startDisplay !== undefined && (
-                              <span className="text-text-secondary">
+                              <span className="text-workspace-text-secondary">
                                 {' '}
                                 • L{startDisplay}
                                 {endDisplay !== startDisplay ? `–${endDisplay}` : ''}
                               </span>
                             )}
                             {totalLines > 0 && (
-                              <span className="text-text-muted"> • {totalLines} lines</span>
+                              <span className="text-workspace-text-muted"> • {totalLines} lines</span>
                             )}
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
                           {ref.nodeId && (
                             <button
-                              onClick={() => {
-                                const nodeId = ref.nodeId!;
+                            onClick={() => {
+                              const nodeId = ref.nodeId!;
                                 // Sync selection + focus graph
                                 if (graph) {
                                   const node = nodeById.get(nodeId);
                                   if (node) setSelectedNode(node);
                                 }
                                 onFocusNode(nodeId);
-                              }}
-                              className="rounded p-1.5 text-text-muted transition-colors hover:bg-hover hover:text-text-primary"
-                              title="Focus in graph"
-                            >
-                              <Target className="h-4 w-4" />
+                            }}
+                            className="workspace-outline-button rounded p-1.5 text-workspace-text-secondary hover:text-workspace-text-primary"
+                            title="Focus in graph"
+                          >
+                            <Target className="h-4 w-4" />
                             </button>
                           )}
                           <button
                             onClick={() => removeCodeReference(ref.id)}
-                            className="rounded p-1.5 text-text-muted transition-colors hover:bg-hover hover:text-text-primary"
+                            className="workspace-outline-button rounded p-1.5 text-workspace-text-secondary hover:text-workspace-text-primary"
                             title="Remove"
                           >
                             <X className="h-4 w-4" />
@@ -559,7 +556,7 @@ export const CodeReferencesPanel = ({ onFocusNode }: CodeReferencesPanelProps) =
                                     ? 'rgba(6, 182, 212, 0.14)'
                                     : 'transparent',
                                   borderLeft: isHighlighted
-                                    ? '3px solid #06b6d4'
+                                    ? '3px solid #9a7e63'
                                     : '3px solid transparent',
                                   paddingLeft: '12px',
                                   paddingRight: '16px',
@@ -571,7 +568,7 @@ export const CodeReferencesPanel = ({ onFocusNode }: CodeReferencesPanelProps) =
                             {content}
                           </SyntaxHighlighter>
                         ) : (
-                          <div className="px-3 py-3 text-sm text-text-muted">
+                          <div className="px-3 py-3 text-sm text-workspace-text-secondary">
                             Code not available in memory for{' '}
                             <span className="font-mono">{ref.filePath}</span>
                           </div>
