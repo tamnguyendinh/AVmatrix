@@ -7,6 +7,28 @@
 
 import fs from 'fs/promises';
 import { findRepo, unregisterRepo, listRegisteredRepos } from '../storage/repo-manager.js';
+import { getSettingsPath } from '../storage/settings.js';
+
+export const cleanStoragePreservingSettings = async (
+  repoPath: string,
+  storagePath: string,
+): Promise<void> => {
+  const settingsPath = getSettingsPath(repoPath);
+  let preservedSettings: string | null = null;
+
+  try {
+    preservedSettings = await fs.readFile(settingsPath, 'utf-8');
+  } catch {
+    preservedSettings = null;
+  }
+
+  await fs.rm(storagePath, { recursive: true, force: true });
+
+  if (preservedSettings !== null) {
+    await fs.mkdir(storagePath, { recursive: true });
+    await fs.writeFile(settingsPath, preservedSettings, 'utf-8');
+  }
+};
 
 export const cleanCommand = async (options?: { force?: boolean; all?: boolean }) => {
   // --all flag: clean all indexed repos
@@ -28,7 +50,7 @@ export const cleanCommand = async (options?: { force?: boolean; all?: boolean })
     const entries = await listRegisteredRepos();
     for (const entry of entries) {
       try {
-        await fs.rm(entry.storagePath, { recursive: true, force: true });
+        await cleanStoragePreservingSettings(entry.path, entry.storagePath);
         await unregisterRepo(entry.path);
         console.log(`Deleted: ${entry.name} (${entry.storagePath})`);
       } catch (err) {
@@ -57,7 +79,7 @@ export const cleanCommand = async (options?: { force?: boolean; all?: boolean })
   }
 
   try {
-    await fs.rm(repo.storagePath, { recursive: true, force: true });
+    await cleanStoragePreservingSettings(repo.repoPath, repo.storagePath);
     await unregisterRepo(repo.repoPath);
     console.log(`Deleted: ${repo.storagePath}`);
   } catch (err) {

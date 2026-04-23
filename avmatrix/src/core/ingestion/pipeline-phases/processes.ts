@@ -18,15 +18,13 @@ import type { StructureOutput } from './structure.js';
 import { processProcesses, type ProcessDetectionResult } from '../process-processor.js';
 import { generateId } from '../../../lib/utils.js';
 import { isDev } from '../utils/env.js';
-import type { CLIConfig } from '../../../storage/repo-manager.js';
+import type { AVmatrixSettings } from '../../../storage/settings.js';
 
 export interface ProcessesOutput {
   processResult: ProcessDetectionResult;
 }
 
 export const DEFAULT_MAX_PROCESSES_CAP = 700;
-
-type MaxProcessesConfig = Pick<CLIConfig, 'maxProcesses'>;
 
 const parseConfiguredMaxProcesses = (rawValue: string | number | undefined): number | null => {
   if (typeof rawValue === 'number' && Number.isInteger(rawValue) && rawValue > 0) {
@@ -39,20 +37,21 @@ const parseConfiguredMaxProcesses = (rawValue: string | number | undefined): num
   return null;
 };
 
-const loadStoredMaxProcessesConfig = async (): Promise<MaxProcessesConfig> => {
-  const { loadCLIConfig } = await import('../../../storage/repo-manager.js');
-  return loadCLIConfig();
+const loadStoredMaxProcessesConfig = async (repoPath: string): Promise<AVmatrixSettings> => {
+  const { loadSettings } = await import('../../../storage/settings.js');
+  return loadSettings(repoPath);
 };
 
 export const resolveConfiguredMaxProcessesCap = async (
+  repoPath: string,
   envValue = process.env.AVMATRIX_MAX_PROCESSES,
-  loadConfig: () => Promise<MaxProcessesConfig> = loadStoredMaxProcessesConfig,
+  loadConfig: (repoPath: string) => Promise<AVmatrixSettings> = loadStoredMaxProcessesConfig,
 ): Promise<number> => {
   const envCap = parseConfiguredMaxProcesses(envValue);
   if (envCap !== null) return envCap;
 
-  const savedConfig = await loadConfig();
-  return parseConfiguredMaxProcesses(savedConfig.maxProcesses) ?? DEFAULT_MAX_PROCESSES_CAP;
+  const settings = await loadConfig(repoPath);
+  return parseConfiguredMaxProcesses(settings.maxExecutionFlows) ?? DEFAULT_MAX_PROCESSES_CAP;
 };
 
 export const calculateDynamicMaxProcesses = (
@@ -89,7 +88,7 @@ export const processesPhase: PipelinePhase<ProcessesOutput> = {
     ctx.graph.forEachNode((n) => {
       if (n.label !== 'File') symbolCount++;
     });
-    const configuredMaxProcessesCap = await resolveConfiguredMaxProcessesCap();
+    const configuredMaxProcessesCap = await resolveConfiguredMaxProcessesCap(ctx.repoPath);
     const dynamicMaxProcesses = calculateDynamicMaxProcesses(
       symbolCount,
       configuredMaxProcessesCap,

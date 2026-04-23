@@ -4,31 +4,44 @@ import {
   DEFAULT_MAX_PROCESSES_CAP,
   resolveConfiguredMaxProcessesCap,
 } from '../../src/core/ingestion/pipeline-phases/processes.js';
+import type { AVmatrixSettings } from '../../src/storage/settings.js';
 
 describe('processes phase maxProcesses config', () => {
+  const repoPath = '/tmp/demo-repo';
+
   afterEach(() => {
     vi.unstubAllEnvs();
   });
 
-  it('defaults to 700 when env and saved config are unset', async () => {
-    const cap = await resolveConfiguredMaxProcessesCap(undefined, async () => ({}));
+  it('defaults to 700 when env and settings are unset', async () => {
+    const cap = await resolveConfiguredMaxProcessesCap(repoPath, undefined, async () => ({
+      maxExecutionFlows: DEFAULT_MAX_PROCESSES_CAP,
+    }));
     expect(cap).toBe(DEFAULT_MAX_PROCESSES_CAP);
   });
 
-  it('prefers AVMATRIX_MAX_PROCESSES over saved config', async () => {
+  it('prefers AVMATRIX_MAX_PROCESSES over settings.json', async () => {
     vi.stubEnv('AVMATRIX_MAX_PROCESSES', '650');
 
-    const cap = await resolveConfiguredMaxProcessesCap(process.env.AVMATRIX_MAX_PROCESSES, async () => ({
-      maxProcesses: 900,
-    }));
+    const cap = await resolveConfiguredMaxProcessesCap(
+      repoPath,
+      process.env.AVMATRIX_MAX_PROCESSES,
+      async (_repoPath: string): Promise<AVmatrixSettings> => ({
+        maxExecutionFlows: 900,
+      }),
+    );
 
     expect(cap).toBe(650);
   });
 
-  it('uses saved config when env is unset', async () => {
-    const cap = await resolveConfiguredMaxProcessesCap(undefined, async () => ({
-      maxProcesses: 550,
-    }));
+  it('uses settings.json when env is unset', async () => {
+    const cap = await resolveConfiguredMaxProcessesCap(
+      repoPath,
+      undefined,
+      async (_repoPath: string): Promise<AVmatrixSettings> => ({
+        maxExecutionFlows: 550,
+      }),
+    );
 
     expect(cap).toBe(550);
   });
@@ -36,9 +49,13 @@ describe('processes phase maxProcesses config', () => {
   it('falls back to default when configured values are invalid', async () => {
     vi.stubEnv('AVMATRIX_MAX_PROCESSES', 'abc');
 
-    const cap = await resolveConfiguredMaxProcessesCap(process.env.AVMATRIX_MAX_PROCESSES, async () => ({
-      maxProcesses: -10,
-    }));
+    const cap = await resolveConfiguredMaxProcessesCap(
+      repoPath,
+      process.env.AVMATRIX_MAX_PROCESSES,
+      async (_repoPath: string): Promise<AVmatrixSettings> => ({
+        maxExecutionFlows: -10 as never,
+      }),
+    );
 
     expect(cap).toBe(DEFAULT_MAX_PROCESSES_CAP);
   });

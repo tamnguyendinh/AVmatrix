@@ -98,3 +98,7 @@ avmatrix/vendor/**/node_modules/
 .swarm/
 
 local_docs/
+
+# Generated agent context docs
+AGENTS.md
+CLAUDE.md
