@@ -2,7 +2,7 @@
 
 Date: 2026-04-24  
 Scope: `avmatrix/` analyze pipeline, persistence, FTS, embeddings, metadata; `avmatrix-web/` only if analyze progress/status contract changes  
-Status: In progress - Phase 2 closed by measurement; next work should target measured non-parse bottlenecks
+Status: In progress - Phase 3 correctness blocker fixed; next work is crossFile performance measurement
 
 ## Goal
 
@@ -593,6 +593,22 @@ Goal:
 - first fix known crossFile correctness regressions caused by reprocessing before optimizing runtime
 - reduce cross-file propagation cost while preserving existing propagation semantics
 - reduce full analyze wall time when cross-file propagation is a measured bottleneck
+
+Current status (`2026-04-24`):
+
+- Phase 3 correctness blocker is fixed in commit `ac97527` (`fix(analyze): correct Go receiver source attribution`).
+- The fix stays inside the existing `crossFile` / `processCalls` source-attribution path. It does not introduce a new linker, resolver, or graph-link architecture.
+- Root cause confirmed: `findEnclosingFunction()` passed the Go `method_declaration` node directly to `findEnclosingClassInfo()`, whose walk starts at `node.parent`. That skipped the receiver-bearing method node, so same-file disambiguation could select a same-name interface method such as `AccountClient.Login` instead of the enclosing receiver method `AuthService.Login`.
+- Implemented fix: anchor enclosing-owner lookup at `current.childForFieldName('name') ?? current`, so Go receiver methods remain attributable to the receiver owner.
+- Regression coverage added in `avmatrix/test/unit/call-processor.test.ts` for the `AuthService.* -> AccountClient.*` case and for rejecting `AccountClient.* -> AccountClient.*` self-edge output.
+- Verification:
+  - `npx vitest run test/unit/call-processor.test.ts -t "Go receiver source attribution"` passed.
+  - `npx vitest run test/unit/call-processor.test.ts` passed (`128` tests).
+  - `npx tsc --noEmit` passed.
+  - `npm run build` passed.
+  - `avmatrix analyze H:\hotel_manager --force --skip-git -v` passed; bad `AccountClient.*` self-edge query returned `[]`.
+  - `avmatrix analyze F:\Restaurant_manager --force -v` passed; bad `AccountClient.*` self-edge query returned `[]`.
+- Remaining Phase 3 work is performance only: measure `crossFile` deeply, decide whether sub-timing is needed, then optimize only the measured hot path while preserving output.
 
 Scope:
 
