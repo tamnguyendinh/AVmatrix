@@ -89,6 +89,11 @@ export interface CrossFileTimingBreakdown {
   readContentsMs?: number;
   importedReturnMapsMs?: number;
   processCallsMs?: number;
+  processCallsParserParseMs?: number;
+  processCallsQueryMatchesMs?: number;
+  processCallsBuildTypeEnvMs?: number;
+  processCallsResolutionTraversalMs?: number;
+  processCallsEdgeEmissionMs?: number;
 }
 
 export interface CrossFileMetrics {

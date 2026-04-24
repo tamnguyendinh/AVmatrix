@@ -1,6 +1,7 @@
 import { KnowledgeGraph } from '../graph/types.js';
+import { performance } from 'node:perf_hooks';
 import { ASTCache } from './ast-cache.js';
-import type { SymbolDefinition } from 'avmatrix-shared';
+import type { GraphRelationship, SymbolDefinition } from 'avmatrix-shared';
 import type { SymbolTableReader, HeritageMap, ExtractedHeritage } from './model/index.js';
 import { CLASS_TYPES, CALL_TARGET_TYPES, lookupMethodByOwnerWithMRO } from './model/index.js';
 import type { DispatchDecision, ReceiverEnriched } from './call-types.js';
@@ -77,6 +78,17 @@ import type { SyntaxNode } from './utils/ast-helpers.js';
 /** Per-file resolved type bindings for exported symbols.
  *  Populated during call processing, consumed by Phase 14 re-resolution pass. */
 export type ExportedTypeMap = Map<string, Map<string, string>>;
+
+export type ProcessCallsTimingKey =
+  | 'processCallsParserParseMs'
+  | 'processCallsQueryMatchesMs'
+  | 'processCallsBuildTypeEnvMs'
+  | 'processCallsResolutionTraversalMs'
+  | 'processCallsEdgeEmissionMs';
+
+export interface ProcessCallsTimingSink {
+  mark(key: ProcessCallsTimingKey, durationMs: number): void;
+}
 
 /**
  * Type labels treated as class-like **method-dispatch receivers** by the call
@@ -706,8 +718,33 @@ export const processCalls = async (
   importedRawReturnTypesMap?: ReadonlyMap<string, ReadonlyMap<string, string>>,
   heritageMap?: HeritageMap,
   bindingAccumulator?: BindingAccumulator,
+  timingSink?: ProcessCallsTimingSink,
 ): Promise<ExtractedHeritage[]> => {
   const parser = await loadParser();
+  const markTiming = (key: ProcessCallsTimingKey, startMs: number): void => {
+    timingSink?.mark(key, performance.now() - startMs);
+  };
+  const timeSync = <T>(key: ProcessCallsTimingKey, fn: () => T): T => {
+    if (!timingSink) return fn();
+    const startMs = performance.now();
+    try {
+      return fn();
+    } finally {
+      markTiming(key, startMs);
+    }
+  };
+  const emitRelationship = (relationship: GraphRelationship): void => {
+    if (!timingSink) {
+      graph.addRelationship(relationship);
+      return;
+    }
+    const startMs = performance.now();
+    try {
+      graph.addRelationship(relationship);
+    } finally {
+      markTiming('processCallsEdgeEmissionMs', startMs);
+    }
+  };
   const collectedHeritage: ExtractedHeritage[] = [];
   const pendingWrites: {
     receiverTypeName: string;
@@ -767,9 +804,11 @@ export const processCalls = async (
     let tree = astCache.get(file.path);
     if (!tree) {
       try {
-        tree = parser.parse(file.content, undefined, {
-          bufferSize: getTreeSitterBufferSize(file.content.length),
-        });
+        tree = timeSync('processCallsParserParseMs', () =>
+          parser.parse(file.content, undefined, {
+            bufferSize: getTreeSitterBufferSize(file.content.length),
+          }),
+        );
       } catch (parseError) {
         continue;
       }
@@ -778,9 +817,11 @@ export const processCalls = async (
 
     let matches;
     try {
-      const lang = parser.getLanguage();
-      const query = new Parser.Query(lang, queryStr);
-      matches = query.matches(tree.rootNode);
+      matches = timeSync('processCallsQueryMatchesMs', () => {
+        const lang = parser.getLanguage();
+        const query = new Parser.Query(lang, queryStr);
+        return query.matches(tree.rootNode);
+      });
     } catch (queryError) {
       console.warn(`Query error for ${file.path}:`, queryError);
       continue;
@@ -835,15 +876,17 @@ export const processCalls = async (
     const importedBindings = importedBindingsMap?.get(file.path);
     const importedReturnTypes = importedReturnTypesMap?.get(file.path);
     const importedRawReturnTypes = importedRawReturnTypesMap?.get(file.path);
-    const typeEnv = buildTypeEnv(tree, language, {
-      model: ctx.model,
-      parentMap,
-      importedBindings,
-      importedReturnTypes,
-      importedRawReturnTypes,
-      enclosingFunctionFinder: provider?.enclosingFunctionFinder,
-      extractFunctionName: provider?.methodExtractor?.extractFunctionName,
-    });
+    const typeEnv = timeSync('processCallsBuildTypeEnvMs', () =>
+      buildTypeEnv(tree, language, {
+        model: ctx.model,
+        parentMap,
+        importedBindings,
+        importedReturnTypes,
+        importedRawReturnTypes,
+        enclosingFunctionFinder: provider?.enclosingFunctionFinder,
+        extractFunctionName: provider?.methodExtractor?.extractFunctionName,
+      }),
+    );
     if (typeEnv && exportedTypeMap) {
       const fileExports = collectExportedBindings(typeEnv, file.path, ctx.model.symbols, graph);
       if (fileExports) exportedTypeMap.set(file.path, fileExports);
@@ -861,6 +904,7 @@ export const processCalls = async (
   // regardless of file processing order.
   for (let i = 0; i < prepared.length; i++) {
     const { file, language, provider, tree, matches, parentMap, typeEnv } = prepared[i];
+    const resolutionStartMs = timingSink ? performance.now() : 0;
 
     enclosingFnExtractCache.clear();
     onProgress?.(i + 1, files.length);
@@ -980,7 +1024,7 @@ export const processCalls = async (
           );
 
           if (!resolved) return;
-          graph.addRelationship({
+          emitRelationship({
             id: generateId('CALLS', `${sourceId}:${langCallSite.calledName}->${resolved.nodeId}`),
             sourceId,
             targetId: resolved.nodeId,
@@ -999,7 +1043,7 @@ export const processCalls = async (
               resolved.nodeId,
             );
             for (const impl of implTargets) {
-              graph.addRelationship({
+              emitRelationship({
                 id: generateId('CALLS', `${sourceId}:${langCallSite.calledName}->${impl.nodeId}`),
                 sourceId,
                 targetId: impl.nodeId,
@@ -1070,7 +1114,7 @@ export const processCalls = async (
                 ...(item.declaredType ? { declaredType: item.declaredType } : {}),
               });
               const relId = generateId('DEFINES', `${fileId}->${nodeId}`);
-              graph.addRelationship({
+              emitRelationship({
                 id: relId,
                 sourceId: fileId,
                 targetId: nodeId,
@@ -1079,7 +1123,7 @@ export const processCalls = async (
                 reason: '',
               });
               if (propEnclosingClassId) {
-                graph.addRelationship({
+                emitRelationship({
                   id: generateId('HAS_PROPERTY', `${propEnclosingClassId}->${nodeId}`),
                   sourceId: propEnclosingClassId,
                   targetId: nodeId,
@@ -1222,7 +1266,7 @@ export const processCalls = async (
                 currentType,
                 file.path,
                 ctx,
-                makeAccessEmitter(graph, sourceId),
+                makeAccessEmitter(emitRelationship, sourceId),
                 heritageMap,
               );
               if (receiverTypeName) receiverSource = 'mixed-chain';
@@ -1297,7 +1341,7 @@ export const processCalls = async (
       if (!resolved) return;
       const relId = generateId('CALLS', `${sourceId}:${calledName}->${resolved.nodeId}`);
 
-      graph.addRelationship({
+      emitRelationship({
         id: relId,
         sourceId,
         targetId: resolved.nodeId,
@@ -1316,7 +1360,7 @@ export const processCalls = async (
           resolved.nodeId,
         );
         for (const impl of implTargets) {
-          graph.addRelationship({
+          emitRelationship({
             id: generateId('CALLS', `${sourceId}:${calledName}->${impl.nodeId}`),
             sourceId,
             targetId: impl.nodeId,
@@ -1347,7 +1391,7 @@ export const processCalls = async (
               if (basename !== componentName) continue;
               const targetFileId = generateId('File', importedPath);
               if (graph.getNode(targetFileId)) {
-                graph.addRelationship({
+                emitRelationship({
                   id: generateId('CALLS', `${fileId}:${componentName}->${targetFileId}`),
                   sourceId: fileId,
                   targetId: targetFileId,
@@ -1364,10 +1408,12 @@ export const processCalls = async (
     }
 
     ctx.clearCache();
+    if (timingSink) markTiming('processCallsResolutionTraversalMs', resolutionStartMs);
   }
 
   // ── Resolve deferred write-access edges ──
   // All properties (including Ruby attr_accessor) are now registered.
+  const pendingWritesStartMs = timingSink ? performance.now() : 0;
   for (const pw of pendingWrites) {
     const fieldOwner = resolveFieldOwnership(
       pw.receiverTypeName,
@@ -1376,7 +1422,7 @@ export const processCalls = async (
       ctx,
     );
     if (fieldOwner) {
-      graph.addRelationship({
+      emitRelationship({
         id: generateId('ACCESSES', `${pw.srcId}:${fieldOwner.nodeId}:write`),
         sourceId: pw.srcId,
         targetId: fieldOwner.nodeId,
@@ -1386,6 +1432,7 @@ export const processCalls = async (
       });
     }
   }
+  if (timingSink) markTiming('processCallsResolutionTraversalMs', pendingWritesStartMs);
 
   if (skippedByLang && skippedByLang.size > 0) {
     for (const [lang, count] of skippedByLang.entries()) {
@@ -2594,14 +2641,19 @@ export const resolveStaticCall = (
  * Create a deduplicated ACCESSES edge emitter for a single source node.
  * Each (sourceId, fieldNodeId) pair is emitted at most once per source.
  */
-const makeAccessEmitter = (graph: KnowledgeGraph, sourceId: string): OnFieldResolved => {
+type RelationshipEmitter = (relationship: GraphRelationship) => void;
+
+const makeAccessEmitter = (
+  emitRelationship: RelationshipEmitter,
+  sourceId: string,
+): OnFieldResolved => {
   const emitted = new Set<string>();
   return (fieldNodeId: string): void => {
     const key = `${sourceId}\0${fieldNodeId}`;
     if (emitted.has(key)) return;
     emitted.add(key);
 
-    graph.addRelationship({
+    emitRelationship({
       id: generateId('ACCESSES', `${sourceId}:${fieldNodeId}:read`),
       sourceId,
       targetId: fieldNodeId,
@@ -2717,6 +2769,8 @@ export const processCallsFromExtracted = async (
   heritageMap?: HeritageMap,
   bindingAccumulator?: BindingAccumulator,
 ) => {
+  const emitRelationship: RelationshipEmitter = (relationship) =>
+    graph.addRelationship(relationship);
   // Scope-aware receiver types: keyed by filePath → "funcName\0varName" → typeName.
   // The scope dimension prevents collisions when two functions in the same file
   // have same-named locals pointing to different constructor types.
@@ -2823,7 +2877,7 @@ export const processCallsFromExtracted = async (
             currentType,
             effectiveCall.filePath,
             ctx,
-            makeAccessEmitter(graph, effectiveCall.sourceId),
+            makeAccessEmitter(emitRelationship, effectiveCall.sourceId),
             heritageMap,
           );
           if (walkedType) {

@@ -14,6 +14,7 @@ import {
   buildImportedReturnTypes,
   buildImportedRawReturnTypes,
   type ExportedTypeMap,
+  type ProcessCallsTimingSink,
 } from '../call-processor.js';
 import type { createResolutionContext } from '../model/resolution-context.js';
 import { createASTCache } from '../ast-cache.js';
@@ -74,6 +75,12 @@ const timeAsync = async <T>(
   }
 };
 
+const makeProcessCallsTimingSink = (metrics: CrossFileMetrics): ProcessCallsTimingSink => ({
+  mark(key, durationMs) {
+    addTiming(metrics, key, durationMs);
+  },
+});
+
 /**
  * Cross-file binding propagation.
  * Returns the number of files re-processed plus instrumentation.
@@ -89,6 +96,7 @@ export async function runCrossFileBindingPropagation(
   onProgress: (progress: PipelineProgress) => void,
 ): Promise<CrossFilePropagationResult> {
   const metrics: CrossFileMetrics = { timings: {}, counters: {} };
+  const processCallsTimingSink = makeProcessCallsTimingSink(metrics);
   const totalStart = performance.now();
   const finish = (filesReprocessed: number, skipReason?: string): CrossFilePropagationResult => {
     metrics.timings.totalMs = roundMs(performance.now() - totalStart);
@@ -278,6 +286,9 @@ export async function runCrossFileBindingPropagation(
           bindings.size > 0 ? bindings : undefined,
           importedReturnTypesMap.size > 0 ? importedReturnTypesMap : undefined,
           importedRawReturnTypesMap.size > 0 ? importedRawReturnTypesMap : undefined,
+          undefined,
+          undefined,
+          processCallsTimingSink,
         ),
       );
       crossFileResolved++;
