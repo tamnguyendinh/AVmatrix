@@ -415,6 +415,19 @@ function printPerformanceSummary(performance: AnalyzePerformanceReport): void {
   console.log(
     `  counters: files=${counters.totalFiles ?? 0}, parseable=${counters.parseableFiles ?? 0}, chunks=${counters.parseChunkCount ?? 0}, workers=${counters.workerCount ?? 0}, csvRows=${(counters.csvNodeRows ?? 0) + (counters.csvRelationshipRows ?? 0)}`,
   );
+  const lbugTimings = performance.lbugLoad?.timings;
+  if (lbugTimings) {
+    const lbugCounters = performance.lbugLoad?.counters;
+    console.log(
+      `  lbug detail: csvGen ${(lbugTimings.csvGenerationMs ?? 0).toFixed(1)}ms | nodeCopy ${(lbugTimings.nodeCopyMs ?? 0).toFixed(1)}ms | relSplit ${(lbugTimings.relationshipSplitMs ?? 0).toFixed(1)}ms | relCopy ${(lbugTimings.relationshipCopyMs ?? 0).toFixed(1)}ms | fallbackInsert ${(lbugTimings.fallbackRelationshipInsertMs ?? 0).toFixed(1)}ms | cleanup ${(lbugTimings.cleanupMs ?? 0).toFixed(1)}ms | nodeCopies ${lbugCounters?.nodeCopyCount ?? 0} | relCopies ${lbugCounters?.relationshipCopyCount ?? 0}`,
+    );
+  }
+  const ftsIndexMs = performance.ftsIndexMs;
+  if (Object.keys(ftsIndexMs).length > 0) {
+    console.log(
+      `  fts detail: File ${(ftsIndexMs.File ?? 0).toFixed(1)}ms | Function ${(ftsIndexMs.Function ?? 0).toFixed(1)}ms | Class ${(ftsIndexMs.Class ?? 0).toFixed(1)}ms | Method ${(ftsIndexMs.Method ?? 0).toFixed(1)}ms | Interface ${(ftsIndexMs.Interface ?? 0).toFixed(1)}ms`,
+    );
+  }
   const parseTimings = performance.parse?.timings;
   if (parseTimings) {
     const resolveMs =
