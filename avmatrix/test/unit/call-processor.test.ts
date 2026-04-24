@@ -1567,6 +1567,120 @@ class App {
   });
 });
 
+describe('processCalls — Go receiver source attribution', () => {
+  let graph: ReturnType<typeof createKnowledgeGraph>;
+  let ctx: ResolutionContext;
+
+  beforeEach(() => {
+    graph = createKnowledgeGraph();
+    ctx = createResolutionContext();
+  });
+
+  it('uses the enclosing receiver method as the source when an interface has a same-name method', async () => {
+    const file = 'src/auth/service.go';
+    const serviceId = 'Struct:src/auth/service.go:AuthService';
+    const accountClientId = 'Interface:src/auth/service.go:AccountClient';
+
+    const addGraphNode = (
+      id: string,
+      label: 'Struct' | 'Interface' | 'Method' | 'Property',
+      name: string,
+      properties: Record<string, unknown> = {},
+    ) => {
+      graph.addNode({
+        id,
+        label,
+        properties: { name, filePath: file, ...properties },
+      });
+    };
+
+    addGraphNode(serviceId, 'Struct', 'AuthService');
+    addGraphNode(accountClientId, 'Interface', 'AccountClient');
+    ctx.model.symbols.add(file, 'AuthService', serviceId, 'Struct');
+    ctx.model.symbols.add(file, 'AccountClient', accountClientId, 'Interface');
+
+    for (const methodName of ['Login', 'Logout']) {
+      const interfaceMethodId = `Method:${file}:AccountClient.${methodName}#1`;
+      const serviceMethodId = `Method:${file}:AuthService.${methodName}#1`;
+
+      addGraphNode(interfaceMethodId, 'Method', methodName, { ownerId: accountClientId });
+      addGraphNode(serviceMethodId, 'Method', methodName, { ownerId: serviceId });
+      ctx.model.symbols.add(file, methodName, interfaceMethodId, 'Method', {
+        ownerId: accountClientId,
+      });
+      ctx.model.symbols.add(file, methodName, serviceMethodId, 'Method', {
+        ownerId: serviceId,
+      });
+    }
+
+    const accountsPropertyId = `Property:${file}:AuthService.accounts`;
+    addGraphNode(accountsPropertyId, 'Property', 'accounts', {
+      ownerId: serviceId,
+      declaredType: 'AccountClient',
+    });
+    ctx.model.symbols.add(file, 'accounts', accountsPropertyId, 'Property', {
+      ownerId: serviceId,
+      declaredType: 'AccountClient',
+    });
+
+    await processCalls(
+      graph,
+      [
+        {
+          path: file,
+          content: `package auth
+
+type AccountClient interface {
+	Login(email string) error
+	Logout(token string) error
+}
+
+type AuthService struct {
+	accounts AccountClient
+}
+
+func (s *AuthService) Login(email string) error {
+	return s.accounts.Login(email)
+}
+
+func (s *AuthService) Logout(token string) error {
+	return s.accounts.Logout(token)
+}
+`,
+        },
+      ],
+      createASTCache(),
+      ctx,
+    );
+
+    const calls = graph.relationships.filter((r) => r.type === 'CALLS');
+    expect(calls).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceId: `Method:${file}:AuthService.Login#1`,
+          targetId: `Method:${file}:AccountClient.Login#1`,
+        }),
+        expect.objectContaining({
+          sourceId: `Method:${file}:AuthService.Logout#1`,
+          targetId: `Method:${file}:AccountClient.Logout#1`,
+        }),
+      ]),
+    );
+    expect(calls).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceId: `Method:${file}:AccountClient.Login#1`,
+          targetId: `Method:${file}:AccountClient.Login#1`,
+        }),
+        expect.objectContaining({
+          sourceId: `Method:${file}:AccountClient.Logout#1`,
+          targetId: `Method:${file}:AccountClient.Logout#1`,
+        }),
+      ]),
+    );
+  });
+});
+
 describe('extractReturnTypeName', () => {
   it('extracts simple type name', () => {
     expect(extractReturnTypeName('User')).toBe('User');
