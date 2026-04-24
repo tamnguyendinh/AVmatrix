@@ -2,7 +2,7 @@
 
 Date: 2026-04-24  
 Scope: `avmatrix/` analyze pipeline, persistence, FTS, embeddings, metadata; `avmatrix-web/` only if analyze progress/status contract changes  
-Status: Proposed
+Status: In progress - Phase 1 complete by production CLI validation
 
 ## Goal
 
@@ -179,12 +179,41 @@ Initial benchmark baseline:
 | `F:\Restaurant_manager` | `641.4s` | `parse 480.7s`, `lbugLoad 46.1s`, `crossFile 43.2s`, `fts 33.6s`, `markdown 29.5s`, `scan 5.1s` | Large-repo bottleneck is parse; worker pool timed out and silently fell back to sequential, which is now invalid production behavior. |
 | `F:\Website` | `60.4s` | `crossFile 21.0s`, `fts 13.2s`, `parse 12.3s`, `lbugLoad 11.6s`, `scan 0.3s` | Smaller repo has a different profile; crossFile/FTS matter more after parse is acceptable. |
 
+Phase 1 validation benchmark after worker-canonical parse implementation (`2026-04-24`):
+
+| Repo | Before | After | Key result | Current top buckets |
+|------|--------|-------|------------|---------------------|
+| `F:\Restaurant_manager` | `641.4s total`, `parse 480.7s`, worker timeout plus whole-repo sequential fallback | `133.9s` and `139.2s` repeated production CLI runs, `parse 28.8s` / `26.9s`, no worker timeout/fallback stderr | Large-repo parse bottleneck was materially reduced and production `avmatrix analyze --force -v` now uses the worker path. Both repeated CLI runs produced `70,811 nodes`, `110,777 edges`, `942 clusters`, `700 flows`. | `lbugLoad 38.9-41.1s`, `fts 31.6-36.2s`, `crossFile 30.0-30.2s`, `parse 26.9-28.8s` |
+| `F:\Website` | `60.4s total`, `crossFile 21.0s`, `fts 13.2s`, `parse 12.3s`, `lbugLoad 11.6s` | `64.0s total`, `parse 9.1s`, no worker failure | Smoke/regression signal only. This repo is actively changing, so node/edge/cluster counts and total time are not valid Phase 1 closure evidence. CLI output for this run: `13,422 nodes`, `23,013 edges`, `401 clusters`, `658 flows`. | `crossFile 20.2s`, `fts 18.8s`, `lbugLoad 13.9s`, `parse 9.1s` |
+
+Phase 1 correctness / determinism evidence:
+
+- `F:\Restaurant_manager` repeated parse-through-crossFile snapshot with `skipGraphPhases: true` matched exactly:
+  - `diffCount=0`
+  - `nodeCount=69,375`
+  - `relationshipCount=100,909`
+  - `CALLS=17,842`
+  - `IMPORTS=2,979`
+  - `crossFileReprocessedFiles=409`
+  - `usedWorkerPool=true`
+- The earlier full-pipeline community nondeterminism was traced to Leiden's default random RNG and unstable community output ordering, not to the parse worker path.
+- Community detection now uses a fixed seeded RNG, deterministic graph input ordering, deterministic membership/community sorting, and no timeout/fallback that would return degraded output.
+- `F:\Restaurant_manager` repeated production CLI runs produced the same global output summary and are the Phase 1 closure evidence:
+  - `70,811 nodes`
+  - `110,777 edges`
+  - `942 clusters`
+  - `700 flows`
+- `F:\Website` is kept only as a smoke/regression check because it is under active development and can legitimately produce changing counts unrelated to analyzer changes.
+- Full analyze no longer contains the old Leiden timeout fallback that collapsed all nodes into one community. If community detection is slow, that is a performance issue to optimize, not a reason to return incomplete full-analyze output.
+
 Priority decision:
 
 - Optimize for the large-repo profile first.
 - `scan` and generic progress overhead are not priority targets from this baseline.
 - The next implementation phase should make the worker path the canonical full-analyze parse path and remove silent whole-repo sequential fallback before tuning lower-impact areas.
 - After parse improves, rerun both repos and then choose among `crossFile`, `fts`, and `lbugLoad` based on the new measured wall time.
+- After Phase 1 validation, parse is no longer the dominant end-to-end bucket on the large repo. The measured next bottlenecks are `lbugLoad`, `fts`, and `crossFile`.
+- Phase 2 parse main-thread resolve should not be started blindly: current parse sub-timings show main-thread resolve work is small compared with `workerParseMs` and smaller than the DB/crossFile/FTS buckets. If no new parse-resolve hotspot is measured, record Phase 2 as deferred and move to the highest measured bottleneck.
 
 ## Workstream B. Scan / File IO
 
