@@ -8,9 +8,46 @@ Status: Proposed
 
 Make full `analyze` faster while preserving the existing full-repo semantics and output.
 
+The final outcome is not just better logs or profiling. The final outcome is a measurably faster full `analyze` run on representative repositories, with the same graph, persistence, search, metadata, and caller-visible behavior.
+
 This plan is only about full analyze. It is not about `re-analyze`, delta indexing, affected-file analysis, fast mode, stale derived state, or deferred graph output.
 
 This plan ends when the analyzed index is ready faster: in-memory `KnowledgeGraph` has been built, LadybugDB has been loaded, FTS/optional embeddings have run, and metadata/AI context finalization has completed. It does not optimize how the web app later fetches, streams, parses, lays out, or renders the graph.
+
+Success criteria:
+
+- full `analyze --force` wall time is reduced on the benchmark repos
+- each optimized phase shows a real timing improvement in the instrumentation report
+- no correctness guard regression is accepted
+- no optimization is considered complete unless it moves wall-clock time or removes a measured bottleneck
+
+Optimization target model:
+
+Full analyze wall time is treated as:
+
+`total wall time = measured phase/bucket time + orchestration/progress overhead`
+
+Primary optimization targets are the measured buckets:
+
+- `scan`
+- `structure`
+- `markdown`
+- `cobol`
+- `parse`
+- `routes`
+- `tools`
+- `orm`
+- `crossFile`
+- `mro`
+- `communities`
+- `processes`
+- `lbugLoad`
+- `fts`
+- `embeddings`
+- `metadata`
+- `aiContext`
+
+The plan is to reduce total wall time by reducing the slowest measured buckets first. Do not optimize all buckets equally. A change only counts as a speedup when it reduces the targeted bucket time and improves or preserves total wall time with identical output.
 
 Related separate plan:
 
@@ -27,6 +64,7 @@ Related separate plan:
 7. The default full analyze path must not start using `skipGraphPhases`; that option is not a performance shortcut for production analyze.
 8. Phase-level parallelism is out of scope unless shared `KnowledgeGraph` mutation safety and deterministic output are proven first.
 9. Web `/api/graph` serialization, NDJSON client parsing, Sigma graph construction, and visual layout/rendering are separate concerns.
+10. Preserve existing production skip/cap behavior unless a separate correctness review explicitly changes it.
 
 ## Current Full Analyze Shape
 
@@ -52,6 +90,9 @@ Current codebase constraints:
 - Full analyze currently rebuilds LadybugDB by removing the existing DB/WAL/lock files, then loading the complete graph.
 - FTS and AI context generation are best-effort today; performance changes must preserve their failure behavior unless deliberately changed.
 - Embeddings are optional and are auto-skipped above `EMBEDDING_NODE_LIMIT`; current code threshold is `100_000` nodes. This is a tuning knob, not a full-analyze completeness rule.
+- Scan currently skips files larger than `512KB`; keep that behavior unless a separate parser/file-size plan changes it.
+- Parse currently skips languages whose tree-sitter parser is unavailable and warns; do not hide or reinterpret those warnings.
+- Cross-file propagation currently has an internal benefit threshold and a hard cap; do not remove, tighten, loosen, or bypass them as part of generic performance work.
 
 Key code areas:
 
@@ -86,6 +127,7 @@ Required top-level timings:
 - `embeddings`
 - `metadata`
 - `aiContext`
+- orchestration/progress overhead where measurable
 - total wall time
 
 Required counters:
@@ -129,6 +171,7 @@ Validation:
 
 - same scanned file set
 - same skipped-large-file behavior
+- same parser-unavailable warning behavior downstream
 - same downstream node/edge output
 
 ## Workstream C. Parse Worker Pool
@@ -146,6 +189,7 @@ Validation:
 - same parsed symbols
 - same imports, heritage, calls, routes, tools, ORM outputs
 - same worker and sequential fallback semantics
+- same parser-unavailable skip/warn behavior
 
 Out of scope for V1:
 
@@ -183,19 +227,22 @@ Possible optimizations that preserve output:
 - profile `readFileContents`
 - profile `processCalls`
 - avoid rereading file content if a bounded, correct cache already has it
-- skip internal reprocessing only when inputs prove no output change
+- avoid internal reprocessing only when the existing threshold/cap semantics still produce identical output
 - cache `buildImportedReturnTypes` and `buildImportedRawReturnTypes` inside the phase
 
 Rules:
 
 - `crossFile` remains the cross-file propagation mechanism
+- preserve the existing `CROSS_FILE_SKIP_THRESHOLD` behavior unless a separate correctness review changes it
+- preserve the existing `MAX_CROSS_FILE_REPROCESS` cap unless a separate correctness review changes it
 - no replacement closure engine
 - no manual link creation outside existing processors
 
 Validation:
 
 - same CALLS edges after cross-file propagation
-- same files reprocessed when output would otherwise differ
+- same cross-file reprocessed file count for baseline repos
+- same files reprocessed under the existing threshold/cap behavior
 
 ## Workstream F. MRO / Communities / Processes
 
@@ -228,8 +275,9 @@ This may be a major bottleneck. Optimize persistence without changing graph outp
 Possible optimizations:
 
 - profile `streamAllCSVsToDisk`
-- reduce stringify / CSV escaping overhead
-- increase write-stream buffer size
+- benchmark and tune the existing CSV escaping path
+- benchmark and tune the existing `BufferedCSVWriter` / `FLUSH_EVERY` behavior
+- benchmark and tune the existing file-content LRU cache
 - split relationship CSV by label pair in one efficient pass
 - reduce many tiny `COPY` calls if safe
 - batch cleanup of generated CSV files
@@ -240,6 +288,8 @@ Rules:
 - full analyze continues to rebuild LadybugDB in this plan
 - persisted DB must contain the same graph
 - no delta writer in this plan
+- keep LadybugDB writes sequential unless LadybugDB single-writer / transaction constraints are explicitly verified safe for concurrency
+- preserve `COPY ... PARALLEL=false` semantics unless a DB-level benchmark and correctness check proves a safe alternative
 
 Validation:
 
@@ -274,6 +324,7 @@ Possible optimizations:
 - avoid per-file SSE / IPC churn for large repos
 - keep terminal phase completion progress events
 - never throttle or drop terminal/control events: `error`, `complete`, `done`, cancellation, retry, or `log`
+- preserve progress `stats` and useful `detail` fields for CLI/server/web callers
 
 Validation:
 
@@ -300,18 +351,269 @@ Minimum correctness checks:
 - LadybugDB query output for representative queries
 - sample query results
 - no missing files
+- same skipped-large-file count
+- same parser-unavailable skip/warn count
+- same `usedWorkerPool` value for equivalent worker settings
+- same cross-file reprocessed file count under existing threshold/cap settings
 
 For risky changes, run the same repository before and after optimization and compare serialized graph output or LadybugDB query output.
 
-## Suggested Implementation Order
+## Sequential Implementation Phases
 
-1. Add timing breakdown.
-2. Add progress throttling.
-3. Profile `loadGraphToLbug`.
-4. Tune scan/read concurrency.
-5. Tune worker/chunk settings.
-6. Optimize repeated graph scans in `crossFile`, `communities`, and `processes`.
-7. Optimize LadybugDB CSV/COPY path.
+Implement this plan in order. Do not mix phases in one change unless the earlier phase has already passed its correctness gate. Each phase should leave the codebase in a releasable state.
+
+### Phase 0. Baseline Instrumentation and Correctness Harness
+
+Goal:
+
+- make performance visible before changing behavior
+- create before/after comparison tooling so later optimizations are measurable
+- establish the baseline that later phases must beat
+- rank the optimization targets by actual wall-clock cost
+
+Scope:
+
+- timing breakdown for pipeline phases and `runFullAnalysis`
+- counters for files, parseable files, MB, nodes, edges, workers, chunks, CSV rows, COPY count
+- sub-timings for parse, crossFile, `loadGraphToLbug`, FTS, embeddings, metadata, AI context
+- baseline output comparator for representative repos
+- bottleneck report that sorts measured buckets from slowest to fastest
+
+Rules:
+
+- no intended performance optimization in this phase
+- no output change
+- do not change phase ordering
+
+Exit gate:
+
+- baseline report exists for at least one medium repo and one large repo
+- correctness comparator can detect node/edge/relationship/property differences
+- target bottlenecks are ranked by wall time so Phase 1+ work is grounded in measured cost
+- next phase selection is justified by measured cost, not guesswork
+- `cd avmatrix && npx tsc --noEmit` passes
+
+### Phase 1. Progress Throttling and Scan/File IO
+
+Goal:
+
+- reduce low-risk overhead from progress churn and file stat/read scheduling
+- make full analyze faster when scan/progress overhead is measurable
+
+Scope:
+
+- throttle high-frequency progress callbacks
+- preserve terminal/control events and useful `stats` / `detail`
+- make scan/read concurrency configurable
+- benchmark `READ_CONCURRENCY` values such as `32`, `64`, `128`
+- remove `results.indexOf(result)` from scan result handling
+- cache ignore matcher only when same-process reuse is safe
+
+Rules:
+
+- same scanned file set
+- same skipped-large-file count
+- same parser-unavailable behavior downstream
+- no change to `MAX_FILE_SIZE`
+
+Exit gate:
+
+- scan output matches baseline
+- progress remains usable in CLI/server/web callers
+- benchmark report shows whether this phase reduced full analyze wall time
+- if scan/progress is not a top bottleneck, record that and move to the next measured bottleneck instead of over-optimizing it
+- full correctness guard passes
+
+### Phase 2. Parse Worker Pool Tuning
+
+Goal:
+
+- improve parse throughput without changing extracted symbols or relationships
+- reduce full analyze wall time when parse worker scheduling/chunking is a measured bottleneck
+
+Scope:
+
+- benchmark chunk sizes such as `10MB`, `20MB`, `40MB`, `80MB`
+- benchmark worker count relative to CPU cores
+- reduce worker payload serialization only where profiling proves overhead
+- tune worker threshold only when output and fallback semantics remain identical
+- keep worker reuse within a single analyze run only
+
+Rules:
+
+- do not reuse parser workers across server analyze jobs
+- preserve sequential fallback behavior
+- preserve parser-unavailable skip/warn behavior
+
+Exit gate:
+
+- same parsed symbols, imports, heritage, calls, routes, tools, ORM outputs
+- same `usedWorkerPool` value for equivalent settings, unless the phase explicitly changes tested worker settings
+- benchmark report shows parse time and full analyze wall time before/after
+- if parse worker scheduling/chunking is not a top bottleneck, record that and move to the next measured bottleneck
+- full correctness guard passes
+
+### Phase 3. Parse Main-Thread Resolve Hotspots
+
+Goal:
+
+- reduce CPU cost in import/call/heritage resolution without changing graph-link semantics
+- reduce full analyze wall time when main-thread resolution is a measured bottleneck
+
+Scope:
+
+- optimize `processCallsFromExtracted` hot paths
+- optimize `processImportsFromExtracted` suffix/normalization/cache paths
+- avoid redundant `generateId` and map lookup work
+- avoid redundant `buildExportedTypeMapFromGraph` scans only when equivalent data already exists
+- avoid redundant `synthesizeWildcardImportBindings` graph-global work only when inputs prove no new work
+
+Rules:
+
+- no new resolver
+- no replacement link graph logic
+- no manual relationship creation outside existing processors
+
+Exit gate:
+
+- relationship `type/source/target/confidence/reason/step` matches baseline
+- relevant node properties and search fields match baseline
+- benchmark report shows resolve sub-step time and full analyze wall time before/after
+- if main-thread resolution is not a top bottleneck, record that and move to the next measured bottleneck
+- full correctness guard passes
+
+### Phase 4. CrossFile Optimization
+
+Goal:
+
+- reduce cross-file propagation cost while preserving existing propagation semantics
+- reduce full analyze wall time when cross-file propagation is a measured bottleneck
+
+Scope:
+
+- profile `topologicalLevelSort`
+- cache `buildImportedReturnTypes` and `buildImportedRawReturnTypes` inside the phase
+- avoid repeated read/parse work only where the same files are still selected by existing logic
+- reduce temporary structure rebuilds
+
+Rules:
+
+- preserve `CROSS_FILE_SKIP_THRESHOLD`
+- preserve `MAX_CROSS_FILE_REPROCESS`
+- preserve selected/reprocessed file count for baseline repos
+- `crossFile` remains the propagation mechanism
+
+Exit gate:
+
+- same cross-file reprocessed file count under equivalent settings
+- same CALLS edges after cross-file propagation
+- benchmark report shows crossFile time and full analyze wall time before/after
+- if crossFile is not a top bottleneck, record that and move to the next measured bottleneck
+- full correctness guard passes
+
+### Phase 5. Derived Graph Phases: MRO, Communities, Processes
+
+Goal:
+
+- reduce repeated graph traversal and temporary structure rebuilds after parse/crossFile
+- reduce full analyze wall time when derived graph phases are measured bottlenecks
+
+Scope:
+
+- optimize MRO graph traversal and lookup indexes
+- profile community input graph construction before Leiden execution
+- cache local adjacency / node maps within a phase
+- reduce repeated scans in process extraction
+
+Rules:
+
+- do not skip MRO, communities, or processes
+- do not reduce process/community output
+- keep default full analyze on the existing sequential phase runner
+
+Exit gate:
+
+- same MRO edge counts and override/implementation semantics
+- same community count and memberships where deterministic
+- same process count and process step relationships
+- benchmark report shows derived phase timings and full analyze wall time before/after
+- if derived graph phases are not top bottlenecks, record that and move to the next measured bottleneck
+- full correctness guard passes
+
+### Phase 6. LadybugDB Load and FTS
+
+Goal:
+
+- reduce persistence and index creation time without changing stored graph/query behavior
+- reduce full analyze wall time when DB load or FTS is a measured bottleneck
+
+Scope:
+
+- profile `streamAllCSVsToDisk`
+- benchmark/tune existing CSV escaping, `BufferedCSVWriter`, `FLUSH_EVERY`, and file-content LRU cache
+- optimize relationship CSV split by label pair if profiling shows cost
+- reduce many tiny COPY calls only if safe
+- batch CSV cleanup where safe
+- time each FTS index separately
+
+Rules:
+
+- full analyze continues to rebuild LadybugDB
+- no delta writer
+- keep LadybugDB writes sequential unless DB-level safety is proven
+- preserve `COPY ... PARALLEL=false` semantics unless a DB-level benchmark and correctness check proves a safe alternative
+- keep FTS best-effort failure behavior
+
+Exit gate:
+
+- same LadybugDB stats
+- same representative query/search results
+- same searchable tables and fields
+- benchmark report shows LadybugDB/FTS timings and full analyze wall time before/after
+- if DB load/FTS is not a top bottleneck, record that and move to the next measured bottleneck
+- full correctness guard passes
+
+### Phase 7. Optional Embeddings, Metadata, and Finalization
+
+Goal:
+
+- reduce finalization overhead without changing analyze result semantics
+- reduce full analyze wall time when embeddings/finalization are measured bottlenecks
+
+Scope:
+
+- measure embedding cache restore, embedding generation, vector index creation, and embedding count query
+- measure metadata save, registry update, `.gitignore` update, and AI context generation
+- optimize only after Phase 6 confirms DB load/FTS costs are understood
+
+Rules:
+
+- embeddings remain optional
+- preserve `EMBEDDING_NODE_LIMIT`
+- preserve cached embedding restore semantics
+- preserve AI context best-effort failure behavior
+- preserve registry collision semantics
+
+Exit gate:
+
+- same metadata stats
+- same embedding count behavior
+- same registry result
+- benchmark report shows finalization timings and full analyze wall time before/after
+- if embeddings/finalization are not top bottlenecks, record that and defer further work
+- full correctness guard passes
+
+## Final Definition of Done
+
+The plan is complete only when full `analyze` is faster end-to-end.
+
+Required final evidence:
+
+- before/after full `analyze --force` wall time on representative repos
+- phase timing report showing where the speedup came from
+- correctness guard report showing no accepted graph/output regression
+- summary of any tunables changed and their selected values
+- clear statement of remaining bottlenecks deferred to future work
 
 ## Validation Commands
 
