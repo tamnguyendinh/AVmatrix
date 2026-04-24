@@ -167,6 +167,20 @@ Phase 0 observed issue:
 - The measured hot spots are `c3Linearize`, `buildTransitiveEdgeTypes`, `gatherAncestors`, MRO name materialization, and `METHOD_IMPLEMENTS` ancestor scanning.
 - Do not fix this by skipping MRO, reducing inheritance depth, weakening semantics, or merely raising the timeout without recording the underlying cost.
 
+Initial benchmark baseline:
+
+| Repo | Total | Top measured buckets | Decision signal |
+|------|-------|----------------------|-----------------|
+| `F:\Restaurant_manager` | `641.4s` | `parse 480.7s`, `lbugLoad 46.1s`, `crossFile 43.2s`, `fts 33.6s`, `markdown 29.5s`, `scan 5.1s` | Large-repo bottleneck is parse; worker pool timed out and fell back to sequential. |
+| `F:\Website` | `60.4s` | `crossFile 21.0s`, `fts 13.2s`, `parse 12.3s`, `lbugLoad 11.6s`, `scan 0.3s` | Smaller repo has a different profile; crossFile/FTS matter more after parse is acceptable. |
+
+Priority decision:
+
+- Optimize for the large-repo profile first.
+- `scan` and generic progress overhead are not priority targets from this baseline.
+- The next implementation phase should investigate and fix parse worker timeout/fallback before tuning lower-impact areas.
+- After parse improves, rerun both repos and then choose among `crossFile`, `fts`, and `lbugLoad` based on the new measured wall time.
+
 ## Workstream B. Scan / File IO
 
 Possible optimizations that preserve output:
@@ -188,18 +202,21 @@ Validation:
 
 Possible optimizations that preserve output:
 
-- benchmark parse chunk sizes: `10MB`, `20MB`, `40MB`, `80MB`
-- benchmark worker count relative to CPU cores
+- replace static file-count worker partitioning with a deterministic dynamic parse scheduler
+- split parse work into small byte-bounded work units with stable `unitId`s
+- let idle workers pull the next available work unit while the main thread merges results by stable `unitId`, not completion order
+- use worker heartbeat/inactivity timeout instead of treating a whole sub-batch wall time as failure
+- retry failed work units at smaller granularity, then isolate single-file failures before using sequential fallback
 - reduce serialization payload to workers if profiling shows worker transfer overhead
-- reuse worker pool only within a single analyze run if lifecycle is safe and output remains identical
-- tune worker threshold to avoid slow sequential path on medium repos
+- tune worker count relative to CPU cores after the scheduler is deterministic
 
 Validation:
 
 - same parsed symbols
 - same imports, heritage, calls, routes, tools, ORM outputs
-- same worker and sequential fallback semantics
+- same deterministic output regardless of worker completion order
 - same parser-unavailable skip/warn behavior
+- fallback is granular: only failed units/files are retried or parsed sequentially
 
 Out of scope for V1:
 
@@ -412,67 +429,53 @@ Exit gate:
 - next phase selection is justified by measured cost, not guesswork
 - `cd avmatrix && npx tsc --noEmit` passes
 
-### Phase 1. Progress Throttling and Scan/File IO
+### Phase 1. Parse Worker Timeout and Throughput
 
 Goal:
 
-- reduce low-risk overhead from progress churn and file stat/read scheduling
-- make full analyze faster when scan/progress overhead is measurable
+- eliminate large-repo parse worker timeout/fallback before optimizing smaller buckets
+- replace the current static worker chunking with one coherent deterministic scheduler
+- improve parse throughput without changing extracted symbols, relationships, or caller-visible behavior
+- reduce full analyze wall time when parse worker scheduling/timeout/fallback is a measured bottleneck
 
 Scope:
 
-- throttle high-frequency progress callbacks
-- preserve terminal/control events and useful `stats` / `detail`
-- make scan/read concurrency configurable
-- benchmark `READ_CONCURRENCY` values such as `32`, `64`, `128`
-- remove `results.indexOf(result)` from scan result handling
-- cache ignore matcher only when same-process reuse is safe
-
-Rules:
-
-- same scanned file set
-- same skipped-large-file count
-- same parser-unavailable behavior downstream
-- no change to `MAX_FILE_SIZE`
-
-Exit gate:
-
-- scan output matches baseline
-- progress remains usable in CLI/server/web callers
-- benchmark report shows whether this phase reduced full analyze wall time
-- if scan/progress is not a top bottleneck, record that and move to the next measured bottleneck instead of over-optimizing it
-- full correctness guard passes
-
-### Phase 2. Parse Worker Pool Tuning
-
-Goal:
-
-- improve parse throughput without changing extracted symbols or relationships
-- reduce full analyze wall time when parse worker scheduling/chunking is a measured bottleneck
-
-Scope:
-
-- benchmark chunk sizes such as `10MB`, `20MB`, `40MB`, `80MB`
-- benchmark worker count relative to CPU cores
-- reduce worker payload serialization only where profiling proves overhead
-- tune worker threshold only when output and fallback semantics remain identical
+- reproduce and isolate the `Restaurant_manager` worker timeout: `Worker 1 sub-batch timed out after 30s (chunk: 176 items)`
+- introduce a stable `ParseWorkUnit` model: `unitId`, file indexes/paths, total bytes, file count, and language breakdown
+- build work units from the parseable file list with a byte/file budget; preserve a stable unit order independent of worker completion order
+- replace one-static-chunk-per-worker dispatch with a dynamic scheduler: workers request or receive the next pending work unit when they become idle
+- merge worker results only by sorted `unitId` after completion so output remains deterministic
+- change timeout policy from whole-sub-batch wall time to worker inactivity: reset watchdog on heartbeat/progress, and report the last active unit/file on timeout
+- emit verbose diagnostics for each worker/unit: elapsed time, file count, bytes, language breakdown, result sizes, retry count, and slow/stuck file hints
+- implement granular retry/fallback: retry failed units with smaller units, isolate single-file failures, and only then sequentially parse the failed file/unit
+- reduce worker payload serialization only where profiling proves overhead after scheduler correctness is established
+- tune worker count relative to CPU cores after deterministic scheduling is in place
 - keep worker reuse within a single analyze run only
 
 Rules:
 
+- do not skip files to avoid timeout
+- do not hide parser failures or parser-unavailable warnings
+- do not treat fallback-to-sequential as success when the goal is faster full analyze
+- do not fallback the entire parse chunk/repo when only one unit or file failed
 - do not reuse parser workers across server analyze jobs
-- preserve sequential fallback behavior
+- preserve sequential fallback behavior for real worker failure, but make it granular
 - preserve parser-unavailable skip/warn behavior
+- no new parser/linker/resolver architecture
+- no temporary static-partition implementation that is expected to be replaced later by dynamic scheduling
 
 Exit gate:
 
+- `Restaurant_manager` no longer falls back to sequential for the whole parse workload because of worker timeout
+- any remaining fallback is limited to failed work units/files and is reported with diagnostics
 - same parsed symbols, imports, heritage, calls, routes, tools, ORM outputs
+- same deterministic output across repeated runs even when work units complete in different orders
 - same `usedWorkerPool` value for equivalent settings, unless the phase explicitly changes tested worker settings
-- benchmark report shows parse time and full analyze wall time before/after
-- if parse worker scheduling/chunking is not a top bottleneck, record that and move to the next measured bottleneck
+- benchmark report shows parse time and full analyze wall time before/after on `Restaurant_manager`
+- rerun `Website` after the change to catch regressions on the smaller profile
 - full correctness guard passes
 
-### Phase 3. Parse Main-Thread Resolve Hotspots
+### Phase 2. Parse Main-Thread Resolve Hotspots
 
 Goal:
 
@@ -498,10 +501,10 @@ Exit gate:
 - relationship `type/source/target/confidence/reason/step` matches baseline
 - relevant node properties and search fields match baseline
 - benchmark report shows resolve sub-step time and full analyze wall time before/after
-- if main-thread resolution is not a top bottleneck, record that and move to the next measured bottleneck
+- if main-thread resolution is not a top bottleneck after Phase 1, record that and move to the next measured bottleneck
 - full correctness guard passes
 
-### Phase 4. CrossFile Optimization
+### Phase 3. CrossFile Optimization
 
 Goal:
 
@@ -527,7 +530,40 @@ Exit gate:
 - same cross-file reprocessed file count under equivalent settings
 - same CALLS edges after cross-file propagation
 - benchmark report shows crossFile time and full analyze wall time before/after
-- if crossFile is not a top bottleneck, record that and move to the next measured bottleneck
+- if crossFile is not a top bottleneck after parse work, record that and move to the next measured bottleneck
+- full correctness guard passes
+
+### Phase 4. LadybugDB Load and FTS
+
+Goal:
+
+- reduce persistence and index creation time without changing stored graph/query behavior
+- reduce full analyze wall time when DB load or FTS is a measured bottleneck
+
+Scope:
+
+- profile `streamAllCSVsToDisk`
+- benchmark/tune existing CSV escaping, `BufferedCSVWriter`, `FLUSH_EVERY`, and file-content LRU cache
+- optimize relationship CSV split by label pair if profiling shows cost
+- reduce many tiny COPY calls only if safe
+- batch CSV cleanup where safe
+- time each FTS index separately
+
+Rules:
+
+- full analyze continues to rebuild LadybugDB
+- no delta writer
+- keep LadybugDB writes sequential unless DB-level safety is proven
+- preserve `COPY ... PARALLEL=false` semantics unless a DB-level benchmark and correctness check proves a safe alternative
+- keep FTS best-effort failure behavior
+
+Exit gate:
+
+- same LadybugDB stats
+- same representative query/search results
+- same searchable tables and fields
+- benchmark report shows LadybugDB/FTS timings and full analyze wall time before/after
+- if DB load/FTS is not a top bottleneck after parse/crossFile work, record that and move to the next measured bottleneck
 - full correctness guard passes
 
 ### Phase 5. Derived Graph Phases: MRO, Communities, Processes
@@ -566,37 +602,36 @@ Exit gate:
 - if derived graph phases are not top bottlenecks, record that and move to the next measured bottleneck
 - full correctness guard passes
 
-### Phase 6. LadybugDB Load and FTS
+### Phase 6. Scan / File IO / Progress Throttling
 
 Goal:
 
-- reduce persistence and index creation time without changing stored graph/query behavior
-- reduce full analyze wall time when DB load or FTS is a measured bottleneck
+- reduce low-risk overhead from progress churn and file stat/read scheduling only if later benchmarks show it matters
+- keep this phase behind parse/crossFile/DB/FTS because initial baseline showed `scan` is not a primary bottleneck
 
 Scope:
 
-- profile `streamAllCSVsToDisk`
-- benchmark/tune existing CSV escaping, `BufferedCSVWriter`, `FLUSH_EVERY`, and file-content LRU cache
-- optimize relationship CSV split by label pair if profiling shows cost
-- reduce many tiny COPY calls only if safe
-- batch CSV cleanup where safe
-- time each FTS index separately
+- throttle high-frequency progress callbacks
+- preserve terminal/control events and useful `stats` / `detail`
+- make scan/read concurrency configurable
+- benchmark `READ_CONCURRENCY` values such as `32`, `64`, `128`
+- remove `results.indexOf(result)` from scan result handling
+- cache ignore matcher only when same-process reuse is safe
 
 Rules:
 
-- full analyze continues to rebuild LadybugDB
-- no delta writer
-- keep LadybugDB writes sequential unless DB-level safety is proven
-- preserve `COPY ... PARALLEL=false` semantics unless a DB-level benchmark and correctness check proves a safe alternative
-- keep FTS best-effort failure behavior
+- same scanned file set
+- same skipped-large-file count
+- same parser-unavailable behavior downstream
+- no change to `MAX_FILE_SIZE`
+- never throttle or drop terminal/control events: `error`, `complete`, `done`, cancellation, retry, or `log`
 
 Exit gate:
 
-- same LadybugDB stats
-- same representative query/search results
-- same searchable tables and fields
-- benchmark report shows LadybugDB/FTS timings and full analyze wall time before/after
-- if DB load/FTS is not a top bottleneck, record that and move to the next measured bottleneck
+- scan output matches baseline
+- progress remains usable in CLI/server/web callers
+- benchmark report shows whether this phase reduced full analyze wall time
+- if scan/progress remains negligible, stop rather than over-optimizing it
 - full correctness guard passes
 
 ### Phase 7. Optional Embeddings, Metadata, and Finalization
@@ -610,7 +645,7 @@ Scope:
 
 - measure embedding cache restore, embedding generation, vector index creation, and embedding count query
 - measure metadata save, registry update, `.gitignore` update, and AI context generation
-- optimize only after Phase 6 confirms DB load/FTS costs are understood
+- optimize only after Phase 4 confirms DB load/FTS costs are understood
 
 Rules:
 
