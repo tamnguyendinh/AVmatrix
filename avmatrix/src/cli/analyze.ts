@@ -415,4 +415,21 @@ function printPerformanceSummary(performance: AnalyzePerformanceReport): void {
   console.log(
     `  counters: files=${counters.totalFiles ?? 0}, parseable=${counters.parseableFiles ?? 0}, chunks=${counters.parseChunkCount ?? 0}, workers=${counters.workerCount ?? 0}, csvRows=${(counters.csvNodeRows ?? 0) + (counters.csvRelationshipRows ?? 0)}`,
   );
+  const parseTimings = performance.parse?.timings;
+  if (parseTimings) {
+    const resolveMs =
+      (parseTimings.importResolveMs ?? 0) +
+      (parseTimings.heritageResolveMs ?? 0) +
+      (parseTimings.routeResolveMs ?? 0) +
+      (parseTimings.callResolveMs ?? 0) +
+      (parseTimings.assignmentResolveMs ?? 0) +
+      (parseTimings.wildcardSynthesisMs ?? 0) +
+      (parseTimings.exportedTypeMapEnrichMs ?? 0);
+    console.log(
+      `  parse detail: read ${(parseTimings.readContentsMs ?? 0).toFixed(1)}ms | worker ${(parseTimings.workerParseMs ?? 0).toFixed(1)}ms | resolve ${resolveMs.toFixed(1)}ms`,
+    );
+    console.log(
+      `  parse resolve: imports ${(parseTimings.importResolveMs ?? 0).toFixed(1)}ms | calls ${(parseTimings.callResolveMs ?? 0).toFixed(1)}ms | heritage ${(parseTimings.heritageResolveMs ?? 0).toFixed(1)}ms | assignments ${(parseTimings.assignmentResolveMs ?? 0).toFixed(1)}ms | wildcard ${(parseTimings.wildcardSynthesisMs ?? 0).toFixed(1)}ms | exports ${(parseTimings.exportedTypeMapEnrichMs ?? 0).toFixed(1)}ms`,
+    );
+  }
 }

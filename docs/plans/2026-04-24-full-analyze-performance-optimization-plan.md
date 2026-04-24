@@ -2,7 +2,7 @@
 
 Date: 2026-04-24  
 Scope: `avmatrix/` analyze pipeline, persistence, FTS, embeddings, metadata; `avmatrix-web/` only if analyze progress/status contract changes  
-Status: In progress - Phase 1 complete by production CLI validation
+Status: In progress - Phase 2 closed by measurement; next work should target measured non-parse bottlenecks
 
 ## Goal
 
@@ -214,6 +214,21 @@ Priority decision:
 - After parse improves, rerun both repos and then choose among `crossFile`, `fts`, and `lbugLoad` based on the new measured wall time.
 - After Phase 1 validation, parse is no longer the dominant end-to-end bucket on the large repo. The measured next bottlenecks are `lbugLoad`, `fts`, and `crossFile`.
 - Phase 2 parse main-thread resolve should not be started blindly: current parse sub-timings show main-thread resolve work is small compared with `workerParseMs` and smaller than the DB/crossFile/FTS buckets. If no new parse-resolve hotspot is measured, record Phase 2 as deferred and move to the highest measured bottleneck.
+
+Phase 2 validation (`2026-04-24`):
+
+- Added verbose CLI parse sub-timing output so production `avmatrix analyze --force -v` reports parse read, worker, and resolve sub-steps directly.
+- Production CLI run on stable `F:\Restaurant_manager`:
+  - `131.6s total`
+  - `70,811 nodes`
+  - `110,777 edges`
+  - `942 clusters`
+  - `700 flows`
+  - top buckets: `lbugLoad 39.0s`, `fts 32.8s`, `crossFile 30.0s`, `parse 25.5s`
+  - parse detail: `read 416.1ms`, `worker 23,841.1ms`, `resolve 808.0ms`
+  - parse resolve: `imports 287.5ms`, `calls 415.7ms`, `heritage 2.1ms`, `assignments 63.0ms`, `wildcard 35.9ms`, `exports 3.5ms`
+- Decision: Phase 2 is closed without resolver/linker optimization. Main-thread parse resolve is under `1s` and under `1%` of full analyze wall time on the stable benchmark repo, so changing resolver code would add correctness risk without moving the measured bottleneck.
+- Next work should not stay in parse main-thread resolve. The measured candidates are `lbugLoad`, `fts`, and `crossFile`.
 
 ## Workstream B. Scan / File IO
 
