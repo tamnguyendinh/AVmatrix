@@ -14,6 +14,7 @@ import {
   buildImportedReturnTypes,
   buildImportedRawReturnTypes,
   type ExportedTypeMap,
+  type ProcessCallsQueryCache,
   type ProcessCallsTimingSink,
 } from '../call-processor.js';
 import type { createResolutionContext } from '../model/resolution-context.js';
@@ -97,6 +98,7 @@ export async function runCrossFileBindingPropagation(
 ): Promise<CrossFilePropagationResult> {
   const metrics: CrossFileMetrics = { timings: {}, counters: {} };
   const processCallsTimingSink = makeProcessCallsTimingSink(metrics);
+  const processCallsQueryCache: ProcessCallsQueryCache = new Map();
   const totalStart = performance.now();
   const finish = (filesReprocessed: number, skipReason?: string): CrossFilePropagationResult => {
     metrics.timings.totalMs = roundMs(performance.now() - totalStart);
@@ -289,6 +291,7 @@ export async function runCrossFileBindingPropagation(
           undefined,
           undefined,
           processCallsTimingSink,
+          processCallsQueryCache,
         ),
       );
       crossFileResolved++;

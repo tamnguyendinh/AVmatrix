@@ -447,7 +447,7 @@ function printPerformanceSummary(performance: AnalyzePerformanceReport): void {
       `  crossFile detail: total ${phaseTotalMs.toFixed(1)}ms | topo ${(crossFileTimings.topologicalSortMs ?? 0).toFixed(1)}ms | candidates ${(crossFileTimings.candidateSelectionMs ?? 0).toFixed(1)}ms | read ${(crossFileTimings.readContentsMs ?? 0).toFixed(1)}ms | returnMaps ${(crossFileTimings.importedReturnMapsMs ?? 0).toFixed(1)}ms | processCalls ${(crossFileTimings.processCallsMs ?? 0).toFixed(1)}ms | reprocessed ${reprocessed}`,
     );
     console.log(
-      `  crossFile processCalls: parse ${(crossFileTimings.processCallsParserParseMs ?? 0).toFixed(1)}ms | query ${(crossFileTimings.processCallsQueryMatchesMs ?? 0).toFixed(1)}ms | typeEnv ${(crossFileTimings.processCallsBuildTypeEnvMs ?? 0).toFixed(1)}ms | resolution ${(crossFileTimings.processCallsResolutionTraversalMs ?? 0).toFixed(1)}ms | emit ${(crossFileTimings.processCallsEdgeEmissionMs ?? 0).toFixed(1)}ms`,
+      `  crossFile processCalls: parse ${(crossFileTimings.processCallsParserParseMs ?? 0).toFixed(1)}ms | query ${(crossFileTimings.processCallsQueryMatchesMs ?? 0).toFixed(1)}ms (compile ${(crossFileTimings.processCallsQueryCompileMs ?? 0).toFixed(1)}ms, match ${(crossFileTimings.processCallsQueryExecuteMs ?? 0).toFixed(1)}ms) | typeEnv ${(crossFileTimings.processCallsBuildTypeEnvMs ?? 0).toFixed(1)}ms | resolution ${(crossFileTimings.processCallsResolutionTraversalMs ?? 0).toFixed(1)}ms | emit ${(crossFileTimings.processCallsEdgeEmissionMs ?? 0).toFixed(1)}ms`,
     );
   }
 }

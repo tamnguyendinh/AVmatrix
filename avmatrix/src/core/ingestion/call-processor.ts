@@ -82,6 +82,8 @@ export type ExportedTypeMap = Map<string, Map<string, string>>;
 export type ProcessCallsTimingKey =
   | 'processCallsParserParseMs'
   | 'processCallsQueryMatchesMs'
+  | 'processCallsQueryCompileMs'
+  | 'processCallsQueryExecuteMs'
   | 'processCallsBuildTypeEnvMs'
   | 'processCallsResolutionTraversalMs'
   | 'processCallsEdgeEmissionMs';
@@ -89,6 +91,8 @@ export type ProcessCallsTimingKey =
 export interface ProcessCallsTimingSink {
   mark(key: ProcessCallsTimingKey, durationMs: number): void;
 }
+
+export type ProcessCallsQueryCache = Map<string, Parser.Query>;
 
 /**
  * Type labels treated as class-like **method-dispatch receivers** by the call
@@ -719,6 +723,7 @@ export const processCalls = async (
   heritageMap?: HeritageMap,
   bindingAccumulator?: BindingAccumulator,
   timingSink?: ProcessCallsTimingSink,
+  compiledQueryCache?: ProcessCallsQueryCache,
 ): Promise<ExtractedHeritage[]> => {
   const parser = await loadParser();
   const markTiming = (key: ProcessCallsTimingKey, startMs: number): void => {
@@ -781,6 +786,16 @@ export const processCalls = async (
     typeEnv: ReturnType<typeof buildTypeEnv>;
   }
   const prepared: PreparedFile[] = [];
+  const queryCache = compiledQueryCache ?? new Map<string, Parser.Query>();
+  const getCompiledQuery = (language: SupportedLanguages, queryStr: string): Parser.Query => {
+    const cacheKey = `${language}\0${queryStr}`;
+    const cached = queryCache.get(cacheKey);
+    if (cached) return cached;
+    const lang = parser.getLanguage();
+    const query = timeSync('processCallsQueryCompileMs', () => new Parser.Query(lang, queryStr));
+    queryCache.set(cacheKey, query);
+    return query;
+  };
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
@@ -818,9 +833,8 @@ export const processCalls = async (
     let matches;
     try {
       matches = timeSync('processCallsQueryMatchesMs', () => {
-        const lang = parser.getLanguage();
-        const query = new Parser.Query(lang, queryStr);
-        return query.matches(tree.rootNode);
+        const query = getCompiledQuery(language, queryStr);
+        return timeSync('processCallsQueryExecuteMs', () => query.matches(tree.rootNode));
       });
     } catch (queryError) {
       console.warn(`Query error for ${file.path}:`, queryError);

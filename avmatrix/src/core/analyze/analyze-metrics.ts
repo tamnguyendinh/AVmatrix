@@ -91,6 +91,8 @@ export interface CrossFileTimingBreakdown {
   processCallsMs?: number;
   processCallsParserParseMs?: number;
   processCallsQueryMatchesMs?: number;
+  processCallsQueryCompileMs?: number;
+  processCallsQueryExecuteMs?: number;
   processCallsBuildTypeEnvMs?: number;
   processCallsResolutionTraversalMs?: number;
   processCallsEdgeEmissionMs?: number;
