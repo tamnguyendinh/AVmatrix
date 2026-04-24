@@ -247,6 +247,17 @@ Validation:
 
 ## Workstream E. CrossFile
 
+Known correctness issue to resolve before optimizing this phase:
+
+- In the worker path, raw parse-worker output for Go receiver methods can be correct, but `crossFile` can still add incorrect duplicate `CALLS` edges during reprocessing.
+- Reproduction case observed in `H:\hotel_manager\apps\desktop\backend\internal\usecase\auth\service.go`:
+  - actual code: calls inside `AuthService.Login/Logout/ForgotPassword/ResetPassword`
+  - expected source attribution: `AuthService.*`
+  - incorrect crossFile output: duplicate calls attributed to same-name interface methods such as `AccountClient.Login/Logout/ForgotPassword/ResetPassword`
+- Root cause: `crossFile` calls `processCalls(...)`; `processCalls` uses `findEnclosingFunction(...)`; for Go `method_declaration` nodes, owner disambiguation can miss the receiver because the helper starts from `node.parent` while the caller already passes the `method_declaration` node. When an interface method and receiver method share the same name in the same file, resolution can fall back to the first same-file candidate, which is often the interface method.
+- This is not a parse-worker extraction bug and must not be fixed by changing scheduler, partitioning, worker fallback, or graph-link architecture.
+- Phase 3 must fix this within the existing crossFile / `processCalls` source-attribution path before treating crossFile timing optimization as complete.
+
 Possible optimizations that preserve output:
 
 - profile `topologicalLevelSort`
@@ -508,11 +519,15 @@ Exit gate:
 
 Goal:
 
+- first fix known crossFile correctness regressions caused by reprocessing before optimizing runtime
 - reduce cross-file propagation cost while preserving existing propagation semantics
 - reduce full analyze wall time when cross-file propagation is a measured bottleneck
 
 Scope:
 
+- reproduce the Go interface/concrete receiver same-name method case where parse-worker output is correct but crossFile reprocessing adds duplicate wrong-source `CALLS`
+- fix source attribution in the existing `crossFile` / `processCalls` path so calls inside Go receiver methods remain attributed to the receiver owner, not to same-name interface methods in the same file
+- add a regression check that `AuthService.* -> AccountClient.*` remains the edge shape and no `AccountClient.* -> AccountClient.*` self-edge is created by crossFile reprocessing
 - profile `topologicalLevelSort`
 - cache `buildImportedReturnTypes` and `buildImportedRawReturnTypes` inside the phase
 - avoid repeated read/parse work only where the same files are still selected by existing logic
@@ -524,9 +539,13 @@ Rules:
 - preserve `MAX_CROSS_FILE_REPROCESS`
 - preserve selected/reprocessed file count for baseline repos
 - `crossFile` remains the propagation mechanism
+- no new graph-link architecture
+- do not change parse worker scheduling, partitioning, or fallback to address this crossFile bug
 
 Exit gate:
 
+- known Go receiver/interface same-name regression is fixed in the existing crossFile reprocess path
+- no duplicate wrong-source `CALLS` are emitted for the observed `AuthService.*` / `AccountClient.*` case
 - same cross-file reprocessed file count under equivalent settings
 - same CALLS edges after cross-file propagation
 - benchmark report shows crossFile time and full analyze wall time before/after
