@@ -65,6 +65,9 @@ Related separate plan:
 8. Phase-level parallelism is out of scope unless shared `KnowledgeGraph` mutation safety and deterministic output are proven first.
 9. Web `/api/graph` serialization, NDJSON client parsing, Sigma graph construction, and visual layout/rendering are separate concerns.
 10. Preserve existing production skip/cap behavior unless a separate correctness review explicitly changes it.
+11. The parse worker path is the canonical production path for full `analyze`.
+12. Sequential parsing must not silently replace the worker path for full-repo production analyze.
+13. Worker failures must be handled by diagnosis, retry, isolation, or an explicit hard failure; they must not be hidden behind whole-repo sequential fallback.
 
 ## Current Full Analyze Shape
 
@@ -85,6 +88,8 @@ Current codebase constraints:
 
 - `runFullAnalysis()` calls `runPipelineFromRepo(repoPath, onProgress)` without pipeline options; full analyze therefore includes graph phases by default.
 - `PipelineOptions.skipGraphPhases` exists, but it is not a valid optimization for full analyze semantics.
+- `PipelineOptions.skipWorkers` and the legacy sequential parser path exist today, but this plan treats them as implementation debt, not as production full-analyze behavior.
+- Full analyze must converge on a worker-only canonical parse path. Test/debug entry points that still force sequential parsing must be removed or rewritten as part of the worker-canonical migration.
 - The pipeline runner executes phases in dependency order and each phase mutates or reads the shared graph; optimize inside phases before considering phase parallelism.
 - The server analyze worker is a short-lived forked child process and exits after completion, so cross-job worker reuse is not a safe V1 assumption.
 - Full analyze currently rebuilds LadybugDB by removing the existing DB/WAL/lock files, then loading the complete graph.
@@ -171,14 +176,14 @@ Initial benchmark baseline:
 
 | Repo | Total | Top measured buckets | Decision signal |
 |------|-------|----------------------|-----------------|
-| `F:\Restaurant_manager` | `641.4s` | `parse 480.7s`, `lbugLoad 46.1s`, `crossFile 43.2s`, `fts 33.6s`, `markdown 29.5s`, `scan 5.1s` | Large-repo bottleneck is parse; worker pool timed out and fell back to sequential. |
+| `F:\Restaurant_manager` | `641.4s` | `parse 480.7s`, `lbugLoad 46.1s`, `crossFile 43.2s`, `fts 33.6s`, `markdown 29.5s`, `scan 5.1s` | Large-repo bottleneck is parse; worker pool timed out and silently fell back to sequential, which is now invalid production behavior. |
 | `F:\Website` | `60.4s` | `crossFile 21.0s`, `fts 13.2s`, `parse 12.3s`, `lbugLoad 11.6s`, `scan 0.3s` | Smaller repo has a different profile; crossFile/FTS matter more after parse is acceptable. |
 
 Priority decision:
 
 - Optimize for the large-repo profile first.
 - `scan` and generic progress overhead are not priority targets from this baseline.
-- The next implementation phase should investigate and fix parse worker timeout/fallback before tuning lower-impact areas.
+- The next implementation phase should make the worker path the canonical full-analyze parse path and remove silent whole-repo sequential fallback before tuning lower-impact areas.
 - After parse improves, rerun both repos and then choose among `crossFile`, `fts`, and `lbugLoad` based on the new measured wall time.
 
 ## Workstream B. Scan / File IO
@@ -200,13 +205,22 @@ Validation:
 
 ## Workstream C. Parse Worker Pool
 
+Production direction:
+
+- worker parsing is the canonical full-analyze parse path
+- sequential parsing is not a production fallback for full analyze
+- a missing worker script, worker-thread spawn failure, or missing parser native binding should produce an explicit analyze failure with a clear diagnostic
+- worker unit/file failures should be retried granularly, split to isolate the failed unit/file, and then either fail analyze or use only an explicitly parity-proven per-file recovery path
+- whole-repo fallback to sequential parsing is not allowed
+- remove the legacy sequential parser path from the repository as part of the worker-canonical migration, after porting any necessary coverage to worker-path tests
+
 Possible optimizations that preserve output:
 
 - replace static file-count worker partitioning with a deterministic dynamic parse scheduler
 - split parse work into small byte-bounded work units with stable `unitId`s
 - let idle workers pull the next available work unit while the main thread merges results by stable `unitId`, not completion order
 - use worker heartbeat/inactivity timeout instead of treating a whole sub-batch wall time as failure
-- retry failed work units at smaller granularity, then isolate single-file failures before using sequential fallback
+- retry failed work units at smaller granularity, then isolate single-file failures before failing analyze or using an explicitly parity-proven per-file recovery path
 - reduce serialization payload to workers if profiling shows worker transfer overhead
 - tune worker count relative to CPU cores after the scheduler is deterministic
 
@@ -216,7 +230,8 @@ Validation:
 - same imports, heritage, calls, routes, tools, ORM outputs
 - same deterministic output regardless of worker completion order
 - same parser-unavailable skip/warn behavior
-- fallback is granular: only failed units/files are retried or parsed sequentially
+- no whole-repo sequential fallback occurs
+- worker failure diagnostics identify the missing script, spawn failure, parser binding failure, timed-out unit, or failed file
 
 Out of scope for V1:
 
@@ -299,7 +314,7 @@ Possible optimizations that preserve output:
 
 Rules:
 
-- keep default full analyze on the existing sequential phase runner unless deterministic graph mutation safety is proven
+- keep default full analyze on the existing ordered phase runner unless deterministic graph mutation safety is proven
 - do not skip MRO
 - do not skip communities
 - do not skip processes
@@ -440,25 +455,33 @@ Exit gate:
 - next phase selection is justified by measured cost, not guesswork
 - `cd avmatrix && npx tsc --noEmit` passes
 
-### Phase 1. Parse Worker Timeout and Throughput
+### Phase 1. Worker-Canonical Parse Path, Timeout, and Throughput
 
 Goal:
 
-- eliminate large-repo parse worker timeout/fallback before optimizing smaller buckets
+- make the worker path the canonical parse path for full analyze
+- remove silent whole-repo sequential fallback from production full analyze
+- make worker spawn/native-binding/unit failures visible and actionable instead of hiding them behind a slower path with different semantics
+- eliminate large-repo parse worker timeout before optimizing smaller buckets
 - replace the current static worker chunking with one coherent deterministic scheduler
 - improve parse throughput without changing extracted symbols, relationships, or caller-visible behavior
-- reduce full analyze wall time when parse worker scheduling/timeout/fallback is a measured bottleneck
+- reduce full analyze wall time when parse worker scheduling/timeout is a measured bottleneck
 
 Scope:
 
 - reproduce and isolate the `Restaurant_manager` worker timeout: `Worker 1 sub-batch timed out after 30s (chunk: 176 items)`
+- remove whole-repo sequential fallback from the full-analyze production path
+- make worker script missing, worker-thread spawn failure, and parser native binding failure fail analyze with clear diagnostics
+- remove or rewrite all `skipWorkers` usage that forces the legacy sequential parser path
+- port necessary sequential-path tests/debug harnesses to worker-path coverage
+- delete the legacy sequential parser implementation from the repository in this phase, after the test/debug coverage has been ported
 - introduce a stable `ParseWorkUnit` model: `unitId`, file indexes/paths, total bytes, file count, and language breakdown
 - build work units from the parseable file list with a byte/file budget; preserve a stable unit order independent of worker completion order
 - replace one-static-chunk-per-worker dispatch with a dynamic scheduler: workers request or receive the next pending work unit when they become idle
 - merge worker results only by sorted `unitId` after completion so output remains deterministic
 - change timeout policy from whole-sub-batch wall time to worker inactivity: reset watchdog on heartbeat/progress, and report the last active unit/file on timeout
 - emit verbose diagnostics for each worker/unit: elapsed time, file count, bytes, language breakdown, result sizes, retry count, and slow/stuck file hints
-- implement granular retry/fallback: retry failed units with smaller units, isolate single-file failures, and only then sequentially parse the failed file/unit
+- implement granular retry/isolation: retry failed units with smaller units, isolate single-file failures, and then either fail analyze or route the failed file through an explicitly parity-proven recovery path
 - reduce worker payload serialization only where profiling proves overhead after scheduler correctness is established
 - tune worker count relative to CPU cores after deterministic scheduling is in place
 - keep worker reuse within a single analyze run only
@@ -467,21 +490,25 @@ Rules:
 
 - do not skip files to avoid timeout
 - do not hide parser failures or parser-unavailable warnings
-- do not treat fallback-to-sequential as success when the goal is faster full analyze
-- do not fallback the entire parse chunk/repo when only one unit or file failed
+- do not treat fallback-to-sequential as success when the goal is faster and correct full analyze
+- do not fallback the entire parse chunk/repo when one unit or file failed
+- do not silently fallback to sequential parsing when worker startup fails
+- do not keep two production parse paths with different output semantics
 - do not reuse parser workers across server analyze jobs
-- preserve sequential fallback behavior for real worker failure, but make it granular
+- any per-file recovery path must have explicit parity tests and must not be the old whole-repo sequential analyzer
 - preserve parser-unavailable skip/warn behavior
 - no new parser/linker/resolver architecture
 - no temporary static-partition implementation that is expected to be replaced later by dynamic scheduling
 
 Exit gate:
 
-- `Restaurant_manager` no longer falls back to sequential for the whole parse workload because of worker timeout
-- any remaining fallback is limited to failed work units/files and is reported with diagnostics
+- full analyze has no silent whole-repo sequential fallback
+- worker startup failures fail analyze with clear diagnostics instead of producing a graph through a different path
+- `Restaurant_manager` no longer falls back to sequential for the parse workload because of worker timeout
+- failed work units/files are retried, isolated, and then either fail analyze or use an explicitly parity-proven per-file recovery path
 - same parsed symbols, imports, heritage, calls, routes, tools, ORM outputs
 - same deterministic output across repeated runs even when work units complete in different orders
-- same `usedWorkerPool` value for equivalent settings, unless the phase explicitly changes tested worker settings
+- `usedWorkerPool` is true for production full analyze runs that meet worker requirements
 - benchmark report shows parse time and full analyze wall time before/after on `Restaurant_manager`
 - rerun `Website` after the change to catch regressions on the smaller profile
 - full correctness guard passes
@@ -606,7 +633,7 @@ Rules:
 
 - do not skip MRO, communities, or processes
 - do not reduce process/community output
-- keep default full analyze on the existing sequential phase runner
+- keep default full analyze on the existing ordered phase runner
 - keep existing language-specific MRO behavior: Python C3, C++ leftmost, C#/Java/Kotlin implements split, Rust qualified syntax
 - do not change `METHOD_OVERRIDES` or `METHOD_IMPLEMENTS` relationship direction, confidence, or reason semantics
 
