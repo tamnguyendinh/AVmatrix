@@ -35,6 +35,12 @@ import type { CachedEmbedding } from './embeddings/types.js';
 import { generateAIContextFiles } from '../cli/ai-context.js';
 import { EMBEDDING_TABLE_NAME } from './lbug/schema.js';
 import { STALE_HASH_SENTINEL } from './lbug/schema.js';
+import {
+  AnalyzeMetricsCollector,
+  buildAnalyzePerformanceReport,
+  type AnalyzePerformanceReport,
+  type TimingMap,
+} from './analyze/analyze-metrics.js';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -90,6 +96,8 @@ export interface AnalyzeResult {
   alreadyUpToDate?: boolean;
   /** The raw pipeline result — only populated when needed by callers (e.g. skill generation). */
   pipelineResult?: any;
+  /** Phase 0 analyze-performance instrumentation. */
+  performance?: AnalyzePerformanceReport;
 }
 
 /** Threshold: auto-skip embeddings for repos with more nodes than this */
@@ -134,6 +142,9 @@ export async function runFullAnalysis(
   const log = (msg: string) => callbacks.onLog?.(msg);
   const progress = (phase: string, percent: number, message: string) =>
     callbacks.onProgress(phase, percent, message);
+  const metrics = new AnalyzeMetricsCollector();
+  const ftsIndexMs: TimingMap = {};
+  let lbugLoadMetrics: Awaited<ReturnType<typeof loadGraphToLbug>>['metrics'] | undefined;
 
   const { storagePath, lbugPath } = getStoragePaths(repoPath);
 
@@ -165,20 +176,22 @@ export async function runFullAnalysis(
   let cachedEmbeddings: CachedEmbedding[] = [];
 
   if (options.embeddings && existingMeta && !options.force) {
-    try {
-      progress('embeddings', 0, 'Caching embeddings...');
-      await initLbug(lbugPath);
-      const cached = await loadCachedEmbeddings();
-      cachedEmbeddingNodeIds = cached.embeddingNodeIds;
-      cachedEmbeddings = cached.embeddings;
-      await closeLbug();
-    } catch {
+    await metrics.time('embeddings', async () => {
       try {
+        progress('embeddings', 0, 'Caching embeddings...');
+        await initLbug(lbugPath);
+        const cached = await loadCachedEmbeddings();
+        cachedEmbeddingNodeIds = cached.embeddingNodeIds;
+        cachedEmbeddings = cached.embeddings;
         await closeLbug();
       } catch {
-        /* swallow */
+        try {
+          await closeLbug();
+        } catch {
+          /* swallow */
+        }
       }
-    }
+    });
   }
 
   // ── Phase 1: Full Pipeline (0–60%) ────────────────────────────────
@@ -208,21 +221,34 @@ export async function runFullAnalysis(
     // must be released to avoid blocking subsequent invocations.
 
     let lbugMsgCount = 0;
-    await loadGraphToLbug(pipelineResult.graph, pipelineResult.repoPath, storagePath, (msg) => {
-      lbugMsgCount++;
-      const pct = Math.min(84, 60 + Math.round((lbugMsgCount / (lbugMsgCount + 10)) * 24));
-      progress('lbug', pct, msg);
-    });
+    const lbugResult = await metrics.time('lbugLoad', () =>
+      loadGraphToLbug(pipelineResult.graph, pipelineResult.repoPath, storagePath, (msg) => {
+        lbugMsgCount++;
+        const pct = Math.min(84, 60 + Math.round((lbugMsgCount / (lbugMsgCount + 10)) * 24));
+        progress('lbug', pct, msg);
+      }),
+    );
+    lbugLoadMetrics = lbugResult.metrics;
 
     // ── Phase 3: FTS (85–90%) ─────────────────────────────────────────
     progress('fts', 85, 'Creating search indexes...');
 
     try {
-      await createFTSIndex('File', 'file_fts', ['name', 'content']);
-      await createFTSIndex('Function', 'function_fts', ['name', 'content']);
-      await createFTSIndex('Class', 'class_fts', ['name', 'content']);
-      await createFTSIndex('Method', 'method_fts', ['name', 'content']);
-      await createFTSIndex('Interface', 'interface_fts', ['name', 'content']);
+      await timeFtsIndex(metrics, ftsIndexMs, 'File', () =>
+        createFTSIndex('File', 'file_fts', ['name', 'content']),
+      );
+      await timeFtsIndex(metrics, ftsIndexMs, 'Function', () =>
+        createFTSIndex('Function', 'function_fts', ['name', 'content']),
+      );
+      await timeFtsIndex(metrics, ftsIndexMs, 'Class', () =>
+        createFTSIndex('Class', 'class_fts', ['name', 'content']),
+      );
+      await timeFtsIndex(metrics, ftsIndexMs, 'Method', () =>
+        createFTSIndex('Method', 'method_fts', ['name', 'content']),
+      );
+      await timeFtsIndex(metrics, ftsIndexMs, 'Interface', () =>
+        createFTSIndex('Interface', 'interface_fts', ['name', 'content']),
+      );
     } catch {
       // Non-fatal — FTS is best-effort
     }
@@ -239,24 +265,26 @@ export async function runFullAnalysis(
         cachedEmbeddings = [];
         cachedEmbeddingNodeIds = new Set();
       } else {
-        progress('embeddings', 88, `Restoring ${cachedEmbeddings.length} cached embeddings...`);
-        const { batchInsertEmbeddings: batchInsert } =
-          await import('./embeddings/embedding-pipeline.js');
-        const EMBED_BATCH = 200;
-        for (let i = 0; i < cachedEmbeddings.length; i += EMBED_BATCH) {
-          const batch = cachedEmbeddings.slice(i, i + EMBED_BATCH);
+        await metrics.time('embeddings', async () => {
+          progress('embeddings', 88, `Restoring ${cachedEmbeddings.length} cached embeddings...`);
+          const { batchInsertEmbeddings: batchInsert } =
+            await import('./embeddings/embedding-pipeline.js');
+          const EMBED_BATCH = 200;
+          for (let i = 0; i < cachedEmbeddings.length; i += EMBED_BATCH) {
+            const batch = cachedEmbeddings.slice(i, i + EMBED_BATCH);
 
-          try {
-            await batchInsert(executeWithReusedStatement, batch);
-          } catch {
-            /* some may fail if node was removed, that's fine */
+            try {
+              await batchInsert(executeWithReusedStatement, batch);
+            } catch {
+              /* some may fail if node was removed, that's fine */
+            }
           }
-        }
+        });
       }
     }
 
     // ── Phase 4: Embeddings (90–98%) ──────────────────────────────────
-    const stats = await getLbugStats();
+    const stats = await metrics.time('metadata', () => getLbugStats());
     let embeddingSkipped = true;
 
     if (options.embeddings) {
@@ -286,23 +314,25 @@ export async function runFullAnalysis(
       const { readServerMapping } = await import('./embeddings/server-mapping.js');
       const projectName = path.basename(repoPath);
       const serverName = await readServerMapping(projectName);
-      await runEmbeddingPipeline(
-        executeQuery,
-        executeWithReusedStatement,
-        (p) => {
-          const scaled = 90 + Math.round((p.percent / 100) * 8);
-          const label =
-            p.phase === 'loading-model'
-              ? httpMode
-                ? 'Connecting to embedding endpoint...'
-                : 'Loading embedding model...'
-              : `Embedding ${p.nodesProcessed || 0}/${p.totalNodes || '?'}`;
-          progress('embeddings', scaled, label);
-        },
-        {},
-        cachedEmbeddingNodeIds.size > 0 ? cachedEmbeddingNodeIds : undefined,
-        { repoName: projectName, serverName },
-        existingEmbeddings,
+      await metrics.time('embeddings', () =>
+        runEmbeddingPipeline(
+          executeQuery,
+          executeWithReusedStatement,
+          (p) => {
+            const scaled = 90 + Math.round((p.percent / 100) * 8);
+            const label =
+              p.phase === 'loading-model'
+                ? httpMode
+                  ? 'Connecting to embedding endpoint...'
+                  : 'Loading embedding model...'
+                : `Embedding ${p.nodesProcessed || 0}/${p.totalNodes || '?'}`;
+            progress('embeddings', scaled, label);
+          },
+          {},
+          cachedEmbeddingNodeIds.size > 0 ? cachedEmbeddingNodeIds : undefined,
+          { repoName: projectName, serverName },
+          existingEmbeddings,
+        ),
       );
     }
 
@@ -311,14 +341,16 @@ export async function runFullAnalysis(
 
     // Count embeddings in the index (cached + newly generated)
     let embeddingCount = 0;
-    try {
-      const embResult = await executeQuery(
-        `MATCH (e:${EMBEDDING_TABLE_NAME}) RETURN count(e) AS cnt`,
-      );
-      embeddingCount = embResult?.[0]?.cnt ?? 0;
-    } catch {
-      /* table may not exist if embeddings never ran */
-    }
+    await metrics.time('metadata', async () => {
+      try {
+        const embResult = await executeQuery(
+          `MATCH (e:${EMBEDDING_TABLE_NAME}) RETURN count(e) AS cnt`,
+        );
+        embeddingCount = embResult?.[0]?.cnt ?? 0;
+      } catch {
+        /* table may not exist if embeddings never ran */
+      }
+    });
 
     const meta = {
       repoPath,
@@ -333,7 +365,7 @@ export async function runFullAnalysis(
         embeddings: embeddingCount,
       },
     };
-    await saveMeta(storagePath, meta);
+    await metrics.time('metadata', () => saveMeta(storagePath, meta));
     // Forward the --name alias and the registry-collision bypass bit.
     // `allowDuplicateName` is its own concern — independent from the
     // pipeline `force` above. The CLI maps it from
@@ -343,14 +375,16 @@ export async function runFullAnalysis(
     // (after applying the precedence chain in registerRepo) — reuse it
     // so AGENTS.md / skill files reference the same name MCP clients
     // will look up (#979).
-    const projectName = await registerRepo(repoPath, meta, {
-      name: options.registryName,
-      allowDuplicateName: options.allowDuplicateName,
-    });
+    const projectName = await metrics.time('metadata', () =>
+      registerRepo(repoPath, meta, {
+        name: options.registryName,
+        allowDuplicateName: options.allowDuplicateName,
+      }),
+    );
 
     // Only attempt to update .gitignore when a .git directory is present.
     if (hasGitDir(repoPath)) {
-      await addToGitignore(repoPath);
+      await metrics.time('metadata', () => addToGitignore(repoPath));
     }
 
     // ── Generate AI context files (best-effort) ───────────────────────
@@ -364,36 +398,59 @@ export async function runFullAnalysis(
       aggregatedClusterCount = Array.from(groups.values()).filter((count) => count >= 5).length;
     }
 
-    try {
-      await generateAIContextFiles(
-        repoPath,
-        storagePath,
-        projectName,
-        {
-          files: pipelineResult.totalFileCount,
-          nodes: stats.nodes,
-          edges: stats.edges,
-          communities: pipelineResult.communityResult?.stats.totalCommunities,
-          clusters: aggregatedClusterCount,
-          processes: pipelineResult.processResult?.stats.totalProcesses,
-        },
-        undefined,
-        { skipAgentsMd: options.skipAgentsMd, noStats: options.noStats },
-      );
-    } catch {
-      // Best-effort — don't fail the entire analysis for context file issues
-    }
+    await metrics.time('aiContext', async () => {
+      try {
+        await generateAIContextFiles(
+          repoPath,
+          storagePath,
+          projectName,
+          {
+            files: pipelineResult.totalFileCount,
+            nodes: stats.nodes,
+            edges: stats.edges,
+            communities: pipelineResult.communityResult?.stats.totalCommunities,
+            clusters: aggregatedClusterCount,
+            processes: pipelineResult.processResult?.stats.totalProcesses,
+          },
+          undefined,
+          { skipAgentsMd: options.skipAgentsMd, noStats: options.noStats },
+        );
+      } catch {
+        // Best-effort — don't fail the entire analysis for context file issues
+      }
+    });
 
     // ── Close LadybugDB ──────────────────────────────────────────────
     await closeLbug();
 
     progress('done', 100, 'Done');
+    const metricSnapshot = metrics.snapshot();
+    const counters = {
+      ...pipelineResult.performance?.counters,
+      ...metricSnapshot.counters,
+      nodeCount: stats.nodes,
+      edgeCount: stats.edges,
+      csvNodeRows: lbugLoadMetrics?.counters.csvNodeRows,
+      csvRelationshipRows: lbugLoadMetrics?.counters.csvRelationshipRows,
+      ladybugCopyCount: lbugLoadMetrics?.counters.ladybugCopyCount,
+      ftsIndexCount: Object.keys(ftsIndexMs).length,
+    };
+    const performance = buildAnalyzePerformanceReport({
+      totalWallMs: metrics.elapsedMs(),
+      buckets: metricSnapshot.buckets,
+      pipelinePhaseMs: pipelineResult.performance?.phaseMs,
+      ftsIndexMs,
+      counters,
+      lbugLoad: lbugLoadMetrics,
+      parse: pipelineResult.performance?.parse,
+    });
 
     return {
       repoName: projectName,
       repoPath,
       stats: meta.stats,
       pipelineResult,
+      performance,
     };
   } catch (err) {
     // Ensure LadybugDB is closed even on error
@@ -404,4 +461,16 @@ export async function runFullAnalysis(
     }
     throw err;
   }
+}
+
+async function timeFtsIndex(
+  metrics: AnalyzeMetricsCollector,
+  ftsIndexMs: TimingMap,
+  table: string,
+  fn: () => Promise<void>,
+): Promise<void> {
+  const before = metrics.snapshot().buckets.fts ?? 0;
+  await metrics.time('fts', fn);
+  const after = metrics.snapshot().buckets.fts ?? 0;
+  ftsIndexMs[table] = Math.round((after - before) * 10) / 10;
 }

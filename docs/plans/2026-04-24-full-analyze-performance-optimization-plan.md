@@ -150,12 +150,22 @@ Required sub-timings:
 - `parse`: read contents, worker parse, import resolve, heritage resolve, call resolve, exported type map enrichment
 - `markdown` / `cobol`: file reads, parse/extract time, graph write time
 - `crossFile`: topological sort, candidate selection, file reread, `processCalls`
+- `mro`: C3 linearization, ancestor traversal, transitive edge-type building, MRO name materialization, method collection, `METHOD_IMPLEMENTS` emission
 
 Outcome:
 
 - a baseline timing report for representative repos
 - no performance change yet
 - no output change
+
+Phase 0 observed issue:
+
+- `mro-processor.test.ts > handles very deep single-inheritance chain without stack overflow` can timeout in the full unit suite while passing alone.
+- Isolated measurement showed the depth-2000 Python chain takes roughly `9-10s` inside `computeMRO`; the individual Vitest test is therefore close to its `15s` timeout and can fail under full-suite CPU contention.
+- This is not a Phase 0 instrumentation regression: Phase 0 does not modify `mro-processor.ts` or `model/resolve.ts`.
+- Treat this as a real `mro` performance bottleneck, not as a flaky-test-only problem.
+- The measured hot spots are `c3Linearize`, `buildTransitiveEdgeTypes`, `gatherAncestors`, MRO name materialization, and `METHOD_IMPLEMENTS` ancestor scanning.
+- Do not fix this by skipping MRO, reducing inheritance depth, weakening semantics, or merely raising the timeout without recording the underlying cost.
 
 ## Workstream B. Scan / File IO
 
@@ -249,6 +259,11 @@ Validation:
 Possible optimizations that preserve output:
 
 - optimize MRO graph traversal and index lookup
+- optimize Python C3 linearization for deep single-inheritance chains without changing C3 output
+- avoid eager transitive edge-type construction for languages or classes that do not need `implements-split` conflict resolution
+- cache or reuse ancestor/MRO-derived data inside `computeMRO` where it preserves deterministic output
+- avoid repeated `graph.getNode` / method-map scans in MRO hot loops
+- keep the deep-chain unit benchmark as a tracked MRO performance case
 - profile community input graph construction before Leiden execution
 - reduce repeated graph scans in `processes`
 - cache local adjacency / node maps within a phase
@@ -261,12 +276,16 @@ Rules:
 - do not skip communities
 - do not skip processes
 - do not reduce process/community output for speed
+- do not change language-specific MRO strategies or relationship semantics
+- do not introduce a new inheritance/link graph architecture
 
 Validation:
 
 - same `METHOD_OVERRIDES` and `METHOD_IMPLEMENTS`
+- same Python C3 MRO order for diamond, cyclic, and deep-chain cases
 - same community count and memberships where deterministic
 - same process count and process step relationships
+- `mro-processor.test.ts` passes, including the depth-2000 single-inheritance chain
 
 ## Workstream G. LadybugDB Load
 
@@ -521,6 +540,9 @@ Goal:
 Scope:
 
 - optimize MRO graph traversal and lookup indexes
+- specifically address measured MRO deep-chain cost in `computeMRO` / `c3Linearize`
+- avoid unnecessary transitive edge-type work when a language strategy does not use it
+- cache/reuse ancestor and MRO-derived structures only within the phase and only when output remains identical
 - profile community input graph construction before Leiden execution
 - cache local adjacency / node maps within a phase
 - reduce repeated scans in process extraction
@@ -530,10 +552,14 @@ Rules:
 - do not skip MRO, communities, or processes
 - do not reduce process/community output
 - keep default full analyze on the existing sequential phase runner
+- keep existing language-specific MRO behavior: Python C3, C++ leftmost, C#/Java/Kotlin implements split, Rust qualified syntax
+- do not change `METHOD_OVERRIDES` or `METHOD_IMPLEMENTS` relationship direction, confidence, or reason semantics
 
 Exit gate:
 
 - same MRO edge counts and override/implementation semantics
+- deep-chain MRO benchmark improves materially from the Phase 0 baseline without increasing failures elsewhere
+- full `mro-processor.test.ts` passes, not only the deep-chain test in isolation
 - same community count and memberships where deterministic
 - same process count and process step relationships
 - benchmark report shows derived phase timings and full analyze wall time before/after

@@ -29,6 +29,7 @@ import type {
 } from '../workers/parse-worker.js';
 import type { createResolutionContext } from '../model/resolution-context.js';
 import { runChunkedParseAndResolve } from './parse-impl.js';
+import type { ParseMetrics } from '../../analyze/analyze-metrics.js';
 
 export interface ParseOutput {
   /**
@@ -63,6 +64,8 @@ export interface ParseOutput {
    * see `PipelineOptions.workerThresholdsForTest`.
    */
   readonly usedWorkerPool: boolean;
+  /** Phase 0 parse instrumentation. */
+  readonly metrics?: ParseMetrics;
 }
 
 export const parsePhase: PipelinePhase<ParseOutput> = {

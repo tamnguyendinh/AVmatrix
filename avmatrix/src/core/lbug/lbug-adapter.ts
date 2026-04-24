@@ -4,6 +4,7 @@ import { createInterface } from 'readline';
 import { once } from 'events';
 import { finished } from 'stream/promises';
 import path from 'path';
+import { performance } from 'node:perf_hooks';
 import lbug from '@ladybugdb/core';
 import { KnowledgeGraph } from '../graph/types.js';
 import {
@@ -16,6 +17,8 @@ import {
 } from './schema.js';
 import { streamAllCSVsToDisk } from './csv-generator.js';
 import type { CachedEmbedding } from '../embeddings/types.js';
+import type { LbugLoadMetrics, LbugLoadTimingBreakdown } from '../analyze/analyze-metrics.js';
+import { roundMs } from '../analyze/analyze-metrics.js';
 
 // ---------------------------------------------------------------------------
 // Relationship CSV splitting — extracted for testability (PR #818)
@@ -373,12 +376,20 @@ const doInitLbug = async (dbPath: string) => {
 
 export type LbugProgressCallback = (message: string) => void;
 
+export interface LoadGraphToLbugResult {
+  success: boolean;
+  insertedRels: number;
+  skippedRels: number;
+  warnings: string[];
+  metrics: LbugLoadMetrics;
+}
+
 export const loadGraphToLbug = async (
   graph: KnowledgeGraph,
   repoPath: string,
   storagePath: string,
   onProgress?: LbugProgressCallback,
-) => {
+): Promise<LoadGraphToLbugResult> => {
   if (!conn) {
     throw new Error('LadybugDB not initialized. Call initLbug first.');
   }
@@ -386,9 +397,12 @@ export const loadGraphToLbug = async (
   const log = onProgress || (() => {});
 
   const csvDir = path.join(storagePath, 'csv');
+  const timings: LbugLoadTimingBreakdown = {};
 
   log('Streaming CSVs to disk...');
-  const csvResult = await streamAllCSVsToDisk(graph, repoPath, csvDir);
+  const csvResult = await timeLbugStep(timings, 'csvGenerationMs', () =>
+    streamAllCSVsToDisk(graph, repoPath, csvDir),
+  );
 
   const validTables = new Set<string>(NODE_TABLES as readonly string[]);
   const getNodeLabel = (nodeId: string): string => {
@@ -399,35 +413,42 @@ export const loadGraphToLbug = async (
 
   // Bulk COPY all node CSVs (sequential — LadybugDB allows only one write txn at a time)
   const nodeFiles = [...csvResult.nodeFiles.entries()];
+  const csvNodeRows = nodeFiles.reduce((sum, [, { rows }]) => sum + rows, 0);
   const totalSteps = nodeFiles.length + 1; // +1 for relationships
   let stepsDone = 0;
+  let nodeCopyCount = 0;
 
-  for (const [table, { csvPath, rows }] of nodeFiles) {
-    stepsDone++;
-    log(`Loading nodes ${stepsDone}/${totalSteps}: ${table} (${rows.toLocaleString()} rows)`);
+  await timeLbugStep(timings, 'nodeCopyMs', async () => {
+    for (const [table, { csvPath, rows }] of nodeFiles) {
+      stepsDone++;
+      log(`Loading nodes ${stepsDone}/${totalSteps}: ${table} (${rows.toLocaleString()} rows)`);
 
-    const normalizedPath = normalizeCopyPath(csvPath);
-    const copyQuery = getCopyQuery(table, normalizedPath);
+      const normalizedPath = normalizeCopyPath(csvPath);
+      const copyQuery = getCopyQuery(table, normalizedPath);
+      nodeCopyCount++;
 
-    try {
-      await conn.query(copyQuery);
-    } catch (err) {
       try {
-        const retryQuery = copyQuery.replace(
-          'auto_detect=false)',
-          'auto_detect=false, IGNORE_ERRORS=true)',
-        );
-        await conn.query(retryQuery);
-      } catch (retryErr) {
-        const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
-        throw new Error(`COPY failed for ${table}: ${retryMsg.slice(0, 200)}`);
+        await conn.query(copyQuery);
+      } catch (err) {
+        try {
+          const retryQuery = copyQuery.replace(
+            'auto_detect=false)',
+            'auto_detect=false, IGNORE_ERRORS=true)',
+          );
+          await conn.query(retryQuery);
+        } catch (retryErr) {
+          const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+          throw new Error(`COPY failed for ${table}: ${retryMsg.slice(0, 200)}`);
+        }
       }
     }
-  }
+  });
 
   // Bulk COPY relationships — split by FROM→TO label pair (LadybugDB requires it)
   const { relHeader, relsByPairMeta, pairWriteStreams, skippedRels, totalValidRels } =
-    await splitRelCsvByLabelPair(csvResult.relCsvPath, csvDir, validTables, getNodeLabel);
+    await timeLbugStep(timings, 'relationshipSplitMs', () =>
+      splitRelCsvByLabelPair(csvResult.relCsvPath, csvDir, validTables, getNodeLabel),
+    );
 
   // Close all per-pair write streams before COPY. `stream/promises.finished`
   // resolves on the stream's 'finish' event and rejects on 'error' — replaces
@@ -441,6 +462,7 @@ export const loadGraphToLbug = async (
 
   const insertedRels = totalValidRels;
   const warnings: string[] = [];
+  let relationshipCopyCount = 0;
   if (insertedRels > 0) {
     log(`Loading edges: ${insertedRels.toLocaleString()} across ${relsByPairMeta.size} types`);
 
@@ -448,39 +470,44 @@ export const loadGraphToLbug = async (
     let failedPairEdges = 0;
     const failedPairCsvPaths = new Set<string>();
 
-    for (const [pairKey, { csvPath: pairCsvPath, rows }] of relsByPairMeta) {
-      pairIdx++;
-      const [fromLabel, toLabel] = pairKey.split('|');
-      const normalizedPath = normalizeCopyPath(pairCsvPath);
-      const copyQuery = `COPY ${REL_TABLE_NAME} FROM "${normalizedPath}" (from="${fromLabel}", to="${toLabel}", HEADER=true, ESCAPE='"', DELIM=',', QUOTE='"', PARALLEL=false, auto_detect=false)`;
+    await timeLbugStep(timings, 'relationshipCopyMs', async () => {
+      for (const [pairKey, { csvPath: pairCsvPath, rows }] of relsByPairMeta) {
+        pairIdx++;
+        const [fromLabel, toLabel] = pairKey.split('|');
+        const normalizedPath = normalizeCopyPath(pairCsvPath);
+        const copyQuery = `COPY ${REL_TABLE_NAME} FROM "${normalizedPath}" (from="${fromLabel}", to="${toLabel}", HEADER=true, ESCAPE='"', DELIM=',', QUOTE='"', PARALLEL=false, auto_detect=false)`;
+        relationshipCopyCount++;
 
-      if (pairIdx % 5 === 0 || rows > 1000) {
-        log(`Loading edges: ${pairIdx}/${relsByPairMeta.size} types (${fromLabel} -> ${toLabel})`);
-      }
-
-      try {
-        await conn.query(copyQuery);
-      } catch (err) {
-        try {
-          const retryQuery = copyQuery.replace(
-            'auto_detect=false)',
-            'auto_detect=false, IGNORE_ERRORS=true)',
+        if (pairIdx % 5 === 0 || rows > 1000) {
+          log(
+            `Loading edges: ${pairIdx}/${relsByPairMeta.size} types (${fromLabel} -> ${toLabel})`,
           );
-          await conn.query(retryQuery);
-        } catch (retryErr) {
-          const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
-          warnings.push(`${fromLabel}->${toLabel} (${rows} edges): ${retryMsg.slice(0, 80)}`);
-          failedPairEdges += rows;
-          failedPairCsvPaths.add(pairCsvPath);
+        }
+
+        try {
+          await conn.query(copyQuery);
+        } catch (err) {
+          try {
+            const retryQuery = copyQuery.replace(
+              'auto_detect=false)',
+              'auto_detect=false, IGNORE_ERRORS=true)',
+            );
+            await conn.query(retryQuery);
+          } catch (retryErr) {
+            const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+            warnings.push(`${fromLabel}->${toLabel} (${rows} edges): ${retryMsg.slice(0, 80)}`);
+            failedPairEdges += rows;
+            failedPairCsvPaths.add(pairCsvPath);
+          }
+        }
+        // Only delete if not in failedPairCsvPaths (needed for fallback)
+        if (!failedPairCsvPaths.has(pairCsvPath)) {
+          try {
+            await fs.unlink(pairCsvPath);
+          } catch {}
         }
       }
-      // Only delete if not in failedPairCsvPaths (needed for fallback)
-      if (!failedPairCsvPaths.has(pairCsvPath)) {
-        try {
-          await fs.unlink(pairCsvPath);
-        } catch {}
-      }
-    }
+    });
 
     if (failedPairCsvPaths.size > 0) {
       log(`Inserting ${failedPairEdges} edges individually (missing schema pairs)`);
@@ -500,34 +527,68 @@ export const loadGraphToLbug = async (
         } catch {}
       }
       if (allLines.length > 1) {
-        await fallbackRelationshipInserts(allLines, validTables, getNodeLabel);
+        await timeLbugStep(timings, 'fallbackRelationshipInsertMs', () =>
+          fallbackRelationshipInserts(allLines, validTables, getNodeLabel),
+        );
       }
     }
   }
 
   // Cleanup all CSVs
-  try {
-    await fs.unlink(csvResult.relCsvPath);
-  } catch {}
-  for (const [, { csvPath }] of csvResult.nodeFiles) {
+  await timeLbugStep(timings, 'cleanupMs', async () => {
     try {
-      await fs.unlink(csvPath);
+      await fs.unlink(csvResult.relCsvPath);
     } catch {}
-  }
-  try {
-    const remaining = await fs.readdir(csvDir);
-    for (const f of remaining) {
+    for (const [, { csvPath }] of csvResult.nodeFiles) {
       try {
-        await fs.unlink(path.join(csvDir, f));
+        await fs.unlink(csvPath);
       } catch {}
     }
-  } catch {}
-  try {
-    await fs.rmdir(csvDir);
-  } catch {}
+    try {
+      const remaining = await fs.readdir(csvDir);
+      for (const f of remaining) {
+        try {
+          await fs.unlink(path.join(csvDir, f));
+        } catch {}
+      }
+    } catch {}
+    try {
+      await fs.rmdir(csvDir);
+    } catch {}
+  });
 
-  return { success: true, insertedRels, skippedRels, warnings };
+  return {
+    success: true,
+    insertedRels,
+    skippedRels,
+    warnings,
+    metrics: {
+      timings,
+      counters: {
+        csvNodeRows,
+        csvRelationshipRows: csvResult.relRows,
+        ladybugCopyCount: nodeCopyCount + relationshipCopyCount,
+        nodeCopyCount,
+        relationshipCopyCount,
+        insertedRelationships: insertedRels,
+        skippedRelationships: skippedRels,
+      },
+    },
+  };
 };
+
+async function timeLbugStep<T>(
+  timings: LbugLoadTimingBreakdown,
+  key: keyof LbugLoadTimingBreakdown,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const start = performance.now();
+  try {
+    return await fn();
+  } finally {
+    timings[key] = roundMs((timings[key] ?? 0) + performance.now() - start);
+  }
+}
 
 // LadybugDB default ESCAPE is '\' (backslash), but our CSV uses RFC 4180 escaping ("" for literal quotes).
 // Source code content is full of backslashes which confuse the auto-detection.

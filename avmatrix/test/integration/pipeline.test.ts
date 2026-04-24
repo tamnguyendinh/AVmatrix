@@ -171,6 +171,16 @@ describe('pipeline end-to-end', () => {
   it('returns correct repoPath in result', () => {
     expect(result.repoPath).toBe(MINI_REPO);
   });
+
+  it('returns Phase 0 performance instrumentation', () => {
+    expect(result.performance).toBeDefined();
+    expect(result.performance?.phaseMs.scan).toBeGreaterThanOrEqual(0);
+    expect(result.performance?.phaseMs.parse).toBeGreaterThanOrEqual(0);
+    expect(result.performance?.counters.totalFiles).toBe(result.totalFileCount);
+    expect(result.performance?.counters.nodeCount).toBe(result.graph.nodeCount);
+    expect(result.performance?.counters.edgeCount).toBe(result.graph.relationshipCount);
+    expect(result.performance?.parse?.counters.parseableFiles).toBeGreaterThan(0);
+  });
 });
 
 // ─── Pipeline error handling ──────────────────────────────────────────

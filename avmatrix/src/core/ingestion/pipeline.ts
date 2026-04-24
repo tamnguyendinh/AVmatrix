@@ -18,6 +18,7 @@
 import { createKnowledgeGraph } from '../graph/graph.js';
 import { type PipelineProgress } from 'avmatrix-shared';
 import { PipelineResult } from '../../types/pipeline.js';
+import type { AnalyzeCounters, TimingMap } from '../analyze/analyze-metrics.js';
 import {
   runPipeline,
   getPhaseOutput,
@@ -36,6 +37,8 @@ import {
   type PipelinePhase,
   type CommunitiesOutput,
   type ProcessesOutput,
+  type ParseOutput,
+  type CrossFileOutput,
 } from './pipeline-phases/index.js';
 
 export interface PipelineOptions {
@@ -114,6 +117,8 @@ export const runPipelineFromRepo = async (
     totalFiles: number;
     usedWorkerPool: boolean;
   }>(results, 'parse');
+  const parseOutput = getPhaseOutput<ParseOutput>(results, 'parse');
+  const crossFileOutput = getPhaseOutput<CrossFileOutput>(results, 'crossFile');
 
   let communityResult: CommunitiesOutput['communityResult'] | undefined;
   let processResult: ProcessesOutput['processResult'] | undefined;
@@ -137,6 +142,24 @@ export const runPipelineFromRepo = async (
     },
   });
 
+  const phaseMs: TimingMap = {};
+  for (const [phaseName, result] of results) {
+    phaseMs[phaseName] = Math.round(result.durationMs * 10) / 10;
+  }
+
+  const counters: AnalyzeCounters = {
+    totalFiles,
+    parseableFiles: parseOutput.metrics?.counters.parseableFiles,
+    totalParseableMB: parseOutput.metrics?.counters.totalParseableMB,
+    workerCount: parseOutput.metrics?.counters.workerCount,
+    parseChunkCount: parseOutput.metrics?.counters.parseChunkCount,
+    parserUnavailableFiles: parseOutput.metrics?.counters.parserUnavailableFiles,
+    nodeCount: graph.nodeCount,
+    edgeCount: graph.relationshipCount,
+    usedWorkerPool,
+    crossFileReprocessedFiles: crossFileOutput.filesReprocessed,
+  };
+
   return {
     graph,
     repoPath,
@@ -144,5 +167,10 @@ export const runPipelineFromRepo = async (
     communityResult,
     processResult,
     usedWorkerPool,
+    performance: {
+      phaseMs,
+      counters,
+      parse: parseOutput.metrics,
+    },
   };
 };

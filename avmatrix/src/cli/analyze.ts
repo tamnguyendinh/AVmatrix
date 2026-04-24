@@ -20,6 +20,7 @@ import {
 } from '../storage/repo-manager.js';
 import { getGitRoot, hasGitDir } from '../storage/git.js';
 import { runFullAnalysis } from '../core/run-analyze.js';
+import type { AnalyzePerformanceReport } from '../core/analyze/analyze-metrics.js';
 import fs from 'fs/promises';
 
 const HEAP_MB = 8192;
@@ -308,6 +309,9 @@ export const analyzeCommand = async (inputPath?: string, options?: AnalyzeOption
     console.log(
       `  ${(s.nodes ?? 0).toLocaleString()} nodes | ${(s.edges ?? 0).toLocaleString()} edges | ${s.communities ?? 0} clusters | ${s.processes ?? 0} flows`,
     );
+    if (options?.verbose && result.performance) {
+      printPerformanceSummary(result.performance);
+    }
     console.log(`  ${repoPath}`);
 
     try {
@@ -394,3 +398,21 @@ export const analyzeCommand = async (inputPath?: string, options?: AnalyzeOption
   // platforms (#38, #40). Force-exit to ensure clean termination.
   process.exit(0);
 };
+
+function printPerformanceSummary(performance: AnalyzePerformanceReport): void {
+  console.log(
+    `  analyze timing: ${(performance.totalWallMs / 1000).toFixed(1)}s total, ${(performance.overheadMs / 1000).toFixed(1)}s overhead`,
+  );
+  const top = performance.bottlenecks.slice(0, 8);
+  if (top.length > 0) {
+    console.log(
+      `  top buckets: ${top
+        .map((b) => `${b.bucket} ${(b.durationMs / 1000).toFixed(1)}s`)
+        .join(' | ')}`,
+    );
+  }
+  const counters = performance.counters;
+  console.log(
+    `  counters: files=${counters.totalFiles ?? 0}, parseable=${counters.parseableFiles ?? 0}, chunks=${counters.parseChunkCount ?? 0}, workers=${counters.workerCount ?? 0}, csvRows=${(counters.csvNodeRows ?? 0) + (counters.csvRelationshipRows ?? 0)}`,
+  );
+}

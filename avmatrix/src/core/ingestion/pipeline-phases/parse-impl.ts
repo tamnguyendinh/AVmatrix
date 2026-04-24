@@ -63,11 +63,14 @@ import type { PipelineOptions } from '../pipeline.js';
 import { extractFetchCallsFromFiles } from '../call-processor.js';
 import fs from 'node:fs';
 import path from 'node:path';
+import { performance } from 'node:perf_hooks';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { isDev } from '../utils/env.js';
 import { synthesizeWildcardImportBindings, needsSynthesis } from './wildcard-synthesis.js';
 import { extractORMQueriesInline } from './orm-extraction.js';
+import type { ParseMetrics, ParseTimingBreakdown } from '../../analyze/analyze-metrics.js';
+import { roundMs } from '../../analyze/analyze-metrics.js';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -109,9 +112,11 @@ export async function runChunkedParseAndResolve(
   bindingAccumulator: BindingAccumulator;
   resolutionContext: ReturnType<typeof createResolutionContext>;
   usedWorkerPool: boolean;
+  metrics: ParseMetrics;
 }> {
   const ctx = createResolutionContext();
   const symbolTable = ctx.model.symbols;
+  const metrics: ParseMetrics = { timings: {}, counters: {} };
 
   const parseableScanned = scannedFiles.filter((f) => {
     const lang = getLanguageFromFilename(f.path);
@@ -120,9 +125,11 @@ export async function runChunkedParseAndResolve(
 
   // Warn about files skipped due to unavailable parsers
   const skippedByLang = new Map<string, number>();
+  let parserUnavailableFiles = 0;
   for (const f of scannedFiles) {
     const lang = getLanguageFromFilename(f.path);
     if (lang && !isLanguageAvailable(lang)) {
+      parserUnavailableFiles++;
       skippedByLang.set(lang, (skippedByLang.get(lang) || 0) + 1);
     }
   }
@@ -133,6 +140,7 @@ export async function runChunkedParseAndResolve(
   }
 
   const totalParseable = parseableScanned.length;
+  const totalParseableBytes = parseableScanned.reduce((s, f) => s + f.size, 0);
 
   if (totalParseable === 0) {
     onProgress({
@@ -161,7 +169,7 @@ export async function runChunkedParseAndResolve(
   const numChunks = chunks.length;
 
   if (isDev) {
-    const totalMB = parseableScanned.reduce((s, f) => s + f.size, 0) / (1024 * 1024);
+    const totalMB = totalParseableBytes / (1024 * 1024);
     console.log(
       `📂 Scan: ${totalFiles} paths, ${totalParseable} parseable (${totalMB.toFixed(0)}MB), ${numChunks} chunks @ ${CHUNK_BYTE_BUDGET / (1024 * 1024)}MB budget`,
     );
@@ -179,7 +187,7 @@ export async function runChunkedParseAndResolve(
   // to exercise the worker-pool path with small fixtures; see PipelineOptions.
   const MIN_FILES_FOR_WORKERS = options?.workerThresholdsForTest?.minFiles ?? 15;
   const MIN_BYTES_FOR_WORKERS = options?.workerThresholdsForTest?.minBytes ?? 512 * 1024;
-  const totalBytes = parseableScanned.reduce((s, f) => s + f.size, 0);
+  const totalBytes = totalParseableBytes;
 
   // Create worker pool once, reuse across chunks
   let workerPool: WorkerPool | undefined;
@@ -210,6 +218,7 @@ export async function runChunkedParseAndResolve(
         }
       }
       workerPool = createWorkerPool(workerUrl);
+      metrics.counters.workerCount = workerPool.size;
     } catch (err) {
       console.warn(
         'Worker pool creation failed, using sequential fallback:',
@@ -257,60 +266,68 @@ export async function runChunkedParseAndResolve(
     for (let chunkIdx = 0; chunkIdx < numChunks; chunkIdx++) {
       const chunkPaths = chunks[chunkIdx];
 
-      const chunkContents = await readFileContents(repoPath, chunkPaths);
+      const chunkContents = await timeParseStep(metrics, 'readContentsMs', () =>
+        readFileContents(repoPath, chunkPaths),
+      );
       const chunkFiles = chunkPaths
         .filter((p) => chunkContents.has(p))
         .map((p) => ({ path: p, content: chunkContents.get(p)! }));
 
-      const chunkWorkerData = await processParsing(
-        graph,
-        chunkFiles,
-        symbolTable,
-        astCache,
-        (current, _total, filePath) => {
-          const globalCurrent = filesParsedSoFar + current;
-          const parsingProgress = 20 + (globalCurrent / totalParseable) * 62;
-          onProgress({
-            phase: 'parsing',
-            percent: Math.round(parsingProgress),
-            message: `Parsing chunk ${chunkIdx + 1}/${numChunks}...`,
-            detail: filePath,
-            stats: {
-              filesProcessed: globalCurrent,
-              totalFiles: totalParseable,
-              nodesCreated: graph.nodeCount,
-            },
-          });
-        },
-        workerPool,
-      );
-
-      const chunkBasePercent = 20 + (filesParsedSoFar / totalParseable) * 62;
-
-      if (chunkWorkerData) {
-        await processImportsFromExtracted(
+      const chunkWorkerData = await timeParseStep(metrics, 'workerParseMs', () =>
+        processParsing(
           graph,
-          allPathObjects,
-          chunkWorkerData.imports,
-          ctx,
-          (current, total) => {
+          chunkFiles,
+          symbolTable,
+          astCache,
+          (current, _total, filePath) => {
+            const globalCurrent = filesParsedSoFar + current;
+            const parsingProgress = 20 + (globalCurrent / totalParseable) * 62;
             onProgress({
               phase: 'parsing',
-              percent: Math.round(chunkBasePercent),
-              message: `Resolving imports (chunk ${chunkIdx + 1}/${numChunks})...`,
-              detail: `${current}/${total} files`,
+              percent: Math.round(parsingProgress),
+              message: `Parsing chunk ${chunkIdx + 1}/${numChunks}...`,
+              detail: filePath,
               stats: {
-                filesProcessed: filesParsedSoFar,
+                filesProcessed: globalCurrent,
                 totalFiles: totalParseable,
                 nodesCreated: graph.nodeCount,
               },
             });
           },
-          repoPath,
-          importCtx,
+          workerPool,
+        ),
+      );
+
+      const chunkBasePercent = 20 + (filesParsedSoFar / totalParseable) * 62;
+
+      if (chunkWorkerData) {
+        await timeParseStep(metrics, 'importResolveMs', () =>
+          processImportsFromExtracted(
+            graph,
+            allPathObjects,
+            chunkWorkerData.imports,
+            ctx,
+            (current, total) => {
+              onProgress({
+                phase: 'parsing',
+                percent: Math.round(chunkBasePercent),
+                message: `Resolving imports (chunk ${chunkIdx + 1}/${numChunks})...`,
+                detail: `${current}/${total} files`,
+                stats: {
+                  filesProcessed: filesParsedSoFar,
+                  totalFiles: totalParseable,
+                  nodesCreated: graph.nodeCount,
+                },
+              });
+            },
+            repoPath,
+            importCtx,
+          ),
         );
         if (chunkNeedsSynthesis[chunkIdx]) {
-          synthesizeWildcardImportBindings(graph, ctx);
+          timeParseStepSync(metrics, 'wildcardSynthesisMs', () =>
+            synthesizeWildcardImportBindings(graph, ctx),
+          );
           hasSynthesized = true;
         }
         if (exportedTypeMap.size > 0 && ctx.namedImportMap.size > 0) {
@@ -334,32 +351,46 @@ export async function runChunkedParseAndResolve(
         }
 
         await Promise.all([
-          processHeritageFromExtracted(graph, chunkWorkerData.heritage, ctx, (current, total) => {
-            onProgress({
-              phase: 'parsing',
-              percent: Math.round(chunkBasePercent),
-              message: `Resolving heritage (chunk ${chunkIdx + 1}/${numChunks})...`,
-              detail: `${current}/${total} records`,
-              stats: {
-                filesProcessed: filesParsedSoFar,
-                totalFiles: totalParseable,
-                nodesCreated: graph.nodeCount,
+          timeParseStep(metrics, 'heritageResolveMs', () =>
+            processHeritageFromExtracted(
+              graph,
+              chunkWorkerData.heritage,
+              ctx,
+              (current, total) => {
+                onProgress({
+                  phase: 'parsing',
+                  percent: Math.round(chunkBasePercent),
+                  message: `Resolving heritage (chunk ${chunkIdx + 1}/${numChunks})...`,
+                  detail: `${current}/${total} records`,
+                  stats: {
+                    filesProcessed: filesParsedSoFar,
+                    totalFiles: totalParseable,
+                    nodesCreated: graph.nodeCount,
+                  },
+                });
               },
-            });
-          }),
-          processRoutesFromExtracted(graph, chunkWorkerData.routes ?? [], ctx, (current, total) => {
-            onProgress({
-              phase: 'parsing',
-              percent: Math.round(chunkBasePercent),
-              message: `Resolving routes (chunk ${chunkIdx + 1}/${numChunks})...`,
-              detail: `${current}/${total} routes`,
-              stats: {
-                filesProcessed: filesParsedSoFar,
-                totalFiles: totalParseable,
-                nodesCreated: graph.nodeCount,
+            ),
+          ),
+          timeParseStep(metrics, 'routeResolveMs', () =>
+            processRoutesFromExtracted(
+              graph,
+              chunkWorkerData.routes ?? [],
+              ctx,
+              (current, total) => {
+                onProgress({
+                  phase: 'parsing',
+                  percent: Math.round(chunkBasePercent),
+                  message: `Resolving routes (chunk ${chunkIdx + 1}/${numChunks})...`,
+                  detail: `${current}/${total} routes`,
+                  stats: {
+                    filesProcessed: filesParsedSoFar,
+                    totalFiles: totalParseable,
+                    nodesCreated: graph.nodeCount,
+                  },
+                });
               },
-            });
-          }),
+            ),
+          ),
         ]);
 
         if (chunkWorkerData.fileScopeBindings?.length) {
@@ -394,7 +425,9 @@ export async function runChunkedParseAndResolve(
           for (const item of chunkWorkerData.ormQueries) allORMQueries.push(item);
         }
       } else {
-        await processImports(graph, chunkFiles, astCache, ctx, undefined, repoPath, allPaths);
+        await timeParseStep(metrics, 'importResolveMs', () =>
+          processImports(graph, chunkFiles, astCache, ctx, undefined, repoPath, allPaths),
+        );
         sequentialChunkPaths.push(chunkPaths);
       }
 
@@ -408,36 +441,40 @@ export async function runChunkedParseAndResolve(
         : undefined;
 
     if (deferredWorkerCalls.length > 0) {
-      await processCallsFromExtracted(
-        graph,
-        deferredWorkerCalls,
-        ctx,
-        (current, total) => {
-          onProgress({
-            phase: 'parsing',
-            percent: 82,
-            message: 'Resolving calls (all chunks)...',
-            detail: `${current}/${total} files`,
-            stats: {
-              filesProcessed: filesParsedSoFar,
-              totalFiles: totalParseable,
-              nodesCreated: graph.nodeCount,
-            },
-          });
-        },
-        deferredConstructorBindings.length > 0 ? deferredConstructorBindings : undefined,
-        fullWorkerHeritageMap,
-        bindingAccumulator,
+      await timeParseStep(metrics, 'callResolveMs', () =>
+        processCallsFromExtracted(
+          graph,
+          deferredWorkerCalls,
+          ctx,
+          (current, total) => {
+            onProgress({
+              phase: 'parsing',
+              percent: 82,
+              message: 'Resolving calls (all chunks)...',
+              detail: `${current}/${total} files`,
+              stats: {
+                filesProcessed: filesParsedSoFar,
+                totalFiles: totalParseable,
+                nodesCreated: graph.nodeCount,
+              },
+            });
+          },
+          deferredConstructorBindings.length > 0 ? deferredConstructorBindings : undefined,
+          fullWorkerHeritageMap,
+          bindingAccumulator,
+        ),
       );
     }
 
     if (deferredAssignments.length > 0) {
-      processAssignmentsFromExtracted(
-        graph,
-        deferredAssignments,
-        ctx,
-        deferredConstructorBindings.length > 0 ? deferredConstructorBindings : undefined,
-        bindingAccumulator,
+      timeParseStepSync(metrics, 'assignmentResolveMs', () =>
+        processAssignmentsFromExtracted(
+          graph,
+          deferredAssignments,
+          ctx,
+          deferredConstructorBindings.length > 0 ? deferredConstructorBindings : undefined,
+          bindingAccumulator,
+        ),
       );
     }
   } finally {
@@ -462,19 +499,25 @@ export async function runChunkedParseAndResolve(
   // NOT call `bindingAccumulator.dispose()` here.
   try {
     if (sequentialChunkPaths.length > 0) {
-      synthesizeWildcardImportBindings(graph, ctx);
+      timeParseStepSync(metrics, 'wildcardSynthesisMs', () =>
+        synthesizeWildcardImportBindings(graph, ctx),
+      );
       hasSynthesized = true;
     }
     const allSequentialHeritage: ExtractedHeritage[] = [];
     const cachedSequentialChunkFiles: Array<Array<{ path: string; content: string }>> = [];
     for (const chunkPaths of sequentialChunkPaths) {
-      const chunkContents = await readFileContents(repoPath, chunkPaths);
+      const chunkContents = await timeParseStep(metrics, 'readContentsMs', () =>
+        readFileContents(repoPath, chunkPaths),
+      );
       const chunkFiles = chunkPaths
         .filter((p) => chunkContents.has(p))
         .map((p) => ({ path: p, content: chunkContents.get(p)! }));
       cachedSequentialChunkFiles.push(chunkFiles);
       astCache = createASTCache(chunkFiles.length);
-      const sequentialHeritage = await extractExtractedHeritageFromFiles(chunkFiles, astCache);
+      const sequentialHeritage = await timeParseStep(metrics, 'heritageResolveMs', () =>
+        extractExtractedHeritageFromFiles(chunkFiles, astCache),
+      );
       for (const h of sequentialHeritage) allSequentialHeritage.push(h);
       astCache.clear();
     }
@@ -486,22 +529,28 @@ export async function runChunkedParseAndResolve(
     for (let chunkIdx = 0; chunkIdx < sequentialChunkPaths.length; chunkIdx++) {
       const chunkFiles = cachedSequentialChunkFiles[chunkIdx];
       astCache = createASTCache(chunkFiles.length);
-      const rubyHeritage = await processCalls(
-        graph,
-        chunkFiles,
-        astCache,
-        ctx,
-        undefined,
-        exportedTypeMap,
-        undefined,
-        undefined,
-        undefined,
-        sequentialHeritageMap,
-        bindingAccumulator,
+      const rubyHeritage = await timeParseStep(metrics, 'callResolveMs', () =>
+        processCalls(
+          graph,
+          chunkFiles,
+          astCache,
+          ctx,
+          undefined,
+          exportedTypeMap,
+          undefined,
+          undefined,
+          undefined,
+          sequentialHeritageMap,
+          bindingAccumulator,
+        ),
       );
-      await processHeritage(graph, chunkFiles, astCache, ctx);
+      await timeParseStep(metrics, 'heritageResolveMs', () =>
+        processHeritage(graph, chunkFiles, astCache, ctx),
+      );
       if (rubyHeritage.length > 0) {
-        await processHeritageFromExtracted(graph, rubyHeritage, ctx);
+        await timeParseStep(metrics, 'heritageResolveMs', () =>
+          processHeritageFromExtracted(graph, rubyHeritage, ctx),
+        );
       }
       const chunkFetchCalls = await extractFetchCallsFromFiles(chunkFiles, astCache);
       if (chunkFetchCalls.length > 0) {
@@ -532,8 +581,10 @@ export async function runChunkedParseAndResolve(
     // masks the original fallback error. finalize must precede crossFile's
     // dispose (U2) and enrichExportedTypeMap depends on finalized bindings.
     try {
-      bindingAccumulator.finalize();
-      const enriched = enrichExportedTypeMap(bindingAccumulator, graph, exportedTypeMap);
+      const enriched = timeParseStepSync(metrics, 'exportedTypeMapEnrichMs', () => {
+        bindingAccumulator.finalize();
+        return enrichExportedTypeMap(bindingAccumulator, graph, exportedTypeMap);
+      });
       if (isDev && enriched > 0) {
         console.log(
           `🔗 Worker TypeEnv enrichment: ${enriched} fixpoint-inferred exports added to ExportedTypeMap`,
@@ -550,7 +601,9 @@ export async function runChunkedParseAndResolve(
   }
 
   if (!hasSynthesized) {
-    const synthesized = synthesizeWildcardImportBindings(graph, ctx);
+    const synthesized = timeParseStepSync(metrics, 'wildcardSynthesisMs', () =>
+      synthesizeWildcardImportBindings(graph, ctx),
+    );
     if (isDev && synthesized > 0) {
       console.log(
         `🔗 Synthesized ${synthesized} additional wildcard import bindings (Go/Ruby/C++/Swift/Python)`,
@@ -565,7 +618,9 @@ export async function runChunkedParseAndResolve(
   // crossFile receives a fully-populated map and never needs to mutate it for
   // initial-graph enrichment.
   if (exportedTypeMap.size === 0 && graph.nodeCount > 0) {
-    const graphExports = buildExportedTypeMapFromGraph(graph, ctx.model.symbols);
+    const graphExports = timeParseStepSync(metrics, 'exportedTypeMapEnrichMs', () =>
+      buildExportedTypeMapFromGraph(graph, ctx.model.symbols),
+    );
     for (const [fp, exports] of graphExports) exportedTypeMap.set(fp, exports);
   }
 
@@ -582,6 +637,12 @@ export async function runChunkedParseAndResolve(
   importCtx.index = EMPTY_INDEX;
   importCtx.normalizedFileList = [];
 
+  metrics.counters.parseableFiles = totalParseable;
+  metrics.counters.totalParseableMB = roundMs(totalParseableBytes / (1024 * 1024));
+  metrics.counters.parseChunkCount = numChunks;
+  metrics.counters.workerCount = metrics.counters.workerCount ?? 0;
+  metrics.counters.parserUnavailableFiles = parserUnavailableFiles;
+
   return {
     exportedTypeMap,
     allFetchCalls,
@@ -595,5 +656,40 @@ export async function runChunkedParseAndResolve(
     // sequential fallback handled every chunk (either due to `skipWorkers`,
     // the file-count/byte thresholds, or a pool-creation failure).
     usedWorkerPool: workerPool !== undefined,
+    metrics,
   };
+}
+
+async function timeParseStep<T>(
+  metrics: ParseMetrics,
+  key: keyof ParseTimingBreakdown,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const start = performance.now();
+  try {
+    return await fn();
+  } finally {
+    addParseTiming(metrics, key, performance.now() - start);
+  }
+}
+
+function timeParseStepSync<T>(
+  metrics: ParseMetrics,
+  key: keyof ParseTimingBreakdown,
+  fn: () => T,
+): T {
+  const start = performance.now();
+  try {
+    return fn();
+  } finally {
+    addParseTiming(metrics, key, performance.now() - start);
+  }
+}
+
+function addParseTiming(
+  metrics: ParseMetrics,
+  key: keyof ParseTimingBreakdown,
+  durationMs: number,
+): void {
+  metrics.timings[key] = roundMs((metrics.timings[key] ?? 0) + durationMs);
 }

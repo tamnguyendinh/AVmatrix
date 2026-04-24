@@ -1,6 +1,16 @@
 import type { KnowledgeGraph } from '../core/graph/types.js';
 import { CommunityDetectionResult } from '../core/ingestion/community-processor.js';
 import { ProcessDetectionResult } from '../core/ingestion/process-processor.js';
+import type { AnalyzeCounters, ParseMetrics, TimingMap } from '../core/analyze/analyze-metrics.js';
+
+export interface PipelinePerformance {
+  /** Phase wall-clock durations from the dependency-ordered pipeline runner. */
+  phaseMs: TimingMap;
+  /** Counters captured during ingestion. */
+  counters: AnalyzeCounters;
+  /** Parse-specific sub-step timings and counters. */
+  parse?: ParseMetrics;
+}
 
 // CLI-specific: in-memory result with graph + detection results
 export interface PipelineResult {
@@ -17,4 +27,6 @@ export interface PipelineResult {
    * so regression suites can prove which path executed.
    */
   usedWorkerPool: boolean;
+  /** Phase 0 analyze-performance instrumentation. */
+  performance?: PipelinePerformance;
 }
