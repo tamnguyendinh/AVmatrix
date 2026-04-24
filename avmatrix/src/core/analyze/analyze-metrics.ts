@@ -64,6 +64,7 @@ export interface LbugLoadMetrics {
     insertedRelationships?: number;
     skippedRelationships?: number;
     csvRowsByTable?: Record<string, number>;
+    csvBytesByTable?: Record<string, number>;
   };
   nodeCopyByTableMs?: TimingMap;
 }

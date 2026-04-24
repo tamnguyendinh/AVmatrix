@@ -586,6 +586,7 @@ export const loadGraphToLbug = async (
         insertedRelationships: insertedRels,
         skippedRelationships: skippedRels,
         csvRowsByTable: csvResult.metrics.rowsByTable,
+        csvBytesByTable: csvResult.metrics.bytesByTable,
       },
       nodeCopyByTableMs,
     },

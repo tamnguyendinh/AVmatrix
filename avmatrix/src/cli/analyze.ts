@@ -411,6 +411,33 @@ function formatCountMap(map: Record<string, number> | undefined): string {
   return entries.map(([key, value]) => `${key} ${value.toLocaleString()}`).join(' | ');
 }
 
+function formatBytes(value: number): string {
+  if (value >= 1024 * 1024) return `${(value / 1024 / 1024).toFixed(1)}MB`;
+  if (value >= 1024) return `${(value / 1024).toFixed(1)}KB`;
+  return `${value}B`;
+}
+
+function formatByteMap(map: Record<string, number> | undefined): string {
+  const entries = Object.entries(map ?? {}).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0) return 'none';
+  return entries.map(([key, value]) => `${key} ${formatBytes(value)}`).join(' | ');
+}
+
+function formatThroughputMap(
+  bytesByTable: Record<string, number> | undefined,
+  timeByTableMs: Record<string, number> | undefined,
+): string {
+  const entries = Object.entries(timeByTableMs ?? {}).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0) return 'none';
+  return entries
+    .map(([key, timeMs]) => {
+      const bytes = bytesByTable?.[key] ?? 0;
+      const mbPerSec = timeMs > 0 ? bytes / 1024 / 1024 / (timeMs / 1000) : 0;
+      return `${key} ${mbPerSec.toFixed(1)}MB/s`;
+    })
+    .join(' | ');
+}
+
 function printPerformanceSummary(performance: AnalyzePerformanceReport): void {
   console.log(
     `  analyze timing: ${(performance.totalWallMs / 1000).toFixed(1)}s total, ${(performance.overheadMs / 1000).toFixed(1)}s overhead`,
@@ -437,7 +464,11 @@ function printPerformanceSummary(performance: AnalyzePerformanceReport): void {
       `  lbug csvGen detail: contentRead ${(lbugTimings.csvContentReadMs ?? 0).toFixed(1)}ms | cacheHit ${(lbugTimings.csvContentCacheHitMs ?? 0).toFixed(1)}ms | extract ${(lbugTimings.csvContentExtractMs ?? 0).toFixed(1)}ms | rowBuild ${(lbugTimings.csvRowBuildMs ?? 0).toFixed(1)}ms | writerFlush ${(lbugTimings.csvWriterFlushMs ?? 0).toFixed(1)}ms`,
     );
     console.log(`  lbug csv rows: ${formatCountMap(lbugCounters?.csvRowsByTable)}`);
+    console.log(`  lbug csv bytes: ${formatByteMap(lbugCounters?.csvBytesByTable)}`);
     console.log(`  lbug nodeCopy detail: ${formatTimingMap(performance.lbugLoad?.nodeCopyByTableMs)}`);
+    console.log(
+      `  lbug nodeCopy throughput: ${formatThroughputMap(lbugCounters?.csvBytesByTable, performance.lbugLoad?.nodeCopyByTableMs)}`,
+    );
   }
   const ftsIndexMs = performance.ftsIndexMs;
   if (Object.keys(ftsIndexMs).length > 0) {

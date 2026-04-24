@@ -34,6 +34,7 @@ export interface CsvGenerationTimingBreakdown {
 export interface CsvGenerationMetrics {
   timings: CsvGenerationTimingBreakdown;
   rowsByTable: Record<string, number>;
+  bytesByTable: Record<string, number>;
 }
 
 type CsvGenerationTimingKey = keyof CsvGenerationTimingBreakdown;
@@ -279,6 +280,15 @@ const addBuiltRow = async (
 ): Promise<void> => {
   const row = timeCsvSync(timings, 'rowBuildMs', buildRow);
   await writer.addRow(row);
+};
+
+const getFileSize = async (filePath: string): Promise<number> => {
+  try {
+    const stat = await fs.stat(filePath);
+    return stat.size;
+  } catch {
+    return 0;
+  }
 };
 
 /**
@@ -627,6 +637,7 @@ export const streamAllCSVsToDisk = async (
   // Build result map — only include tables that have rows
   const nodeFiles = new Map<NodeTableName, { csvPath: string; rows: number }>();
   const rowsByTable: Record<string, number> = {};
+  const bytesByTable: Record<string, number> = {};
   const tableMap: [NodeTableName, BufferedCSVWriter][] = [
     ['File', fileWriter],
     ['Folder', folderWriter],
@@ -646,14 +657,17 @@ export const streamAllCSVsToDisk = async (
   ];
   for (const [name, writer] of tableMap) {
     if (writer.rows > 0) {
+      const csvPath = path.join(csvDir, `${name.toLowerCase()}.csv`);
       rowsByTable[name] = writer.rows;
+      bytesByTable[name] = await getFileSize(csvPath);
       nodeFiles.set(name, {
-        csvPath: path.join(csvDir, `${name.toLowerCase()}.csv`),
+        csvPath,
         rows: writer.rows,
       });
     }
   }
   rowsByTable.Relationship = relWriter.rows;
+  bytesByTable.Relationship = await getFileSize(relCsvPath);
 
   // Restore original process listener limit
   process.setMaxListeners(prevMax);
@@ -662,6 +676,6 @@ export const streamAllCSVsToDisk = async (
     nodeFiles,
     relCsvPath,
     relRows: relWriter.rows,
-    metrics: { timings: csvTimings, rowsByTable },
+    metrics: { timings: csvTimings, rowsByTable, bytesByTable },
   };
 };
