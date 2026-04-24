@@ -449,5 +449,8 @@ function printPerformanceSummary(performance: AnalyzePerformanceReport): void {
     console.log(
       `  crossFile processCalls: parse ${(crossFileTimings.processCallsParserParseMs ?? 0).toFixed(1)}ms | query ${(crossFileTimings.processCallsQueryMatchesMs ?? 0).toFixed(1)}ms (compile ${(crossFileTimings.processCallsQueryCompileMs ?? 0).toFixed(1)}ms, match ${(crossFileTimings.processCallsQueryExecuteMs ?? 0).toFixed(1)}ms) | typeEnv ${(crossFileTimings.processCallsBuildTypeEnvMs ?? 0).toFixed(1)}ms | resolution ${(crossFileTimings.processCallsResolutionTraversalMs ?? 0).toFixed(1)}ms | emit ${(crossFileTimings.processCallsEdgeEmissionMs ?? 0).toFixed(1)}ms`,
     );
+    console.log(
+      `  crossFile typeEnv: walk ${(crossFileTimings.processCallsTypeEnvWalkMs ?? 0).toFixed(1)}ms | extract ${(crossFileTimings.processCallsTypeEnvExtractTypeBindingMs ?? 0).toFixed(1)}ms | pattern ${(crossFileTimings.processCallsTypeEnvPatternBindingMs ?? 0).toFixed(1)}ms | pending ${(crossFileTimings.processCallsTypeEnvPendingAssignmentMs ?? 0).toFixed(1)}ms | ctorScan ${(crossFileTimings.processCallsTypeEnvConstructorBindingScanMs ?? 0).toFixed(1)}ms | seed ${(crossFileTimings.processCallsTypeEnvSeedImportedBindingsMs ?? 0).toFixed(1)}ms | fixpoint ${(crossFileTimings.processCallsTypeEnvFixpointMs ?? 0).toFixed(1)}ms | forLoopReplay ${(crossFileTimings.processCallsTypeEnvForLoopReplayMs ?? 0).toFixed(1)}ms`,
+    );
   }
 }

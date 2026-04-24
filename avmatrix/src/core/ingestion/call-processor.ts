@@ -59,7 +59,7 @@ import {
   type MixedChainStep,
 } from './utils/call-analysis.js';
 import { buildTypeEnv, isSubclassOf } from './type-env.js';
-import type { ConstructorBinding, TypeEnvironment } from './type-env.js';
+import type { BuildTypeEnvTimingKey, ConstructorBinding, TypeEnvironment } from './type-env.js';
 import type { BindingAccumulator } from './binding-accumulator.js';
 import { getTreeSitterBufferSize } from './constants.js';
 import type {
@@ -80,6 +80,7 @@ import type { SyntaxNode } from './utils/ast-helpers.js';
 export type ExportedTypeMap = Map<string, Map<string, string>>;
 
 export type ProcessCallsTimingKey =
+  | BuildTypeEnvTimingKey
   | 'processCallsParserParseMs'
   | 'processCallsQueryMatchesMs'
   | 'processCallsQueryCompileMs'
@@ -899,6 +900,7 @@ export const processCalls = async (
         importedRawReturnTypes,
         enclosingFunctionFinder: provider?.enclosingFunctionFinder,
         extractFunctionName: provider?.methodExtractor?.extractFunctionName,
+        timingSink,
       }),
     );
     if (typeEnv && exportedTypeMap) {

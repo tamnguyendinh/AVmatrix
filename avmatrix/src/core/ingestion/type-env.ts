@@ -1,3 +1,4 @@
+import { performance } from 'node:perf_hooks';
 import {
   type SyntaxNode,
   FUNCTION_NODE_TYPES,
@@ -92,6 +93,20 @@ export interface TypeEnvironment {
    *  Must be called at most once per TypeEnv instance — throws on second call.
    *  The source `env` is not cleared (TypeEnv is per-file and discarded immediately after). */
   flush(filePath: string, accumulator: BindingAccumulator): void;
+}
+
+export type BuildTypeEnvTimingKey =
+  | 'processCallsTypeEnvWalkMs'
+  | 'processCallsTypeEnvExtractTypeBindingMs'
+  | 'processCallsTypeEnvPatternBindingMs'
+  | 'processCallsTypeEnvPendingAssignmentMs'
+  | 'processCallsTypeEnvConstructorBindingScanMs'
+  | 'processCallsTypeEnvSeedImportedBindingsMs'
+  | 'processCallsTypeEnvFixpointMs'
+  | 'processCallsTypeEnvForLoopReplayMs';
+
+export interface BuildTypeEnvTimingSink {
+  mark(key: BuildTypeEnvTimingKey, durationMs: number): void;
 }
 
 /**
@@ -807,6 +822,8 @@ export interface BuildTypeEnvOptions {
    *  AST structures (C/C++ declarator unwrapping, Swift init/deinit, etc.).
    *  When null is returned or not provided, falls back to node.childForFieldName('name')?.text. */
   extractFunctionName?: (node: SyntaxNode) => { funcName: string | null; label: NodeLabel } | null;
+  /** Optional instrumentation sink. Only crossFile passes this; default callers stay uninstrumented. */
+  timingSink?: BuildTypeEnvTimingSink;
 }
 
 /** Seed cross-file type bindings into the file scope.
@@ -830,6 +847,20 @@ export const buildTypeEnv = (
   language: SupportedLanguages,
   options?: BuildTypeEnvOptions,
 ): TypeEnvironment => {
+  const timingSink = options?.timingSink;
+  const markTiming = (key: BuildTypeEnvTimingKey, startMs: number): void => {
+    timingSink?.mark(key, performance.now() - startMs);
+  };
+  const timeSync = <T>(key: BuildTypeEnvTimingKey, fn: () => T): T => {
+    if (!timingSink) return fn();
+    const startMs = performance.now();
+    try {
+      return fn();
+    } finally {
+      markTiming(key, startMs);
+    }
+  };
+
   // Clear per-file memoization caches from the previous file.
   enclosingClassNameCache.clear();
   enclosingParentClassNameCache.clear();
@@ -1132,7 +1163,9 @@ export const buildTypeEnv = (
     if (interestingNodeTypes.has(node.type)) {
       if (!env.has(scope)) env.set(scope, new Map());
       const scopeEnv = env.get(scope)!;
-      extractTypeBinding(node, scopeEnv, scope);
+      timeSync('processCallsTypeEnvExtractTypeBindingMs', () =>
+        extractTypeBinding(node, scopeEnv, scope),
+      );
     }
 
     // Pattern binding extraction: handles constructs that introduce NEW typed variables
@@ -1144,50 +1177,52 @@ export const buildTypeEnv = (
       config.extractPatternBinding &&
       (!config.patternBindingNodeTypes || config.patternBindingNodeTypes.has(node.type))
     ) {
-      // Ensure scopeEnv exists for pattern binding reads/writes
-      if (!env.has(scope)) env.set(scope, new Map());
-      const scopeEnv = env.get(scope)!;
-      const patternBinding = config.extractPatternBinding(
-        node,
-        scopeEnv,
-        declarationTypeNodes,
-        scope,
-      );
-      if (patternBinding) {
-        if (patternBinding.narrowingRange) {
-          // Explicit narrowing range (null-check narrowing): always store in patternOverrides
-          // using the extractor-provided range (typically the if-body block).
-          if (!patternOverrides.has(scope)) patternOverrides.set(scope, new Map());
-          const varMap = patternOverrides.get(scope)!;
-          if (!varMap.has(patternBinding.varName)) varMap.set(patternBinding.varName, []);
-          varMap.get(patternBinding.varName)!.push({
-            rangeStart: patternBinding.narrowingRange.startIndex,
-            rangeEnd: patternBinding.narrowingRange.endIndex,
-            typeName: patternBinding.typeName,
-          });
-        } else if (config.allowPatternBindingOverwrite) {
-          // Position-indexed: store per-branch binding for smart-cast narrowing.
-          // Each when arm / switch case gets its own type for the variable,
-          // preventing cross-arm contamination (e.g., Kotlin when/is).
-          const branchNode = findNarrowingBranchScope(node);
-          if (branchNode) {
+      timeSync('processCallsTypeEnvPatternBindingMs', () => {
+        // Ensure scopeEnv exists for pattern binding reads/writes
+        if (!env.has(scope)) env.set(scope, new Map());
+        const scopeEnv = env.get(scope)!;
+        const patternBinding = config.extractPatternBinding!(
+          node,
+          scopeEnv,
+          declarationTypeNodes,
+          scope,
+        );
+        if (patternBinding) {
+          if (patternBinding.narrowingRange) {
+            // Explicit narrowing range (null-check narrowing): always store in patternOverrides
+            // using the extractor-provided range (typically the if-body block).
             if (!patternOverrides.has(scope)) patternOverrides.set(scope, new Map());
             const varMap = patternOverrides.get(scope)!;
             if (!varMap.has(patternBinding.varName)) varMap.set(patternBinding.varName, []);
             varMap.get(patternBinding.varName)!.push({
-              rangeStart: branchNode.startIndex,
-              rangeEnd: branchNode.endIndex,
+              rangeStart: patternBinding.narrowingRange.startIndex,
+              rangeEnd: patternBinding.narrowingRange.endIndex,
               typeName: patternBinding.typeName,
             });
+          } else if (config.allowPatternBindingOverwrite) {
+            // Position-indexed: store per-branch binding for smart-cast narrowing.
+            // Each when arm / switch case gets its own type for the variable,
+            // preventing cross-arm contamination (e.g., Kotlin when/is).
+            const branchNode = findNarrowingBranchScope(node);
+            if (branchNode) {
+              if (!patternOverrides.has(scope)) patternOverrides.set(scope, new Map());
+              const varMap = patternOverrides.get(scope)!;
+              if (!varMap.has(patternBinding.varName)) varMap.set(patternBinding.varName, []);
+              varMap.get(patternBinding.varName)!.push({
+                rangeStart: branchNode.startIndex,
+                rangeEnd: branchNode.endIndex,
+                typeName: patternBinding.typeName,
+              });
+            }
+            // Also store in flat scopeEnv as fallback (last arm wins — same as before
+            // for code that doesn't use position-indexed lookup).
+            scopeEnv.set(patternBinding.varName, patternBinding.typeName);
+          } else if (!scopeEnv.has(patternBinding.varName)) {
+            // First-writer-wins for languages without smart-cast overwrite (Java instanceof, etc.)
+            scopeEnv.set(patternBinding.varName, patternBinding.typeName);
           }
-          // Also store in flat scopeEnv as fallback (last arm wins — same as before
-          // for code that doesn't use position-indexed lookup).
-          scopeEnv.set(patternBinding.varName, patternBinding.typeName);
-        } else if (!scopeEnv.has(patternBinding.varName)) {
-          // First-writer-wins for languages without smart-cast overwrite (Java instanceof, etc.)
-          scopeEnv.set(patternBinding.varName, patternBinding.typeName);
         }
-      }
+      });
     }
 
     // Tier 2: collect plain-identifier RHS assignments for post-walk propagation.
@@ -1196,32 +1231,36 @@ export const buildTypeEnv = (
     // Python uses assignment/left/right, Go uses short_var_declaration/expression_list).
     // May return a single item or an array (for destructuring: N fieldAccess items).
     if (config.extractPendingAssignment && config.declarationNodeTypes.has(node.type)) {
-      // scopeEnv is guaranteed to exist here because declarationNodeTypes is a subset
-      // of interestingNodeTypes, so extractTypeBinding already created the scope map above.
-      const scopeEnv = env.get(scope);
-      if (scopeEnv) {
-        const pending = config.extractPendingAssignment(node, scopeEnv);
-        if (pending) {
-          const items = Array.isArray(pending) ? pending : [pending];
-          for (const item of items) {
-            // Substitute this/self/$this/Me receivers with enclosing class name
-            const resolved = substituteThisReceiver(item, node);
-            pendingItems.push({ scope, ...resolved });
+      timeSync('processCallsTypeEnvPendingAssignmentMs', () => {
+        // scopeEnv is guaranteed to exist here because declarationNodeTypes is a subset
+        // of interestingNodeTypes, so extractTypeBinding already created the scope map above.
+        const scopeEnv = env.get(scope);
+        if (scopeEnv) {
+          const pending = config.extractPendingAssignment!(node, scopeEnv);
+          if (pending) {
+            const items = Array.isArray(pending) ? pending : [pending];
+            for (const item of items) {
+              // Substitute this/self/$this/Me receivers with enclosing class name
+              const resolved = substituteThisReceiver(item, node);
+              pendingItems.push({ scope, ...resolved });
+            }
           }
         }
-      }
+      });
     }
 
     // Scan for constructor bindings that couldn't be resolved locally.
     // Only collect if TypeEnv didn't already resolve this binding.
     if (config.scanConstructorBinding) {
-      const result = config.scanConstructorBinding(node);
-      if (result) {
-        const scopeEnv = env.get(scope);
-        if (!scopeEnv?.has(result.varName)) {
-          bindings.push({ scope, ...result });
+      timeSync('processCallsTypeEnvConstructorBindingScanMs', () => {
+        const result = config.scanConstructorBinding!(node);
+        if (result) {
+          const scopeEnv = env.get(scope);
+          if (!scopeEnv?.has(result.varName)) {
+            bindings.push({ scope, ...result });
+          }
         }
-      }
+      });
     }
 
     // Push children onto stack (reverse order so first child is processed first)
@@ -1235,16 +1274,20 @@ export const buildTypeEnv = (
   // to avoid "Maximum call stack size exceeded" on large files (2000+ lines)
   while (stack.length > 0) {
     const { node, scope } = stack.pop()!;
-    processNode(node, scope);
+    timeSync('processCallsTypeEnvWalkMs', () => processNode(node, scope));
   }
 
   // Phase 14: Seed cross-file bindings from upstream files AFTER walk
   // (local declarations from walk() take precedence — first-writer-wins)
   if (options?.importedBindings && options.importedBindings.size > 0) {
-    seedImportedBindings(env, options.importedBindings);
+    timeSync('processCallsTypeEnvSeedImportedBindingsMs', () =>
+      seedImportedBindings(env, options.importedBindings!),
+    );
   }
 
-  resolveFixpointBindings(pendingItems, env, returnTypeLookup, model, parentMap);
+  timeSync('processCallsTypeEnvFixpointMs', () =>
+    resolveFixpointBindings(pendingItems, env, returnTypeLookup, model, parentMap),
+  );
 
   // Post-fixpoint for-loop replay (Phase 10 / ex-9B loop-fixpoint bridge):
   // For-loop nodes whose iterables were unresolved at walk-time may now be
@@ -1254,24 +1297,29 @@ export const buildTypeEnv = (
   //   - fixpoint: users → User[]
   //   - replay: users now typed → u → User
   if (pendingForLoops.length > 0 && config.extractForLoopBinding) {
-    for (const { node, scope } of pendingForLoops) {
-      if (!env.has(scope)) env.set(scope, new Map());
-      const scopeEnv = env.get(scope)!;
-      config.extractForLoopBinding(node, {
-        scopeEnv,
-        declarationTypeNodes,
-        scope,
-        returnTypeLookup,
+    let unresolvedBefore: Array<{ scope: string } & PendingAssignment> = [];
+    timeSync('processCallsTypeEnvForLoopReplayMs', () => {
+      for (const { node, scope } of pendingForLoops) {
+        if (!env.has(scope)) env.set(scope, new Map());
+        const scopeEnv = env.get(scope)!;
+        config.extractForLoopBinding!(node, {
+          scopeEnv,
+          declarationTypeNodes,
+          scope,
+          returnTypeLookup,
+        });
+      }
+      // Re-run the main fixpoint to resolve items that depended on loop variables.
+      // Only needed if replay actually produced new bindings.
+      unresolvedBefore = pendingItems.filter((item) => {
+        const scopeEnv = env.get(item.scope);
+        return scopeEnv && !scopeEnv.has(item.lhs);
       });
-    }
-    // Re-run the main fixpoint to resolve items that depended on loop variables.
-    // Only needed if replay actually produced new bindings.
-    const unresolvedBefore = pendingItems.filter((item) => {
-      const scopeEnv = env.get(item.scope);
-      return scopeEnv && !scopeEnv.has(item.lhs);
     });
     if (unresolvedBefore.length > 0) {
-      resolveFixpointBindings(unresolvedBefore, env, returnTypeLookup, model);
+      timeSync('processCallsTypeEnvFixpointMs', () =>
+        resolveFixpointBindings(unresolvedBefore, env, returnTypeLookup, model),
+      );
     }
   }
 
