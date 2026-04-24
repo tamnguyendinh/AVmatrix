@@ -93,7 +93,7 @@ export interface AnalyzeResult {
 }
 
 /** Threshold: auto-skip embeddings for repos with more nodes than this */
-const EMBEDDING_NODE_LIMIT = 50_000;
+const EMBEDDING_NODE_LIMIT = 100_000;
 
 export const PHASE_LABELS: Record<string, string> = {
   extracting: 'Scanning files',
