@@ -129,6 +129,85 @@ describe('processCallsFromExtracted', () => {
     expect(graph.relationshipCount).toBe(0);
   });
 
+  it('does not route broken mixed-chain calls back to the base receiver type', async () => {
+    const file = 'src/queue.go';
+    const serviceId = 'Struct:src/queue.go:OfflineQueueService';
+    const serviceMethodId = 'Method:src/queue.go:OfflineQueueService.Enqueue#0';
+
+    ctx.model.symbols.add(file, 'OfflineQueueService', serviceId, 'Struct');
+    ctx.model.symbols.add(file, 'Enqueue', serviceMethodId, 'Method', {
+      ownerId: serviceId,
+    });
+
+    const calls: ExtractedCall[] = [
+      {
+        filePath: file,
+        calledName: 'Enqueue',
+        sourceId: serviceMethodId,
+        callForm: 'member',
+        receiverName: 's',
+        receiverTypeName: 'OfflineQueueService',
+        receiverMixedChain: [{ kind: 'field', name: 'repo' }],
+      },
+    ];
+
+    await processCallsFromExtracted(graph, calls, ctx);
+
+    const rels = graph.relationships.filter((r) => r.type === 'CALLS');
+    expect(rels).toHaveLength(0);
+  });
+
+  it('resolves mixed-chain calls through declared field type instead of base receiver type', async () => {
+    const file = 'src/queue.go';
+    const serviceId = 'Struct:src/queue.go:OfflineQueueService';
+    const repoId = 'Interface:src/queue.go:OfflineQueueRepo';
+    const sqliteRepoId = 'Struct:src/sqlite/sync_repo.go:OfflineQueueRepo';
+    const serviceMethodId = 'Method:src/queue.go:OfflineQueueService.Enqueue#0';
+    const repoMethodId = 'Method:src/queue.go:OfflineQueueRepo.Enqueue#0';
+    const sqliteRepoMethodId = 'Method:src/sqlite/sync_repo.go:OfflineQueueRepo.Enqueue#0';
+
+    ctx.model.symbols.add(file, 'OfflineQueueService', serviceId, 'Struct');
+    ctx.model.symbols.add(file, 'OfflineQueueRepo', repoId, 'Interface');
+    ctx.model.symbols.add('src/sqlite/sync_repo.go', 'OfflineQueueRepo', sqliteRepoId, 'Struct');
+    ctx.model.symbols.add(
+      file,
+      'repo',
+      'Property:src/queue.go:OfflineQueueService.repo',
+      'Property',
+      {
+        ownerId: serviceId,
+        declaredType: 'OfflineQueueRepo',
+      },
+    );
+    ctx.model.symbols.add(file, 'Enqueue', serviceMethodId, 'Method', {
+      ownerId: serviceId,
+    });
+    ctx.model.symbols.add(file, 'Enqueue', repoMethodId, 'Method', {
+      ownerId: repoId,
+    });
+    ctx.model.symbols.add('src/sqlite/sync_repo.go', 'Enqueue', sqliteRepoMethodId, 'Method', {
+      ownerId: sqliteRepoId,
+    });
+
+    const calls: ExtractedCall[] = [
+      {
+        filePath: file,
+        calledName: 'Enqueue',
+        sourceId: serviceMethodId,
+        callForm: 'member',
+        receiverName: 's',
+        receiverTypeName: 'OfflineQueueService',
+        receiverMixedChain: [{ kind: 'field', name: 'repo' }],
+      },
+    ];
+
+    await processCallsFromExtracted(graph, calls, ctx);
+
+    const rels = graph.relationships.filter((r) => r.type === 'CALLS');
+    expect(rels).toHaveLength(1);
+    expect(rels[0].targetId).toBe(repoMethodId);
+  });
+
   it('refuses non-callable symbols even when the name resolves', async () => {
     ctx.model.symbols.add('src/index.ts', 'Widget', 'Class:src/index.ts:Widget', 'Class');
 

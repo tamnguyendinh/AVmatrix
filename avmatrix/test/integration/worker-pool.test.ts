@@ -162,6 +162,43 @@ describe('worker pool integration', () => {
     expect(writeCall?.sourceId).toBe(closeId);
   });
 
+  it.skipIf(!hasDistWorker)('emits declared types for Go struct fields', async () => {
+    const workerUrl = pathToFileURL(DIST_WORKER) as URL;
+    pool = createWorkerPool(workerUrl, 1);
+
+    const results = await pool.dispatch<any, any>([
+      {
+        path: 'src/queue.go',
+        content: `
+          package main
+
+          type OfflineQueueRepo interface {
+            Enqueue() error
+          }
+
+          type OfflineQueueService struct {
+            repo OfflineQueueRepo
+          }
+
+          func (s *OfflineQueueService) Enqueue() error {
+            return s.repo.Enqueue()
+          }
+        `,
+      },
+    ]);
+
+    const result = results[0];
+    const repoNode = result.nodes.find(
+      (n: any) => n.label === 'Property' && n.properties.name === 'repo',
+    );
+    const repoSymbol = result.symbols.find(
+      (s: any) => s.type === 'Property' && s.name === 'repo',
+    );
+
+    expect(repoNode?.properties.declaredType).toBe('OfflineQueueRepo');
+    expect(repoSymbol?.declaredType).toBe('OfflineQueueRepo');
+  });
+
   it.skipIf(!hasDistWorker)('reports progress during parsing', async () => {
     const workerUrl = pathToFileURL(DIST_WORKER) as URL;
     pool = createWorkerPool(workerUrl, 1);

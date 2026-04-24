@@ -79,6 +79,7 @@ import {
 import type { LanguageProvider } from '../language-provider.js';
 import type { ParsedFile } from 'avmatrix-shared';
 import { extractParsedFile } from '../scope-extractor-bridge.js';
+import { extractSimpleTypeName } from '../type-extractors/shared.js';
 
 // ============================================================================
 // Types for serializable results
@@ -497,6 +498,33 @@ function getFieldInfo(
   }
   fieldInfoCache.set(cacheKey, cached);
   return cached;
+}
+
+function extractGoFieldInfo(
+  fieldNode: SyntaxNode,
+  fieldName: string,
+  filePath: string,
+): FieldInfo | undefined {
+  if (fieldNode.type !== 'field_declaration') return undefined;
+
+  let typeNode = fieldNode.childForFieldName('type');
+  if (!typeNode && fieldNode.namedChildCount >= 2) {
+    typeNode = fieldNode.namedChild(fieldNode.namedChildCount - 1);
+  }
+
+  const type = typeNode ? (extractSimpleTypeName(typeNode) ?? typeNode.text?.trim()) : undefined;
+  const first = fieldName.charAt(0);
+  const isExported = first !== '' && first === first.toUpperCase() && first !== first.toLowerCase();
+
+  return {
+    name: fieldName,
+    type: type ?? null,
+    visibility: isExported ? 'public' : 'package',
+    isStatic: false,
+    isReadonly: false,
+    sourceFile: filePath,
+    line: fieldNode.startPosition.row + 1,
+  };
 }
 
 // ============================================================================
@@ -2174,8 +2202,17 @@ const processFileGroup = (
 
       // Property metadata extraction (not needed before nodeId — Properties don't overload)
       if (nodeLabel === 'Property' && definitionNode) {
-        // FieldExtractor is the single source of truth when available
-        if (provider.fieldExtractor && typeEnv) {
+        const goFieldInfo =
+          language === SupportedLanguages.Go
+            ? extractGoFieldInfo(definitionNode, nodeName, file.path)
+            : undefined;
+        if (goFieldInfo) {
+          declaredType = goFieldInfo.type ?? undefined;
+          methodProps.visibility = goFieldInfo.visibility;
+          methodProps.isStatic = goFieldInfo.isStatic;
+          methodProps.isReadonly = goFieldInfo.isReadonly;
+        } else if (provider.fieldExtractor && typeEnv) {
+          // FieldExtractor is the single source of truth when available
           const classNode = findEnclosingClassNode(definitionNode);
           if (classNode) {
             const fieldMap = getFieldInfo(classNode, provider, {

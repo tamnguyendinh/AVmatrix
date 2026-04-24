@@ -135,6 +135,7 @@ describe('tree-sitter queries', () => {
     it('captures function and method declarations', () => {
       expect(GO_QUERIES).toContain('function_declaration');
       expect(GO_QUERIES).toContain('method_declaration');
+      expect(GO_QUERIES).toContain('method_elem');
     });
 
     it('captures struct and interface types', () => {

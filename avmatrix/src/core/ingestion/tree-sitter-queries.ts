@@ -471,6 +471,7 @@ export const GO_QUERIES = `
 ; Functions & Methods
 (function_declaration name: (identifier) @name) @definition.function
 (method_declaration name: (field_identifier) @name) @definition.method
+(interface_type (method_elem name: (field_identifier) @name) @definition.method)
 
 ; Types
 (type_declaration (type_spec name: (type_identifier) @name type: (struct_type))) @definition.struct

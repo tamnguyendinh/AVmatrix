@@ -2128,6 +2128,25 @@ const resolveFieldOwnership = (
   return ctx.model.fields.lookupFieldByOwner(classDef.nodeId, fieldName) ?? undefined;
 };
 
+const directoryOf = (filePath: string): string => {
+  const normalized = filePath.replace(/\\/g, '/');
+  const slash = normalized.lastIndexOf('/');
+  return slash >= 0 ? normalized.slice(0, slash) : '';
+};
+
+const preferGoSamePackageTypes = (
+  candidates: SymbolDefinition[],
+  currentFile: string,
+  language: SupportedLanguages | null,
+): SymbolDefinition[] => {
+  if (language !== SupportedLanguages.Go || candidates.length <= 1) return candidates;
+  const currentDir = directoryOf(currentFile);
+  const samePackage = candidates.filter(
+    (candidate) => directoryOf(candidate.filePath) === currentDir,
+  );
+  return samePackage.length > 0 ? samePackage : candidates;
+};
+
 /**
  * Resolve a method by owner type name using the eagerly-populated methodByOwner index.
  * Returns `{ def, tier }` when an unambiguous method is found, `undefined` otherwise.
@@ -2171,9 +2190,14 @@ const resolveMethodByOwner = (
   // MRO walking needs a language hint so we can derive the per-language
   // strategy; compute it once and reuse for every candidate. Unknown
   // extension → fall back to plain direct lookup (D1-D4 still runs on miss).
-  const language = heritageMap ? getLanguageFromFilename(filePath) : null;
-  const mroStrategy = language != null ? getProvider(language).mroStrategy : null;
+  const language = getLanguageFromFilename(filePath);
+  const mroStrategy = heritageMap && language != null ? getProvider(language).mroStrategy : null;
   const canWalkMRO = heritageMap != null && mroStrategy != null;
+  const ownerCandidates = preferGoSamePackageTypes(
+    typeResolved.candidates.filter((candidate) => CLASS_LIKE_TYPES.has(candidate.type)),
+    filePath,
+    language,
+  );
 
   // Iterate all class-like candidates tracking the first unambiguous hit.
   // Zero-allocation fast path: the common case is exactly one class candidate,
@@ -2190,8 +2214,7 @@ const resolveMethodByOwner = (
   // owner-scoped lookup rather than collapsing to an arbitrary first pick.
   let firstDef: SymbolDefinition | undefined;
   let ambiguous = false;
-  for (const candidate of typeResolved.candidates) {
-    if (!CLASS_LIKE_TYPES.has(candidate.type)) continue;
+  for (const candidate of ownerCandidates) {
     // Singleton dispatch: when the DAG decision requested the singleton
     // ancestry view, pass `heritageMap.getSingletonAncestry` as the walker's
     // ancestry override. Kind-aware strategies (e.g. MroStrategy 'ruby-mixin')
@@ -2737,6 +2760,7 @@ export const processCallsFromExtracted = async (
 
     for (const call of calls) {
       let effectiveCall = call;
+      let skipBrokenMixedChainCall = false;
 
       // Step 1: resolve receiver type from constructor bindings
       if (!call.receiverTypeName && call.receiverName && receiverMap) {
@@ -2803,9 +2827,13 @@ export const processCallsFromExtracted = async (
           );
           if (walkedType) {
             effectiveCall = { ...effectiveCall, receiverTypeName: walkedType };
+          } else {
+            skipBrokenMixedChainCall = true;
           }
         }
       }
+
+      if (skipBrokenMixedChainCall) continue;
 
       const resolved = resolveCallTarget(
         effectiveCall,
