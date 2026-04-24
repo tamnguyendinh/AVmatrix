@@ -655,6 +655,30 @@ Scope:
 - batch CSV cleanup where safe
 - time each FTS index separately
 
+Measured Phase 4.0 baseline after Phase 3 closure:
+
+- `H:\hotel_manager`: `lbugLoad 12.9s`, `fts 16.8s`, output unchanged at `6,441 nodes`, `15,297 edges`, `138 clusters`, `540 flows`
+- `F:\Restaurant_manager`: `lbugLoad 38.2s`, `fts 32.8s`, output unchanged at `70,818 nodes`, `110,611 edges`, `949 clusters`, `700 flows`
+- `Restaurant_manager` `lbugLoad` breakdown: `csvGen 10.0s`, `nodeCopy 17.9s`, `relSplit 1.3s`, `relCopy 8.8s`, fallback/cleanup negligible
+- `Restaurant_manager` FTS breakdown: `File 18.5s`, `Function 5.6s`, `Class 2.0s`, `Method 4.0s`, `Interface 2.6s`
+- Next priority is `lbugLoad` deep timing first because `csvGeneration` and `nodeCopy` have safer optimization surfaces than changing FTS behavior.
+
+Phase 4.1 deep timing sequence:
+
+1. Add deeper `csvGeneration` timing without changing generated CSV content:
+   - file content read / cache hit timing
+   - content snippet extraction and `split('\n')` timing
+   - CSV escaping / row string building timing
+   - `BufferedCSVWriter` flush/write timing
+   - rows per output table
+2. Add `nodeCopy` timing by table:
+   - `File`, `Function`, `Class`, `Method`, `Interface`, and remaining node tables
+   - identify which table accounts for the measured `nodeCopy` cost
+3. Decide the next optimization from data:
+   - if `csvGeneration` is dominated by content extraction, optimize cache/split behavior while keeping stored content identical
+   - if `nodeCopy` is dominated by `File` or `Method` content-heavy tables, investigate reducing load overhead without changing stored columns or values
+   - if `nodeCopy` is intrinsic LadybugDB COPY time, move to FTS File index investigation
+
 Rules:
 
 - full analyze continues to rebuild LadybugDB

@@ -15,12 +15,52 @@
 import fs from 'fs/promises';
 import { createWriteStream, WriteStream } from 'fs';
 import path from 'path';
+import { performance } from 'node:perf_hooks';
 import type { GraphNode } from 'avmatrix-shared';
 import { KnowledgeGraph } from '../graph/types.js';
 import { NodeTableName } from './schema.js';
 
 /** Flush buffered rows to disk every N rows */
 const FLUSH_EVERY = 500;
+
+export interface CsvGenerationTimingBreakdown {
+  contentCacheHitMs?: number;
+  contentReadMs?: number;
+  contentExtractMs?: number;
+  rowBuildMs?: number;
+  writerFlushMs?: number;
+}
+
+export interface CsvGenerationMetrics {
+  timings: CsvGenerationTimingBreakdown;
+  rowsByTable: Record<string, number>;
+}
+
+type CsvGenerationTimingKey = keyof CsvGenerationTimingBreakdown;
+
+const roundCsvMs = (value: number): number => Math.round(value * 10) / 10;
+
+const markCsvTiming = (
+  timings: CsvGenerationTimingBreakdown,
+  key: CsvGenerationTimingKey,
+  durationMs: number,
+): void => {
+  if (!Number.isFinite(durationMs) || durationMs < 0) return;
+  timings[key] = roundCsvMs((timings[key] ?? 0) + durationMs);
+};
+
+const timeCsvSync = <T>(
+  timings: CsvGenerationTimingBreakdown,
+  key: CsvGenerationTimingKey,
+  fn: () => T,
+): T => {
+  const start = performance.now();
+  try {
+    return fn();
+  } finally {
+    markCsvTiming(timings, key, performance.now() - start);
+  }
+};
 
 // ============================================================================
 // CSV ESCAPE UTILITIES
@@ -75,14 +115,21 @@ class FileContentCache {
   private accessOrder: string[] = [];
   private maxSize: number;
   private repoPath: string;
+  private timings: CsvGenerationTimingBreakdown;
 
-  constructor(repoPath: string, maxSize: number = 3000) {
+  constructor(
+    repoPath: string,
+    maxSize: number = 3000,
+    timings: CsvGenerationTimingBreakdown = {},
+  ) {
     this.repoPath = repoPath;
     this.maxSize = maxSize;
+    this.timings = timings;
   }
 
   async get(relativePath: string): Promise<string> {
     if (!relativePath) return '';
+    const cacheStart = performance.now();
     const cached = this.cache.get(relativePath);
     if (cached !== undefined) {
       // Move to end of accessOrder (LRU promotion)
@@ -91,14 +138,18 @@ class FileContentCache {
         this.accessOrder.splice(idx, 1);
         this.accessOrder.push(relativePath);
       }
+      markCsvTiming(this.timings, 'contentCacheHitMs', performance.now() - cacheStart);
       return cached;
     }
     try {
       const fullPath = path.join(this.repoPath, relativePath);
+      const readStart = performance.now();
       const content = await fs.readFile(fullPath, 'utf-8');
+      markCsvTiming(this.timings, 'contentReadMs', performance.now() - readStart);
       this.set(relativePath, content);
       return content;
     } catch {
+      markCsvTiming(this.timings, 'contentReadMs', performance.now() - cacheStart);
       this.set(relativePath, '');
       return '';
     }
@@ -114,32 +165,38 @@ class FileContentCache {
   }
 }
 
-const extractContent = async (node: GraphNode, contentCache: FileContentCache): Promise<string> => {
+const extractContent = async (
+  node: GraphNode,
+  contentCache: FileContentCache,
+  timings: CsvGenerationTimingBreakdown,
+): Promise<string> => {
   const filePath = node.properties.filePath;
   const content = await contentCache.get(filePath);
-  if (!content) return '';
-  if (node.label === 'Folder') return '';
-  if (isBinaryContent(content)) return '[Binary file - content not stored]';
+  return timeCsvSync(timings, 'contentExtractMs', () => {
+    if (!content) return '';
+    if (node.label === 'Folder') return '';
+    if (isBinaryContent(content)) return '[Binary file - content not stored]';
 
-  if (node.label === 'File') {
-    const MAX_FILE_CONTENT = 10000;
-    return content.length > MAX_FILE_CONTENT
-      ? content.slice(0, MAX_FILE_CONTENT) + '\n... [truncated]'
-      : content;
-  }
+    if (node.label === 'File') {
+      const MAX_FILE_CONTENT = 10000;
+      return content.length > MAX_FILE_CONTENT
+        ? content.slice(0, MAX_FILE_CONTENT) + '\n... [truncated]'
+        : content;
+    }
 
-  const startLine = node.properties.startLine;
-  const endLine = node.properties.endLine;
-  if (startLine === undefined || endLine === undefined) return '';
+    const startLine = node.properties.startLine;
+    const endLine = node.properties.endLine;
+    if (startLine === undefined || endLine === undefined) return '';
 
-  const lines = content.split('\n');
-  const start = Math.max(0, startLine - 2);
-  const end = Math.min(lines.length - 1, endLine + 2);
-  const snippet = lines.slice(start, end + 1).join('\n');
-  const MAX_SNIPPET = 5000;
-  return snippet.length > MAX_SNIPPET
-    ? snippet.slice(0, MAX_SNIPPET) + '\n... [truncated]'
-    : snippet;
+    const lines = content.split('\n');
+    const start = Math.max(0, startLine - 2);
+    const end = Math.min(lines.length - 1, endLine + 2);
+    const snippet = lines.slice(start, end + 1).join('\n');
+    const MAX_SNIPPET = 5000;
+    return snippet.length > MAX_SNIPPET
+      ? snippet.slice(0, MAX_SNIPPET) + '\n... [truncated]'
+      : snippet;
+  });
 };
 
 // ============================================================================
@@ -149,10 +206,16 @@ const extractContent = async (node: GraphNode, contentCache: FileContentCache): 
 class BufferedCSVWriter {
   private ws: WriteStream;
   private buffer: string[] = [];
+  private timings: CsvGenerationTimingBreakdown;
   rows = 0;
 
-  constructor(filePath: string, header: string) {
+  constructor(
+    filePath: string,
+    header: string,
+    timings: CsvGenerationTimingBreakdown = {},
+  ) {
     this.ws = createWriteStream(filePath, 'utf-8');
+    this.timings = timings;
     // Large repos flush many times — raise listener cap to avoid MaxListenersExceededWarning
     this.ws.setMaxListeners(50);
     this.buffer.push(header);
@@ -171,7 +234,8 @@ class BufferedCSVWriter {
     if (this.buffer.length === 0) return Promise.resolve();
     const chunk = this.buffer.join('\n') + '\n';
     this.buffer.length = 0;
-    return new Promise((resolve, reject) => {
+    const start = performance.now();
+    return new Promise<void>((resolve, reject) => {
       this.ws.once('error', reject);
       const ok = this.ws.write(chunk);
       if (ok) {
@@ -183,6 +247,8 @@ class BufferedCSVWriter {
           resolve();
         });
       }
+    }).finally(() => {
+      markCsvTiming(this.timings, 'writerFlushMs', performance.now() - start);
     });
   }
 
@@ -203,7 +269,17 @@ export interface StreamedCSVResult {
   nodeFiles: Map<NodeTableName, { csvPath: string; rows: number }>;
   relCsvPath: string;
   relRows: number;
+  metrics: CsvGenerationMetrics;
 }
+
+const addBuiltRow = async (
+  writer: BufferedCSVWriter,
+  timings: CsvGenerationTimingBreakdown,
+  buildRow: () => string,
+): Promise<void> => {
+  const row = timeCsvSync(timings, 'rowBuildMs', buildRow);
+  await writer.addRow(row);
+};
 
 /**
  * Stream all CSV data directly to disk files.
@@ -226,56 +302,78 @@ export const streamAllCSVsToDisk = async (
   const prevMax = process.getMaxListeners();
   process.setMaxListeners(prevMax + 40);
 
-  const contentCache = new FileContentCache(repoPath);
+  const csvTimings: CsvGenerationTimingBreakdown = {};
+  const contentCache = new FileContentCache(repoPath, 3000, csvTimings);
 
   // Create writers for every node type up-front
   const fileWriter = new BufferedCSVWriter(
     path.join(csvDir, 'file.csv'),
     'id,name,filePath,content',
+    csvTimings,
   );
-  const folderWriter = new BufferedCSVWriter(path.join(csvDir, 'folder.csv'), 'id,name,filePath');
+  const folderWriter = new BufferedCSVWriter(
+    path.join(csvDir, 'folder.csv'),
+    'id,name,filePath',
+    csvTimings,
+  );
   const codeElementHeader = 'id,name,filePath,startLine,endLine,isExported,content,description';
   const functionWriter = new BufferedCSVWriter(
     path.join(csvDir, 'function.csv'),
     codeElementHeader,
+    csvTimings,
   );
-  const classWriter = new BufferedCSVWriter(path.join(csvDir, 'class.csv'), codeElementHeader);
+  const classWriter = new BufferedCSVWriter(
+    path.join(csvDir, 'class.csv'),
+    codeElementHeader,
+    csvTimings,
+  );
   const interfaceWriter = new BufferedCSVWriter(
     path.join(csvDir, 'interface.csv'),
     codeElementHeader,
+    csvTimings,
   );
   const methodHeader =
     'id,name,filePath,startLine,endLine,isExported,content,description,parameterCount,returnType';
-  const methodWriter = new BufferedCSVWriter(path.join(csvDir, 'method.csv'), methodHeader);
+  const methodWriter = new BufferedCSVWriter(
+    path.join(csvDir, 'method.csv'),
+    methodHeader,
+    csvTimings,
+  );
   const codeElemWriter = new BufferedCSVWriter(
     path.join(csvDir, 'codeelement.csv'),
     codeElementHeader,
+    csvTimings,
   );
   const communityWriter = new BufferedCSVWriter(
     path.join(csvDir, 'community.csv'),
     'id,label,heuristicLabel,keywords,description,enrichedBy,cohesion,symbolCount',
+    csvTimings,
   );
   const processWriter = new BufferedCSVWriter(
     path.join(csvDir, 'process.csv'),
     'id,label,heuristicLabel,processType,stepCount,communities,entryPointId,terminalId',
+    csvTimings,
   );
 
   // Section nodes have an extra 'level' column
   const sectionWriter = new BufferedCSVWriter(
     path.join(csvDir, 'section.csv'),
     'id,name,filePath,startLine,endLine,level,content,description',
+    csvTimings,
   );
 
   // Route nodes for API endpoint mapping
   const routeWriter = new BufferedCSVWriter(
     path.join(csvDir, 'route.csv'),
     'id,name,filePath,responseKeys,errorKeys,middleware',
+    csvTimings,
   );
 
   // Tool nodes for MCP tool definitions
   const toolWriter = new BufferedCSVWriter(
     path.join(csvDir, 'tool.csv'),
     'id,name,filePath,description',
+    csvTimings,
   );
 
   // Multi-language node types share the same CSV shape (no isExported column)
@@ -305,7 +403,7 @@ export const streamAllCSVsToDisk = async (
   for (const t of MULTI_LANG_TYPES) {
     multiLangWriters.set(
       t,
-      new BufferedCSVWriter(path.join(csvDir, `${t.toLowerCase()}.csv`), multiLangHeader),
+      new BufferedCSVWriter(path.join(csvDir, `${t.toLowerCase()}.csv`), multiLangHeader, csvTimings),
     );
   }
 
@@ -328,8 +426,8 @@ export const streamAllCSVsToDisk = async (
 
     switch (node.label) {
       case 'File': {
-        const content = await extractContent(node, contentCache);
-        await fileWriter.addRow(
+        const content = await extractContent(node, contentCache, csvTimings);
+        await addBuiltRow(fileWriter, csvTimings, () =>
           [
             escapeCSVField(node.id),
             escapeCSVField(node.properties.name || ''),
@@ -340,7 +438,7 @@ export const streamAllCSVsToDisk = async (
         break;
       }
       case 'Folder':
-        await folderWriter.addRow(
+        await addBuiltRow(folderWriter, csvTimings, () =>
           [
             escapeCSVField(node.id),
             escapeCSVField(node.properties.name || ''),
@@ -351,7 +449,7 @@ export const streamAllCSVsToDisk = async (
       case 'Community': {
         const keywords = node.properties.keywords || [];
         const keywordsStr = `[${keywords.map((k: string) => `'${k.replace(/\\/g, '\\\\').replace(/'/g, "''").replace(/,/g, '\\,')}'`).join(',')}]`;
-        await communityWriter.addRow(
+        await addBuiltRow(communityWriter, csvTimings, () =>
           [
             escapeCSVField(node.id),
             escapeCSVField(node.properties.name || ''),
@@ -368,7 +466,7 @@ export const streamAllCSVsToDisk = async (
       case 'Process': {
         const communities = node.properties.communities || [];
         const communitiesStr = `[${communities.map((c: string) => `'${c.replace(/'/g, "''")}'`).join(',')}]`;
-        await processWriter.addRow(
+        await addBuiltRow(processWriter, csvTimings, () =>
           [
             escapeCSVField(node.id),
             escapeCSVField(node.properties.name || ''),
@@ -383,8 +481,8 @@ export const streamAllCSVsToDisk = async (
         break;
       }
       case 'Method': {
-        const content = await extractContent(node, contentCache);
-        await methodWriter.addRow(
+        const content = await extractContent(node, contentCache, csvTimings);
+        await addBuiltRow(methodWriter, csvTimings, () =>
           [
             escapeCSVField(node.id),
             escapeCSVField(node.properties.name || ''),
@@ -401,8 +499,8 @@ export const streamAllCSVsToDisk = async (
         break;
       }
       case 'Section': {
-        const content = await extractContent(node, contentCache);
-        await sectionWriter.addRow(
+        const content = await extractContent(node, contentCache, csvTimings);
+        await addBuiltRow(sectionWriter, csvTimings, () =>
           [
             escapeCSVField(node.id),
             escapeCSVField(node.properties.name || ''),
@@ -425,7 +523,7 @@ export const streamAllCSVsToDisk = async (
         const errorKeysStr = `[${errorKeys.map((k: string) => `'${k.replace(/'/g, "''")}'`).join(',')}]`;
         const middleware = node.properties.middleware || [];
         const middlewareStr = `[${middleware.map((m: string) => `'${m.replace(/'/g, "''")}'`).join(',')}]`;
-        await routeWriter.addRow(
+        await addBuiltRow(routeWriter, csvTimings, () =>
           [
             escapeCSVField(node.id),
             escapeCSVField(node.properties.name || ''),
@@ -438,7 +536,7 @@ export const streamAllCSVsToDisk = async (
         break;
       }
       case 'Tool':
-        await toolWriter.addRow(
+        await addBuiltRow(toolWriter, csvTimings, () =>
           [
             escapeCSVField(node.id),
             escapeCSVField(node.properties.name || ''),
@@ -451,8 +549,8 @@ export const streamAllCSVsToDisk = async (
         // Code element nodes (Function, Class, Interface, CodeElement)
         const writer = codeWriterMap[node.label];
         if (writer) {
-          const content = await extractContent(node, contentCache);
-          await writer.addRow(
+          const content = await extractContent(node, contentCache, csvTimings);
+          await addBuiltRow(writer, csvTimings, () =>
             [
               escapeCSVField(node.id),
               escapeCSVField(node.properties.name || ''),
@@ -468,8 +566,8 @@ export const streamAllCSVsToDisk = async (
           // Multi-language node types (Struct, Impl, Trait, Macro, etc.)
           const mlWriter = multiLangWriters.get(node.label);
           if (mlWriter) {
-            const content = await extractContent(node, contentCache);
-            await mlWriter.addRow(
+            const content = await extractContent(node, contentCache, csvTimings);
+            await addBuiltRow(mlWriter, csvTimings, () =>
               [
                 escapeCSVField(node.id),
                 escapeCSVField(node.properties.name || ''),
@@ -507,9 +605,13 @@ export const streamAllCSVsToDisk = async (
 
   // --- Stream relationship CSV ---
   const relCsvPath = path.join(csvDir, 'relations.csv');
-  const relWriter = new BufferedCSVWriter(relCsvPath, 'from,to,type,confidence,reason,step');
+  const relWriter = new BufferedCSVWriter(
+    relCsvPath,
+    'from,to,type,confidence,reason,step',
+    csvTimings,
+  );
   for (const rel of graph.iterRelationships()) {
-    await relWriter.addRow(
+    await addBuiltRow(relWriter, csvTimings, () =>
       [
         escapeCSVField(rel.sourceId),
         escapeCSVField(rel.targetId),
@@ -524,6 +626,7 @@ export const streamAllCSVsToDisk = async (
 
   // Build result map — only include tables that have rows
   const nodeFiles = new Map<NodeTableName, { csvPath: string; rows: number }>();
+  const rowsByTable: Record<string, number> = {};
   const tableMap: [NodeTableName, BufferedCSVWriter][] = [
     ['File', fileWriter],
     ['Folder', folderWriter],
@@ -543,15 +646,22 @@ export const streamAllCSVsToDisk = async (
   ];
   for (const [name, writer] of tableMap) {
     if (writer.rows > 0) {
+      rowsByTable[name] = writer.rows;
       nodeFiles.set(name, {
         csvPath: path.join(csvDir, `${name.toLowerCase()}.csv`),
         rows: writer.rows,
       });
     }
   }
+  rowsByTable.Relationship = relWriter.rows;
 
   // Restore original process listener limit
   process.setMaxListeners(prevMax);
 
-  return { nodeFiles, relCsvPath, relRows: relWriter.rows };
+  return {
+    nodeFiles,
+    relCsvPath,
+    relRows: relWriter.rows,
+    metrics: { timings: csvTimings, rowsByTable },
+  };
 };

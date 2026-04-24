@@ -41,6 +41,11 @@ export interface AnalyzeCounters {
 
 export interface LbugLoadTimingBreakdown {
   csvGenerationMs?: number;
+  csvContentCacheHitMs?: number;
+  csvContentReadMs?: number;
+  csvContentExtractMs?: number;
+  csvRowBuildMs?: number;
+  csvWriterFlushMs?: number;
   nodeCopyMs?: number;
   relationshipSplitMs?: number;
   relationshipCopyMs?: number;
@@ -58,7 +63,9 @@ export interface LbugLoadMetrics {
     relationshipCopyCount?: number;
     insertedRelationships?: number;
     skippedRelationships?: number;
+    csvRowsByTable?: Record<string, number>;
   };
+  nodeCopyByTableMs?: TimingMap;
 }
 
 export interface ParseTimingBreakdown {

@@ -399,6 +399,18 @@ export const analyzeCommand = async (inputPath?: string, options?: AnalyzeOption
   process.exit(0);
 };
 
+function formatTimingMap(map: Record<string, number> | undefined): string {
+  const entries = Object.entries(map ?? {}).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0) return 'none';
+  return entries.map(([key, value]) => `${key} ${value.toFixed(1)}ms`).join(' | ');
+}
+
+function formatCountMap(map: Record<string, number> | undefined): string {
+  const entries = Object.entries(map ?? {}).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0) return 'none';
+  return entries.map(([key, value]) => `${key} ${value.toLocaleString()}`).join(' | ');
+}
+
 function printPerformanceSummary(performance: AnalyzePerformanceReport): void {
   console.log(
     `  analyze timing: ${(performance.totalWallMs / 1000).toFixed(1)}s total, ${(performance.overheadMs / 1000).toFixed(1)}s overhead`,
@@ -421,6 +433,11 @@ function printPerformanceSummary(performance: AnalyzePerformanceReport): void {
     console.log(
       `  lbug detail: csvGen ${(lbugTimings.csvGenerationMs ?? 0).toFixed(1)}ms | nodeCopy ${(lbugTimings.nodeCopyMs ?? 0).toFixed(1)}ms | relSplit ${(lbugTimings.relationshipSplitMs ?? 0).toFixed(1)}ms | relCopy ${(lbugTimings.relationshipCopyMs ?? 0).toFixed(1)}ms | fallbackInsert ${(lbugTimings.fallbackRelationshipInsertMs ?? 0).toFixed(1)}ms | cleanup ${(lbugTimings.cleanupMs ?? 0).toFixed(1)}ms | nodeCopies ${lbugCounters?.nodeCopyCount ?? 0} | relCopies ${lbugCounters?.relationshipCopyCount ?? 0}`,
     );
+    console.log(
+      `  lbug csvGen detail: contentRead ${(lbugTimings.csvContentReadMs ?? 0).toFixed(1)}ms | cacheHit ${(lbugTimings.csvContentCacheHitMs ?? 0).toFixed(1)}ms | extract ${(lbugTimings.csvContentExtractMs ?? 0).toFixed(1)}ms | rowBuild ${(lbugTimings.csvRowBuildMs ?? 0).toFixed(1)}ms | writerFlush ${(lbugTimings.csvWriterFlushMs ?? 0).toFixed(1)}ms`,
+    );
+    console.log(`  lbug csv rows: ${formatCountMap(lbugCounters?.csvRowsByTable)}`);
+    console.log(`  lbug nodeCopy detail: ${formatTimingMap(performance.lbugLoad?.nodeCopyByTableMs)}`);
   }
   const ftsIndexMs = performance.ftsIndexMs;
   if (Object.keys(ftsIndexMs).length > 0) {

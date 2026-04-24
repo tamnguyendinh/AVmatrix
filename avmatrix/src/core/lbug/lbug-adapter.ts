@@ -17,7 +17,11 @@ import {
 } from './schema.js';
 import { streamAllCSVsToDisk } from './csv-generator.js';
 import type { CachedEmbedding } from '../embeddings/types.js';
-import type { LbugLoadMetrics, LbugLoadTimingBreakdown } from '../analyze/analyze-metrics.js';
+import type {
+  LbugLoadMetrics,
+  LbugLoadTimingBreakdown,
+  TimingMap,
+} from '../analyze/analyze-metrics.js';
 import { roundMs } from '../analyze/analyze-metrics.js';
 
 // ---------------------------------------------------------------------------
@@ -403,6 +407,11 @@ export const loadGraphToLbug = async (
   const csvResult = await timeLbugStep(timings, 'csvGenerationMs', () =>
     streamAllCSVsToDisk(graph, repoPath, csvDir),
   );
+  timings.csvContentCacheHitMs = csvResult.metrics.timings.contentCacheHitMs;
+  timings.csvContentReadMs = csvResult.metrics.timings.contentReadMs;
+  timings.csvContentExtractMs = csvResult.metrics.timings.contentExtractMs;
+  timings.csvRowBuildMs = csvResult.metrics.timings.rowBuildMs;
+  timings.csvWriterFlushMs = csvResult.metrics.timings.writerFlushMs;
 
   const validTables = new Set<string>(NODE_TABLES as readonly string[]);
   const getNodeLabel = (nodeId: string): string => {
@@ -417,6 +426,7 @@ export const loadGraphToLbug = async (
   const totalSteps = nodeFiles.length + 1; // +1 for relationships
   let stepsDone = 0;
   let nodeCopyCount = 0;
+  const nodeCopyByTableMs: TimingMap = {};
 
   await timeLbugStep(timings, 'nodeCopyMs', async () => {
     for (const [table, { csvPath, rows }] of nodeFiles) {
@@ -426,6 +436,7 @@ export const loadGraphToLbug = async (
       const normalizedPath = normalizeCopyPath(csvPath);
       const copyQuery = getCopyQuery(table, normalizedPath);
       nodeCopyCount++;
+      const copyStart = performance.now();
 
       try {
         await conn.query(copyQuery);
@@ -440,6 +451,8 @@ export const loadGraphToLbug = async (
           const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
           throw new Error(`COPY failed for ${table}: ${retryMsg.slice(0, 200)}`);
         }
+      } finally {
+        nodeCopyByTableMs[table] = roundMs(performance.now() - copyStart);
       }
     }
   });
@@ -572,7 +585,9 @@ export const loadGraphToLbug = async (
         relationshipCopyCount,
         insertedRelationships: insertedRels,
         skippedRelationships: skippedRels,
+        csvRowsByTable: csvResult.metrics.rowsByTable,
       },
+      nodeCopyByTableMs,
     },
   };
 };
