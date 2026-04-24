@@ -2,7 +2,7 @@
  * Phase: parse
  *
  * Chunked parse + resolve loop: reads source in byte-budget chunks,
- * parses via worker pool (or sequential fallback), resolves imports,
+ * parses via worker pool, resolves imports,
  * heritage, and calls, synthesizes wildcard bindings.
  *
  * This phase encapsulates the entire `runChunkedParseAndResolve` function
@@ -35,8 +35,8 @@ export interface ParseOutput {
   /**
    * Read-only snapshot of exported type bindings keyed by file path.
    *
-   * Fully populated by `parse` (sequential path via `enrichExportedTypeMap`
-   * and worker path via `buildExportedTypeMapFromGraph` in the main thread).
+   * Fully populated by `parse` via worker output plus
+   * `buildExportedTypeMapFromGraph` in the main thread.
    * Downstream phases — including `crossFile` — receive it as a true
    * `ReadonlyMap`; `crossFile` builds its own mutable working copy locally
    * for per-file re-resolution writes, so this snapshot is never mutated
@@ -59,9 +59,7 @@ export interface ParseOutput {
   totalFiles: number;
   /**
    * True if the parse phase spawned a live worker pool for this run.
-   * False means every chunk ran through the sequential fallback (skipWorkers,
-   * thresholds not met, or pool-creation failure). Primarily a test affordance:
-   * see `PipelineOptions.workerThresholdsForTest`.
+   * False only means there were no parseable files.
    */
   readonly usedWorkerPool: boolean;
   /** Phase 0 parse instrumentation. */
@@ -89,7 +87,6 @@ export const parsePhase: PipelinePhase<ParseOutput> = {
       ctx.repoPath,
       ctx.pipelineStart,
       ctx.onProgress,
-      ctx.options,
     );
 
     return {

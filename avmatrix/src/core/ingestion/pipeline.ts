@@ -44,19 +44,6 @@ import {
 export interface PipelineOptions {
   /** Skip MRO, community detection, and process extraction for faster test runs. */
   skipGraphPhases?: boolean;
-  /** Force sequential parsing (no worker pool). Useful for testing the sequential path. */
-  skipWorkers?: boolean;
-  /**
-   * @internal Test-only override for worker-pool gating thresholds.
-   * When unset, production defaults apply (15 files OR 512 KB total bytes).
-   * Setting either field lowers the corresponding threshold so small test
-   * fixtures can still exercise the worker-pool path. Do not use from
-   * production call sites.
-   */
-  workerThresholdsForTest?: {
-    minFiles?: number;
-    minBytes?: number;
-  };
 }
 
 // ── Phase registry ─────────────────────────────────────────────────────────

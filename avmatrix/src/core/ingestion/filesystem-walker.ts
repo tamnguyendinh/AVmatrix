@@ -116,10 +116,7 @@ export const readFileContents = async (
   return contents;
 };
 
-/**
- * Legacy API — scans and reads everything into memory.
- * Used by sequential fallback path only.
- */
+/** Legacy API — scans and reads everything into memory. */
 export const walkRepository = async (
   repoPath: string,
   onProgress?: (current: number, total: number, filePath: string) => void,

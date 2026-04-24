@@ -1173,8 +1173,7 @@ describe('Ruby method enrichment (visibility, isStatic, parameters)', () => {
       (m) => m.name === 'internal_state' && m.properties.filePath?.includes('animal'),
     );
     expect(internalState).toBeDefined();
-    // Visibility enrichment requires the MethodExtractor path (worker mode).
-    // Sequential fallback (small repos) does not populate visibility.
+    // Visibility enrichment requires the worker MethodExtractor path.
     if (internalState!.properties.visibility !== undefined) {
       expect(internalState!.properties.visibility).toBe('private');
     }
@@ -1267,13 +1266,11 @@ describe('Ruby method enrichment (visibility, isStatic, parameters)', () => {
   });
 });
 
-describe('Ruby singleton_class handling via sequential path (skipWorkers)', () => {
+describe('Ruby singleton_class handling via worker path', () => {
   let result: PipelineResult;
 
   beforeAll(async () => {
-    result = await runPipelineFromRepo(path.join(FIXTURES, 'ruby-method-enrichment'), () => {}, {
-      skipWorkers: true,
-    });
+    result = await runPipelineFromRepo(path.join(FIXTURES, 'ruby-method-enrichment'), () => {});
   }, 60000);
 
   it('keeps Animal as the owner for class << self methods', () => {
@@ -1283,7 +1280,7 @@ describe('Ruby singleton_class handling via sequential path (skipWorkers)', () =
     ).toBeDefined();
   });
 
-  it('marks from_habitat as static in the sequential path', () => {
+  it('marks from_habitat as static in the worker path', () => {
     const methods = getNodesByLabelFull(result, 'Method');
     const fromHabitat = methods.find(
       (m) => m.name === 'from_habitat' && m.properties.filePath?.includes('animal'),

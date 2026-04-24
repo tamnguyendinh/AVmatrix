@@ -1966,20 +1966,16 @@ describe('Java overloaded method disambiguation (METHOD_IMPLEMENTS)', () => {
   });
 });
 
-// ── Phase P: Sequential path parity — same-arity overloads ────────────────
+// ── Phase P: Worker path — same-arity overloads ───────────────────────────
 
-describe('Java same-arity overloads via sequential path (skipWorkers)', () => {
+describe('Java same-arity overloads via worker path', () => {
   let result: PipelineResult;
 
   beforeAll(async () => {
-    result = await runPipelineFromRepo(
-      path.join(FIXTURES, 'java-same-arity-cross-file'),
-      () => {},
-      { skipWorkers: true },
-    );
+    result = await runPipelineFromRepo(path.join(FIXTURES, 'java-same-arity-cross-file'), () => {});
   }, 60000);
 
-  it('produces distinct graph nodes for find(int) and find(String) — sequential path', () => {
+  it('produces distinct graph nodes for find(int) and find(String) — worker path', () => {
     const methods = getNodesByLabelFull(result, 'Method');
     const findNodes = methods.filter(
       (m) => m.name === 'find' && m.properties.filePath?.includes('DbLookup'),
@@ -1989,7 +1985,7 @@ describe('Java same-arity overloads via sequential path (skipWorkers)', () => {
     expect(types).toEqual([['String'], ['int']]);
   });
 
-  it('crossFileById() → find(int) — sequential path', () => {
+  it('crossFileById() → find(int) — worker path', () => {
     const calls = getRelationships(result, 'CALLS');
     const edges = calls.filter(
       (c) =>
@@ -2002,7 +1998,7 @@ describe('Java same-arity overloads via sequential path (skipWorkers)', () => {
     expect(targetNode?.properties.parameterTypes).toEqual(['int']);
   });
 
-  it('crossFileByName() → find(String) — sequential path', () => {
+  it('crossFileByName() → find(String) — worker path', () => {
     const calls = getRelationships(result, 'CALLS');
     const edges = calls.filter(
       (c) =>
@@ -2015,7 +2011,7 @@ describe('Java same-arity overloads via sequential path (skipWorkers)', () => {
     expect(targetNode?.properties.parameterTypes).toEqual(['String']);
   });
 
-  it('METHOD_IMPLEMENTS edges match interface methods — sequential path', () => {
+  it('METHOD_IMPLEMENTS edges match interface methods — worker path', () => {
     const mi = getRelationships(result, 'METHOD_IMPLEMENTS');
     const edges = mi.filter(
       (e) =>

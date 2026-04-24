@@ -270,14 +270,21 @@ export const createWorkerPool = (workerUrl: URL, poolSize?: number): WorkerPool 
         };
       };
 
-      const replaceWorker = (state: WorkerState<TInput>) => {
+      const replaceWorker = (state: WorkerState<TInput>): boolean => {
         state.cleanup?.();
         state.cleanup = undefined;
         void state.worker.terminate().catch(() => undefined);
-        const replacement = new Worker(workerUrl);
-        workers[state.index] = replacement;
-        state.worker = replacement;
-        attachHandlers(state);
+        try {
+          const replacement = new Worker(workerUrl);
+          workers[state.index] = replacement;
+          state.worker = replacement;
+          attachHandlers(state);
+          return true;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          failDispatch(new Error(`Worker ${state.index} restart failed: ${message}`));
+          return false;
+        }
       };
 
       const resetInactivityTimer = (state: WorkerState<TInput>) => {
@@ -335,10 +342,10 @@ export const createWorkerPool = (workerUrl: URL, poolSize?: number): WorkerPool 
         state.startedAtMs = undefined;
         state.lastActiveFile = undefined;
 
-        if (restartWorker) replaceWorker(state);
+        if (restartWorker && !replaceWorker(state)) return;
 
         if (!enqueueSplitRetry(unit)) {
-          failDispatch(error);
+          failDispatch(describeFinalUnitFailure(state.index, unit, error, options));
           return;
         }
 
@@ -462,6 +469,24 @@ function formatLanguageBreakdown(breakdown: Record<string, number>): string {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([ext, count]) => `${ext}:${count}`)
     .join(',');
+}
+
+function describeFinalUnitFailure<TInput>(
+  workerIndex: number,
+  unit: WorkUnit<TInput>,
+  error: Error,
+  options: WorkerDispatchOptions<TInput>,
+): Error {
+  const paths = unit.items
+    .map((item) => itemPath(item, options))
+    .filter((pathValue): pathValue is string => Boolean(pathValue));
+  const fileList =
+    paths.length <= 5 ? paths.join(', ') : `${paths.slice(0, 5).join(', ')} (+${paths.length - 5})`;
+  return new Error(
+    `${error.message} Worker ${workerIndex} unit ${unit.unitId} failed after ` +
+      `${unit.retryDepth} retry split(s); files=${fileList || 'unknown'}. ` +
+      'Sequential whole-repo fallback is disabled for full analyze.',
+  );
 }
 
 function formatBytes(bytes: number): string {

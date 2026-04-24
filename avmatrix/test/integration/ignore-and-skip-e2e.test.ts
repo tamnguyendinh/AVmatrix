@@ -6,12 +6,9 @@ import {
   walkRepositoryPaths,
   readFileContents,
 } from '../../src/core/ingestion/filesystem-walker.js';
-import { processParsing } from '../../src/core/ingestion/parsing-processor.js';
-import { createKnowledgeGraph } from '../../src/core/graph/graph.js';
-import { createSymbolTable } from '../../src/core/ingestion/model/symbol-table.js';
-import { createASTCache } from '../../src/core/ingestion/ast-cache.js';
 import { isLanguageAvailable } from '../../src/core/tree-sitter/parser-loader.js';
 import { SupportedLanguages } from '../../src/config/supported-languages.js';
+import { runPipelineFromRepo } from '../../src/core/ingestion/pipeline.js';
 
 // ============================================================================
 // E2E: .gitignore + .avmatrixignore + unsupported language skip
@@ -113,23 +110,15 @@ describe('ignore + language-skip E2E', () => {
       const scannedFiles = await walkRepositoryPaths(tmpDir);
       const relativePaths = scannedFiles.map((f) => f.path);
 
-      // Phase 2: read contents
-      const contentMap = await readFileContents(tmpDir, relativePaths);
-      const files = Array.from(contentMap.entries()).map(([p, content]) => ({
-        path: p,
-        content,
-      }));
+      // Phase 2: ensure contents are readable for the discovered files
+      await readFileContents(tmpDir, relativePaths);
 
-      // Phase 3: parse (sequential — no worker pool)
-      const graph = createKnowledgeGraph();
-      const symbolTable = createSymbolTable();
-      const astCache = createASTCache();
-
-      // Should NOT throw even if Swift grammar is unavailable
-      await processParsing(graph, files, symbolTable, astCache);
+      // Phase 3: parse through the canonical worker path
+      const result = await runPipelineFromRepo(tmpDir, () => {}, { skipGraphPhases: true });
+      expect(result.usedWorkerPool).toBe(true);
 
       // TypeScript files should produce Function nodes
-      const nodes = graph.nodes;
+      const nodes = result.graph.nodes;
       const functionNodes = nodes.filter((n) => n.label === 'Function');
       const functionNames = functionNodes.map((n) => n.properties.name);
 
@@ -145,9 +134,10 @@ describe('ignore + language-skip E2E', () => {
 
       // Swift behavior depends on grammar availability
       if (!isLanguageAvailable(SupportedLanguages.Swift)) {
-        // No Swift-sourced nodes should appear in the graph
+        // The structure phase still creates the File node; parsing should not
+        // create Swift code symbols when the grammar is unavailable.
         const swiftNodes = nodes.filter((n) =>
-          (n.properties.filePath as string | undefined)?.endsWith('.swift'),
+          (n.properties.filePath as string | undefined)?.endsWith('.swift') && n.label !== 'File',
         );
         expect(swiftNodes).toHaveLength(0);
       }

@@ -3,7 +3,7 @@
  *
  * This is the core parsing engine of the ingestion pipeline. It reads
  * source files in byte-budget chunks (~20MB each), parses via worker
- * pool (or sequential fallback), resolves imports/calls/heritage per
+ * pool, resolves imports/calls/heritage per
  * chunk, and synthesizes wildcard import bindings.
  *
  * Consumed by the parse phase (`parse.ts`) — the phase file handles
@@ -19,13 +19,11 @@ import {
 } from '../binding-accumulator.js';
 import { processParsing } from '../parsing-processor.js';
 import {
-  processImports,
   processImportsFromExtracted,
   buildImportResolutionContext,
 } from '../import-processor.js';
 import { EMPTY_INDEX } from '../import-resolvers/utils.js';
 import {
-  processCalls,
   processCallsFromExtracted,
   processAssignmentsFromExtracted,
   processRoutesFromExtracted,
@@ -35,13 +33,10 @@ import {
 } from '../call-processor.js';
 import { buildHeritageMap } from '../model/heritage-map.js';
 import {
-  processHeritage,
   processHeritageFromExtracted,
-  extractExtractedHeritageFromFiles,
   getHeritageStrategyForLanguage,
 } from '../heritage-processor.js';
 import { createResolutionContext } from '../model/resolution-context.js';
-import { createASTCache } from '../ast-cache.js';
 import { type PipelineProgress, getLanguageFromFilename } from 'avmatrix-shared';
 import { readFileContents } from '../filesystem-walker.js';
 import { isLanguageAvailable } from '../../tree-sitter/parser-loader.js';
@@ -59,8 +54,6 @@ import type {
 } from '../workers/parse-worker.js';
 import type { ExtractedHeritage } from '../model/heritage-map.js';
 import type { KnowledgeGraph } from '../../graph/types.js';
-import type { PipelineOptions } from '../pipeline.js';
-import { extractFetchCallsFromFiles } from '../call-processor.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
@@ -68,7 +61,6 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { isDev } from '../utils/env.js';
 import { synthesizeWildcardImportBindings, needsSynthesis } from './wildcard-synthesis.js';
-import { extractORMQueriesInline } from './orm-extraction.js';
 import type { ParseMetrics, ParseTimingBreakdown } from '../../analyze/analyze-metrics.js';
 import { roundMs } from '../../analyze/analyze-metrics.js';
 
@@ -86,7 +78,7 @@ type ProgressFn = (progress: PipelineProgress) => void;
  * Chunked parse + resolve loop.
  *
  * Reads source in byte-budget chunks (~20MB each). For each chunk:
- * 1. Parse via worker pool (or sequential fallback)
+ * 1. Parse via worker pool
  * 2. Resolve imports from extracted data
  * 3. Synthesize wildcard import bindings (Go/Ruby/C++/Swift/Python)
  * 4. Resolve heritage + routes per chunk; defer worker CALLS until all chunks
@@ -101,7 +93,6 @@ export async function runChunkedParseAndResolve(
   repoPath: string,
   pipelineStart: number,
   onProgress: ProgressFn,
-  options?: PipelineOptions,
 ): Promise<{
   exportedTypeMap: ExportedTypeMap;
   allFetchCalls: ExtractedFetchCall[];
@@ -182,62 +173,17 @@ export async function runChunkedParseAndResolve(
     stats: { filesProcessed: 0, totalFiles: totalParseable, nodesCreated: graph.nodeCount },
   });
 
-  // Don't spawn workers for tiny repos — overhead exceeds benefit.
-  // Test suites may lower the thresholds via `options.workerThresholdsForTest`
-  // to exercise the worker-pool path with small fixtures; see PipelineOptions.
-  const MIN_FILES_FOR_WORKERS = options?.workerThresholdsForTest?.minFiles ?? 15;
-  const MIN_BYTES_FOR_WORKERS = options?.workerThresholdsForTest?.minBytes ?? 512 * 1024;
-  const totalBytes = totalParseableBytes;
-
-  // Create worker pool once, reuse across chunks
-  let workerPool: WorkerPool | undefined;
-  if (
-    !options?.skipWorkers &&
-    (totalParseable >= MIN_FILES_FOR_WORKERS || totalBytes >= MIN_BYTES_FOR_WORKERS)
-  ) {
-    try {
-      let workerUrl = new URL('../workers/parse-worker.js', import.meta.url);
-      // When running under vitest, import.meta.url points to src/ where no .js exists.
-      // Fall back to the compiled dist/ worker so the pool can spawn real worker threads.
-      const thisDir = fileURLToPath(new URL('.', import.meta.url));
-      if (!fs.existsSync(fileURLToPath(workerUrl))) {
-        const distWorker = path.resolve(
-          thisDir,
-          '..',
-          '..',
-          '..',
-          '..',
-          'dist',
-          'core',
-          'ingestion',
-          'workers',
-          'parse-worker.js',
-        );
-        if (fs.existsSync(distWorker)) {
-          workerUrl = pathToFileURL(distWorker);
-        }
-      }
-      workerPool = createWorkerPool(workerUrl);
-      metrics.counters.workerCount = workerPool.size;
-    } catch (err) {
-      console.warn(
-        'Worker pool creation failed, using sequential fallback:',
-        (err as Error).message,
-      );
-    }
-  }
+  // Create worker pool once, reuse across chunks. Worker parsing is the
+  // canonical full-analyze path; startup failures are surfaced instead of
+  // silently switching to the removed sequential parser.
+  const workerPool = totalParseable > 0 ? createCanonicalParseWorkerPool(metrics) : undefined;
 
   let filesParsedSoFar = 0;
-
-  // AST cache sized for one chunk (sequential fallback uses it for import/call/heritage)
-  const maxChunkFiles = chunks.reduce((max, c) => Math.max(max, c.length), 0);
-  let astCache = createASTCache(maxChunkFiles);
 
   // Build import resolution context once — suffix index, file lists, resolve cache.
   const importCtx = buildImportResolutionContext(allPaths);
   const allPathObjects = allPaths.map((p) => ({ path: p }));
 
-  const sequentialChunkPaths: string[][] = [];
   const chunkNeedsSynthesis = chunks.map((paths) =>
     paths.some((p) => {
       const lang = getLanguageFromFilename(p);
@@ -246,7 +192,7 @@ export async function runChunkedParseAndResolve(
   );
   const exportedTypeMap: ExportedTypeMap = new Map();
   const bindingAccumulator = new BindingAccumulator();
-  // Tracks whether per-chunk or fallback wildcard-binding synthesis already
+  // Tracks whether per-chunk wildcard-binding synthesis already
   // ran, so the unconditional final call below can be skipped when redundant.
   // synthesizeWildcardImportBindings is graph-global; once any chunk runs it
   // after parsing wildcard files, later non-wildcard chunks add no work for
@@ -278,7 +224,7 @@ export async function runChunkedParseAndResolve(
           graph,
           chunkFiles,
           symbolTable,
-          astCache,
+          workerPool!,
           (current, _total, filePath) => {
             const globalCurrent = filesParsedSoFar + current;
             const parsingProgress = 20 + (globalCurrent / totalParseable) * 62;
@@ -294,13 +240,12 @@ export async function runChunkedParseAndResolve(
               },
             });
           },
-          workerPool,
         ),
       );
 
       const chunkBasePercent = 20 + (filesParsedSoFar / totalParseable) * 62;
 
-      if (chunkWorkerData) {
+      {
         await timeParseStep(metrics, 'importResolveMs', () =>
           processImportsFromExtracted(
             graph,
@@ -424,15 +369,9 @@ export async function runChunkedParseAndResolve(
         if (chunkWorkerData.ormQueries?.length) {
           for (const item of chunkWorkerData.ormQueries) allORMQueries.push(item);
         }
-      } else {
-        await timeParseStep(metrics, 'importResolveMs', () =>
-          processImports(graph, chunkFiles, astCache, ctx, undefined, repoPath, allPaths),
-        );
-        sequentialChunkPaths.push(chunkPaths);
       }
 
       filesParsedSoFar += chunkFiles.length;
-      astCache.clear();
     }
 
     const fullWorkerHeritageMap =
@@ -481,123 +420,14 @@ export async function runChunkedParseAndResolve(
     await workerPool?.terminate();
   }
 
-  // Sequential fallback chunks.
-  //
-  // U6: wrap the fallback loop and the finalize/enrich steps in a try/finally
-  // so cleanup still runs on a mid-fallback throw. The `finally` guarantees:
-  //   1. `astCache.clear()` releases any tree-sitter trees held by the most
-  //      recently allocated per-chunk cache, mirroring the per-chunk
-  //      `astCache.clear()` calls on the happy path.
-  //   2. `bindingAccumulator.finalize()` runs before `crossFile` disposes the
-  //      accumulator downstream — callers that inspect partial TypeEnv state
-  //      (or consume it via `enrichExportedTypeMap` on a partial recovery)
-  //      still see a finalized accumulator.
-  //   3. `enrichExportedTypeMap` runs so any bindings already accumulated
-  //      are propagated into `exportedTypeMap` even if the fallback aborted.
-  //
-  // Disposal of the accumulator remains with `crossFile` (owned by U2). We do
-  // NOT call `bindingAccumulator.dispose()` here.
-  try {
-    if (sequentialChunkPaths.length > 0) {
-      timeParseStepSync(metrics, 'wildcardSynthesisMs', () =>
-        synthesizeWildcardImportBindings(graph, ctx),
-      );
-      hasSynthesized = true;
-    }
-    const allSequentialHeritage: ExtractedHeritage[] = [];
-    const cachedSequentialChunkFiles: Array<Array<{ path: string; content: string }>> = [];
-    for (const chunkPaths of sequentialChunkPaths) {
-      const chunkContents = await timeParseStep(metrics, 'readContentsMs', () =>
-        readFileContents(repoPath, chunkPaths),
-      );
-      const chunkFiles = chunkPaths
-        .filter((p) => chunkContents.has(p))
-        .map((p) => ({ path: p, content: chunkContents.get(p)! }));
-      cachedSequentialChunkFiles.push(chunkFiles);
-      astCache = createASTCache(chunkFiles.length);
-      const sequentialHeritage = await timeParseStep(metrics, 'heritageResolveMs', () =>
-        extractExtractedHeritageFromFiles(chunkFiles, astCache),
-      );
-      for (const h of sequentialHeritage) allSequentialHeritage.push(h);
-      astCache.clear();
-    }
-    const sequentialHeritageMap =
-      allSequentialHeritage.length > 0
-        ? buildHeritageMap(allSequentialHeritage, ctx, getHeritageStrategyForLanguage)
-        : undefined;
-
-    for (let chunkIdx = 0; chunkIdx < sequentialChunkPaths.length; chunkIdx++) {
-      const chunkFiles = cachedSequentialChunkFiles[chunkIdx];
-      astCache = createASTCache(chunkFiles.length);
-      const rubyHeritage = await timeParseStep(metrics, 'callResolveMs', () =>
-        processCalls(
-          graph,
-          chunkFiles,
-          astCache,
-          ctx,
-          undefined,
-          exportedTypeMap,
-          undefined,
-          undefined,
-          undefined,
-          sequentialHeritageMap,
-          bindingAccumulator,
-        ),
-      );
-      await timeParseStep(metrics, 'heritageResolveMs', () =>
-        processHeritage(graph, chunkFiles, astCache, ctx),
-      );
-      if (rubyHeritage.length > 0) {
-        await timeParseStep(metrics, 'heritageResolveMs', () =>
-          processHeritageFromExtracted(graph, rubyHeritage, ctx),
-        );
-      }
-      const chunkFetchCalls = await extractFetchCallsFromFiles(chunkFiles, astCache);
-      if (chunkFetchCalls.length > 0) {
-        for (const item of chunkFetchCalls) allFetchCalls.push(item);
-      }
-      for (const f of chunkFiles) {
-        extractORMQueriesInline(f.path, f.content, allORMQueries);
-      }
-      astCache.clear();
-      cachedSequentialChunkFiles[chunkIdx] = [];
-    }
-
-    // Log resolution cache stats
-    if (isDev) {
-      const rcStats = ctx.getStats();
-      const total = rcStats.cacheHits + rcStats.cacheMisses;
-      const hitRate = total > 0 ? ((rcStats.cacheHits / total) * 100).toFixed(1) : '0';
-      console.log(
-        `🔍 Resolution cache: ${rcStats.cacheHits} hits, ${rcStats.cacheMisses} misses (${hitRate}% hit rate)`,
-      );
-    }
-  } finally {
-    // Clearing an already-empty cache is a no-op, so this is idempotent-safe
-    // on the happy path where every per-chunk block already cleared astCache.
-    astCache.clear();
-
-    // Run finalize + enrichment inside try/catch so a cleanup failure never
-    // masks the original fallback error. finalize must precede crossFile's
-    // dispose (U2) and enrichExportedTypeMap depends on finalized bindings.
-    try {
-      const enriched = timeParseStepSync(metrics, 'exportedTypeMapEnrichMs', () => {
-        bindingAccumulator.finalize();
-        return enrichExportedTypeMap(bindingAccumulator, graph, exportedTypeMap);
-      });
-      if (isDev && enriched > 0) {
-        console.log(
-          `🔗 Worker TypeEnv enrichment: ${enriched} fixpoint-inferred exports added to ExportedTypeMap`,
-        );
-      }
-    } catch (enrichErr) {
-      if (isDev) {
-        console.warn(
-          'Post-fallback finalize/enrich failed during cleanup:',
-          (enrichErr as Error).message,
-        );
-      }
-    }
+  const enriched = timeParseStepSync(metrics, 'exportedTypeMapEnrichMs', () => {
+    bindingAccumulator.finalize();
+    return enrichExportedTypeMap(bindingAccumulator, graph, exportedTypeMap);
+  });
+  if (isDev && enriched > 0) {
+    console.log(
+      `🔗 Worker TypeEnv enrichment: ${enriched} fixpoint-inferred exports added to ExportedTypeMap`,
+    );
   }
 
   if (!hasSynthesized) {
@@ -652,12 +482,52 @@ export async function runChunkedParseAndResolve(
     allORMQueries,
     bindingAccumulator,
     resolutionContext: ctx,
-    // Whether a worker pool was actually live for this run. False means the
-    // sequential fallback handled every chunk (either due to `skipWorkers`,
-    // the file-count/byte thresholds, or a pool-creation failure).
+    // Whether a worker pool was live for this run. False only means there
+    // were no parseable files.
     usedWorkerPool: workerPool !== undefined,
     metrics,
   };
+}
+
+function createCanonicalParseWorkerPool(metrics: ParseMetrics): WorkerPool {
+  try {
+    const workerUrl = resolveParseWorkerUrl();
+    const workerPool = createWorkerPool(workerUrl);
+    metrics.counters.workerCount = workerPool.size;
+    return workerPool;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      'Worker pool creation failed. Full analyze requires parse workers and no longer ' +
+        `falls back to sequential parsing. ${message}`,
+    );
+  }
+}
+
+function resolveParseWorkerUrl(): URL {
+  const sourceJsWorker = new URL('../workers/parse-worker.js', import.meta.url);
+  const sourceJsPath = fileURLToPath(sourceJsWorker);
+  if (fs.existsSync(sourceJsPath)) return sourceJsWorker;
+
+  const thisDir = fileURLToPath(new URL('.', import.meta.url));
+  const distWorker = path.resolve(
+    thisDir,
+    '..',
+    '..',
+    '..',
+    '..',
+    'dist',
+    'core',
+    'ingestion',
+    'workers',
+    'parse-worker.js',
+  );
+  if (fs.existsSync(distWorker)) return pathToFileURL(distWorker);
+
+  throw new Error(
+    `Parse worker script not found. Checked ${sourceJsPath} and ${distWorker}. ` +
+      'Run `npm run build` in avmatrix or fix the package install before analyzing.',
+  );
 }
 
 async function timeParseStep<T>(

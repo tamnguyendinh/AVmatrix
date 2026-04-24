@@ -1,10 +1,39 @@
-import { describe, expect, it } from 'vitest';
-import { createASTCache } from '../../src/core/ingestion/ast-cache.js';
+import { afterEach, describe, expect, it } from 'vitest';
 import { processParsing } from '../../src/core/ingestion/parsing-processor.js';
 import { createSemanticModel } from '../../src/core/ingestion/model/semantic-model.js';
 import { createKnowledgeGraph } from '../../src/core/graph/graph.js';
+import { createWorkerPool, type WorkerPool } from '../../src/core/ingestion/workers/worker-pool.js';
+import { pathToFileURL } from 'node:url';
+import path from 'node:path';
+import fs from 'node:fs';
 
-describe('qualified class lookups', () => {
+const DIST_WORKER = path.resolve(
+  __dirname,
+  '..',
+  '..',
+  'dist',
+  'core',
+  'ingestion',
+  'workers',
+  'parse-worker.js',
+);
+const hasDistWorker = fs.existsSync(DIST_WORKER);
+
+describe.skipIf(!hasDistWorker)('qualified class lookups', () => {
+  let pool: WorkerPool | undefined;
+
+  afterEach(async () => {
+    if (pool) {
+      await pool.terminate();
+      pool = undefined;
+    }
+  });
+
+  function createPool(): WorkerPool {
+    pool = createWorkerPool(pathToFileURL(DIST_WORKER) as URL, 1);
+    return pool;
+  }
+
   it('derives canonical dot-separated names from namespaces, packages, and modules', async () => {
     const graph = createKnowledgeGraph();
     const model = createSemanticModel();
@@ -13,7 +42,6 @@ describe('qualified class lookups', () => {
     // via SemanticModel's wrappedAdd — this alias is purely for convenience
     // at call sites that want the SymbolTable-shaped interface.
     const symbolTable = model.symbols;
-    const astCache = createASTCache();
 
     await processParsing(
       graph,
@@ -36,7 +64,7 @@ describe('qualified class lookups', () => {
         },
       ],
       symbolTable,
-      astCache,
+      createPool(),
     );
 
     const userMatches = model.types.lookupClassByName('User');
@@ -71,13 +99,12 @@ describe('qualified class lookups', () => {
     // via SemanticModel's wrappedAdd — this alias is purely for convenience
     // at call sites that want the SymbolTable-shaped interface.
     const symbolTable = model.symbols;
-    const astCache = createASTCache();
 
     await processParsing(
       graph,
       [{ path: 'src/plain-user.ts', content: 'export class User {}\n' }],
       symbolTable,
-      astCache,
+      createPool(),
     );
 
     const simpleMatches = model.types.lookupClassByName('User');

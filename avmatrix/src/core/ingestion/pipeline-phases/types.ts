@@ -28,7 +28,7 @@ export interface PipelineContext {
   readonly graph: KnowledgeGraph;
   /** Progress callback for UI updates. */
   readonly onProgress: (progress: PipelineProgress) => void;
-  /** Pipeline options (skipGraphPhases, skipWorkers, etc.). */
+  /** Pipeline options (skipGraphPhases, etc.). */
   readonly options?: PipelineOptions;
   /** Pipeline start timestamp (for elapsed-time logging). */
   readonly pipelineStart: number;
