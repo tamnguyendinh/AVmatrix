@@ -80,7 +80,12 @@ describe('runCrossFileBindingPropagation', () => {
       () => {},
     );
 
-    expect(result).toBe(0);
+    expect(result.filesReprocessed).toBe(0);
+    expect(result.metrics.counters).toMatchObject({
+      filesReprocessed: 0,
+      skipped: true,
+      skipReason: 'no-named-imports',
+    });
     expect(processCallsMock).not.toHaveBeenCalled();
   });
 
@@ -117,7 +122,13 @@ describe('runCrossFileBindingPropagation', () => {
       () => {},
     );
 
-    expect(result).toBe(0);
+    expect(result.filesReprocessed).toBe(0);
+    expect(result.metrics.counters).toMatchObject({
+      filesWithGaps: 0,
+      filesReprocessed: 0,
+      skipped: true,
+      skipReason: 'below-gap-threshold',
+    });
     expect(processCallsMock).not.toHaveBeenCalled();
   });
 
@@ -200,7 +211,10 @@ describe('runCrossFileBindingPropagation', () => {
 
     // Hard cap is 2000. The function returns `crossFileResolved`, which
     // equals MAX_CROSS_FILE_REPROCESS once the cap is hit.
-    expect(result).toBe(2000);
+    expect(result.filesReprocessed).toBe(2000);
+    expect(result.metrics.counters.filesReprocessed).toBe(2000);
+    expect(result.metrics.counters.candidateFiles).toBeGreaterThanOrEqual(2000);
+    expect(result.metrics.timings.processCallsMs).toBeGreaterThanOrEqual(0);
     expect(processCallsMock).toHaveBeenCalledTimes(2000);
   });
 });

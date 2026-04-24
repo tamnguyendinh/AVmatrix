@@ -65,7 +65,10 @@ describe('crossFilePhase', () => {
   });
 
   it('disposes the binding accumulator on the happy path', async () => {
-    runCrossFileMock.mockResolvedValueOnce(7);
+    runCrossFileMock.mockResolvedValueOnce({
+      filesReprocessed: 7,
+      metrics: { timings: { processCallsMs: 12.3 }, counters: { filesReprocessed: 7 } },
+    });
 
     const acc = new BindingAccumulator();
     acc.appendFile('src/a.ts', [{ scope: '', varName: 'x', typeName: 'X' }]);
@@ -74,6 +77,7 @@ describe('crossFilePhase', () => {
     const result = await crossFilePhase.execute(makeCtx(), makeDeps(acc));
 
     expect(result.filesReprocessed).toBe(7);
+    expect(result.metrics.timings.processCallsMs).toBe(12.3);
     expect(acc.disposed).toBe(true);
     // Post-dispose contract holds.
     expect(acc.fileCount).toBe(0);

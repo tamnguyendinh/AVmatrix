@@ -443,6 +443,7 @@ export async function runFullAnalysis(
       counters,
       lbugLoad: lbugLoadMetrics,
       parse: pipelineResult.performance?.parse,
+      crossFile: pipelineResult.performance?.crossFile,
     });
 
     return {

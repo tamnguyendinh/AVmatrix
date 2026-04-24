@@ -35,10 +35,13 @@ import { getPhaseOutput } from './types.js';
 import type { ParseOutput } from './parse.js';
 import { runCrossFileBindingPropagation } from './cross-file-impl.js';
 import { isDev } from '../utils/env.js';
+import type { CrossFileMetrics } from '../../analyze/analyze-metrics.js';
 
 export interface CrossFileOutput {
   /** Number of files re-processed during cross-file propagation. */
   filesReprocessed: number;
+  /** Cross-file sub-step timings and counters. */
+  metrics: CrossFileMetrics;
 }
 
 export const crossFilePhase: PipelinePhase<CrossFileOutput> = {
@@ -69,7 +72,7 @@ export const crossFilePhase: PipelinePhase<CrossFileOutput> = {
         }
       }
 
-      const filesReprocessed = await runCrossFileBindingPropagation(
+      const propagationResult = await runCrossFileBindingPropagation(
         ctx.graph,
         resolutionContext,
         exportedTypeMap,
@@ -80,7 +83,10 @@ export const crossFilePhase: PipelinePhase<CrossFileOutput> = {
         ctx.onProgress,
       );
 
-      return { filesReprocessed };
+      return {
+        filesReprocessed: propagationResult.filesReprocessed,
+        metrics: propagationResult.metrics,
+      };
     } finally {
       // Single dispose call site for the accumulator — runs on both the
       // happy path and the throw path so the heap is always released

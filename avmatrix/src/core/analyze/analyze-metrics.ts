@@ -82,6 +82,28 @@ export interface ParseMetrics {
   >;
 }
 
+export interface CrossFileTimingBreakdown {
+  totalMs?: number;
+  topologicalSortMs?: number;
+  candidateSelectionMs?: number;
+  readContentsMs?: number;
+  importedReturnMapsMs?: number;
+  processCallsMs?: number;
+}
+
+export interface CrossFileMetrics {
+  timings: CrossFileTimingBreakdown;
+  counters: {
+    filesWithGaps?: number;
+    candidateFiles?: number;
+    filesReprocessed?: number;
+    importLevels?: number;
+    importCycleFiles?: number;
+    skipped?: boolean;
+    skipReason?: string;
+  };
+}
+
 export interface AnalyzeBottleneck {
   bucket: string;
   durationMs: number;
@@ -98,6 +120,7 @@ export interface AnalyzePerformanceReport {
   overheadMs: number;
   lbugLoad?: LbugLoadMetrics;
   parse?: ParseMetrics;
+  crossFile?: CrossFileMetrics;
 }
 
 export class AnalyzeMetricsCollector {
@@ -164,6 +187,7 @@ export function buildAnalyzePerformanceReport(params: {
   counters?: AnalyzeCounters;
   lbugLoad?: LbugLoadMetrics;
   parse?: ParseMetrics;
+  crossFile?: CrossFileMetrics;
 }): AnalyzePerformanceReport {
   const pipelinePhaseMs = params.pipelinePhaseMs ?? {};
   const buckets = { ...pipelinePhaseMs, ...params.buckets };
@@ -190,5 +214,6 @@ export function buildAnalyzePerformanceReport(params: {
     overheadMs,
     lbugLoad: params.lbugLoad,
     parse: params.parse,
+    crossFile: params.crossFile,
   };
 }

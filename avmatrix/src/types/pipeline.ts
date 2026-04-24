@@ -1,7 +1,12 @@
 import type { KnowledgeGraph } from '../core/graph/types.js';
 import { CommunityDetectionResult } from '../core/ingestion/community-processor.js';
 import { ProcessDetectionResult } from '../core/ingestion/process-processor.js';
-import type { AnalyzeCounters, ParseMetrics, TimingMap } from '../core/analyze/analyze-metrics.js';
+import type {
+  AnalyzeCounters,
+  CrossFileMetrics,
+  ParseMetrics,
+  TimingMap,
+} from '../core/analyze/analyze-metrics.js';
 
 export interface PipelinePerformance {
   /** Phase wall-clock durations from the dependency-ordered pipeline runner. */
@@ -10,6 +15,8 @@ export interface PipelinePerformance {
   counters: AnalyzeCounters;
   /** Parse-specific sub-step timings and counters. */
   parse?: ParseMetrics;
+  /** Cross-file propagation sub-step timings and counters. */
+  crossFile?: CrossFileMetrics;
 }
 
 // CLI-specific: in-memory result with graph + detection results

@@ -432,4 +432,19 @@ function printPerformanceSummary(performance: AnalyzePerformanceReport): void {
       `  parse resolve: imports ${(parseTimings.importResolveMs ?? 0).toFixed(1)}ms | calls ${(parseTimings.callResolveMs ?? 0).toFixed(1)}ms | heritage ${(parseTimings.heritageResolveMs ?? 0).toFixed(1)}ms | assignments ${(parseTimings.assignmentResolveMs ?? 0).toFixed(1)}ms | wildcard ${(parseTimings.wildcardSynthesisMs ?? 0).toFixed(1)}ms | exports ${(parseTimings.exportedTypeMapEnrichMs ?? 0).toFixed(1)}ms`,
     );
   }
+  const crossFileTimings = performance.crossFile?.timings;
+  if (crossFileTimings) {
+    const phaseTotalMs =
+      performance.pipelinePhaseMs.crossFile ??
+      crossFileTimings.totalMs ??
+      performance.buckets.crossFile ??
+      0;
+    const reprocessed =
+      performance.crossFile?.counters.filesReprocessed ??
+      performance.counters.crossFileReprocessedFiles ??
+      0;
+    console.log(
+      `  crossFile detail: total ${phaseTotalMs.toFixed(1)}ms | topo ${(crossFileTimings.topologicalSortMs ?? 0).toFixed(1)}ms | candidates ${(crossFileTimings.candidateSelectionMs ?? 0).toFixed(1)}ms | read ${(crossFileTimings.readContentsMs ?? 0).toFixed(1)}ms | returnMaps ${(crossFileTimings.importedReturnMapsMs ?? 0).toFixed(1)}ms | processCalls ${(crossFileTimings.processCallsMs ?? 0).toFixed(1)}ms | reprocessed ${reprocessed}`,
+    );
+  }
 }

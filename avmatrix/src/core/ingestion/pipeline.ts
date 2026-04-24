@@ -158,6 +158,7 @@ export const runPipelineFromRepo = async (
       phaseMs,
       counters,
       parse: parseOutput.metrics,
+      crossFile: crossFileOutput.metrics,
     },
   };
 };
