@@ -116,6 +116,11 @@ const processParsingWithWorkers = async (
     (filesProcessed) => {
       onFileProgress?.(Math.min(filesProcessed, total), total, 'Parsing...');
     },
+    {
+      getItemPath: (file) => file.path,
+      getItemSize: (file) => Buffer.byteLength(file.content),
+      verbose: process.env.AVMATRIX_VERBOSE === '1',
+    },
   );
 
   // Merge results from all workers into graph and symbol table

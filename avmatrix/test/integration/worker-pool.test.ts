@@ -107,6 +107,61 @@ describe('worker pool integration', () => {
     expect(allNames).toContain('formatResponse');
   });
 
+  it.skipIf(!hasDistWorker)('keeps every Go const name from declaration blocks', async () => {
+    const workerUrl = pathToFileURL(DIST_WORKER) as URL;
+    pool = createWorkerPool(workerUrl, 1);
+
+    const results = await pool.dispatch<any, any>([
+      {
+        path: 'src/constants.go',
+        content: `
+          package main
+
+          const (
+            Alpha = "alpha"
+            Beta = "beta"
+          )
+        `,
+      },
+    ]);
+
+    const names = results.flatMap((r: any) => r.nodes.map((n: any) => n.properties.name));
+    expect(names).toContain('Alpha');
+    expect(names).toContain('Beta');
+  });
+
+  it.skipIf(!hasDistWorker)('uses receiver-qualified Go method ids as call sources', async () => {
+    const workerUrl = pathToFileURL(DIST_WORKER) as URL;
+    pool = createWorkerPool(workerUrl, 1);
+
+    const results = await pool.dispatch<any, any>([
+      {
+        path: 'src/logger.go',
+        content: `
+          package main
+
+          type jsonLogger struct{}
+
+          func (l *jsonLogger) Close() error {
+            return l.write("close")
+          }
+
+          func (l *jsonLogger) write(msg string) error {
+            return nil
+          }
+        `,
+      },
+    ]);
+
+    const result = results[0];
+    const closeId = 'Method:src/logger.go:jsonLogger.Close#0';
+    const nodeIds = result.nodes.map((n: any) => n.id);
+    expect(nodeIds).toContain(closeId);
+
+    const writeCall = result.calls.find((c: any) => c.calledName === 'write');
+    expect(writeCall?.sourceId).toBe(closeId);
+  });
+
   it.skipIf(!hasDistWorker)('reports progress during parsing', async () => {
     const workerUrl = pathToFileURL(DIST_WORKER) as URL;
     pool = createWorkerPool(workerUrl, 1);
@@ -219,6 +274,150 @@ describe('worker pool integration', () => {
       expect(warnSpy).toHaveBeenCalledWith('warning before result');
     } finally {
       warnSpy.mockRestore();
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('returns dynamic work-unit results in input order, not completion order', async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'avmatrix-worker-order-'));
+    const workerPath = path.join(tempDir, 'order-worker.js');
+    fs.writeFileSync(
+      workerPath,
+      `
+      const { parentPort } = require('node:worker_threads');
+      let current = [];
+      parentPort.on('message', (msg) => {
+        if (msg && msg.type === 'sub-batch') {
+          current = msg.files;
+          const delay = current[0]?.path === 'slow.ts' ? 50 : 0;
+          setTimeout(() => parentPort.postMessage({ type: 'sub-batch-done' }), delay);
+          return;
+        }
+        if (msg && msg.type === 'flush') {
+          parentPort.postMessage({
+            type: 'result',
+            data: { fileCount: current.length, paths: current.map((f) => f.path) },
+          });
+          current = [];
+        }
+      });
+    `,
+    );
+
+    const workerUrl = pathToFileURL(workerPath) as URL;
+    pool = createWorkerPool(workerUrl, 2);
+
+    try {
+      const results = await pool.dispatch<any, any>(
+        [
+          { path: 'slow.ts', content: 'const slow = 1;' },
+          { path: 'fast.ts', content: 'const fast = 1;' },
+        ],
+        undefined,
+        { maxFilesPerUnit: 1, targetUnitBytes: 1 },
+      );
+      expect(results.map((r) => r.paths[0])).toEqual(['slow.ts', 'fast.ts']);
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('uses heartbeat as the inactivity signal for long-running units', async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'avmatrix-worker-heartbeat-'));
+    const workerPath = path.join(tempDir, 'heartbeat-worker.js');
+    fs.writeFileSync(
+      workerPath,
+      `
+      const { parentPort } = require('node:worker_threads');
+      let current = [];
+      parentPort.on('message', (msg) => {
+        if (msg && msg.type === 'sub-batch') {
+          current = msg.files;
+          let ticks = 0;
+          const interval = setInterval(() => {
+            ticks += 1;
+            parentPort.postMessage({
+              type: 'heartbeat',
+              filePath: current[0]?.path,
+              filesProcessed: 0,
+            });
+            if (ticks >= 6) {
+              clearInterval(interval);
+              parentPort.postMessage({ type: 'sub-batch-done' });
+            }
+          }, 75);
+          return;
+        }
+        if (msg && msg.type === 'flush') {
+          parentPort.postMessage({
+            type: 'result',
+            data: { fileCount: current.length, paths: current.map((f) => f.path) },
+          });
+          current = [];
+        }
+      });
+    `,
+    );
+
+    const workerUrl = pathToFileURL(workerPath) as URL;
+    pool = createWorkerPool(workerUrl, 1);
+
+    try {
+      const results = await pool.dispatch<any, any>(
+        [{ path: 'heartbeat.ts', content: 'const x = 1;' }],
+        undefined,
+        { inactivityTimeoutMs: 300, maxFilesPerUnit: 1 },
+      );
+      expect(results).toHaveLength(1);
+      expect(results[0].paths).toEqual(['heartbeat.ts']);
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('splits and retries failed multi-file work units at smaller granularity', async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'avmatrix-worker-retry-'));
+    const workerPath = path.join(tempDir, 'retry-worker.js');
+    fs.writeFileSync(
+      workerPath,
+      `
+      const { parentPort } = require('node:worker_threads');
+      let current = [];
+      parentPort.on('message', (msg) => {
+        if (msg && msg.type === 'sub-batch') {
+          current = msg.files;
+          if (current.length > 1) {
+            parentPort.postMessage({ type: 'error', error: 'unit too large' });
+            return;
+          }
+          parentPort.postMessage({ type: 'sub-batch-done' });
+          return;
+        }
+        if (msg && msg.type === 'flush') {
+          parentPort.postMessage({
+            type: 'result',
+            data: { fileCount: current.length, paths: current.map((f) => f.path) },
+          });
+          current = [];
+        }
+      });
+    `,
+    );
+
+    const workerUrl = pathToFileURL(workerPath) as URL;
+    pool = createWorkerPool(workerUrl, 1);
+
+    try {
+      const results = await pool.dispatch<any, any>(
+        [
+          { path: 'a.ts', content: 'const a = 1;' },
+          { path: 'b.ts', content: 'const b = 1;' },
+        ],
+        undefined,
+        { maxFilesPerUnit: 2, targetUnitBytes: 1024, maxRetries: 2 },
+      );
+      expect(results.map((r) => r.paths[0])).toEqual(['a.ts', 'b.ts']);
+    } finally {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }
   });

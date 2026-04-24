@@ -563,8 +563,9 @@ const findEnclosingFunctionId = (
           if (override !== null) finalLabel = override;
         }
         // Qualify with enclosing class to match definition-phase node IDs
+        const ownerAnchor = current.childForFieldName?.('name') ?? current;
         const classInfo = cachedFindEnclosingClassInfo(
-          current,
+          ownerAnchor,
           filePath,
           provider.resolveEnclosingOwner,
         );
@@ -576,6 +577,7 @@ const findEnclosingFunctionId = (
         let encTypeTag = '';
         if (finalLabel === 'Method' || finalLabel === 'Constructor') {
           const encLang = getLanguageFromFilename(filePath);
+          let info: MethodInfo | undefined;
           const classNode =
             findEnclosingClassNode(current) ?? findClassNodeByQualifiedName(current);
           if (classNode && encLang) {
@@ -584,7 +586,7 @@ const findEnclosingFunctionId = (
               language: encLang,
             });
             const defLine = current.startPosition.row + 1;
-            const info = methodMap?.get(`${funcName}:${defLine}`);
+            info = methodMap?.get(`${funcName}:${defLine}`);
             if (info) {
               arity = info.parameters.some((p) => p.isVariadic)
                 ? undefined
@@ -595,6 +597,15 @@ const findEnclosingFunctionId = (
                   typeTagForId(methodMap, funcName, arity, info, encLang, g) +
                   constTagForId(methodMap, funcName, arity, info, g);
               }
+            }
+          }
+          if (!info && encLang && provider.methodExtractor?.extractFromNode) {
+            const nodeInfo = provider.methodExtractor.extractFromNode(current, {
+              filePath,
+              language: encLang,
+            });
+            if (nodeInfo) {
+              arity = arityForIdFromInfo(nodeInfo);
             }
           }
         }
@@ -705,6 +716,7 @@ const cachedExportCheck = (
 const processBatch = (
   files: ParseWorkerInput[],
   onProgress?: (filesProcessed: number) => void,
+  onHeartbeat?: (filePath: string, filesProcessed: number) => void,
 ): ParseWorkerResult => {
   const result: ParseWorkerResult = {
     nodes: [],
@@ -781,7 +793,14 @@ const processBatch = (
       if (isLanguageAvailable(language, regularFiles[0].path)) {
         try {
           setLanguage(language, regularFiles[0].path);
-          processFileGroup(regularFiles, language, queryString, result, onFileProcessed);
+          processFileGroup(
+            regularFiles,
+            language,
+            queryString,
+            result,
+            onFileProcessed,
+            onHeartbeat,
+          );
         } catch {
           // parser unavailable — skip this language group
         }
@@ -796,7 +815,14 @@ const processBatch = (
       if (isLanguageAvailable(language, tsxFiles[0].path)) {
         try {
           setLanguage(language, tsxFiles[0].path);
-          processFileGroup(tsxFiles, language, queryString, result, onFileProcessed);
+          processFileGroup(
+            tsxFiles,
+            language,
+            queryString,
+            result,
+            onFileProcessed,
+            onHeartbeat,
+          );
         } catch {
           // parser unavailable — skip this language group
         }
@@ -1349,6 +1375,7 @@ const processFileGroup = (
   queryString: string,
   result: ParseWorkerResult,
   onFileProcessed?: () => void,
+  onHeartbeat?: (filePath: string, filesProcessed: number) => void,
 ): void => {
   let query: Parser.Query;
   try {
@@ -1365,6 +1392,8 @@ const processFileGroup = (
   }
 
   for (const file of files) {
+    onHeartbeat?.(file.path, result.fileCount);
+
     // Skip files larger than the max tree-sitter buffer (32 MB)
     if (file.content.length > TREE_SITTER_MAX_BUFFER) continue;
 
@@ -1494,6 +1523,7 @@ const processFileGroup = (
     // (e.g. @definition.function) to avoid duplicate nodes when @definition.const/@definition.variable
     // patterns overlap with the same source range.
     const processedDefinitionNodes = new Set<number>();
+    const processedVariableDefinitions = new Set<string>();
 
     for (const match of matches) {
       const captureMap: Record<string, SyntaxNode> = {};
@@ -1962,15 +1992,24 @@ const processFileGroup = (
 
       // Dedup: variable captures (Const/Static/Variable) may overlap with higher-priority
       // captures (e.g. `const fn = () => {}` matches both @definition.function and @definition.const).
-      // Skip variable captures whose definition node was already processed.
+      // Skip variable captures whose definition node was already processed by a non-variable
+      // symbol, but do not collapse multiple names in a single declaration block
+      // (`const (...)`, `var (...)`, `a, b := ...`).
+      const isVariableLike =
+        nodeLabel === 'Const' || nodeLabel === 'Static' || nodeLabel === 'Variable';
       if (
-        (nodeLabel === 'Const' || nodeLabel === 'Static' || nodeLabel === 'Variable') &&
+        isVariableLike &&
         definitionNode &&
         processedDefinitionNodes.has(definitionNode.startIndex)
       ) {
         continue;
       }
-      if (definitionNode) {
+
+      if (isVariableLike && definitionNode) {
+        const variableKey = `${definitionNode.startIndex}:${nodeLabel}:${nameNode?.startIndex ?? nameNode?.text ?? ''}`;
+        if (processedVariableDefinitions.has(variableKey)) continue;
+        processedVariableDefinitions.add(variableKey);
+      } else if (definitionNode) {
         processedDefinitionNodes.add(definitionNode.startIndex);
       }
 
@@ -2345,21 +2384,37 @@ parentPort!.on('message', (msg: WorkerIncomingMessage) => {
   try {
     // Legacy single-message mode (backward compat): array of files
     if (Array.isArray(msg)) {
-      const result = processBatch(msg, (filesProcessed) => {
-        parentPort!.postMessage({ type: 'progress', filesProcessed });
-      });
+      const result = processBatch(
+        msg,
+        (filesProcessed) => {
+          parentPort!.postMessage({ type: 'progress', filesProcessed });
+        },
+        (filePath, filesProcessed) => {
+          parentPort!.postMessage({ type: 'heartbeat', filePath, filesProcessed });
+        },
+      );
       parentPort!.postMessage({ type: 'result', data: result });
       return;
     }
 
     // Sub-batch mode: { type: 'sub-batch', files: [...] }
     if (msg.type === 'sub-batch') {
-      const result = processBatch(msg.files, (filesProcessed) => {
-        parentPort!.postMessage({
-          type: 'progress',
-          filesProcessed: cumulativeProcessed + filesProcessed,
-        });
-      });
+      const result = processBatch(
+        msg.files,
+        (filesProcessed) => {
+          parentPort!.postMessage({
+            type: 'progress',
+            filesProcessed: cumulativeProcessed + filesProcessed,
+          });
+        },
+        (filePath, filesProcessed) => {
+          parentPort!.postMessage({
+            type: 'heartbeat',
+            filePath,
+            filesProcessed: cumulativeProcessed + filesProcessed,
+          });
+        },
+      );
       cumulativeProcessed += result.fileCount;
       mergeResult(accumulated, result);
       // Signal ready for next sub-batch
