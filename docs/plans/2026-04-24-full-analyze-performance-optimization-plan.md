@@ -2,7 +2,7 @@
 
 Date: 2026-04-24  
 Scope: `avmatrix/` analyze pipeline, persistence, FTS, embeddings, metadata; `avmatrix-web/` only if analyze progress/status contract changes  
-Status: In progress - Phase 3 correctness blocker fixed; next work is crossFile performance measurement
+Status: Paused - Phase 1 through Phase 3 delivered acceptable speedup; Phase 4 is measured but deferred pending a safer LadybugDB/FTS optimization approach
 
 ## Goal
 
@@ -13,6 +13,13 @@ The final outcome is not just better logs or profiling. The final outcome is a m
 This plan is only about full analyze. It is not about `re-analyze`, delta indexing, affected-file analysis, fast mode, stale derived state, or deferred graph output.
 
 This plan ends when the analyzed index is ready faster: in-memory `KnowledgeGraph` has been built, LadybugDB has been loaded, FTS/optional embeddings have run, and metadata/AI context finalization has completed. It does not optimize how the web app later fetches, streams, parses, lays out, or renders the graph.
+
+Pause note:
+
+- Optimization work is intentionally paused after Phase 4 measurement.
+- The next bottlenecks are persistence/search internals (`lbugLoad.nodeCopy`, `lbugLoad.relCopy`, and `fts File`) rather than pure AVmatrix parse/crossFile CPU.
+- Continuing from here requires a better technical approach for LadybugDB COPY/FTS or a replacement algorithm/storage strategy that preserves stored graph/search behavior exactly.
+- Do not resume by removing stored content, dropping indexes, changing searchable fields, parallelizing writes, or weakening full-repo semantics.
 
 Success criteria:
 
@@ -678,6 +685,36 @@ Phase 4.1 deep timing sequence:
    - if `csvGeneration` is dominated by content extraction, optimize cache/split behavior while keeping stored content identical
    - if `nodeCopy` is dominated by `File` or `Method` content-heavy tables, investigate reducing load overhead without changing stored columns or values
    - if `nodeCopy` is intrinsic LadybugDB COPY time, move to FTS File index investigation
+
+Phase 4.1 measured result:
+
+- Implemented deep timing for `csvGeneration`, rows per table, node COPY time per table, CSV bytes per table, and node COPY throughput per table.
+- `F:\Restaurant_manager` remained stable at `70,818 nodes`, `110,611 edges`, `949 clusters`, `700 flows`.
+- Final measured `Restaurant_manager` Phase 4 shape:
+  - `lbugLoad 38.1s`
+  - `csvGen 9.6s`
+  - `nodeCopy 17.5s`
+  - `relCopy 9.6s`
+  - `relSplit 1.2s`
+  - `fts 34.1s`
+- Largest node COPY tables:
+  - `Section`: `46.4MB`, `5.1s`, about `9.0MB/s`
+  - `File`: `25.1MB`, `3.9s`, about `6.5MB/s`
+  - `Function`: `5.9MB`, `1.2s`
+  - `Method`: `2.3MB`, `1.0s`
+- `csvGeneration` is partially affected by content reads (`contentRead 4.2s`), but it is not the largest remaining persistence cost.
+- `relationshipSplit` is not a current optimization target (`~1.2s` on the large repo).
+
+Pause decision:
+
+- Pause Phase 4 here.
+- The remaining high-value work likely requires changing or replacing the persistence/search strategy around LadybugDB COPY and FTS.
+- Resume only when there is a concrete approach that keeps the same stored graph, the same searchable tables/fields, the same query behavior, and the same full-analyze semantics.
+- Candidate resume topics:
+  - reduce `Section`/`File` COPY cost without changing stored content
+  - reduce fixed per-table COPY overhead without unsafe parallel writes
+  - improve relationship COPY cost without changing edge rows or required label-pair semantics
+  - replace or improve `File(name, content)` FTS indexing without weakening search results
 
 Rules:
 
