@@ -270,10 +270,7 @@ func shutdownWeb(server *http.Server) {
 
 func resetRuntime(paths launcherPaths) error {
 	log.Printf("reset root=%s", paths.rootDir)
-	if err := stopRuntime(paths); err != nil {
-		return err
-	}
-	return startRuntime(paths)
+	return stopRuntime(paths)
 }
 
 func stopRuntime(paths launcherPaths) error {

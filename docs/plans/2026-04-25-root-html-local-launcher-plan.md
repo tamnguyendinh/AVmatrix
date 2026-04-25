@@ -22,8 +22,6 @@ double-click Start-AVmatrix.html
 -> click Reset
 -> stop old launcher-owned runtime processes
 -> clear launcher runtime state
--> start packaged AVmatrix launcher again
--> open Web UI
 ```
 
 Root user-facing surface:
@@ -48,7 +46,7 @@ no "Open Node.js runtime" browser prompt
 Start-AVmatrix.html
 -> Start button
 -> avmatrix://start
--> .avmatrix-launcher/AVmatrixLauncher.exe
+-> avmatrix-launcher/AVmatrixLauncher.exe
 -> start packaged AVmatrix backend
 -> serve bundled Web UI static build
 -> open local Web UI URL
@@ -60,19 +58,16 @@ Reset flow:
 Start-AVmatrix.html
 -> Reset button
 -> avmatrix://reset
--> .avmatrix-launcher/AVmatrixLauncher.exe reset
+-> avmatrix-launcher/AVmatrixLauncher.exe reset
 -> stop owned backend/static runtime processes
 -> remove launcher state file
--> start packaged AVmatrix backend again
--> serve bundled Web UI static build
--> open local Web UI URL
 ```
 
 ## Files
 
 ```text
 Start-AVmatrix.html
-.avmatrix-launcher/
+avmatrix-launcher/
   AVmatrixLauncher.exe
   build.ps1
   src/
@@ -111,10 +106,10 @@ One-time setup registers:
 
 ```text
 avmatrix://start
--> .avmatrix-launcher/AVmatrixLauncher.exe start
+-> avmatrix-launcher/AVmatrixLauncher.exe start
 
 avmatrix://reset
--> .avmatrix-launcher/AVmatrixLauncher.exe reset
+-> avmatrix-launcher/AVmatrixLauncher.exe reset
 ```
 
 Windows first. Other OS support can be added later.
@@ -149,8 +144,6 @@ AVmatrixLauncher.exe reset
 -> stop recorded backend/runtime PIDs if alive
 -> best-effort release owned web/static server
 -> remove stale launcher state
--> start clean runtime
--> open browser
 ```
 
 Dev commands are not user-mode commands:
@@ -169,16 +162,18 @@ launcher exits
 
 If backend and static server are separate child processes, the launcher owns and kills them.
 
+Reset exits after cleanup. It does not re-launch the packaged runtime.
+
 ## Current Implementation Status
 
 Done:
 
 ```text
 Start-AVmatrix.html
-.avmatrix-launcher/AVmatrixLauncher.exe
-.avmatrix-launcher/src/
-.avmatrix-launcher/build.ps1
-.avmatrix-launcher/web-dist/
+avmatrix-launcher/AVmatrixLauncher.exe
+avmatrix-launcher/src/
+avmatrix-launcher/build.ps1
+avmatrix-launcher/web-dist/
 avmatrix://start protocol registration
 ```
 
@@ -201,8 +196,8 @@ Start-AVmatrix.html
 Implemented fix:
 
 ```text
-.avmatrix-launcher/server-wrapper/
--> builds .avmatrix-launcher/server-bundle/avmatrix-server.exe
+avmatrix-launcher/server-wrapper/
+-> builds avmatrix-launcher/server-bundle/avmatrix-server.exe
 -> bundled node.exe is copied into server-bundle
 -> avmatrix-server.exe starts avmatrix/dist/cli/index.js serve with hidden windows
 ```
@@ -230,16 +225,16 @@ Important note:
 2. Build the launcher and backend wrapper:
 
 ```text
-powershell -ExecutionPolicy Bypass -File .avmatrix-launcher/build.ps1
+powershell -ExecutionPolicy Bypass -File avmatrix-launcher/build.ps1
 ```
 
 3. Generated runtime artifacts:
 
 ```text
-.avmatrix-launcher/AVmatrixLauncher.exe
-.avmatrix-launcher/server-bundle/avmatrix-server.exe
-.avmatrix-launcher/server-bundle/node.exe
-.avmatrix-launcher/web-dist/
+avmatrix-launcher/AVmatrixLauncher.exe
+avmatrix-launcher/server-bundle/avmatrix-server.exe
+avmatrix-launcher/server-bundle/node.exe
+avmatrix-launcher/web-dist/
 ```
 
 4. Backend executable behavior:
@@ -264,6 +259,17 @@ Start-AVmatrix.html
 -> open localhost:5173
 ```
 
+Reset behavior after backend bundle exists:
+
+```text
+Start-AVmatrix.html
+-> avmatrix://reset
+-> AVmatrixLauncher.exe reset
+-> stop launcher-owned backend/static runtime
+-> remove stale launcher state
+-> exit
+```
+
 6. If the project later requires zero Node runtime even internally, replace `server-wrapper` with a true native backend. Do not expose `node`, `npm run serve`, or `npm run dev` to the user-facing flow.
 
 ## Rules
@@ -272,6 +278,7 @@ Start-AVmatrix.html
 - Do not change graph logic.
 - Do not change Web UI graph behavior.
 - Reset is a launcher/runtime recovery action only; it must not change analyze, graph, query, or repo-load semantics.
+- Reset must not auto-start a new runtime.
 - Root user-facing surface remains `Start-AVmatrix.html`.
 - Do not require user-installed Node.js.
 - Do not require `npm run serve`.
@@ -290,7 +297,8 @@ Start-AVmatrix.html
 - Web UI opens.
 - Backend API works from Web UI.
 - Repeated click does not spawn duplicate app runtimes.
-- `Reset` stops stuck launcher-owned runtime processes and starts a clean runtime.
+- `Reset` stops stuck launcher-owned runtime processes and clears launcher state without starting a new runtime.
+- After `Reset`, user can click `Start AVmatrix` to launch a fresh runtime.
 - `Reset` does not impose a global one-repo or one-tab limit.
 - Closing launcher stops owned runtime processes.
 

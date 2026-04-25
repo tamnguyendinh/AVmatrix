@@ -102,7 +102,7 @@ Reset must not start AVmatrix.
 
 ### Phase 1: Launcher Routing
 
-Update `.avmatrix-launcher/src/main.go`:
+Update `avmatrix-launcher/src/main.go`:
 
 - Serve a minimal launcher page at `/`.
 - Serve existing Web UI under `/app`.
@@ -150,8 +150,8 @@ Validate manually:
 
 Validate with commands:
 
-- `.avmatrix-launcher/build.ps1`
-- `cd .avmatrix-launcher/src && go build ./...`
+- `avmatrix-launcher/build.ps1`
+- `cd avmatrix-launcher/src && go build ./...`
 - `cd avmatrix-web && npx tsc -b --noEmit`
 
 ## Risks
