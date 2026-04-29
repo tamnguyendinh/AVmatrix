@@ -22,6 +22,11 @@ import {
 } from './services/backend-client';
 import { DEFAULT_BACKEND_URL, ERROR_RESET_DELAY_MS } from './config/ui-constants';
 
+const includeRepoInList = (repos: BackendRepo[], repo: BackendRepo): BackendRepo[] => {
+  if (repos.some((item) => item.name === repo.name)) return repos;
+  return [repo, ...repos];
+};
+
 const AppContent = () => {
   const { chatRuntimeBridge } = useAppState();
 
@@ -276,9 +281,10 @@ const AppContentBody = () => {
           for (let attempt = 0; attempt < 2; attempt++) {
             try {
               const repos = await fetchRepos();
-              setAvailableRepos(repos);
               const result = await connectToServer(url, undefined, undefined, repoName);
               await handleServerConnect(result);
+              const refreshedRepos = await fetchRepos().catch(() => repos);
+              setAvailableRepos(includeRepoInList(refreshedRepos, result.repoInfo));
               setServerBaseUrl(normalizeServerUrl(url));
               setProgress(null);
               return;
