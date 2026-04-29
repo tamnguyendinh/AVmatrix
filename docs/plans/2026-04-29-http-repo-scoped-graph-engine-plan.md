@@ -1,8 +1,34 @@
 # HTTP Repo-Scoped Graph Engine Replacement Plan
 
 Date: 2026-04-29  
-Status: Draft  
+Status: Rollout 1 implemented, write isolation deferred behind gate  
 Scope: `avmatrix/src/server/`, `avmatrix/src/runtime/`, `avmatrix/src/core/lbug/`, `avmatrix-web/src/`, `avmatrix-shared/`, related tests/docs
+
+## Implementation progress
+
+As of 2026-04-29, the first rollout has been implemented:
+
+- shared repo resolver core
+- canonical repo runtime id helper
+- repo-scoped read executor
+- repo-scoped graph read/stream service
+- HTTP read routes migrated off `withLbugDb()`:
+  - `/api/graph`
+  - `/api/query`
+  - `/api/search`
+  - `/api/grep`
+- HTTP graph streaming transport moved to a server adapter helper
+- repeated dropdown repo-switching e2e regression added
+
+Current validation result:
+
+- typecheck passes for `avmatrix/`
+- focused unit coverage passes for resolver/read executor/graph stream/MCP alignment
+- Web typecheck passes
+- repeated dropdown switch e2e passes against live local backend/frontend
+- cross-repo smoke passes while `/api/embed` on `AVmatrix-main` is active and `/api/graph?stream=true` loads `Website`
+
+Phase 5 write isolation remains a gated follow-up. It should be implemented only if broader stress coverage shows that the old `/api/embed` write path still causes the same repo-switch graph-load bug after the read-path replacement.
 
 ## Goal
 

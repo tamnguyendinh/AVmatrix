@@ -1,10 +1,4 @@
-import fs from 'fs/promises';
-import path from 'path';
-import {
-  hasIndex,
-  listRegisteredRepos,
-  getStoragePath,
-} from '../storage/repo-manager.js';
+import type { SessionAdapter } from './session-adapter.js';
 import type {
   ResolvedSessionRepo,
   SessionChatRequest,
@@ -12,16 +6,8 @@ import type {
   SessionRepoResolution,
   SessionStatusResponse,
 } from 'avmatrix-shared';
-import type { SessionAdapter } from './session-adapter.js';
 import { SessionJob, SessionRuntimeError } from './session-adapter.js';
-
-const isLikelyRemoteUrl = (value: string): boolean =>
-  /^[a-z][a-z0-9+.-]*:\/\//i.test(value) || /^git@/i.test(value);
-
-const isUncPath = (value: string): boolean => value.startsWith('\\\\') || value.startsWith('//');
-
-const samePath = (a: string, b: string): boolean =>
-  process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
+import { RepoResolverError, resolveSessionRepoBinding } from './repo-resolver.js';
 
 interface StartChatResult {
   job: SessionJob;
@@ -152,199 +138,15 @@ export class RuntimeController {
   }
 
   private async resolveRepo(binding: SessionRepoBinding): Promise<ResolvedSessionRepo> {
-    if (!binding.repoName && !binding.repoPath) {
-      throw new SessionRuntimeError(
-        'INVALID_REPO_BINDING',
-        'Provide either "repoName" or "repoPath" for session binding',
-        400,
-      );
+    try {
+      return await resolveSessionRepoBinding(binding);
+    } catch (error) {
+      if (error instanceof RepoResolverError) {
+        const status =
+          error.code === 'REPO_NOT_FOUND' ? 404 : error.code === 'INVALID_REPO_BINDING' ? 400 : 400;
+        throw new SessionRuntimeError(error.code, error.message, status, error.details);
+      }
+      throw error;
     }
-
-    let resolvedFromName: ResolvedSessionRepo | null = null;
-    if (binding.repoName) {
-      const repos = await listRegisteredRepos();
-      const entry =
-        repos.find((repo) => repo.name === binding.repoName) ||
-        repos.find((repo) => repo.name.toLowerCase() === binding.repoName!.toLowerCase());
-      if (!entry) {
-        throw new SessionRuntimeError(
-          'REPO_NOT_FOUND',
-          `Indexed repository "${binding.repoName}" was not found`,
-          404,
-        );
-      }
-
-      const entryPath = path.resolve(entry.path);
-      let realRepoPath: string;
-      try {
-        realRepoPath = await fs.realpath(entryPath);
-      } catch (error) {
-        const code = typeof error === 'object' && error && 'code' in error ? (error as NodeJS.ErrnoException).code : undefined;
-        if (code === 'ENOENT') {
-          throw new SessionRuntimeError(
-            'REPO_NOT_FOUND',
-            `Indexed repository "${entry.name}" no longer exists at "${entry.path}"`,
-            404,
-            {
-              repoName: entry.name,
-              repoPath: entry.path,
-            },
-          );
-        }
-        throw new SessionRuntimeError(
-          'INVALID_REPO_PATH',
-          `Failed to resolve repository path "${entry.path}" for "${entry.name}"`,
-          400,
-          {
-            repoName: entry.name,
-            repoPath: entry.path,
-          },
-        );
-      }
-
-      let stat: Awaited<ReturnType<typeof fs.stat>>;
-      try {
-        stat = await fs.stat(realRepoPath);
-      } catch (error) {
-        const code = typeof error === 'object' && error && 'code' in error ? (error as NodeJS.ErrnoException).code : undefined;
-        if (code === 'ENOENT') {
-          throw new SessionRuntimeError(
-            'REPO_NOT_FOUND',
-            `Indexed repository "${entry.name}" no longer exists at "${entry.path}"`,
-            404,
-            {
-              repoName: entry.name,
-              repoPath: entry.path,
-            },
-          );
-        }
-        throw new SessionRuntimeError(
-          'INVALID_REPO_PATH',
-          `Failed to inspect repository path "${entry.path}" for "${entry.name}"`,
-          400,
-          {
-            repoName: entry.name,
-            repoPath: entry.path,
-          },
-        );
-      }
-      if (!stat.isDirectory()) {
-        throw new SessionRuntimeError(
-          'INVALID_REPO_PATH',
-          `Indexed repository "${entry.name}" does not point to a directory`,
-          400,
-          {
-            repoName: entry.name,
-            repoPath: entry.path,
-          },
-        );
-      }
-
-      const indexed = await hasIndex(realRepoPath);
-      resolvedFromName = {
-        repoName: entry.name,
-        repoPath: realRepoPath,
-        indexed,
-        storagePath: indexed ? (entry.storagePath || getStoragePath(realRepoPath)) : undefined,
-      };
-    }
-
-    let resolvedFromPath: ResolvedSessionRepo | null = null;
-    if (binding.repoPath) {
-      if (isLikelyRemoteUrl(binding.repoPath)) {
-        throw new SessionRuntimeError(
-          'INVALID_REPO_PATH',
-          'Remote URLs are not allowed for local session runtime',
-          400,
-        );
-      }
-      if (isUncPath(binding.repoPath)) {
-        throw new SessionRuntimeError(
-          'INVALID_REPO_PATH',
-          'UNC and network-share paths are not allowed',
-          400,
-        );
-      }
-      if (!path.isAbsolute(binding.repoPath)) {
-        throw new SessionRuntimeError(
-          'INVALID_REPO_PATH',
-          '"repoPath" must be an absolute local path',
-          400,
-        );
-      }
-
-      let realRepoPath: string;
-      try {
-        realRepoPath = await fs.realpath(binding.repoPath);
-      } catch (error) {
-        const code = typeof error === 'object' && error && 'code' in error ? (error as NodeJS.ErrnoException).code : undefined;
-        if (code === 'ENOENT') {
-          throw new SessionRuntimeError(
-            'REPO_NOT_FOUND',
-            `Repository path "${binding.repoPath}" does not exist`,
-            404,
-          );
-        }
-        throw new SessionRuntimeError(
-          'INVALID_REPO_PATH',
-          `Failed to resolve repository path "${binding.repoPath}"`,
-          400,
-        );
-      }
-
-      let stat: Awaited<ReturnType<typeof fs.stat>>;
-      try {
-        stat = await fs.stat(realRepoPath);
-      } catch (error) {
-        const code = typeof error === 'object' && error && 'code' in error ? (error as NodeJS.ErrnoException).code : undefined;
-        if (code === 'ENOENT') {
-          throw new SessionRuntimeError(
-            'REPO_NOT_FOUND',
-            `Repository path "${binding.repoPath}" does not exist`,
-            404,
-          );
-        }
-        throw new SessionRuntimeError(
-          'INVALID_REPO_PATH',
-          `Failed to inspect repository path "${binding.repoPath}"`,
-          400,
-        );
-      }
-      if (!stat.isDirectory()) {
-        throw new SessionRuntimeError(
-          'INVALID_REPO_PATH',
-          `"${binding.repoPath}" is not a directory`,
-          400,
-        );
-      }
-
-      const indexed = await hasIndex(realRepoPath);
-      const repos = await listRegisteredRepos();
-      const entry = repos.find((repo) => samePath(path.resolve(repo.path), realRepoPath));
-
-      resolvedFromPath = {
-        repoName: entry?.name || path.basename(realRepoPath),
-        repoPath: realRepoPath,
-        indexed,
-        storagePath: indexed ? (entry?.storagePath || getStoragePath(realRepoPath)) : undefined,
-      };
-    }
-
-    if (resolvedFromName && resolvedFromPath) {
-      if (!samePath(resolvedFromName.repoPath, resolvedFromPath.repoPath)) {
-        throw new SessionRuntimeError(
-          'INVALID_REPO_BINDING',
-          `"repoName" and "repoPath" refer to different repositories`,
-          400,
-          {
-            repoName: resolvedFromName.repoName,
-            repoPath: resolvedFromPath.repoPath,
-          },
-        );
-      }
-      return resolvedFromName;
-    }
-
-    return resolvedFromName || resolvedFromPath!;
   }
 }

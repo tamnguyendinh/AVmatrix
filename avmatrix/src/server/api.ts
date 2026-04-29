@@ -16,16 +16,14 @@ import { createRequire } from 'node:module';
 import { loadMeta, listRegisteredRepos, getStoragePath } from '../storage/repo-manager.js';
 import {
   executeQuery,
-  executePrepared,
   executeWithReusedStatement,
-  streamQuery,
   closeLbug,
   withLbugDb,
 } from '../core/lbug/lbug-adapter.js';
 import { isWriteQuery } from '../core/lbug/pool-adapter.js';
-import { NODE_TABLES, type GraphNode, type GraphRelationship } from 'avmatrix-shared';
+import { NODE_TABLES } from 'avmatrix-shared';
 import { searchFTSFromLbug } from '../core/search/bm25-index.js';
-import { hybridSearch } from '../core/search/hybrid-search.js';
+import { mergeWithRRF } from '../core/search/hybrid-search.js';
 // Embedding imports are lazy (dynamic import) to avoid loading onnxruntime-node
 // at server startup — crashes on unsupported Node ABI versions (#89)
 import { LocalBackend } from '../mcp/local/local-backend.js';
@@ -38,6 +36,25 @@ import { resolveAnalyzeRepoPath } from './local-path-policy.js';
 import { RuntimeController } from '../runtime/runtime-controller.js';
 import { CodexSessionAdapter } from '../runtime/session-adapters/codex.js';
 import { mountSessionBridge } from './session-bridge.js';
+import {
+  assignRepoRuntimeIds,
+  findRepoCandidate,
+  normalizeRepoParam,
+} from '../runtime/repo-resolver.js';
+import {
+  buildRepoGraph,
+  streamRepoGraph,
+} from '../runtime/repo-runtime/graph-read-service.js';
+import {
+  ensureRepoReadReady,
+  executeRepoParameterizedReadQuery,
+  executeRepoReadQuery,
+} from '../runtime/repo-runtime/repo-read-executor.js';
+import {
+  ClientDisconnectedError,
+  createGraphStreamBatchWriter,
+  writeNdjsonChunk,
+} from './graph-stream-http.js';
 
 const _require = createRequire(import.meta.url);
 const pkg = _require('../../package.json');
@@ -92,266 +109,6 @@ export const isAllowedOrigin = (origin: string | undefined): boolean => {
   }
 
   return false;
-};
-
-type GraphStreamRecord =
-  | { type: 'node'; data: GraphNode }
-  | { type: 'relationship'; data: GraphRelationship }
-  | { type: 'error'; error: string };
-
-export class ClientDisconnectedError extends Error {
-  constructor() {
-    super('Client disconnected during graph stream');
-    this.name = 'ClientDisconnectedError';
-  }
-}
-
-const GRAPH_STREAM_TARGET_CHUNK_BYTES = 64 * 1024;
-const GRAPH_STREAM_TARGET_CHUNK_RECORDS = 128;
-
-export const isIgnorableGraphQueryError = (err: unknown): boolean => {
-  const message = err instanceof Error ? err.message : String(err);
-  return (
-    message.includes('does not exist') ||
-    message.includes('not found') ||
-    message.includes('No table named')
-  );
-};
-
-const ensureStreamIsWritable = (res: express.Response, signal?: AbortSignal): void => {
-  if (signal?.aborted || res.destroyed || res.writableEnded) {
-    throw new ClientDisconnectedError();
-  }
-};
-
-const waitForDrain = async (res: express.Response, signal?: AbortSignal): Promise<void> => {
-  ensureStreamIsWritable(res, signal);
-
-  await new Promise<void>((resolve, reject) => {
-    const cleanup = () => {
-      res.off('drain', onDrain);
-      res.off('close', onClose);
-      signal?.removeEventListener('abort', onAbort);
-    };
-
-    const onDrain = () => {
-      cleanup();
-      resolve();
-    };
-    const onClose = () => {
-      cleanup();
-      reject(new ClientDisconnectedError());
-    };
-    const onAbort = () => {
-      cleanup();
-      reject(new ClientDisconnectedError());
-    };
-
-    res.once('drain', onDrain);
-    res.once('close', onClose);
-    signal?.addEventListener('abort', onAbort, { once: true });
-
-    if (signal?.aborted || res.destroyed || res.writableEnded) {
-      onAbort();
-    }
-  });
-
-  ensureStreamIsWritable(res, signal);
-};
-
-const isClientDisconnectWriteError = (err: unknown): boolean => {
-  if (!(err instanceof Error)) return false;
-  return (
-    (err as NodeJS.ErrnoException).code === 'ERR_STREAM_DESTROYED' ||
-    (err as NodeJS.ErrnoException).code === 'EPIPE' ||
-    (err as NodeJS.ErrnoException).code === 'ECONNRESET' ||
-    err.message.includes('write after end')
-  );
-};
-
-export const writeNdjsonRecord = async (
-  res: express.Response,
-  record: GraphStreamRecord,
-  signal?: AbortSignal,
-): Promise<void> => {
-  await writeNdjsonChunk(res, JSON.stringify(record) + '\n', signal);
-};
-
-export const writeNdjsonChunk = async (
-  res: express.Response,
-  chunk: string,
-  signal?: AbortSignal,
-): Promise<void> => {
-  ensureStreamIsWritable(res, signal);
-
-  try {
-    const canContinue = res.write(chunk);
-    if (!canContinue) {
-      await waitForDrain(res, signal);
-    }
-  } catch (err) {
-    if (isClientDisconnectWriteError(err)) {
-      throw new ClientDisconnectedError();
-    }
-    throw err;
-  }
-};
-
-const createGraphStreamBatchWriter = (res: express.Response, signal?: AbortSignal) => {
-  let bufferedChunk = '';
-  let bufferedRecords = 0;
-
-  const flush = async (): Promise<void> => {
-    if (bufferedChunk.length === 0) return;
-    const chunk = bufferedChunk;
-    bufferedChunk = '';
-    bufferedRecords = 0;
-    await writeNdjsonChunk(res, chunk, signal);
-  };
-
-  const write = async (record: GraphStreamRecord): Promise<void> => {
-    bufferedChunk += JSON.stringify(record) + '\n';
-    bufferedRecords += 1;
-
-    if (
-      bufferedRecords >= GRAPH_STREAM_TARGET_CHUNK_RECORDS ||
-      bufferedChunk.length >= GRAPH_STREAM_TARGET_CHUNK_BYTES
-    ) {
-      await flush();
-    }
-  };
-
-  return { write, flush };
-};
-
-const buildGraph = async (
-  includeContent = false,
-): Promise<{ nodes: GraphNode[]; relationships: GraphRelationship[] }> => {
-  const nodes: GraphNode[] = [];
-  for (const table of NODE_TABLES) {
-    try {
-      const rows = await executeQuery(getNodeQuery(table, includeContent));
-      for (const row of rows) {
-        nodes.push(mapGraphNodeRow(table, row, includeContent));
-      }
-    } catch (err) {
-      if (!isIgnorableGraphQueryError(err)) {
-        throw err;
-      }
-    }
-  }
-
-  const relationships: GraphRelationship[] = [];
-  const relRows = await executeQuery(GRAPH_RELATIONSHIP_QUERY);
-  for (const row of relRows) {
-    relationships.push(mapGraphRelationshipRow(row));
-  }
-
-  return { nodes, relationships };
-};
-
-const GRAPH_RELATIONSHIP_QUERY =
-  `MATCH (a)-[r:CodeRelation]->(b) RETURN a.id AS sourceId, b.id AS targetId, ` +
-  `r.type AS type, r.confidence AS confidence, r.reason AS reason, r.step AS step`;
-
-const quoteNodeTable = (table: string): string => `\`${table.replace(/`/g, '``')}\``;
-
-const getNodeQuery = (table: string, includeContent: boolean): string => {
-  const tableLabel = quoteNodeTable(table);
-
-  if (table === 'File') {
-    return includeContent
-      ? `MATCH (n:${tableLabel}) RETURN n.id AS id, n.name AS name, n.filePath AS filePath, n.content AS content`
-      : `MATCH (n:${tableLabel}) RETURN n.id AS id, n.name AS name, n.filePath AS filePath`;
-  }
-  if (table === 'Folder') {
-    return `MATCH (n:${tableLabel}) RETURN n.id AS id, n.name AS name, n.filePath AS filePath`;
-  }
-  if (table === 'Community') {
-    return `MATCH (n:${tableLabel}) RETURN n.id AS id, n.label AS label, n.heuristicLabel AS heuristicLabel, n.cohesion AS cohesion, n.symbolCount AS symbolCount`;
-  }
-  if (table === 'Process') {
-    return `MATCH (n:${tableLabel}) RETURN n.id AS id, n.label AS label, n.heuristicLabel AS heuristicLabel, n.processType AS processType, n.stepCount AS stepCount, n.communities AS communities, n.entryPointId AS entryPointId, n.terminalId AS terminalId`;
-  }
-  if (table === 'Route') {
-    return `MATCH (n:${tableLabel}) RETURN n.id AS id, n.name AS name, n.filePath AS filePath, n.responseKeys AS responseKeys, n.errorKeys AS errorKeys, n.middleware AS middleware`;
-  }
-  if (table === 'Tool') {
-    return `MATCH (n:${tableLabel}) RETURN n.id AS id, n.name AS name, n.filePath AS filePath, n.description AS description`;
-  }
-  return includeContent
-    ? `MATCH (n:${tableLabel}) RETURN n.id AS id, n.name AS name, n.filePath AS filePath, n.startLine AS startLine, n.endLine AS endLine, n.content AS content`
-    : `MATCH (n:${tableLabel}) RETURN n.id AS id, n.name AS name, n.filePath AS filePath, n.startLine AS startLine, n.endLine AS endLine`;
-};
-
-const mapGraphNodeRow = (table: string, row: any, includeContent: boolean): GraphNode => ({
-  id: row.id ?? row[0],
-  label: table as GraphNode['label'],
-  properties: {
-    name: row.name ?? row.label ?? row[1],
-    filePath: row.filePath ?? row[2],
-    startLine: row.startLine,
-    endLine: row.endLine,
-    content: includeContent ? row.content : undefined,
-    responseKeys: row.responseKeys,
-    errorKeys: row.errorKeys,
-    middleware: row.middleware,
-    heuristicLabel: row.heuristicLabel,
-    cohesion: row.cohesion,
-    symbolCount: row.symbolCount,
-    description: row.description,
-    processType: row.processType,
-    stepCount: row.stepCount,
-    communities: row.communities,
-    entryPointId: row.entryPointId,
-    terminalId: row.terminalId,
-  } as GraphNode['properties'],
-});
-
-const mapGraphRelationshipRow = (row: any): GraphRelationship => ({
-  id: `${row.sourceId}_${row.type}_${row.targetId}`,
-  type: row.type,
-  sourceId: row.sourceId,
-  targetId: row.targetId,
-  confidence: row.confidence,
-  reason: row.reason,
-  step: row.step,
-});
-
-export const streamGraphNdjson = async (
-  res: express.Response,
-  includeContent = false,
-  signal?: AbortSignal,
-): Promise<void> => {
-  const writer = createGraphStreamBatchWriter(res, signal);
-
-  for (const table of NODE_TABLES) {
-    try {
-      await streamQuery(getNodeQuery(table, includeContent), async (row) => {
-        await writer.write(
-          {
-            type: 'node',
-            data: mapGraphNodeRow(table, row, includeContent),
-          },
-        );
-      });
-      await writer.flush();
-    } catch (err) {
-      if (!isIgnorableGraphQueryError(err)) {
-        throw err;
-      }
-    }
-  }
-
-  await streamQuery(GRAPH_RELATIONSHIP_QUERY, async (row) => {
-    await writer.write(
-      {
-        type: 'relationship',
-        data: mapGraphRelationshipRow(row),
-      },
-    );
-  });
-  await writer.flush();
 };
 
 /**
@@ -512,21 +269,25 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
   // Helper: resolve a repo by name from the global registry, or default to first.
   // Pass `req` to enable early exit if the client disconnects during the hold-queue wait.
   const resolveRepo = async (repoName?: string, isRetry = false, req?: any): Promise<any> => {
-    const repos = await listRegisteredRepos();
-    let found = null;
-
-    // Normalize: if a full path is passed, extract just the basename.
-    // e.g. "C:\Users\LENOVO\.avmatrix\repos\todo.txt-cli" -> "todo.txt-cli"
-    const normalizedName = repoName ? path.basename(repoName) : undefined;
-
-    if (normalizedName) {
-      found =
-        repos.find((r) => r.name === normalizedName) ||
-        repos.find((r) => r.name.toLowerCase() === normalizedName.toLowerCase()) ||
-        null;
-    } else if (repos.length > 0) {
-      found = repos[0]; // default to first repo
-    }
+    const repos = assignRepoRuntimeIds(
+      (await listRegisteredRepos()).map((repo) => ({
+        ...repo,
+        repoPath: path.resolve(repo.path),
+      })),
+    );
+    const normalizedName = normalizeRepoParam(repoName);
+    const foundCandidate = findRepoCandidate(
+      repos,
+      repoName,
+      { allowSingleDefault: true, matchId: true },
+    );
+    let found =
+      foundCandidate
+        ? repos.find(
+            (repo) =>
+              repo.id === foundCandidate.id && repo.repoPath === foundCandidate.repoPath,
+          ) || null
+        : null;
 
     // If not yet in the registry, check whether a background job is actively preparing or
     // analyzing this repo. Hold the connection open (up to 5 minutes) until it completes.
@@ -558,7 +319,12 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
             if (!currentJob || currentJob.status === 'failed') break;
             if (currentJob.status === 'complete') {
               await backend.init();
-              const freshRepos = await listRegisteredRepos();
+              const freshRepos = assignRepoRuntimeIds(
+                (await listRegisteredRepos()).map((repo) => ({
+                  ...repo,
+                  repoPath: path.resolve(repo.path),
+                })),
+              );
               return freshRepos.find((r) => r.name === normalizedName) || null;
             }
             await new Promise((r) => setTimeout(r, 1000));
@@ -733,7 +499,10 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
         res.status(404).json({ error: 'Repository not found' });
         return;
       }
-      const lbugPath = path.join(entry.storagePath, 'lbug');
+      const repoTarget = {
+        repoId: entry.id,
+        lbugPath: path.join(entry.storagePath, 'lbug'),
+      };
       const includeContent = req.query.includeContent === 'true';
       const stream = req.query.stream === 'true';
 
@@ -760,8 +529,14 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
         res.once('close', abortStreaming);
 
         try {
-          await withLbugDb(lbugPath, async () =>
-            streamGraphNdjson(res, includeContent, abortController.signal),
+          const writer = createGraphStreamBatchWriter(res, abortController.signal);
+          await streamRepoGraph(
+            repoTarget,
+            {
+              write: writer.write,
+              flush: writer.flush,
+            },
+            includeContent,
           );
           if (!abortController.signal.aborted && !res.writableEnded) {
             res.end();
@@ -774,7 +549,7 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
         return;
       }
 
-      const graph = await withLbugDb(lbugPath, async () => buildGraph(includeContent));
+      const graph = await buildRepoGraph(repoTarget, includeContent);
       res.json(graph);
     } catch (err: any) {
       if (err instanceof ClientDisconnectedError) {
@@ -813,8 +588,13 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
         res.status(404).json({ error: 'Repository not found' });
         return;
       }
-      const lbugPath = path.join(entry.storagePath, 'lbug');
-      const result = await withLbugDb(lbugPath, () => executeQuery(cypher));
+      const result = await executeRepoReadQuery(
+        {
+          repoId: entry.id,
+          lbugPath: path.join(entry.storagePath, 'lbug'),
+        },
+        cypher,
+      );
       res.json({ result });
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'Query failed' });
@@ -835,7 +615,11 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
         res.status(404).json({ error: 'Repository not found' });
         return;
       }
-      const lbugPath = path.join(entry.storagePath, 'lbug');
+      const repoTarget = {
+        repoId: entry.id,
+        lbugPath: path.join(entry.storagePath, 'lbug'),
+      };
+      const repoQuery = (cypher: string) => executeRepoReadQuery(repoTarget, cypher);
       const parsedLimit = Number(req.body.limit ?? 10);
       const limit = Number.isFinite(parsedLimit)
         ? Math.max(1, Math.min(100, Math.trunc(parsedLimit)))
@@ -843,7 +627,8 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
       const mode: string = req.body.mode ?? 'hybrid';
       const enrich: boolean = req.body.enrich !== false; // default true
 
-      const results = await withLbugDb(lbugPath, async () => {
+      await ensureRepoReadReady(repoTarget);
+      const results = await (async () => {
         let searchResults: any[];
 
         if (mode === 'semantic') {
@@ -853,7 +638,7 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
           }
           const { semanticSearch: semSearch } =
             await import('../core/embeddings/embedding-pipeline.js');
-          searchResults = await semSearch(executeQuery, query, limit);
+          searchResults = await semSearch(repoQuery, query, limit);
           // Normalize semantic results to HybridSearchResult shape
           searchResults = searchResults.map((r: any, i: number) => ({
             ...r,
@@ -862,7 +647,7 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
             sources: ['semantic'],
           }));
         } else if (mode === 'bm25') {
-          searchResults = await searchFTSFromLbug(query, limit);
+          searchResults = await searchFTSFromLbug(query, limit, entry.id);
           searchResults = searchResults.map((r: any, i: number) => ({
             ...r,
             rank: i + 1,
@@ -874,9 +659,13 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
           if (isEmbedderReady()) {
             const { semanticSearch: semSearch } =
               await import('../core/embeddings/embedding-pipeline.js');
-            searchResults = await hybridSearch(query, limit, executeQuery, semSearch);
+            const [bm25Results, semanticResults] = await Promise.all([
+              searchFTSFromLbug(query, limit, entry.id),
+              semSearch(repoQuery, query, limit),
+            ]);
+            searchResults = mergeWithRRF(bm25Results, semanticResults, limit);
           } else {
-            searchResults = await searchFTSFromLbug(query, limit);
+            searchResults = await searchFTSFromLbug(query, limit, entry.id);
           }
         }
 
@@ -899,7 +688,8 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
             // Label is validated against NODE_TABLES (compile-time safe identifiers);
             // nodeId uses $nid parameter binding to prevent injection
             const [connRes, clusterRes, procRes] = await Promise.all([
-              executePrepared(
+              executeRepoParameterizedReadQuery(
+                repoTarget,
                 `
               MATCH (n:${nodeLabel} {id: $nid})
               OPTIONAL MATCH (n)-[r1:CodeRelation]->(dst)
@@ -911,7 +701,8 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
             `,
                 { nid: nodeId },
               ).catch(() => []),
-              executePrepared(
+              executeRepoParameterizedReadQuery(
+                repoTarget,
                 `
               MATCH (n:${nodeLabel} {id: $nid})
               MATCH (n)-[:CodeRelation {type: 'MEMBER_OF'}]->(c:Community)
@@ -920,7 +711,8 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
             `,
                 { nid: nodeId },
               ).catch(() => []),
-              executePrepared(
+              executeRepoParameterizedReadQuery(
+                repoTarget,
                 `
               MATCH (n:${nodeLabel} {id: $nid})
               MATCH (n)-[rel:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process)
@@ -963,7 +755,7 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
         );
 
         return enriched;
-      });
+      })();
       res.json({ results });
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'Search failed' });
@@ -1063,9 +855,12 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
       const repoRoot = path.resolve(entry.path);
 
       // Get file paths from the graph (lightweight — no content loaded)
-      const lbugPath = path.join(entry.storagePath, 'lbug');
-      const fileRows = await withLbugDb(lbugPath, () =>
-        executeQuery(`MATCH (n:File) WHERE n.content IS NOT NULL RETURN n.filePath AS filePath`),
+      const fileRows = await executeRepoReadQuery(
+        {
+          repoId: entry.id,
+          lbugPath: path.join(entry.storagePath, 'lbug'),
+        },
+        `MATCH (n:File) WHERE n.content IS NOT NULL RETURN n.filePath AS filePath`,
       );
 
       // Search files on disk one at a time (constant memory)

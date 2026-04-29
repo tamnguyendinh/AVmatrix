@@ -11,12 +11,14 @@ const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:4747';
 const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173';
 
 let firstRepoName: string;
+let repoNames: string[] = [];
 
 test.beforeAll(async () => {
   if (process.env.E2E) {
     try {
       const res = await fetch(`${BACKEND_URL}/api/repos`);
       const repos = await res.json();
+      repoNames = repos.map((repo: { name: string }) => repo.name);
       firstRepoName = repos[0]?.name ?? '';
     } catch {
       firstRepoName = '';
@@ -48,11 +50,48 @@ test.beforeAll(async () => {
         test.skip(true, 'No indexed repos');
         return;
       }
+      repoNames = repos.map((repo: { name: string }) => repo.name);
       firstRepoName = repos[0].name;
     }
   } catch {
     test.skip(true, 'servers not available');
   }
+});
+
+// ── 5. Repeated dropdown switching ───────────────────────────────────────────
+
+test.describe('Repeated dropdown repo switching', () => {
+  test('loads the target graph after repeated switches across repos', async ({ page }) => {
+    test.slow();
+    if (repoNames.length < 2) test.skip(true, 'requires at least two indexed repos');
+
+    const [first, second] = repoNames;
+    let current = first;
+
+    await page.goto(
+      `${FRONTEND_URL}/?server=${encodeURIComponent(BACKEND_URL)}&project=${encodeURIComponent(current)}`,
+    );
+    await expect(page.locator('[data-testid="status-ready"]')).toBeVisible({
+      timeout: READY_TIMEOUT_MS,
+    });
+
+    const sequence = [second, first, second, first, second, first];
+    for (const target of sequence) {
+      await page.locator('header button').filter({ hasText: current }).first().click();
+      await page.locator('button').filter({ hasText: target }).first().click();
+
+      await expect(page.locator('[data-testid="status-ready"]')).toBeVisible({
+        timeout: READY_TIMEOUT_MS,
+      });
+      await expect(page.locator('[data-testid="graph-stats"]')).toContainText(/nodes/i, {
+        timeout: 10_000,
+      });
+
+      const url = new URL(page.url());
+      expect(url.searchParams.get('project')).toBe(target);
+      current = target;
+    }
+  });
 });
 
 // ── 1. Hold-queue: 503 → descriptive user message ────────────────────────────

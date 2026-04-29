@@ -1,18 +1,14 @@
 import { EventEmitter } from 'node:events';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { streamGraphFromExecutor } from '../../src/runtime/repo-runtime/graph-read-service.js';
+import {
+  ClientDisconnectedError,
+  createGraphStreamBatchWriter,
+} from '../../src/server/graph-stream-http.js';
 
-const { lbugMocks } = vi.hoisted(() => ({
-  lbugMocks: {
-    streamQuery: vi.fn(),
-  },
-}));
-
-vi.mock('../../src/core/lbug/lbug-adapter.js', async (importOriginal) => {
-  const actual = await importOriginal();
-  return { ...actual, ...lbugMocks };
-});
-
-import { ClientDisconnectedError, streamGraphNdjson } from '../../src/server/api.js';
+const lbugMocks = {
+  streamQuery: vi.fn(),
+};
 
 const createMockResponse = (writeImpl?: (chunk: string) => boolean) => {
   const response = new EventEmitter() as any;
@@ -20,6 +16,15 @@ const createMockResponse = (writeImpl?: (chunk: string) => boolean) => {
   response.destroyed = false;
   response.write = vi.fn((chunk: string) => (writeImpl ? writeImpl(chunk) : true));
   return response;
+};
+
+const streamGraphNdjson = (
+  response: any,
+  includeContent = false,
+  signal?: AbortSignal,
+): Promise<void> => {
+  const writer = createGraphStreamBatchWriter(response, signal);
+  return streamGraphFromExecutor(lbugMocks.streamQuery, writer, includeContent);
 };
 
 describe('streamGraphNdjson', () => {

@@ -27,6 +27,12 @@ import {
   cleanupOldKuzuFiles,
   type RegistryEntry,
 } from '../../storage/repo-manager.js';
+import {
+  assignRepoRuntimeIds,
+  buildRepoLabels,
+  findRepoCandidate,
+  type RepoLookupCandidate,
+} from '../../runtime/repo-resolver.js';
 import { GroupService, type GroupToolPort } from '../../core/group/service.js';
 import { collectBestChunks } from '../../core/embeddings/types.js';
 import { EMBEDDING_TABLE_NAME, EMBEDDING_INDEX_NAME } from '../../core/lbug/schema.js';
@@ -195,6 +201,12 @@ interface RepoHandle {
   stats?: RegistryEntry['stats'];
 }
 
+const toRepoLookupCandidate = (handle: RepoHandle): RepoLookupCandidate => ({
+  id: handle.id,
+  name: handle.name,
+  repoPath: handle.repoPath,
+});
+
 export class LocalBackend {
   private repos: Map<string, RepoHandle> = new Map();
   private contextCache: Map<string, CodebaseContext> = new Map();
@@ -256,12 +268,16 @@ export class LocalBackend {
   }
 
   private async refreshReposInternal(): Promise<void> {
-    const entries = await listRegisteredRepos({ validate: true });
+    const entries = assignRepoRuntimeIds(
+      (await listRegisteredRepos({ validate: true })).map((entry) => ({
+        ...entry,
+        repoPath: entry.path,
+      })),
+    );
     const freshIds = new Set<string>();
 
     for (const entry of entries) {
-      const id = this.repoId(entry.name, entry.path);
-      freshIds.add(id);
+      freshIds.add(entry.id);
 
       const storagePath = entry.storagePath;
       const lbugPath = path.join(storagePath, 'lbug');
@@ -276,9 +292,9 @@ export class LocalBackend {
       }
 
       const handle: RepoHandle = {
-        id,
+        id: entry.id,
         name: entry.name,
-        repoPath: entry.path,
+        repoPath: entry.repoPath,
         storagePath,
         lbugPath,
         indexedAt: entry.indexedAt,
@@ -286,11 +302,11 @@ export class LocalBackend {
         stats: entry.stats,
       };
 
-      this.repos.set(id, handle);
+      this.repos.set(entry.id, handle);
 
       // Build lightweight context (no LadybugDB needed)
       const s = entry.stats || {};
-      this.contextCache.set(id, {
+      this.contextCache.set(entry.id, {
         projectName: entry.name,
         stats: {
           fileCount: s.files || 0,
@@ -309,23 +325,6 @@ export class LocalBackend {
         this.initializedRepos.delete(id);
       }
     }
-  }
-
-  /**
-   * Generate a stable repo ID from name + path.
-   * If names collide, append a hash of the path.
-   */
-  private repoId(name: string, repoPath: string): string {
-    const base = name.toLowerCase();
-    // Check for name collision with a different path
-    for (const [id, handle] of this.repos) {
-      if (id === base && handle.repoPath !== path.resolve(repoPath)) {
-        // Collision — use path hash
-        const hash = Buffer.from(repoPath).toString('base64url').slice(0, 6);
-        return `${base}-${hash}`;
-      }
-    }
-    return base;
   }
 
   // ─── Repo Resolution ─────────────────────────────────────────────
@@ -353,18 +352,7 @@ export class LocalBackend {
       throw new Error('No indexed repositories. Run: avmatrix analyze');
     }
 
-    // Build a disambiguated "Available: …" list (#829). When two handles
-    // share a name, annotate each colliding label with its path so the
-    // caller can actually pick the right one. Single-name entries render
-    // identically to pre-#829 output.
-    const nameCounts = new Map<string, number>();
-    for (const h of this.repos.values()) {
-      const key = h.name.toLowerCase();
-      nameCounts.set(key, (nameCounts.get(key) ?? 0) + 1);
-    }
-    const labels = [...this.repos.values()].map((h) =>
-      (nameCounts.get(h.name.toLowerCase()) ?? 0) > 1 ? `${h.name} (${h.repoPath})` : h.name,
-    );
+    const labels = buildRepoLabels([...this.repos.values()].map(toRepoLookupCandidate));
 
     if (repoParam) {
       throw new Error(`Repository "${repoParam}" not found. Available: ${labels.join(', ')}`);
@@ -378,33 +366,28 @@ export class LocalBackend {
    * Try to resolve a repo from the in-memory cache. Returns null on miss.
    */
   private resolveRepoFromCache(repoParam?: string): RepoHandle | null {
-    if (this.repos.size === 0) return null;
-
-    if (repoParam) {
-      const paramLower = repoParam.toLowerCase();
-      // Match by id
-      if (this.repos.has(paramLower)) return this.repos.get(paramLower)!;
-      // Match by name (case-insensitive)
-      for (const handle of this.repos.values()) {
-        if (handle.name.toLowerCase() === paramLower) return handle;
-      }
-      // Match by path (substring)
-      const resolved = path.resolve(repoParam);
-      for (const handle of this.repos.values()) {
-        if (handle.repoPath === resolved) return handle;
-      }
-      // Match by partial name
-      for (const handle of this.repos.values()) {
-        if (handle.name.toLowerCase().includes(paramLower)) return handle;
-      }
-      return null;
-    }
-
-    if (this.repos.size === 1) {
-      return this.repos.values().next().value!;
-    }
-
-    return null; // Multiple repos, no param — ambiguous
+    const candidates = [...this.repos.values()].map((handle) => ({
+      handle,
+      candidate: toRepoLookupCandidate(handle),
+    }));
+    const found = findRepoCandidate(
+      candidates.map((entry) => entry.candidate),
+      repoParam,
+      {
+        allowPartialName: true,
+        allowSingleDefault: true,
+        matchId: true,
+      },
+    );
+    if (!found) return null;
+    return (
+      candidates.find(
+        (entry) =>
+          entry.candidate.id === found.id &&
+          entry.candidate.name === found.name &&
+          entry.candidate.repoPath === found.repoPath,
+      )?.handle ?? null
+    );
   }
 
   // ─── Lazy LadybugDB Init ────────────────────────────────────────────

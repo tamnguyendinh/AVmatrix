@@ -536,6 +536,51 @@ export const executeQuery = async (repoId: string, cypher: string): Promise<any[
   }
 };
 
+export const streamQuery = async (
+  repoId: string,
+  cypher: string,
+  onRow: (row: any) => void | Promise<void>,
+): Promise<number> => {
+  const entry = pool.get(repoId);
+  if (!entry) {
+    throw new Error(`LadybugDB not initialized for repo "${repoId}". Call initLbug first.`);
+  }
+
+  if (isWriteQuery(cypher)) {
+    throw new Error('Write operations are not allowed. The pool adapter is read-only.');
+  }
+
+  entry.lastUsed = Date.now();
+
+  const conn = await checkout(entry);
+  silenceStdout();
+  activeQueryCount++;
+  try {
+    const queryResult = await withTimeout(conn.query(cypher), QUERY_TIMEOUT_MS, 'Query');
+    const result = Array.isArray(queryResult) ? queryResult[0] : queryResult;
+    let rowCount = 0;
+
+    try {
+      while (await result.hasNext()) {
+        const row = await result.getNext();
+        await onRow(row);
+        rowCount++;
+      }
+      return rowCount;
+    } finally {
+      try {
+        await result.close();
+      } catch {
+        // Best-effort cleanup only.
+      }
+    }
+  } finally {
+    activeQueryCount--;
+    restoreStdout();
+    checkin(entry, conn);
+  }
+};
+
 /**
  * Execute a parameterized query on a specific repo's connection pool.
  * Uses prepare/execute pattern to prevent Cypher injection.
