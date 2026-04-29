@@ -665,6 +665,22 @@ export interface AnalyzeRequest {
   embeddings?: boolean;
 }
 
+export interface PickLocalFolderResult {
+  path: string | null;
+  cancelled?: boolean;
+}
+
+/** Open the local runtime's native folder picker and return an absolute path. */
+export const pickLocalFolder = async (): Promise<PickLocalFolderResult> => {
+  const response = await fetchWithTimeout(
+    `${_backendUrl}/api/local/folder-picker`,
+    { method: 'POST' },
+    600_000,
+  );
+  await assertOk(response);
+  return response.json() as Promise<PickLocalFolderResult>;
+};
+
 /** Start a server-side local analysis job. */
 export const startAnalyze = async (
   request: AnalyzeRequest,

@@ -15,6 +15,7 @@ import {
   Sparkles,
 } from '@/lib/lucide-icons';
 import {
+  pickLocalFolder,
   startAnalyze,
   cancelAnalyze,
   streamAnalyzeProgress,
@@ -101,9 +102,9 @@ export interface RepoAnalyzerProps {
 
 export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProps) => {
   const inputId = useId();
-  const folderInputRef = useRef<HTMLInputElement>(null);
   const [localPath, setLocalPath] = useState('');
   const [phase, setPhase] = useState<InternalPhase>('input');
+  const [isPickingFolder, setIsPickingFolder] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [progress, setProgress] = useState<JobProgress>({
     phase: 'queued',
@@ -123,14 +124,30 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
     };
   }, []);
 
-  // Use the browser's native directory picker (webkitdirectory doesn't give paths,
-  // so we use a text input + a "Browse" button that opens a standard file input
-  // to let users pick files from the folder — the path is typed manually since
-  // browsers don't expose absolute paths for security reasons).
-  // For local paths, the user types or pastes the absolute path.
-
   const canSubmit =
-    isLikelyAbsoluteLocalPath(localPath) && (phase === 'input' || phase === 'error');
+    !isPickingFolder && isLikelyAbsoluteLocalPath(localPath) && (phase === 'input' || phase === 'error');
+
+  const handleChooseRepository = async () => {
+    if (isPickingFolder || phase === 'starting' || phase === 'analyzing') return;
+
+    setValidationError(null);
+    setIsPickingFolder(true);
+    try {
+      const result = await pickLocalFolder();
+      if (result.path) {
+        setLocalPath(result.path);
+      }
+    } catch (err) {
+      setValidationError(
+        err instanceof Error
+          ? err.message
+          : 'Unable to open the local repository picker. Paste the absolute path manually.',
+      );
+      setPhase('input');
+    } finally {
+      setIsPickingFolder(false);
+    }
+  };
 
   const handleAnalyze = async () => {
     if (!isLikelyAbsoluteLocalPath(localPath)) {
@@ -236,35 +253,21 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
               <Check className="h-3.5 w-3.5 shrink-0 text-success" />
             )}
           </div>
-          {/* Native folder picker + Browse button — below the input */}
-          <input
-            ref={folderInputRef}
-            type="file"
-            // @ts-expect-error -- webkitdirectory is non-standard but widely supported
-            webkitdirectory=""
-            className="hidden"
-            onChange={(e) => {
-              const files = e.target.files;
-              if (files && files.length > 0) {
-                setValidationError(
-                  'Browsers do not expose absolute folder paths here. Paste the full local path manually.',
-                );
-              }
-              e.target.value = '';
-            }}
-          />
           <button
             type="button"
-            onClick={() => folderInputRef.current?.click()}
-            disabled={isLoading}
+            onClick={handleChooseRepository}
+            disabled={isLoading || isPickingFolder}
             className="press-outline-button flex w-full cursor-pointer items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-text-secondary disabled:opacity-50"
           >
-            <FolderOpen className="h-3.5 w-3.5" />
-            Folder picker hint
+            {isPickingFolder ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <FolderOpen className="h-3.5 w-3.5" />
+            )}
+            {isPickingFolder ? 'Opening repository picker...' : 'Choose Repository'}
           </button>
           <p className="text-xs text-text-muted">
-            Paste an absolute local path. Browser folder pickers cannot reveal the full path, so the
-            picker only helps confirm the folder name.
+            Choose a local repository folder or paste its absolute path manually.
           </p>
         </div>
       )}

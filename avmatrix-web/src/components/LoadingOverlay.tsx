@@ -1,4 +1,5 @@
 import type { PipelineProgress } from 'avmatrix-shared';
+import { EncouragementLine } from './EncouragementLine';
 
 interface LoadingOverlayProps {
   progress: PipelineProgress;
@@ -35,6 +36,9 @@ export const LoadingOverlay = ({ progress }: LoadingOverlayProps) => {
         {progress.detail && (
           <p className="max-w-md truncate font-reading text-xs text-text-secondary">{progress.detail}</p>
         )}
+        <p className="mt-3 font-reading text-sm text-text-secondary">
+          This may take a moment for large repositories
+        </p>
       </div>
 
       {progress.stats && (
@@ -51,6 +55,10 @@ export const LoadingOverlay = ({ progress }: LoadingOverlayProps) => {
           </div>
         </div>
       )}
+
+      <div className="mt-6">
+        <EncouragementLine />
+      </div>
     </div>
   );
 };

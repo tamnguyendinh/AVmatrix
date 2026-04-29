@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X } from '@/lib/lucide-icons';
 import type { JobProgress as AnalyzeJobProgress } from '../services/backend-client';
+import { EncouragementLine } from './EncouragementLine';
 
 interface AnalyzeProgressProps {
   progress: AnalyzeJobProgress;
@@ -68,6 +69,12 @@ export const AnalyzeProgress = ({ progress, onCancel }: AnalyzeProgressProps) =>
           Cancel
         </button>
       </div>
+
+      <p className="text-center font-reading text-sm text-text-secondary">
+        This may take a moment for large repositories
+      </p>
+
+      <EncouragementLine />
     </div>
   );
 };

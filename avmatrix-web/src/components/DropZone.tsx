@@ -11,6 +11,7 @@ import { useBackend } from '../hooks/useBackend';
 import { OnboardingGuide } from './OnboardingGuide';
 import { AnalyzeOnboarding } from './AnalyzeOnboarding';
 import { RepoLanding } from './RepoLanding';
+import { EncouragementLine } from './EncouragementLine';
 
 interface DropZoneProps {
   onServerConnect?: (result: ConnectResult, serverUrl?: string) => void | Promise<void>;
@@ -98,24 +99,27 @@ function SuccessCard() {
 
 function LoadingCard({ message }: { message: string }) {
   return (
-    <div
-      className="press-panel relative overflow-hidden p-8"
-      role="status"
-      aria-live="polite"
-    >
-      <div className="relative">
-        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-xl border-[3px] border-border-default bg-inset">
-          <Loader2 className="h-8 w-8 animate-spin text-border-strong" />
-        </div>
+    <div className="space-y-4">
+      <div
+        className="press-panel relative overflow-hidden p-8"
+        role="status"
+        aria-live="polite"
+      >
+        <div className="relative">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-xl border-[3px] border-border-default bg-inset">
+            <Loader2 className="h-8 w-8 animate-spin text-border-strong" />
+          </div>
 
-        <p className="press-eyebrow mb-2 text-center">Connecting</p>
-        <h2 className="press-title mb-2 text-center text-2xl">
-          {message || 'Connecting...'}
-        </h2>
-        <p className="mx-auto text-center text-base leading-relaxed font-reading text-text-secondary">
-          This may take a moment for large repositories
-        </p>
+          <p className="press-eyebrow mb-2 text-center">Connecting</p>
+          <h2 className="press-title mb-2 text-center text-2xl">
+            {message || 'Connecting...'}
+          </h2>
+          <p className="mx-auto text-center text-base leading-relaxed font-reading text-text-secondary">
+            This may take a moment for large repositories
+          </p>
+        </div>
       </div>
+      <EncouragementLine />
     </div>
   );
 }

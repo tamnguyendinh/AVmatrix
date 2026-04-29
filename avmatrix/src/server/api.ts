@@ -55,6 +55,7 @@ import {
   createGraphStreamBatchWriter,
   writeNdjsonChunk,
 } from './graph-stream-http.js';
+import { pickLocalFolder, UnsupportedFolderPickerError } from './local-folder-picker.js';
 
 const _require = createRequire(import.meta.url);
 const pkg = _require('../../package.json');
@@ -956,6 +957,25 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
       res
         .status(statusFromError(err))
         .json({ error: err.message || 'Failed to query cluster detail' });
+    }
+  });
+
+  // POST /api/local/folder-picker — open a native local folder picker.
+  app.post('/api/local/folder-picker', async (_req, res) => {
+    try {
+      const selectedPath = await pickLocalFolder();
+      if (!selectedPath) {
+        res.json({ path: null, cancelled: true });
+        return;
+      }
+
+      res.json({ path: selectedPath, cancelled: false });
+    } catch (err: any) {
+      if (err instanceof UnsupportedFolderPickerError) {
+        res.status(501).json({ error: err.message });
+        return;
+      }
+      res.status(500).json({ error: err?.message || 'Failed to open local folder picker' });
     }
   });
 
