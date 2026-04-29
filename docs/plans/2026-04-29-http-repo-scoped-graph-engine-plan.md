@@ -2,7 +2,7 @@
 
 Date: 2026-04-29  
 Status: Draft  
-Scope: `avmatrix/src/server/`, `avmatrix/src/core/lbug/`, `avmatrix-web/src/`, related tests/docs
+Scope: `avmatrix/src/server/`, `avmatrix/src/runtime/`, `avmatrix/src/core/lbug/`, `avmatrix-web/src/`, `avmatrix-shared/`, related tests/docs
 
 ## Goal
 
@@ -15,7 +15,7 @@ This plan does **not** replace the whole tool.
 This plan replaces one broken sub-engine:
 
 ```text
-HTTP repo attach / graph load / repo-scoped read-write execution path
+HTTP repo attach / graph load / repo-scoped read execution path
 ```
 
 ## What is being replaced
@@ -67,6 +67,23 @@ This plan is **not**:
 - a dropdown-only patch
 - a whole-tool rewrite
 - a replacement of MCP with HTTP
+
+## Architecture constraints
+
+The replacement must obey these constraints:
+
+1. The new engine belongs to shared runtime/core, not to HTTP.
+2. `api.ts` stays an adapter, in line with the existing local-runtime direction in:
+   - [2026-04-20-convert-all-to-local.md](F:/AVmatrix-main/docs/plans/2026-04-20-convert-all-to-local.md:50)
+   - [2026-04-20-convert-all-to-local.md](F:/AVmatrix-main/docs/plans/2026-04-20-convert-all-to-local.md:54)
+3. The plan must not create a second repo-binding/type family parallel to the runtime/session types that already exist in:
+   - [session.ts](F:/AVmatrix-main/avmatrix-shared/src/session.ts:24)
+   - [runtime-controller.ts](F:/AVmatrix-main/avmatrix/src/runtime/runtime-controller.ts:154)
+4. Runtime/core contracts must stay transport-neutral. `express.Response`, route objects, and SSE formatting stay in HTTP adapter code.
+5. The plan must define one canonical repo identity / pool key for repo-scoped execution. Do not let HTTP, runtime, and pool layers invent different keys.
+6. First rollout deliverable is the HTTP read-path replacement that serves dropdown repo switching and graph load.
+7. Write-side isolation for embed/analyze is allowed only as a gated follow-up phase, not as an excuse to turn this plan into a half-tool rewrite.
+8. First rollout must preserve current Web route contracts, including `repo` query-param compatibility, and map them inside the adapter to shared repo-binding types.
 
 ## Why this specific sub-engine must be replaced
 
@@ -148,7 +165,7 @@ HTTP route -> global DB retarget -> query
 with:
 
 ```text
-HTTP route -> explicit repo binding -> repo-scoped executor -> graph/query/embed service
+HTTP route -> explicit repo binding -> repo-scoped executor -> graph/query/search/file read service
 ```
 
 ### Current architecture
@@ -169,9 +186,9 @@ Web UI
 Web UI
 -> /api/repo
 -> /api/graph
--> HTTP repo runtime adapter resolves explicit RepoHandle
+-> HTTP repo runtime adapter maps `repo` query param to explicit SessionRepoBinding
 -> HTTP repo runtime gets repo-scoped executor for repo.id
--> graph/query/embed service runs only inside that repo-scoped executor
+-> graph/query/search/file read service runs only inside that repo-scoped executor
 -> repo A and repo B do not retarget one shared active DB slot
 ```
 
@@ -186,18 +203,21 @@ Web UI
 
 #### Replace with
 
-Create a shared repo-handle resolver for transport adapters:
+Create a shared repo resolver core under `src/runtime/`, extracted from the current runtime/session path instead of inventing a second binding model:
 
-- `avmatrix/src/runtime/repo-handle.ts`
-- `avmatrix/src/runtime/repo-handle-resolver.ts`
+- `avmatrix/src/runtime/repo-resolver.ts`
+- optionally `avmatrix/src/runtime/repo-descriptor.ts`
 
-Suggested types:
+Canonical binding types should continue to come from:
+
+- [SessionRepoBinding](F:/AVmatrix-main/avmatrix-shared/src/session.ts:24)
+- [ResolvedSessionRepo](F:/AVmatrix-main/avmatrix-shared/src/session.ts:29)
+
+If the HTTP graph engine needs more metadata than `ResolvedSessionRepo` currently exposes, prefer one companion descriptor that extends the existing resolved-repo model instead of creating a parallel family:
 
 ```ts
-export interface RepoRuntimeHandle {
-  id: string;
-  name: string;
-  repoPath: string;
+export interface IndexedRepoDescriptor extends ResolvedSessionRepo {
+  repoId: string;
   storagePath: string;
   lbugPath: string;
   indexedAt: string;
@@ -206,21 +226,17 @@ export interface RepoRuntimeHandle {
 }
 ```
 
-```ts
-export interface RepoBinding {
-  repo?: string;
-  repoPath?: string;
-}
-```
+`repoId` is the canonical repo identity for repo-scoped execution and pool lookup. The first rollout must not leave this implicit.
 
 #### Reuse
 
-Reuse the **resolution semantics** from:
+Reuse the **resolution semantics and existing runtime path** from:
 
 - [LocalBackend.resolveRepo()](F:/AVmatrix-main/avmatrix/src/mcp/local/local-backend.ts:342)
 - [LocalBackend.resolveRepoFromCache()](F:/AVmatrix-main/avmatrix/src/mcp/local/local-backend.ts:380)
+- [RuntimeController.resolveRepo()](F:/AVmatrix-main/avmatrix/src/runtime/runtime-controller.ts:154)
 
-Do **not** reuse the entire `LocalBackend` class.
+Do **not** duplicate repo resolution one more time in HTTP. Extract a shared resolver that both HTTP and runtime/session code can call.
 
 #### Why not reuse the whole class
 
@@ -250,25 +266,29 @@ Examples:
 
 ### Replace with
 
-Introduce a repo-scoped read executor abstraction:
+Introduce a repo-scoped read executor abstraction in shared runtime/core:
 
-- `avmatrix/src/server/repo-runtime/repo-read-executor.ts`
-- `avmatrix/src/server/repo-runtime/pool-repo-read-executor.ts`
+- `avmatrix/src/runtime/repo-runtime/repo-read-executor.ts`
+- `avmatrix/src/runtime/repo-runtime/pool-repo-read-executor.ts`
 
 Suggested contract:
 
 ```ts
 export interface RepoReadExecutor {
-  ensureReady(repo: RepoRuntimeHandle): Promise<void>;
-  query(repo: RepoRuntimeHandle, cypher: string): Promise<any[]>;
-  queryParams(repo: RepoRuntimeHandle, cypher: string, params: Record<string, unknown>): Promise<any[]>;
+  ensureReady(repo: IndexedRepoDescriptor): Promise<void>;
+  query(repo: IndexedRepoDescriptor, cypher: string): Promise<any[]>;
+  queryParams(
+    repo: IndexedRepoDescriptor,
+    cypher: string,
+    params: Record<string, unknown>,
+  ): Promise<any[]>;
   stream(
-    repo: RepoRuntimeHandle,
+    repo: IndexedRepoDescriptor,
     cypher: string,
     onRow: (row: any) => Promise<void>,
     signal?: AbortSignal,
   ): Promise<void>;
-  close?(repo: RepoRuntimeHandle): Promise<void>;
+  close?(repo: IndexedRepoDescriptor): Promise<void>;
 }
 ```
 
@@ -313,16 +333,25 @@ Both functions currently depend on global query primitives:
 
 ### Replace with
 
-Extract graph logic into repo-scoped services:
+Extract graph logic into repo-scoped services in shared runtime/core:
 
-- `avmatrix/src/server/repo-runtime/graph-read-service.ts`
-- `avmatrix/src/server/repo-runtime/graph-stream-service.ts`
+- `avmatrix/src/runtime/repo-runtime/graph-read-service.ts`
+- `avmatrix/src/runtime/repo-runtime/graph-stream-service.ts`
+
+Transport-neutral streaming support should live in runtime/core, for example:
+
+```ts
+export interface GraphStreamSink {
+  write(chunk: string): Promise<void>;
+  end(): Promise<void>;
+}
+```
 
 Suggested contracts:
 
 ```ts
 export interface RepoGraphReadService {
-  buildGraph(repo: RepoRuntimeHandle, options: { includeContent: boolean }): Promise<{
+  buildGraph(repo: IndexedRepoDescriptor, options: { includeContent: boolean }): Promise<{
     nodes: GraphNode[];
     relationships: GraphRelationship[];
   }>;
@@ -332,8 +361,8 @@ export interface RepoGraphReadService {
 ```ts
 export interface RepoGraphStreamService {
   streamGraphNdjson(
-    repo: RepoRuntimeHandle,
-    res: express.Response,
+    repo: IndexedRepoDescriptor,
+    sink: GraphStreamSink,
     options: { includeContent: boolean; signal?: AbortSignal },
   ): Promise<void>;
 }
@@ -370,20 +399,26 @@ The signatures must change so graph services depend on `RepoReadExecutor`, not g
 
 ### Replace with
 
-Make `api.ts` only a route adapter over a small HTTP repo runtime facade:
+Make `api.ts` only a route adapter over a runtime-core facade plus a thin server adapter:
 
-- `avmatrix/src/server/repo-runtime/http-repo-runtime.ts`
+- runtime/core facade:
+  - `avmatrix/src/runtime/repo-runtime/repo-runtime-core.ts`
+- optional thin HTTP adapter helper:
+  - `avmatrix/src/server/http-repo-runtime-adapter.ts`
 
 Suggested facade:
 
 ```ts
-export interface HttpRepoRuntime {
-  resolve(binding: RepoBinding): Promise<RepoRuntimeHandle>;
-  buildGraph(repo: RepoRuntimeHandle, options: { includeContent: boolean }): Promise<GraphPayload>;
-  streamGraph(repo: RepoRuntimeHandle, res: express.Response, options: StreamOptions): Promise<void>;
-  executeCypher(repo: RepoRuntimeHandle, cypher: string): Promise<any[]>;
-  search(repo: RepoRuntimeHandle, request: SearchRequest): Promise<any[]>;
-  startEmbed(repo: RepoRuntimeHandle): Promise<JobHandle>;
+export interface RepoRuntimeCore {
+  resolve(binding: SessionRepoBinding): Promise<IndexedRepoDescriptor>;
+  buildGraph(repo: IndexedRepoDescriptor, options: { includeContent: boolean }): Promise<GraphPayload>;
+  streamGraph(
+    repo: IndexedRepoDescriptor,
+    sink: GraphStreamSink,
+    options: StreamOptions,
+  ): Promise<void>;
+  executeCypher(repo: IndexedRepoDescriptor, cypher: string): Promise<any[]>;
+  search(repo: IndexedRepoDescriptor, request: SearchRequest): Promise<any[]>;
 }
 ```
 
@@ -412,11 +447,11 @@ These HTTP routes also use the old global path:
 
 ### Replace with
 
-Move them to repo-scoped services:
+Move them to repo-scoped services in runtime/core:
 
-- `avmatrix/src/server/repo-runtime/repo-query-service.ts`
-- `avmatrix/src/server/repo-runtime/repo-search-service.ts`
-- `avmatrix/src/server/repo-runtime/repo-file-service.ts`
+- `avmatrix/src/runtime/repo-runtime/repo-query-service.ts`
+- `avmatrix/src/runtime/repo-runtime/repo-search-service.ts`
+- `avmatrix/src/runtime/repo-runtime/repo-file-service.ts`
 
 ### Reuse
 
@@ -433,6 +468,12 @@ The HTTP-facing services and their repo-scoped contracts.
 
 ## F. Embed / analyze isolation
 
+This section is a **gated follow-up**, not the primary deliverable of the first rollout.
+
+The first rollout must land the HTTP read-path replacement for dropdown repo switching and graph load.
+
+Write isolation should only be pulled into the same implementation wave if the read-path replacement still leaves the same bug class alive.
+
 ### Current
 
 `/api/embed` uses:
@@ -447,26 +488,27 @@ This is still built on the old global mutable adapter.
 
 Do **not** move write work onto the current read-only `pool-adapter`.
 
-Instead create a dedicated write-side abstraction:
+Instead create a dedicated write-side abstraction in runtime/core:
 
-- `avmatrix/src/server/repo-runtime/repo-write-runtime.ts`
-- `avmatrix/src/server/repo-runtime/repo-embed-service.ts`
-- optionally `avmatrix/src/server/repo-runtime/repo-write-worker.ts`
+- `avmatrix/src/runtime/repo-runtime/repo-write-runtime.ts`
+- `avmatrix/src/runtime/repo-runtime/repo-embed-service.ts`
+- optionally `avmatrix/src/runtime/repo-runtime/repo-write-worker.ts`
 
 Suggested direction:
 
 - one repo-scoped write session at a time per repo
 - isolate write-side native lifecycle from HTTP read-side repo pools
-- communicate job progress back to HTTP routes via current `JobManager`
+- publish progress through a runtime-neutral progress/event interface; HTTP may adapt that into `JobManager` / SSE, but runtime/core must not depend on `api.ts`
 
 ### Reuse
 
 Reuse:
 
-- [JobManager](F:/AVmatrix-main/avmatrix/src/server/api.ts:491)
 - progress/SSE mechanics already in `api.ts`
 - embedding pipeline logic itself:
   - [runEmbeddingPipeline](F:/AVmatrix-main/avmatrix/src/server/api.ts:1453)
+
+If `JobManager` remains useful, only reuse it at the HTTP adapter layer, not as a runtime-core dependency.
 
 ### Must be written new
 
@@ -494,22 +536,23 @@ These can be reused largely as-is:
 
 These should be extracted from their current locations, then shared:
 
-1. repo handle shape from [local-backend.ts](F:/AVmatrix-main/avmatrix/src/mcp/local/local-backend.ts:187)  
-2. repo resolution cache/refresh logic from `LocalBackend`  
+1. repo descriptor fields from [local-backend.ts](F:/AVmatrix-main/avmatrix/src/mcp/local/local-backend.ts:187), but attached to the existing shared repo-binding model  
+2. repo resolution cache/refresh logic from `LocalBackend` and `RuntimeController`  
 3. graph query/mapping helpers from `api.ts`  
 
 ### Must be written new
 
 These do not exist yet and are required:
 
-1. `RepoRuntimeHandle` canonical type  
+1. `IndexedRepoDescriptor` companion type, only if extending `ResolvedSessionRepo` is not enough  
 2. `RepoReadExecutor` abstraction  
-3. `PoolRepoReadExecutor` HTTP implementation  
+3. `PoolRepoReadExecutor` runtime-core implementation  
 4. repo-scoped streaming query primitive for HTTP graph streaming  
-5. `RepoGraphReadService`  
-6. `RepoGraphStreamService`  
-7. `HttpRepoRuntime` facade  
-8. write-side isolated runtime/service for embed  
+5. transport-neutral graph stream sink / output contract  
+6. `RepoGraphReadService`  
+7. `RepoGraphStreamService`  
+8. `RepoRuntimeCore` facade  
+9. write-side isolated runtime/service for embed  
 
 ## What should NOT be reused
 
@@ -544,9 +587,15 @@ Keep the current Web-facing endpoints stable if possible:
 
 That lets us replace the broken sub-engine under the routes without forcing a large Web rewrite in the first pass.
 
+Compatibility rule for rollout 1:
+
+- keep `repo` as the external HTTP query parameter on current Web routes
+- map `repo` inside the HTTP adapter to `SessionRepoBinding`
+- do not force Web UI to adopt a new binding payload just to land the runtime-core replacement
+
 ### Optional later phase
 
-If needed, add explicit repo-session endpoints later.
+If needed, add explicit repo-session endpoints later by extending the existing session/runtime surface rather than inventing a second unrelated session API.
 
 But they are not required to replace the broken sub-engine in the first pass.
 
@@ -559,25 +608,28 @@ Deliverables:
 - confirm this plan only replaces the HTTP repo/graph sub-engine
 - confirm MCP local remains canonical and unchanged in role
 - confirm first pass keeps current HTTP route surface stable
+- confirm canonical repo identity / pool key (`repoId`) and where it enters the runtime path
+- confirm runtime/core stream contracts do not depend on Express objects
 
-### Phase 1: Shared repo-handle resolver
+### Phase 1: Shared repo resolver core
 
 Create:
 
-- `avmatrix/src/runtime/repo-handle.ts`
-- `avmatrix/src/runtime/repo-handle-resolver.ts`
+- `avmatrix/src/runtime/repo-resolver.ts`
+- optionally `avmatrix/src/runtime/repo-descriptor.ts`
 
 Refactor:
 
-- `api.ts` repo resolution to use shared resolver
-- `LocalBackend` to reuse the same resolver or the same resolver core
+- `api.ts` repo resolution to use shared resolver core
+- `RuntimeController` to reuse the same resolver core
+- `LocalBackend` to reuse the same resolver core where practical
 
 ### Phase 2: Repo-scoped read executor
 
 Create:
 
-- `avmatrix/src/server/repo-runtime/repo-read-executor.ts`
-- `avmatrix/src/server/repo-runtime/pool-repo-read-executor.ts`
+- `avmatrix/src/runtime/repo-runtime/repo-read-executor.ts`
+- `avmatrix/src/runtime/repo-runtime/pool-repo-read-executor.ts`
 
 Extend:
 
@@ -587,8 +639,8 @@ Extend:
 
 Create:
 
-- `avmatrix/src/server/repo-runtime/graph-read-service.ts`
-- `avmatrix/src/server/repo-runtime/graph-stream-service.ts`
+- `avmatrix/src/runtime/repo-runtime/graph-read-service.ts`
+- `avmatrix/src/runtime/repo-runtime/graph-stream-service.ts`
 
 Refactor:
 
@@ -600,23 +652,25 @@ Refactor:
 
 Create:
 
-- `avmatrix/src/server/repo-runtime/http-repo-runtime.ts`
+- runtime/core facade:
+  - `avmatrix/src/runtime/repo-runtime/repo-runtime-core.ts`
+- optional server adapter helper:
+  - `avmatrix/src/server/http-repo-runtime-adapter.ts`
 
 Refactor `api.ts` routes to call:
 
 - resolver
 - graph services
 - query/search services
-- embed service
 
 At this point, `api.ts` should stop calling `withLbugDb()` for HTTP read paths.
 
-### Phase 5: Embed write isolation
+### Phase 5: Embed write isolation (gated follow-up)
 
 Create:
 
-- `avmatrix/src/server/repo-runtime/repo-write-runtime.ts`
-- `avmatrix/src/server/repo-runtime/repo-embed-service.ts`
+- `avmatrix/src/runtime/repo-runtime/repo-write-runtime.ts`
+- `avmatrix/src/runtime/repo-runtime/repo-embed-service.ts`
 
 Refactor `/api/embed` to stop using the old global `withLbugDb()` path directly in the transport process.
 
@@ -635,9 +689,10 @@ After parity:
 Add or update:
 
 - `avmatrix/test/unit/api-graph-streaming.test.ts`
-- new tests for repo-handle resolver
+- new tests for shared repo resolver
 - new tests for repo-scoped read executor
 - new tests for graph stream service
+- new tests for HTTP adapter mapping `repo` -> `SessionRepoBinding`
 - new tests for embed isolation service
 
 ### Web E2E
@@ -668,9 +723,11 @@ The replacement is only complete when:
 1. HTTP graph load no longer depends on process-global `currentDbPath`
 2. HTTP query/search/file routes no longer depend on process-global DB retargeting
 3. repo switch in Web UI can repeatedly load target graph without transport restart
-4. repo A embed does not poison repo B graph load
-5. MCP local remains intact and still talks directly to Codex / Claude Code
-6. AVmatrix does not require a whole-tool rewrite to achieve the fix
+4. MCP local remains intact and still talks directly to Codex / Claude Code
+5. the replacement does not create a second repo-binding/type family beside `SessionRepoBinding` / `ResolvedSessionRepo`
+6. runtime/core graph streaming no longer depends on `express.Response` or route-owned transport objects
+7. repo-scoped execution uses one canonical repo identity / pool key (`repoId`)
+8. AVmatrix does not require a whole-tool rewrite to achieve the fix
 
 ## Recommendation
 
@@ -679,10 +736,11 @@ Do not spend more time hardening the old HTTP `withLbugDb(currentDbPath)` engine
 Replace that sub-engine with:
 
 ```text
-explicit repo handle
+ explicit repo binding / repo descriptor
 -> repo-scoped read executor
 -> extracted graph/query/search services
--> isolated write runtime for embed/analyze
+-> transport-neutral graph stream output
+-> isolated write runtime for embed/analyze only if gated follow-up is still needed
 ```
 
 That is the smallest replacement that changes the broken class of design without replacing AVmatrix as a whole.
