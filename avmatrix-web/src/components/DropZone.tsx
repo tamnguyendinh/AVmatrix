@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Loader2, Check } from '@/lib/lucide-icons';
 import {
   connectToServer,
+  deleteRepo,
   fetchRepos,
   type ConnectResult,
   type BackendRepo,
@@ -217,6 +218,18 @@ export const DropZone = ({ onServerConnect }: DropZoneProps) => {
     })();
   };
 
+  const removeRepoFromLanding = async (repoName: string) => {
+    setError(null);
+    await deleteRepo(repoName);
+
+    const repos = await fetchRepos();
+    setDetectedRepos(repos);
+    if (repos.length === 0) {
+      setPhase('analyze');
+      autoConnectRan.current = false;
+    }
+  };
+
   // Track when the initial probe finishes
   useEffect(() => {
     if (!isProbing && !initialProbeComplete) {
@@ -288,6 +301,7 @@ export const DropZone = ({ onServerConnect }: DropZoneProps) => {
                 repos={detectedRepos}
                 onSelectRepo={connectToRepo}
                 onAnalyzeComplete={connectToRepo}
+                onRemoveRepo={removeRepoFromLanding}
               />
             )}
             {displayPhase === 'success' && <SuccessCard />}
