@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Check, Copy, Terminal, Server, Zap, Sparkles } from '@/lib/lucide-icons';
+import { Check, Copy, Terminal, Server, Zap } from '@/lib/lucide-icons';
 import { REQUIRED_NODE_VERSION } from '../config/ui-constants';
 
 // ── Design constants ─────────────────────────────────────────────────────────
@@ -208,9 +208,8 @@ export const OnboardingGuide = ({ isPolling }: OnboardingGuideProps) => {
     <div className="press-panel press-ruled relative animate-fade-in overflow-hidden p-8">
       <div className="relative mb-6">
         <div className="text-center">
-          <p className="press-eyebrow mb-3 inline-flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-border-strong" />
-            <span>Vol. XII · Local bridge</span>
+          <p className="press-eyebrow mb-3">
+            Vol. XII · Local bridge
           </p>
           <h2 className="press-title text-3xl leading-snug">
             Start AVmatrix locally

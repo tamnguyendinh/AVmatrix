@@ -14,7 +14,6 @@ import {
   Home,
   ChevronDown,
   ChevronRight,
-  Sparkles,
   Lightbulb,
   Layers,
 } from 'lucide-react';
@@ -380,8 +379,8 @@ export const ProcessesPanel = () => {
               </p>
             </div>
             {loadingProcess === 'all' ? (
-              <span className="mr-1 animate-spin">
-                <Sparkles className="h-4 w-4 text-border-strong" />
+              <span className="mr-1 font-mono text-[11px] text-border-strong">
+                Loading...
               </span>
             ) : (
               <Eye className="h-4 w-4 text-text-muted group-hover:text-border-strong" />

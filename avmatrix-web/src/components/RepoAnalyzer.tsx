@@ -12,7 +12,6 @@ import {
   Check,
   ArrowRight,
   AlertCircle,
-  Sparkles,
 } from '@/lib/lucide-icons';
 import {
   pickLocalFolder,
@@ -62,7 +61,7 @@ function AnalyzeButton({
           : 'cursor-not-allowed border-border-subtle bg-inset text-text-muted'
       } `}
     >
-      {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+      {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
       <span>{isLoading ? 'Starting analysis...' : 'Analyze Repository'}</span>
       {canSubmit && !isLoading && <ArrowRight className="h-3.5 w-3.5" />}
     </button>

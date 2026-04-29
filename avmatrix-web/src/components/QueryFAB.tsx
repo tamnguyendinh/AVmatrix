@@ -6,7 +6,6 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
-  Sparkles,
   Table,
 } from '@/lib/lucide-icons';
 import { useAppState } from '../hooks/useAppState.local-runtime';
@@ -240,7 +239,6 @@ export const QueryFAB = () => {
               onClick={() => setShowExamples(!showExamples)}
               className="workspace-outline-button flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs text-workspace-text-secondary hover:text-workspace-text-primary"
             >
-              <Sparkles className="h-3.5 w-3.5" />
               <span>Examples</span>
               <ChevronDown
                 className={`h-3.5 w-3.5 transition-transform ${showExamples ? 'rotate-180' : ''}`}

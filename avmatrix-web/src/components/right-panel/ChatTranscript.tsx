@@ -1,6 +1,5 @@
 import { memo, type MutableRefObject } from 'react';
 import {
-  Sparkles,
   User,
   Loader2,
   AlertTriangle,
@@ -123,7 +122,6 @@ export const ChatTranscript = memo(function ChatTranscript({
                 {message.role === 'assistant' && (
                   <div>
                     <div className="mb-3 flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-border-strong" />
                       <span className="press-eyebrow text-text-secondary">
                         Desk Chat
                       </span>

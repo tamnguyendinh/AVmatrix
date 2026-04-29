@@ -2,7 +2,6 @@ import {
   Search,
   Settings,
   HelpCircle,
-  Sparkles,
   FolderOpen,
   ChevronDown,
   Trash2,
@@ -165,15 +164,7 @@ export const Header = ({
     <header className="flex min-h-[72px] items-center justify-between border-b-[3px] border-border-default bg-surface px-5 py-4">
       {/* Left section */}
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md border-[3px] border-border-strong bg-base text-sm font-bold text-text-primary">
-            ✦
-          </div>
-          <div>
-            <div className="press-eyebrow">Vol. XII · Editorial graph</div>
-            <div className="press-title text-lg">AVmatrix</div>
-          </div>
-        </div>
+        <div className="press-title text-2xl leading-none text-text-primary">AVmatrix</div>
 
         {projectName && (
           <div className="relative" ref={repoDropdownRef}>
@@ -362,9 +353,8 @@ export const Header = ({
                       <button
                         onClick={() => setShowAnalyzer(true)}
                         disabled={!!reanalyzing}
-                        className="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-base disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex w-full cursor-pointer items-center px-4 py-3 text-left transition-colors hover:bg-base disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        <Sparkles className="h-3.5 w-3.5 shrink-0 text-border-strong" />
                         <span className="font-reading text-sm text-text-secondary">
                           Analyze a new repository...
                         </span>
@@ -442,12 +432,10 @@ export const Header = ({
         <button
           type="button"
           onClick={() => setHelpDialogBoxOpen(true)}
-          className="press-outline-button group flex items-center gap-2 px-3.5 py-2 text-sm font-medium"
+          className="press-outline-button group flex items-center px-3.5 py-2 text-sm font-medium"
           title="About AVmatrix"
         >
-          <Sparkles className="h-4 w-4 text-border-strong" />
-          <span className="hidden sm:inline">About AVmatrix</span>
-          <HelpCircle className="h-3.5 w-3.5 transition-all group-hover:text-border-strong" />
+          <span>About AVmatrix</span>
         </button>
 
         {graph && (
@@ -482,7 +470,6 @@ export const Header = ({
               : 'text-text-inverse'
           } `}
         >
-          <Sparkles className="h-4 w-4" />
           <span>Desk Chat</span>
         </button>
       </div>

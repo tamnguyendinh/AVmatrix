@@ -7,7 +7,6 @@ import {
   X,
   Target,
   FileCode,
-  Sparkles,
   MousePointerClick,
   Loader2,
 } from '@/lib/lucide-icons';
@@ -440,8 +439,7 @@ export const CodeReferencesPanel = ({ onFocusNode }: CodeReferencesPanelProps) =
         {showCitations && (
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex items-center gap-2 border-b border-workspace-border-default bg-workspace-base px-3 py-2">
-              <div className="flex items-center gap-1.5 rounded-md border-[2px] border-workspace-border-default bg-workspace-surface px-2 py-0.5">
-                <Sparkles className="h-3 w-3 text-workspace-text-primary" />
+              <div className="flex items-center rounded-md border-[2px] border-workspace-border-default bg-workspace-surface px-2 py-0.5">
                 <span className="text-[10px] font-semibold tracking-wide text-workspace-text-primary uppercase">
                   AI Citations
                 </span>

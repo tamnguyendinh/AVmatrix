@@ -13,7 +13,7 @@
  */
 
 import { useState } from 'react';
-import { Sparkles, ArrowRight, GitBranch, FileCode, Layers, Loader2, X } from '@/lib/lucide-icons';
+import { ArrowRight, GitBranch, FileCode, Layers, Loader2, X } from '@/lib/lucide-icons';
 import { RepoAnalyzer } from './RepoAnalyzer';
 import type { BackendRepo } from '../services/backend-client';
 
@@ -86,8 +86,8 @@ function RepoCard({
               </span>
             )}
             {stats.processes != null && stats.processes > 0 && (
-              <span className="press-badge inline-flex items-center gap-1 border-border-default bg-base px-2 py-0.5 text-[11px] text-text-secondary normal-case tracking-normal">
-                <Sparkles className="h-3 w-3" /> {stats.processes} flows
+              <span className="press-badge inline-flex items-center border-border-default bg-base px-2 py-0.5 text-[11px] text-text-secondary normal-case tracking-normal">
+                {stats.processes} flows
               </span>
             )}
           </div>
@@ -154,9 +154,8 @@ export const RepoLanding = ({
               AVmatrix
             </span>
           </div>
-          <p className="press-eyebrow mb-3 inline-flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-border-strong" />
-            <span>Edition 03 · Repository desk</span>
+          <p className="press-eyebrow mb-3">
+            Edition 03 · Repository desk
           </p>
 
           <h2 className="press-title text-3xl leading-snug">

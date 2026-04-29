@@ -15,7 +15,7 @@
  * the app to the graph explorer.
  */
 
-import { Sparkles, FolderOpen } from '@/lib/lucide-icons';
+import { FolderOpen } from '@/lib/lucide-icons';
 import { RepoAnalyzer } from './RepoAnalyzer';
 
 interface AnalyzeOnboardingProps {
@@ -33,9 +33,8 @@ export const AnalyzeOnboarding = ({ onComplete }: AnalyzeOnboardingProps) => {
               AVmatrix
             </span>
           </div>
-          <p className="press-eyebrow mb-3 inline-flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-border-strong" />
-            <span>Edition 01 · First indexing run</span>
+          <p className="press-eyebrow mb-3">
+            Edition 01 · First indexing run
           </p>
 
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border-[3px] border-border-strong bg-inset">

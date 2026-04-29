@@ -9,7 +9,6 @@ import { useState } from 'react';
 import {
   ChevronDown,
   ChevronRight,
-  Sparkles,
   Check,
   Loader2,
   AlertCircle,
@@ -77,7 +76,7 @@ const getStatusDisplay = (status: ToolCallInfo['status']) => {
       };
     default:
       return {
-        icon: <Sparkles className="h-3.5 w-3.5" />,
+        icon: null,
         color: 'text-text-muted',
         bgColor: 'bg-surface',
         borderColor: 'border-border-subtle',

@@ -1,4 +1,4 @@
-import { Sparkles, PanelRightClose, GitBranch } from '@/lib/lucide-icons';
+import { PanelRightClose, GitBranch } from '@/lib/lucide-icons';
 import { useAppState } from '../hooks/useAppState.local-runtime';
 import { ProcessesPanel } from './ProcessesPanel';
 import { ChatPanel } from './ChatPanel';
@@ -26,7 +26,6 @@ export const RightPanel = ({ isOpen, onClose, onRequestAnalyze }: RightPanelProp
                 : 'border-[3px] border-transparent text-text-muted hover:bg-surface hover:text-text-primary'
             }`}
           >
-            <Sparkles className="h-3.5 w-3.5" />
             <span>Desk Chat</span>
           </button>
 
