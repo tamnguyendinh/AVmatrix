@@ -102,6 +102,8 @@ CLAUDE.md
 # other
 avmatrix/undefined/
 .codex-tmp/
+.tmp/
+undefined/
 
 # Local AVmatrix launcher generated artifacts
 avmatrix-launcher/AVmatrixLauncher.exe
