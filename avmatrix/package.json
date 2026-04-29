@@ -1,6 +1,6 @@
 {
   "name": "avmatrix",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "AVmatrix graph-powered code intelligence for AI agents. Index any codebase, query via MCP or CLI.",
   "author": "Abhigyan Patwari",
   "license": "PolyForm-Noncommercial-1.0.0",

@@ -1,7 +1,7 @@
 # HTTP Repo-Scoped Graph Engine Replacement Plan
 
 Date: 2026-04-29  
-Status: Rollout 1 implemented, write isolation deferred behind gate  
+Status: Complete for repo-switch graph-load scope  
 Scope: `avmatrix/src/server/`, `avmatrix/src/runtime/`, `avmatrix/src/core/lbug/`, `avmatrix-web/src/`, `avmatrix-shared/`, related tests/docs
 
 ## Implementation progress
@@ -28,7 +28,7 @@ Current validation result:
 - repeated dropdown switch e2e passes against live local backend/frontend
 - cross-repo smoke passes while `/api/embed` on `AVmatrix-main` is active and `/api/graph?stream=true` loads `Website`
 
-Phase 5 write isolation remains a gated follow-up. It should be implemented only if broader stress coverage shows that the old `/api/embed` write path still causes the same repo-switch graph-load bug after the read-path replacement.
+No additional write-isolation phase is part of this plan. `/api/embed` remains outside this repo-switch graph-load replacement because validation shows the new read path stays stable while embed is active.
 
 ## Goal
 
@@ -52,7 +52,7 @@ The part being replaced is the current HTTP path that behaves like:
 resolve repo
 -> compute lbugPath
 -> switch module-global LadybugDB state to that dbPath
--> run graph/query/search/embed against the newly active DB
+-> run graph/query/search against the newly active DB
 ```
 
 In current code, that path is centered around:
@@ -60,7 +60,6 @@ In current code, that path is centered around:
 - [api.ts](F:/AVmatrix-main/avmatrix/src/server/api.ts:729)
 - [api.ts](F:/AVmatrix-main/avmatrix/src/server/api.ts:798)
 - [api.ts](F:/AVmatrix-main/avmatrix/src/server/api.ts:824)
-- [api.ts](F:/AVmatrix-main/avmatrix/src/server/api.ts:1411)
 - [lbug-adapter.ts](F:/AVmatrix-main/avmatrix/src/core/lbug/lbug-adapter.ts:148)
 - [withLbugDb()](F:/AVmatrix-main/avmatrix/src/core/lbug/lbug-adapter.ts:234)
 - [doInitLbug()](F:/AVmatrix-main/avmatrix/src/core/lbug/lbug-adapter.ts:283)
@@ -86,6 +85,7 @@ These are explicitly out of scope:
 - the graph schema itself
 - the whole Web UI
 - the whole CLI
+- HTTP write-side embedding/analyze behavior
 
 This plan is **not**:
 
@@ -108,8 +108,7 @@ The replacement must obey these constraints:
 4. Runtime/core contracts must stay transport-neutral. `express.Response`, route objects, and SSE formatting stay in HTTP adapter code.
 5. The plan must define one canonical repo identity / pool key for repo-scoped execution. Do not let HTTP, runtime, and pool layers invent different keys.
 6. First rollout deliverable is the HTTP read-path replacement that serves dropdown repo switching and graph load.
-7. Write-side isolation for embed/analyze is allowed only as a gated follow-up phase, not as an excuse to turn this plan into a half-tool rewrite.
-8. First rollout must preserve current Web route contracts, including `repo` query-param compatibility, and map them inside the adapter to shared repo-binding types.
+7. First rollout must preserve current Web route contracts, including `repo` query-param compatibility, and map them inside the adapter to shared repo-binding types.
 
 ## Why this specific sub-engine must be replaced
 
@@ -123,14 +122,6 @@ Example from `/api/graph`:
 - derive `lbugPath`
 - call `withLbugDb(lbugPath, ...)` in [api.ts](F:/AVmatrix-main/avmatrix/src/server/api.ts:763)
 
-### Current HTTP write path
-
-Example from `/api/embed`:
-
-- resolve repo in [api.ts](F:/AVmatrix-main/avmatrix/src/server/api.ts:1414)
-- derive `lbugPath`
-- call `withLbugDb(lbugPath, ...)` in [api.ts](F:/AVmatrix-main/avmatrix/src/server/api.ts:1452)
-
 ### Why this is wrong
 
 That means repo B requests are served by **retargeting** a process-global DB context that may previously have been serving repo A.
@@ -138,7 +129,7 @@ That means repo B requests are served by **retargeting** a process-global DB con
 The failure mode is not surprising:
 
 ```text
-repo A read/write lifecycle is active
+repo A read lifecycle is active
 -> repo B request retargets the same global native state
 -> graph for repo B can fail, hang, or crash transport
 ```
@@ -203,7 +194,7 @@ Web UI
 -> api.ts resolves repo
 -> withLbugDb(lbugPath)
 -> lbug-adapter switches global db/conn/currentDbPath
--> graph/query/embed run on whichever DB is currently active
+-> graph/query/search run on whichever DB is currently active
 ```
 
 ### Target architecture
@@ -420,7 +411,6 @@ The signatures must change so graph services depend on `RepoReadExecutor`, not g
 - DB lifecycle coupling
 - graph build orchestration
 - search execution
-- embed execution
 - route formatting
 
 ### Replace with
@@ -492,60 +482,6 @@ Reuse:
 
 The HTTP-facing services and their repo-scoped contracts.
 
-## F. Embed / analyze isolation
-
-This section is a **gated follow-up**, not the primary deliverable of the first rollout.
-
-The first rollout must land the HTTP read-path replacement for dropdown repo switching and graph load.
-
-Write isolation should only be pulled into the same implementation wave if the read-path replacement still leaves the same bug class alive.
-
-### Current
-
-`/api/embed` uses:
-
-- [withLbugDb(lbugPath, ...)](F:/AVmatrix-main/avmatrix/src/server/api.ts:1452)
-- [fetchExistingEmbeddingHashes(executeQuery)](F:/AVmatrix-main/avmatrix/src/server/api.ts:1457)
-- [runEmbeddingPipeline(executeQuery, executeWithReusedStatement, ...)](F:/AVmatrix-main/avmatrix/src/server/api.ts:1464)
-
-This is still built on the old global mutable adapter.
-
-### Replace with
-
-Do **not** move write work onto the current read-only `pool-adapter`.
-
-Instead create a dedicated write-side abstraction in runtime/core:
-
-- `avmatrix/src/runtime/repo-runtime/repo-write-runtime.ts`
-- `avmatrix/src/runtime/repo-runtime/repo-embed-service.ts`
-- optionally `avmatrix/src/runtime/repo-runtime/repo-write-worker.ts`
-
-Suggested direction:
-
-- one repo-scoped write session at a time per repo
-- isolate write-side native lifecycle from HTTP read-side repo pools
-- publish progress through a runtime-neutral progress/event interface; HTTP may adapt that into `JobManager` / SSE, but runtime/core must not depend on `api.ts`
-
-### Reuse
-
-Reuse:
-
-- progress/SSE mechanics already in `api.ts`
-- embedding pipeline logic itself:
-  - [runEmbeddingPipeline](F:/AVmatrix-main/avmatrix/src/server/api.ts:1453)
-
-If `JobManager` remains useful, only reuse it at the HTTP adapter layer, not as a runtime-core dependency.
-
-### Must be written new
-
-New write-side runtime boundary.
-
-This is critical because:
-
-- `pool-adapter` is intentionally read-only
-- `lbug-adapter` is currently global and mutable
-- the write path is where cross-repo poisoning risk is highest
-
 ## What can be reused directly vs what must be extracted
 
 ### Reuse directly
@@ -556,7 +492,6 @@ These can be reused largely as-is:
 2. `LocalBackend.resolveRepo()` semantics  
 3. graph query strings and row-mapping helpers in `api.ts`  
 4. existing HTTP route URLs if we keep compatibility  
-5. `JobManager` and SSE progress plumbing  
 
 ### Extract then reuse
 
@@ -578,7 +513,6 @@ These do not exist yet and are required:
 6. `RepoGraphReadService`  
 7. `RepoGraphStreamService`  
 8. `RepoRuntimeCore` facade  
-9. write-side isolated runtime/service for embed  
 
 ## What should NOT be reused
 
@@ -609,9 +543,10 @@ Keep the current Web-facing endpoints stable if possible:
 - `/api/graph`
 - `/api/query`
 - `/api/search`
-- `/api/embed`
 
 That lets us replace the broken sub-engine under the routes without forcing a large Web rewrite in the first pass.
+
+`/api/embed` is not part of this replacement plan. It remains unchanged because the repo-switch graph-load path is now stable while embedding is active.
 
 Compatibility rule for rollout 1:
 
@@ -691,22 +626,7 @@ Refactor `api.ts` routes to call:
 
 At this point, `api.ts` should stop calling `withLbugDb()` for HTTP read paths.
 
-### Phase 5: Embed write isolation (gated follow-up)
-
-Create:
-
-- `avmatrix/src/runtime/repo-runtime/repo-write-runtime.ts`
-- `avmatrix/src/runtime/repo-runtime/repo-embed-service.ts`
-
-Refactor `/api/embed` to stop using the old global `withLbugDb()` path directly in the transport process.
-
-### Phase 6: Remove old HTTP dependency on global DB retargeting
-
-After parity:
-
-- remove HTTP read reliance on `withLbugDb()`
-- keep `lbug-adapter.ts` only where still justified
-- clearly separate legacy/global adapter from repo-scoped HTTP path
+At this point the plan is complete when the HTTP read routes no longer depend on `withLbugDb()` and the acceptance criteria below pass.
 
 ## Validation and test plan
 
@@ -719,7 +639,6 @@ Add or update:
 - new tests for repo-scoped read executor
 - new tests for graph stream service
 - new tests for HTTP adapter mapping `repo` -> `SessionRepoBinding`
-- new tests for embed isolation service
 
 ### Web E2E
 
@@ -766,7 +685,6 @@ Replace that sub-engine with:
 -> repo-scoped read executor
 -> extracted graph/query/search services
 -> transport-neutral graph stream output
--> isolated write runtime for embed/analyze only if gated follow-up is still needed
 ```
 
 That is the smallest replacement that changes the broken class of design without replacing AVmatrix as a whole.
