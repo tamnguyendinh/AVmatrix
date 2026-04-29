@@ -157,11 +157,13 @@ const AppContentBody = () => {
               detail: 'Validating server',
             });
           } else if (phase === 'downloading') {
-            const pct = total ? Math.round((downloaded / total) * 90) + 5 : 50;
+            const hasTotal = typeof total === 'number' && total > 0;
+            const pct = hasTotal ? Math.round((downloaded / total) * 90) + 5 : 0;
             const mb = (downloaded / (1024 * 1024)).toFixed(1);
             setProgress({
               phase: 'extracting',
               percent: pct,
+              showPercent: hasTotal,
               message: 'Downloading graph...',
               detail: `${mb} MB downloaded`,
             });

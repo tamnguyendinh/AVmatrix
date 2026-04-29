@@ -5,6 +5,9 @@ interface LoadingOverlayProps {
 }
 
 export const LoadingOverlay = ({ progress }: LoadingOverlayProps) => {
+  const isGraphDownload = progress.message === 'Downloading graph...';
+  const showPercent = !isGraphDownload && progress.showPercent !== false;
+
   return (
     <div className="press-shell press-ruled fixed inset-0 z-50 flex flex-col items-center justify-center">
       <div className="relative mb-10">
@@ -16,8 +19,10 @@ export const LoadingOverlay = ({ progress }: LoadingOverlayProps) => {
       <div className="mb-4 w-80">
         <div className="h-1.5 overflow-hidden rounded-full bg-inset">
           <div
-            className="h-full rounded-full bg-border-strong transition-all duration-300 ease-out"
-            style={{ width: `${progress.percent}%` }}
+            className={`h-full rounded-full bg-border-strong transition-all duration-300 ease-out ${
+              showPercent ? '' : 'w-full animate-pulse opacity-50'
+            }`}
+            style={showPercent ? { width: `${progress.percent}%` } : undefined}
           />
         </div>
       </div>
@@ -46,8 +51,6 @@ export const LoadingOverlay = ({ progress }: LoadingOverlayProps) => {
           </div>
         </div>
       )}
-
-      <p className="press-title mt-4 text-4xl text-text-primary">{progress.percent}%</p>
     </div>
   );
 };

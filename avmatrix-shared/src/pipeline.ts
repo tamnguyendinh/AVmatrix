@@ -19,6 +19,7 @@ export type PipelinePhase =
 export interface PipelineProgress {
   phase: PipelinePhase;
   percent: number;
+  showPercent?: boolean;
   message: string;
   detail?: string;
   stats?: {

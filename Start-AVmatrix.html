@@ -58,16 +58,6 @@
         background: #92e5d2;
       }
 
-      button.secondary {
-        border-color: #53616a;
-        background: #1d272f;
-        color: #f3f7f8;
-      }
-
-      button.secondary:hover {
-        background: #27343e;
-      }
-
       button:active {
         transform: translateY(1px);
       }
@@ -85,7 +75,6 @@
     <main>
       <h1>AVmatrix</h1>
       <button id="start" type="button">Start AVmatrix</button>
-      <button id="reset" class="secondary" type="button">Reset</button>
       <p id="status" aria-live="polite"></p>
     </main>
 
@@ -95,11 +84,6 @@
       document.getElementById('start').addEventListener('click', () => {
         statusText.textContent = 'Starting AVmatrix...';
         window.location.href = 'avmatrix://start';
-      });
-
-      document.getElementById('reset').addEventListener('click', () => {
-        statusText.textContent = 'Stopping AVmatrix runtime...';
-        window.location.href = 'avmatrix://reset';
       });
     </script>
   </body>
