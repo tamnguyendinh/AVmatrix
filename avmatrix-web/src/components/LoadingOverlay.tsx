@@ -1,19 +1,24 @@
 import type { PipelineProgress } from 'avmatrix-shared';
 import { EncouragementLine } from './EncouragementLine';
+import { useAppState } from '../hooks/useAppState.local-runtime';
 
 interface LoadingOverlayProps {
   progress: PipelineProgress;
 }
 
 export const LoadingOverlay = ({ progress }: LoadingOverlayProps) => {
+  const { projectName } = useAppState();
   const isGraphDownload = progress.message === 'Downloading graph...';
   const showPercent = !isGraphDownload && progress.showPercent !== false;
+  const repoLabel = progress.targetRepoName || projectName || 'AVmatrix';
 
   return (
     <div className="press-shell press-ruled fixed inset-0 z-50 flex flex-col items-center justify-center">
       <div className="relative mb-10">
-        <div className="flex h-28 w-28 items-center justify-center rounded-full border-[3px] border-border-strong bg-surface">
-          <span className="press-title text-4xl">A</span>
+        <div className="max-w-[min(28rem,calc(100vw-3rem))] border-[2px] border-border-subtle bg-surface px-5 py-3 shadow-[var(--shadow-dropdown)]">
+          <span className="font-mono text-sm font-semibold text-text-primary">
+            [ <span className="inline-block max-w-[20rem] truncate align-bottom">{repoLabel}</span> ]
+          </span>
         </div>
       </div>
 
@@ -39,6 +44,12 @@ export const LoadingOverlay = ({ progress }: LoadingOverlayProps) => {
         <p className="mt-3 font-reading text-sm text-text-secondary">
           This may take a moment for large repositories
         </p>
+      </div>
+
+      <div className="mt-5 w-80 max-w-[calc(100vw-3rem)]">
+        <div className="h-1.5 overflow-hidden rounded-full bg-inset">
+          <div className="h-full w-full rounded-full bg-border-strong opacity-50" />
+        </div>
       </div>
 
       {progress.stats && (

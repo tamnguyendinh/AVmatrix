@@ -23,7 +23,6 @@ interface ChatTranscriptProps {
   isAgentInitializing: boolean;
   agentError: string | null;
   requiresAnalyze: boolean;
-  isLocalRuntimeConfigured: boolean;
   scrollContainerRef: MutableRefObject<HTMLDivElement | null>;
   messagesContainerRef: MutableRefObject<HTMLDivElement | null>;
   isAtBottom: boolean;
@@ -40,7 +39,6 @@ export const ChatTranscript = memo(function ChatTranscript({
   isAgentInitializing,
   agentError,
   requiresAnalyze,
-  isLocalRuntimeConfigured,
   scrollContainerRef,
   messagesContainerRef,
   isAtBottom,
@@ -51,26 +49,13 @@ export const ChatTranscript = memo(function ChatTranscript({
 }: ChatTranscriptProps) {
   return (
     <>
-      <div className="flex items-center gap-2.5 border-b border-border-subtle bg-base px-4 py-3">
-        <div>
-          <p className="press-eyebrow">Session transcript</p>
-          <p className="font-reading text-sm text-text-secondary">
-            Local reasoning and codebase conversation
-          </p>
+      {isAgentInitializing && (
+        <div className="flex items-center justify-end gap-2 border-b border-border-subtle bg-base px-4 py-2">
+          <span className="press-badge flex items-center gap-1 border-border-default bg-surface px-2 py-1 text-[11px] text-text-secondary normal-case tracking-normal">
+            <Loader2 className="h-3 w-3 animate-spin" /> Connecting
+          </span>
         </div>
-        <div className="ml-auto flex items-center gap-2">
-          {!isAgentReady && (
-            <span className="press-badge border-warning bg-surface px-2 py-1 text-[11px] text-warning">
-              Session offline
-            </span>
-          )}
-          {isAgentInitializing && (
-            <span className="press-badge flex items-center gap-1 border-border-default bg-surface px-2 py-1 text-[11px] text-text-secondary normal-case tracking-normal">
-              <Loader2 className="h-3 w-3 animate-spin" /> Connecting
-            </span>
-          )}
-        </div>
-      </div>
+      )}
 
       {agentError && (
         <div className="flex items-center gap-2 border-b border-error bg-surface px-4 py-3 text-sm text-error">
@@ -106,21 +91,26 @@ export const ChatTranscript = memo(function ChatTranscript({
         ) : (
           <div ref={messagesContainerRef} className="flex flex-col gap-6">
             {chatMessages.map((message) => (
-              <div key={message.id} className="animate-fade-in">
+              <div
+                key={message.id}
+                className={`flex animate-fade-in ${
+                  message.role === 'user' ? 'justify-end' : 'justify-start'
+                }`}
+              >
                 {message.role === 'user' && (
-                  <div className="mb-4">
-                    <div className="mb-2 flex items-center gap-2">
+                  <div className="max-w-[82%]">
+                    <div className="mb-2 flex items-center justify-end gap-2">
+                      <span className="press-eyebrow text-text-secondary">You</span>
                       <User className="h-4 w-4 text-border-strong" />
-                      <span className="press-eyebrow text-text-secondary">
-                        You
-                      </span>
                     </div>
-                    <div className="press-reading pl-6 text-text-primary">{message.content}</div>
+                    <div className="chat-message rounded-lg border-[2px] border-border-strong bg-inset px-3.5 py-2.5 text-left">
+                      {message.content}
+                    </div>
                   </div>
                 )}
 
                 {message.role === 'assistant' && (
-                  <div>
+                  <div className="max-w-[92%]">
                     <div className="mb-3 flex items-center gap-2">
                       <span className="press-eyebrow text-text-secondary">
                         My AI
@@ -190,25 +180,17 @@ export const ChatTranscript = memo(function ChatTranscript({
         Scroll to bottom
       </button>
 
-      {!isAgentReady && !isAgentInitializing && (
+      {requiresAnalyze && !isAgentInitializing && (
         <div className="border-t border-border-subtle bg-base px-3 pt-2 text-xs text-warning">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-3.5 w-3.5" />
-            <span>
-              {requiresAnalyze
-                ? 'This repository needs analysis before chat can start.'
-                : isLocalRuntimeConfigured
-                  ? 'Local session runtime is not ready yet.'
-                  : 'Local session runtime is unavailable.'}
-            </span>
-            {requiresAnalyze && (
-              <button
-                onClick={onRequestAnalyze}
-                className="press-outline-button rounded-md border-warning px-2 py-1 text-[11px] font-medium text-warning"
-              >
-                Analyze now
-              </button>
-            )}
+            <span>This repository needs analysis before chat can start.</span>
+            <button
+              onClick={onRequestAnalyze}
+              className="press-outline-button rounded-md border-warning px-2 py-1 text-[11px] font-medium text-warning"
+            >
+              Analyze now
+            </button>
           </div>
         </div>
       )}

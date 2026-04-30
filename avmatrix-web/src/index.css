@@ -52,6 +52,7 @@
   --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
   --font-display: 'Playfair Display', Georgia, serif;
   --font-reading: Georgia, 'Times New Roman', serif;
+  --font-chat: 'Noto Sans', 'Segoe UI', 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
   --font-label: 'DM Sans', 'Helvetica Neue', sans-serif;
 
   /* Timing */
@@ -321,9 +322,20 @@ body {
 
 .chat-prose {
   color: var(--color-text-primary);
-  font-family: var(--font-reading);
+  font-family: var(--font-chat);
   font-size: 16px;
-  line-height: 1.72;
+  line-height: 1.65;
+}
+
+.chat-message {
+  color: var(--color-text-primary);
+  font-family: var(--font-chat);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.chat-input {
+  font-family: var(--font-chat);
 }
 
 .chat-prose p,

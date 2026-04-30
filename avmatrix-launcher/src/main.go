@@ -281,10 +281,55 @@ func stopRuntime(paths launcherPaths) error {
 		}
 		stopPID(state.BackendPID)
 	}
+	if err := stopRuntimeProcessesByPath(paths); err != nil {
+		log.Printf("runtime process sweep failed: %v", err)
+	}
 	waitForURLDown(webURL, 12*time.Second)
 	waitForURLDown(backendHealthURL, 12*time.Second)
 	_ = os.Remove(paths.stateFile)
 	return nil
+}
+
+func stopRuntimeProcessesByPath(paths launcherPaths) error {
+	if runtime.GOOS != "windows" {
+		return nil
+	}
+	bundleDir := filepath.Join(paths.homeDir, "server-bundle")
+	rootDir := paths.rootDir
+	script := fmt.Sprintf(`
+$ErrorActionPreference = 'SilentlyContinue'
+$currentPid = %d
+$launcherPath = [System.IO.Path]::GetFullPath(%s).ToLowerInvariant()
+$serverPath = [System.IO.Path]::GetFullPath(%s).ToLowerInvariant()
+$bundleDir = [System.IO.Path]::GetFullPath(%s).TrimEnd([char]92).ToLowerInvariant()
+$rootDir = [System.IO.Path]::GetFullPath(%s).TrimEnd([char]92).ToLowerInvariant()
+Get-CimInstance Win32_Process | Where-Object {
+  if ($_.ProcessId -eq $currentPid) { return $false }
+  $exe = if ($_.ExecutablePath) { $_.ExecutablePath.ToLowerInvariant() } else { '' }
+  $cmd = if ($_.CommandLine) { $_.CommandLine.ToLowerInvariant() } else { '' }
+  (
+    ($_.Name -ieq 'AVmatrixLauncher.exe' -and $exe -eq $launcherPath) -or
+    ($_.Name -ieq 'avmatrix-server.exe' -and $exe -eq $serverPath) -or
+    ($_.Name -ieq 'node.exe' -and (
+      $exe.StartsWith($bundleDir) -or
+      $cmd.Contains($bundleDir) -or
+      $cmd.Contains($rootDir)
+    ))
+  )
+} | ForEach-Object {
+  Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+}
+`, os.Getpid(), psQuote(paths.exePath), psQuote(paths.serverExe), psQuote(bundleDir), psQuote(rootDir))
+	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script)
+	cmd.SysProcAttr = hiddenProcAttr()
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("powershell process sweep: %w: %s", err, strings.TrimSpace(string(out)))
+	}
+	return nil
+}
+
+func psQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "''") + "'"
 }
 
 func readState(paths launcherPaths) (launcherState, error) {

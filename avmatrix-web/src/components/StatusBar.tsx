@@ -40,22 +40,28 @@ export const StatusBar = () => {
             <span className="font-reading">{progress.message}</span>
           </>
         ) : (
-          <div className="press-eyebrow flex items-center gap-1.5 text-text-secondary" data-testid="status-ready">
-            <span className="h-1.5 w-1.5 rounded-full bg-border-strong" />
+          <div
+            className="press-eyebrow flex items-center gap-1.5 text-green-500"
+            data-testid="status-ready"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
             <span>Ready</span>
           </div>
         )}
       </div>
 
-      <div className="flex flex-wrap items-center justify-end gap-3 font-mono" data-testid="graph-stats">
+      <div
+        className="flex flex-wrap items-center justify-end gap-3 font-mono text-xs font-semibold text-text-primary"
+        data-testid="graph-stats"
+      >
         {graph && (
           <>
             <span>{nodeCount} nodes</span>
-            <span className="text-border-default">•</span>
+            <span className="text-border-strong">•</span>
             <span>{edgeCount} edges</span>
             {primaryLanguage && (
               <>
-                <span className="text-border-default">•</span>
+                <span className="text-border-strong">•</span>
                 <span>{primaryLanguage}</span>
               </>
             )}

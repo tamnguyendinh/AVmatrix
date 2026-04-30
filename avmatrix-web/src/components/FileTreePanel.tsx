@@ -126,15 +126,15 @@ const TreeItem = ({
     <div>
       <button
         onClick={handleClick}
-        className={`relative flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-left text-sm transition-colors hover:bg-base ${isSelected ? 'border-l-[3px] border-border-strong bg-base text-text-primary' : 'border-l-[3px] border-transparent text-text-secondary hover:text-text-primary'} ${matchesSearch ? 'bg-base' : ''} `}
+        className={`relative flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-left text-sm transition-colors hover:bg-base ${isSelected ? 'border-l-[3px] border-border-strong bg-base text-text-primary' : 'border-l-[3px] border-transparent text-text-primary hover:text-text-primary'} ${matchesSearch ? 'bg-base' : ''} `}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
       >
         {/* Expand/collapse icon */}
         {hasChildren ? (
           isExpanded ? (
-            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-text-muted" />
+            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-text-secondary" />
           ) : (
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-text-muted" />
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-text-secondary" />
           )
         ) : (
           <span className="w-3.5" />
@@ -152,7 +152,9 @@ const TreeItem = ({
         )}
 
         {/* Name */}
-        <span className="truncate font-mono text-xs">{node.name}</span>
+        <span className={`truncate font-mono text-xs ${isSelected ? 'font-semibold' : 'font-medium'}`}>
+          {node.name}
+        </span>
       </button>
 
       {/* Children */}
@@ -553,15 +555,6 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
         </div>
       )}
 
-      {/* Stats footer */}
-      {graph && (
-        <div className="border-t border-border-subtle bg-base px-3 py-2">
-          <div className="flex items-center justify-between font-mono text-[10px] text-text-secondary">
-            <span>{graph.nodes.length} nodes</span>
-            <span>{graph.relationships.length} edges</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

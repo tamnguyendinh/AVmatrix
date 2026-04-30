@@ -81,7 +81,7 @@ export const ChatComposer = memo(function ChatComposer({
           onKeyDown={handleKeyDown}
           placeholder="Ask about the codebase..."
           rows={1}
-          className="scrollbar-thin min-h-[36px] flex-1 resize-none border-none bg-transparent font-reading text-sm text-text-primary outline-none placeholder:text-text-muted"
+          className="chat-input scrollbar-thin min-h-[36px] flex-1 resize-none border-none bg-transparent text-sm text-text-primary outline-none placeholder:text-text-muted"
           style={{ height: '36px', overflowY: 'hidden' }}
         />
         <button

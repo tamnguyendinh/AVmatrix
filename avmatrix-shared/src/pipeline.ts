@@ -22,6 +22,7 @@ export interface PipelineProgress {
   showPercent?: boolean;
   message: string;
   detail?: string;
+  targetRepoName?: string;
   stats?: {
     filesProcessed: number;
     totalFiles: number;

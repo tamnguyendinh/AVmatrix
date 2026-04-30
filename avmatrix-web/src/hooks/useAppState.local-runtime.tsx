@@ -757,6 +757,7 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
         percent: 0,
         message: 'Switching repository...',
         detail: `Loading ${repoName}`,
+        targetRepoName: repoName,
       });
       setViewMode('loading');
 
@@ -785,6 +786,7 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
                 percent: 5,
                 message: 'Switching repository...',
                 detail: 'Validating',
+                targetRepoName: repoName,
               });
             } else if (phase === 'downloading') {
               const hasTotal = typeof total === 'number' && total > 0;
@@ -796,6 +798,7 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
                 showPercent: hasTotal,
                 message: 'Downloading graph...',
                 detail: `${mb} MB downloaded`,
+                targetRepoName: repoName,
               });
             } else if (phase === 'extracting') {
               setProgress({
@@ -803,6 +806,7 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
                 percent: 97,
                 message: 'Processing...',
                 detail: 'Extracting file contents',
+                targetRepoName: repoName,
               });
             }
           },
@@ -836,6 +840,7 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
           percent: 0,
           message: 'Failed to switch repository',
           detail: err instanceof Error ? err.message : 'Unknown error',
+          targetRepoName: repoName,
         });
         setTimeout(() => {
           setViewMode('exploring');

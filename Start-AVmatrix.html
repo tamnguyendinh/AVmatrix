@@ -132,6 +132,7 @@
     <main>
       <h1>AVmatrix</h1>
       <button id="start" type="button">Start AVmatrix</button>
+      <button id="reset-runtime" class="secondary" type="button">RESET RUNTIME</button>
       <button id="user-guide" class="secondary" type="button" aria-expanded="false">
         User Guide
       </button>
@@ -160,6 +161,11 @@
       document.getElementById('start').addEventListener('click', () => {
         statusText.textContent = 'Starting AVmatrix...';
         window.location.href = 'avmatrix://start';
+      });
+
+      document.getElementById('reset-runtime').addEventListener('click', () => {
+        statusText.textContent = 'Resetting AVmatrix runtime...';
+        window.location.href = 'avmatrix://reset';
       });
 
       const showGuideFallbackFrame = () => {
