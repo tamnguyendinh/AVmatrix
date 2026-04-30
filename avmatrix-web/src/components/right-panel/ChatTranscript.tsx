@@ -123,7 +123,7 @@ export const ChatTranscript = memo(function ChatTranscript({
                   <div>
                     <div className="mb-3 flex items-center gap-2">
                       <span className="press-eyebrow text-text-secondary">
-                        Desk Chat
+                        My AI
                       </span>
                       {isChatLoading && message === chatMessages[chatMessages.length - 1] && (
                         <Loader2 className="h-3 w-3 animate-spin text-border-strong" />

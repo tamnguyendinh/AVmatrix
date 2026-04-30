@@ -123,7 +123,7 @@ export const RightPanelResizable = ({
                 : 'border-[3px] border-transparent text-text-muted hover:bg-surface hover:text-text-primary'
             }`}
           >
-            <span className="truncate">Desk Chat</span>
+            <span className="truncate">My AI</span>
           </button>
 
           <button

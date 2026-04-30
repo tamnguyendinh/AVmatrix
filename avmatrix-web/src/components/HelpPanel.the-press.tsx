@@ -28,7 +28,7 @@ const tabs: Tab[] = [
   { id: 'overview', label: 'Overview', icon: <HelpCircle className="h-4 w-4" /> },
   { id: 'graph', label: 'Graph & nodes', icon: <GitBranch className="h-4 w-4" /> },
   { id: 'search', label: 'Search & filter', icon: <Search className="h-4 w-4" /> },
-  { id: 'ai', label: 'Desk Chat', icon: <Zap className="h-4 w-4" /> },
+  { id: 'ai', label: 'My AI', icon: <Zap className="h-4 w-4" /> },
   { id: 'shortcuts', label: 'Shortcuts', icon: <Keyboard className="h-4 w-4" /> },
   { id: 'status', label: 'Status bar', icon: <BarChart2 className="h-4 w-4" /> },
 ];
@@ -144,7 +144,7 @@ function TabContent({
           <div className="space-y-1">
             <p>1. Click nodes to inspect them.</p>
             <p>2. Search by name or type.</p>
-            <p>3. Ask Desk Chat a natural-language question.</p>
+            <p>3. Ask My AI a natural-language question.</p>
           </div>
         </InfoCard>
 
@@ -238,10 +238,10 @@ function TabContent({
   if (active === 'ai') {
     return (
       <div className="space-y-4">
-        <p className="press-eyebrow text-text-secondary">Desk Chat</p>
+        <p className="press-eyebrow text-text-secondary">My AI</p>
 
         <InfoCard title="Semantic ready" tone="success">
-          Your repo is indexed and ready for semantic queries. Desk Chat runs through the local
+          Your repo is indexed and ready for semantic queries. My AI runs through the local
           session runtime, so it understands code structure and relationships instead of only file
           names.
         </InfoCard>
@@ -268,7 +268,7 @@ function TabContent({
         </div>
 
         <p className="font-reading text-sm leading-relaxed text-text-secondary">
-          Open the prompt from the <span className="font-mono text-text-primary">Desk Chat</span>{' '}
+          Open the prompt from the <span className="font-mono text-text-primary">My AI</span>{' '}
           button in the top bar.
         </p>
       </div>

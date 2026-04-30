@@ -26,7 +26,7 @@ export const RightPanel = ({ isOpen, onClose, onRequestAnalyze }: RightPanelProp
                 : 'border-[3px] border-transparent text-text-muted hover:bg-surface hover:text-text-primary'
             }`}
           >
-            <span>Desk Chat</span>
+            <span>My AI</span>
           </button>
 
           <button

@@ -75,9 +75,6 @@ export const Header = ({
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const nodeCount = graph?.nodes.length ?? 0;
-  const edgeCount = graph?.relationships.length ?? 0;
-
   // Search results - filter nodes by name
   const searchResults = useMemo(() => {
     if (!graph || !searchQuery.trim()) return [];
@@ -165,7 +162,67 @@ export const Header = ({
       {/* Left section */}
       <div className="flex items-center gap-4">
         <div className="press-title text-2xl leading-none text-text-primary">AVmatrix</div>
+      </div>
+      {/* Center - Search */}
+      <div className="mr-6 ml-16 flex flex-1 items-center justify-start gap-6">
+        <div className="relative w-full max-w-md" ref={searchRef}>
+          <div className="press-inset flex items-center gap-2.5 px-3.5 py-2 transition-all focus-within:border-border-strong">
+            <Search className="h-4 w-4 flex-shrink-0 text-text-muted" />
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Search nodes..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setIsSearchOpen(true);
+                setSelectedIndex(0);
+              }}
+              onFocus={() => setIsSearchOpen(true)}
+              onKeyDown={handleKeyDown}
+              className="flex-1 border-none bg-transparent font-mono text-sm text-text-primary outline-none placeholder:text-text-muted"
+            />
+          </div>
 
+          {isSearchOpen && searchQuery.trim() && (
+            <div className="press-panel absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden shadow-[var(--shadow-dropdown)]">
+              {searchResults.length === 0 ? (
+                <div className="px-4 py-3 font-reading text-sm text-text-muted">
+                  No nodes found for &ldquo;{searchQuery}&rdquo;
+                </div>
+              ) : (
+                <div className="max-h-80 overflow-y-auto">
+                  {searchResults.map((node, index) => (
+                    <button
+                      key={node.id}
+                      onClick={() => handleSelectNode(node)}
+                      className={`flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                        index === selectedIndex
+                          ? 'bg-base text-text-primary'
+                          : 'text-text-secondary hover:bg-base'
+                      }`}
+                    >
+                      <span
+                        className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                        style={{ backgroundColor: NODE_TYPE_COLORS[node.label] || '#6b7280' }}
+                      />
+                      <span className="flex-1 truncate text-sm font-medium">
+                        {node.properties.name}
+                      </span>
+                      <span className="rounded border border-border-default bg-base px-2 py-0.5 font-mono text-xs text-text-secondary">
+                        {node.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Right section */}
+      <div className="flex items-center gap-2">
         {projectName && (
           <div className="relative" ref={repoDropdownRef}>
             <button
@@ -173,14 +230,14 @@ export const Header = ({
                 setIsRepoDropdownOpen((prev) => !prev);
                 setShowAnalyzer(false);
               }}
-              className={`flex cursor-pointer items-center gap-2 rounded-md border-[2px] px-3 py-2 font-mono text-sm transition-all ${
+              className={`flex w-[14rem] cursor-pointer items-center gap-2 rounded-md border-[2px] px-3 py-2 font-mono text-sm transition-all ${
                 isRepoDropdownOpen
                   ? 'border-border-strong bg-inset text-text-primary'
                   : 'border-border-default bg-base text-text-secondary hover:border-border-strong'
               } `}
             >
               <span className="h-1.5 w-1.5 rounded-full bg-border-strong" />
-              <span className="max-w-[160px] truncate">{projectName}</span>
+              <span className="min-w-0 flex-1 truncate">{projectName}</span>
               <ChevronDown
                 className={`h-3 w-3 text-text-muted transition-transform duration-200 ${isRepoDropdownOpen ? 'rotate-180' : ''}`}
               />
@@ -366,84 +423,6 @@ export const Header = ({
             )}
           </div>
         )}
-      </div>
-
-      {/* Center - Search */}
-      <div className="relative mx-6 max-w-md flex-1" ref={searchRef}>
-        <div className="press-inset flex items-center gap-2.5 px-3.5 py-2 transition-all focus-within:border-border-strong">
-          <Search className="h-4 w-4 flex-shrink-0 text-text-muted" />
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder="Search nodes..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setIsSearchOpen(true);
-              setSelectedIndex(0);
-            }}
-            onFocus={() => setIsSearchOpen(true)}
-            onKeyDown={handleKeyDown}
-            className="flex-1 border-none bg-transparent font-mono text-sm text-text-primary outline-none placeholder:text-text-muted"
-          />
-          <kbd className="rounded border border-border-default bg-base px-1.5 py-0.5 font-mono text-[10px] text-text-secondary">
-            ⌘K
-          </kbd>
-        </div>
-
-        {isSearchOpen && searchQuery.trim() && (
-          <div className="press-panel absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden shadow-[var(--shadow-dropdown)]">
-            {searchResults.length === 0 ? (
-              <div className="px-4 py-3 font-reading text-sm text-text-muted">
-                No nodes found for &ldquo;{searchQuery}&rdquo;
-              </div>
-            ) : (
-              <div className="max-h-80 overflow-y-auto">
-                {searchResults.map((node, index) => (
-                  <button
-                    key={node.id}
-                    onClick={() => handleSelectNode(node)}
-                    className={`flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                      index === selectedIndex
-                        ? 'bg-base text-text-primary'
-                        : 'text-text-secondary hover:bg-base'
-                    }`}
-                  >
-                    <span
-                      className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-                      style={{ backgroundColor: NODE_TYPE_COLORS[node.label] || '#6b7280' }}
-                    />
-                    <span className="flex-1 truncate text-sm font-medium">
-                      {node.properties.name}
-                    </span>
-                    <span className="rounded border border-border-default bg-base px-2 py-0.5 font-mono text-xs text-text-secondary">
-                      {node.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Right section */}
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setHelpDialogBoxOpen(true)}
-          className="press-outline-button group flex items-center px-3.5 py-2 text-sm font-medium"
-          title="About AVmatrix"
-        >
-          <span>About AVmatrix</span>
-        </button>
-
-        {graph && (
-          <div className="press-eyebrow mr-2 flex items-center gap-4 text-text-secondary normal-case tracking-normal">
-            <span>{nodeCount} nodes</span>
-            <span>{edgeCount} edges</span>
-          </div>
-        )}
 
         <EmbeddingStatus />
 
@@ -470,7 +449,7 @@ export const Header = ({
               : 'text-text-inverse'
           } `}
         >
-          <span>Desk Chat</span>
+          <span>My AI</span>
         </button>
       </div>
     </header>
