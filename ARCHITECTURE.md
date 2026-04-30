@@ -1,15 +1,17 @@
 # Architecture — AVmatrix
 
-Monorepo: **CLI/MCP** (`avmatrix/`) + **browser UI** (`avmatrix-web/`).
+Monorepo: **CLI/MCP/HTTP backend** (`avmatrix/`) + **browser UI** (`avmatrix-web/`) + **shared contracts** (`avmatrix-shared/`) + **local launcher** (`avmatrix-launcher/`).
 
 ## Repository layout
 
 | Path | Role |
 |------|------|
 | `avmatrix/` | npm package `avmatrix`: CLI, MCP server (stdio), HTTP API, ingestion pipeline, LadybugDB graph, embeddings. |
-| `avmatrix-web/` | Vite + React thin client: graph explorer + AI chat. All queries via `avmatrix serve` HTTP API. |
+| `avmatrix-web/` | Vite + React thin client: graph explorer, repo picker/analyze UI, and Codex/Claude Code session chat. Runtime calls go through the local HTTP API from `avmatrix serve`. |
 | `avmatrix-shared/` | Shared TypeScript types and constants (consumed by CLI and Web). |
+| `avmatrix-launcher/` | Windows local launcher: protocol handler, packaged web static server, backend wrapper, runtime reset, and release build script. |
 | `.claude/`, `avmatrix-claude-plugin/`, `avmatrix-cursor-integration/` | Agent skills and plugin metadata. |
+| `eval/` | Evaluation harness and offline quality checks. |
 | `.github/` | CI workflows + composite actions (`setup-avmatrix/`, `setup-avmatrix-web/`). |
 
 ## End-to-end flow: index → graph → tools
@@ -18,12 +20,71 @@ Monorepo: **CLI/MCP** (`avmatrix/`) + **browser UI** (`avmatrix-web/`).
 
 2. **Persistence** — `repo-manager.ts` (paths, registry, KuzuDB cleanup). `lbug-adapter.ts` (graph load, queries, embedding batches).
 
-3. **Query layer** — three interfaces to the same backend:
-   - **MCP (stdio):** `mcp.ts` → `LocalBackend` → tools (`tools.ts`) + resources (`resources.ts`)
-   - **HTTP bridge:** `serve.ts` → Express (`api.ts`, `mcp-http.ts`) for web UI
-   - **CLI direct:** `avmatrix query|context|impact|cypher` in `tool.ts`
+3. **Runtime interfaces** — four local interfaces over the same indexed repos:
+   - **MCP (stdio):** `mcp.ts` → `LocalBackend` → tools (`tools.ts`) + resources (`resources.ts`).
+   - **HTTP local API:** `serve.ts` → Express (`server/api.ts`, `server/mcp-http.ts`, `server/session-bridge.ts`) for web UI and local adapters.
+   - **CLI direct:** `avmatrix query|context|impact|cypher` in `tool.ts`.
+   - **Launcher:** `avmatrix-launcher` starts the packaged web UI and backend wrapper on localhost.
 
 4. **Staleness** — `staleness.ts` compares indexed `lastCommit` to `HEAD`, surfaces hints.
+
+## Local HTTP runtime
+
+`avmatrix serve` is a local-only backend. It binds localhost by default, allows localhost/private-network browser access, and does not introduce an AVmatrix-hosted cloud path.
+
+| Endpoint family | Purpose | Main implementation |
+|-----------------|---------|---------------------|
+| `/api/info`, `/api/heartbeat` | Backend liveness and runtime metadata | `src/server/api.ts` |
+| `/api/repos`, `/api/repo` | List, select, and remove indexed local repos | `src/server/api.ts`, `src/core/repo-manager.ts` |
+| `/api/graph` | Load or stream graph data for an explicit repo | `src/runtime/repo-runtime/`, `src/server/graph-stream-http.ts` |
+| `/api/query`, `/api/search`, `/api/file`, `/api/grep`, `/api/process*`, `/api/cluster*` | Code search, file access, and graph-derived views | `src/server/api.ts` |
+| `/api/local/folder-picker` | Open an OS folder picker from the local backend and return an absolute path | `src/server/local-folder-picker.ts` |
+| `/api/analyze`, `/api/embed` | Local background jobs for indexing and embeddings | `src/server/jobs/`, `src/core/run-analyze.ts`, `src/core/embeddings/` |
+| `/api/mcp` | MCP-over-HTTP bridge for local clients | `src/server/mcp-http.ts`, `src/mcp/local/local-backend.ts` |
+| `/api/session/*` | Local session bridge for Codex/Claude Code style chat | `src/server/session-bridge.ts`, `src/runtime/runtime-controller.ts` |
+
+The HTTP runtime still contains some legacy endpoint paths that call `src/core/lbug/lbug-adapter.ts` directly. The graph loading path has been moved to the repo-scoped runtime described below, so changing repos in the Web UI does not require retargeting one process-wide active database handle.
+
+## Repo-scoped graph reads
+
+Web graph loading is explicit by repo. The browser sends the target repo name/path, and the server resolves that request into a repo runtime target before reading LadybugDB.
+
+| Layer | Responsibility |
+|-------|----------------|
+| `src/runtime/repo-resolver.ts` | Resolve repo name/path, assign stable runtime IDs, reject unsupported local-session bindings. |
+| `src/runtime/repo-runtime/repo-read-executor.ts` | Represent `RepoReadTarget { repoId, lbugPath }` and execute reads through the LadybugDB pool keyed by `repoId`. |
+| `src/runtime/repo-runtime/graph-read-service.ts` | Build or stream graph nodes and `CodeRelation` relationships from repo-scoped queries. |
+| `src/server/graph-stream-http.ts` | Stream NDJSON batches to the browser and handle disconnects/backpressure. |
+
+This model is intentionally closer to MCP/local-backend semantics: repo context is explicit per operation. It avoids relying on a mutable "currently active repo" as the only source of truth for graph reads.
+
+## Session runtime bridge
+
+The Web chat does not run an AI model inside AVmatrix. The shared contract supports local session providers (`codex` and `claude-code`), while the current backend mounts the Codex CLI adapter. AVmatrix keeps repo binding, streaming, cancellation, and UI state local.
+
+| Component | Role |
+|-----------|------|
+| `src/runtime/session-adapter.ts` | Provider-neutral session job and stream event contract. |
+| `src/runtime/session-adapters/codex.ts` | Native Codex CLI adapter. No AVmatrix API key is stored in the browser, and AVmatrix does not host a chat proxy. |
+| `src/runtime/runtime-controller.ts` | Resolves the repo binding, requires an indexed repo, starts/cancels one active chat job per repo. |
+| `src/server/session-bridge.ts` | Exposes `/api/session/status`, `/api/session/chat` SSE, and session cancellation. |
+| `avmatrix-web/src/hooks/chat-runtime/` | Browser-side status, message streaming, and transcript state. |
+
+Session requests include `repoName` or `repoPath`. The runtime resolves that binding before execution, so chat/tool execution is attached to a concrete local indexed repo instead of ambient UI state.
+
+## Packaged local launcher
+
+`avmatrix-launcher/` packages the local runtime for Windows:
+
+| File | Role |
+|------|------|
+| `avmatrix-launcher/build.ps1` | Builds CLI, Web UI, launcher executable, server wrapper executable, copies bundled assets, and registers the protocol. |
+| `avmatrix-launcher/src/main.go` | Handles `avmatrix://start`, `avmatrix://reset`, and `avmatrix://stop`; serves packaged `web-dist` on `127.0.0.1:5173`; starts the backend wrapper; opens the browser. |
+| `avmatrix-launcher/server-wrapper/main.go` | Starts bundled `node.exe avmatrix/dist/cli/index.js serve`. |
+| `avmatrix-launcher/web-dist/` | Built Web UI used by the launcher. |
+| `avmatrix-launcher/server-bundle/` | Bundled backend runtime used by the launcher. |
+
+The launcher is a convenience layer around the same local backend. It must not become a required cloud/control-plane service, and `avmatrix serve` remains the direct backend entrypoint.
 
 ## MCP tools
 
@@ -51,6 +112,9 @@ Monorepo: **CLI/MCP** (`avmatrix/`) + **browser UI** (`avmatrix-web/`).
 | Concern | Start in |
 |---------|----------|
 | CLI commands/flags | `src/cli/` (`index.ts`, per-command modules) |
+| HTTP server/endpoints | `src/server/api.ts`, `src/server/mcp-http.ts`, `src/server/session-bridge.ts` |
+| Repo-scoped graph reads | `src/runtime/repo-runtime/`, `src/runtime/repo-resolver.ts` |
+| Session runtime bridge | `src/runtime/runtime-controller.ts`, `src/runtime/session-adapter.ts`, `src/runtime/session-adapters/codex.ts` |
 | Parsing/graph construction | `src/core/ingestion/pipeline-phases/` + `pipeline.ts` |
 | Graph schema/DB | `src/core/lbug/` (`schema.ts`, `lbug-adapter.ts`) |
 | MCP tools/resources | `src/mcp/server.ts`, `tools.ts`, `resources.ts` |
@@ -62,10 +126,12 @@ Monorepo: **CLI/MCP** (`avmatrix/`) + **browser UI** (`avmatrix-web/`).
 | Call resolution/MRO | `src/core/ingestion/call-processor.ts` + `model/resolve.ts` |
 | Type extraction | `src/core/ingestion/type-extractors/` |
 | Worker pool | `src/core/ingestion/workers/` |
-| Web UI | `avmatrix-web/src/` |
+| Web UI local runtime | `avmatrix-web/src/hooks/useAppState.local-runtime.tsx`, `avmatrix-web/src/services/backend-client.ts` |
+| Web UI chat runtime | `avmatrix-web/src/hooks/chat-runtime/`, `avmatrix-web/src/components/right-panel/` |
+| Local launcher | `avmatrix-launcher/src/main.go`, `avmatrix-launcher/server-wrapper/main.go`, `avmatrix-launcher/build.ps1` |
 | CI | `.github/workflows/*.yml`, `.github/actions/` |
 
-> Paths above are relative to `avmatrix/` unless they start with `avmatrix-web/` or `.github/`.
+> Paths above are relative to `avmatrix/` unless they start with `avmatrix-web/`, `avmatrix-launcher/`, `.github/`, or another repository-root path.
 
 ---
 
@@ -211,7 +277,7 @@ Both hooks are optional on `LanguageProvider`. Ruby is the only current implemen
 16 languages → single unified graph. Four abstraction layers:
 
 ```
- Unified Graph Schema (44 node types, 21 relationship types)
+ Unified Graph Schema (shared NODE_TABLES + REL_TYPES constants)
            ↑
  Unified Resolution (3-tier name lookup + MRO walk)
            ↑
@@ -312,21 +378,29 @@ CLI (analyze.ts) → runFullAnalysis(repoPath, options, callbacks)
 
 ~/.avmatrix/
   └── registry.json  # Global repo registry (MCP discovery)
+
+avmatrix-launcher/
+  ├── web-dist/      # Packaged Web UI built from avmatrix-web/
+  ├── server-bundle/ # Packaged CLI/backend runtime plus bundled node.exe
+  └── logs/          # launcher.log, backend.log, server-wrapper.log
+
+%TEMP%/
+  └── avmatrix-launcher-<hash>.json # Launcher/backend PID state for start/reset/stop
 ```
 
-Managed by `repo-manager.ts`.
+Repo index storage is managed by `repo-manager.ts`. Launcher state and logs are managed by `avmatrix-launcher/src/main.go` and `avmatrix-launcher/server-wrapper/main.go`.
 
 ## LadybugDB schema
 
-Defined in `lbug/schema.ts`. Separate node tables per type, single `CodeRelation` table.
+Defined in `lbug/schema.ts`; the table-name constants come from `avmatrix-shared/src/lbug/schema-constants.ts`. Separate node tables per type, one `CodeRelation` table for edges, and one `CodeEmbedding` table for vector chunks.
 
-**Node tables:** File, Folder, Function, Class, Interface, Method, Constructor, CodeElement, Struct, Enum, Macro, Typedef, Union, Namespace, Trait, Impl, TypeAlias, Const, Static, Property, Record, Delegate, Annotation, Template, Module, Community, Process, Route, Tool, Section, Embedding.
+**Node tables:** File, Folder, Function, Class, Interface, Method, CodeElement, Community, Process, Section, Struct, Enum, Macro, Typedef, Union, Namespace, Trait, Impl, TypeAlias, Const, Static, Variable, Property, Record, Delegate, Annotation, Constructor, Template, Module, Route, Tool.
 
-**Relation types** (`CodeRelation.type`): CONTAINS, DEFINES, CALLS, IMPORTS, EXTENDS, IMPLEMENTS, HAS_METHOD, HAS_PROPERTY, ACCESSES, METHOD_OVERRIDES, METHOD_IMPLEMENTS, MEMBER_OF, STEP_IN_PROCESS, HANDLES_ROUTE, FETCHES, HANDLES_TOOL, ENTRY_POINT_OF.
+**Relation types** (`CodeRelation.type`): CONTAINS, DEFINES, IMPORTS, CALLS, EXTENDS, IMPLEMENTS, HAS_METHOD, HAS_PROPERTY, ACCESSES, METHOD_OVERRIDES, OVERRIDES (legacy compat), METHOD_IMPLEMENTS, MEMBER_OF, STEP_IN_PROCESS, HANDLES_ROUTE, FETCHES, HANDLES_TOOL, ENTRY_POINT_OF, WRAPS, QUERIES.
 
 ## Embeddings and search
 
-**Embeddings** (`src/core/embeddings/`): Snowflake arctic-embed-xs (384D). Embeddable: File, Function, Class, Method, Interface. Incremental via SHA1 content hash. Separate `Embedding` table.
+**Embeddings** (`src/core/embeddings/`): Snowflake arctic-embed-xs (384D). Embeddable: File, Function, Class, Method, Interface. Incremental via SHA1 content hash. Stored in the separate `CodeEmbedding` table.
 
 **Search** (`src/core/search/`): Hybrid BM25 + semantic vector, merged via Reciprocal Rank Fusion (K=60).
 
