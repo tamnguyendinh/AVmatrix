@@ -5,8 +5,10 @@ import { RepoAnalyzer } from '../../src/components/RepoAnalyzer';
 const startAnalyzeMock = vi.fn();
 const cancelAnalyzeMock = vi.fn();
 const streamAnalyzeProgressMock = vi.fn();
+const pickLocalFolderMock = vi.fn();
 
 vi.mock('../../src/services/backend-client', () => ({
+  pickLocalFolder: (...args: unknown[]) => pickLocalFolderMock(...args),
   startAnalyze: (...args: unknown[]) => startAnalyzeMock(...args),
   cancelAnalyze: (...args: unknown[]) => cancelAnalyzeMock(...args),
   streamAnalyzeProgress: (...args: unknown[]) => streamAnalyzeProgressMock(...args),
@@ -21,6 +23,7 @@ describe('RepoAnalyzer local-only', () => {
     startAnalyzeMock.mockReset();
     cancelAnalyzeMock.mockReset();
     streamAnalyzeProgressMock.mockReset();
+    pickLocalFolderMock.mockReset();
     startAnalyzeMock.mockResolvedValue({ jobId: 'job-1', status: 'queued' });
     streamAnalyzeProgressMock.mockReturnValue(new AbortController());
   });
@@ -28,7 +31,7 @@ describe('RepoAnalyzer local-only', () => {
   it('shows only local-folder input', () => {
     render(<RepoAnalyzer variant="sheet" onComplete={vi.fn()} />);
 
-    expect(screen.getByText('Local Folder Path')).toBeInTheDocument();
+    expect(screen.getByText('Repository Folder')).toBeInTheDocument();
     expect(screen.queryByText('GitHub URL')).not.toBeInTheDocument();
     expect(screen.queryByText('GitHub Repository URL')).not.toBeInTheDocument();
   });
@@ -36,13 +39,17 @@ describe('RepoAnalyzer local-only', () => {
   it('submits an absolute local path to analyze', async () => {
     render(<RepoAnalyzer variant="sheet" onComplete={vi.fn()} />);
 
-    fireEvent.change(screen.getByLabelText('Local Folder Path'), {
-      target: { value: 'C:\\repos\\avmatrix' },
+    const validPath = navigator.userAgent.toLowerCase().includes('win')
+      ? 'C:\\repos\\avmatrix'
+      : '/tmp/avmatrix';
+
+    fireEvent.change(screen.getByLabelText('Repository Folder'), {
+      target: { value: validPath },
     });
     fireEvent.click(screen.getByRole('button', { name: /Analyze Repository/i }));
 
     await waitFor(() => {
-      expect(startAnalyzeMock).toHaveBeenCalledWith({ path: 'C:\\repos\\avmatrix' });
+      expect(startAnalyzeMock).toHaveBeenCalledWith({ path: validPath });
     });
   });
 });

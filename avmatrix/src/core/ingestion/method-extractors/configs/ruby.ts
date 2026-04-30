@@ -210,6 +210,29 @@ function extractRubyParameters(node: SyntaxNode): ParameterInfo[] {
   return params;
 }
 
+function inferRubyConstructorReturnType(node: SyntaxNode): string | undefined {
+  const body = node.childForFieldName('body');
+  if (!body) return undefined;
+
+  let lastExpression: SyntaxNode | null = null;
+  for (let i = body.namedChildCount - 1; i >= 0; i--) {
+    const child = body.namedChild(i);
+    if (!child || child.type === 'comment') continue;
+    lastExpression = child;
+    break;
+  }
+
+  if (lastExpression?.type !== 'call') return undefined;
+  const method = lastExpression.childForFieldName('method');
+  if (method?.text !== 'new') return undefined;
+
+  const receiver = lastExpression.childForFieldName('receiver');
+  if (!receiver) return undefined;
+  const parts = receiver.text.split('::');
+  const simpleName = parts[parts.length - 1];
+  return simpleName && /^\w+$/.test(simpleName) ? simpleName : undefined;
+}
+
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
@@ -264,9 +287,10 @@ export const rubyMethodConfig: MethodExtractionConfig = {
     if (result) return result;
 
     if (node.parent?.type === 'body_statement') {
-      return search(node.parent);
+      const parentResult = search(node.parent);
+      if (parentResult) return parentResult;
     }
-    return undefined;
+    return inferRubyConstructorReturnType(node);
   },
 
   extractParameters: extractRubyParameters,

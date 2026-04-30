@@ -193,7 +193,10 @@ export class TypeScriptFieldExtractor extends BaseFieldExtractor {
    */
   private extractField(node: SyntaxNode, context: FieldExtractorContext): FieldInfo | null {
     // Get the field name
-    const nameNode = node.childForFieldName('name') ?? node.childForFieldName('property');
+    const nameNode =
+      node.childForFieldName('name') ??
+      node.childForFieldName('property') ??
+      node.childForFieldName('pattern');
     if (!nameNode) return null;
 
     const name = nameNode.text;
@@ -233,6 +236,63 @@ export class TypeScriptFieldExtractor extends BaseFieldExtractor {
 
       if (TypeScriptFieldExtractor.FIELD_NODE_TYPES.has(child.type)) {
         const field = this.extractField(child, context);
+        if (field) {
+          fields.push(field);
+        }
+      }
+    }
+
+    fields.push(...this.extractParameterPropertiesFromBody(bodyNode, context));
+
+    return fields;
+  }
+
+  private hasAccessibilityModifier(node: SyntaxNode): boolean {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i);
+      if (child?.type === 'accessibility_modifier') {
+        return true;
+      }
+    }
+
+    const modifiers = node.childForFieldName('modifiers');
+    if (modifiers) {
+      for (let i = 0; i < modifiers.namedChildCount; i++) {
+        const modifier = modifiers.namedChild(i);
+        if (modifier?.type === 'accessibility_modifier') {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  private extractParameterPropertiesFromBody(
+    bodyNode: SyntaxNode,
+    context: FieldExtractorContext,
+  ): FieldInfo[] {
+    const fields: FieldInfo[] = [];
+
+    for (let i = 0; i < bodyNode.namedChildCount; i++) {
+      const member = bodyNode.namedChild(i);
+      if (!member || member.type !== 'method_definition') continue;
+
+      const memberName = member.childForFieldName('name')?.text;
+      if (memberName !== 'constructor') continue;
+
+      const parameters = member.childForFieldName('parameters');
+      if (!parameters) continue;
+
+      for (let j = 0; j < parameters.namedChildCount; j++) {
+        const parameter = parameters.namedChild(j);
+        if (!parameter) continue;
+        if (parameter.type !== 'required_parameter' && parameter.type !== 'optional_parameter') {
+          continue;
+        }
+        if (!this.hasAccessibilityModifier(parameter)) continue;
+
+        const field = this.extractField(parameter, context);
         if (field) {
           fields.push(field);
         }

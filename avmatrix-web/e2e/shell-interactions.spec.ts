@@ -90,17 +90,12 @@ test.describe('Shell interactions', () => {
     await waitForGraphLoaded(page);
 
     await page.getByTitle('Session Settings').click();
-    await expect(page.getByText('Session Settings')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('AI Runtime')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Codex Account')).toBeVisible();
+    await expect(page.getByText('Claude Code Account')).toBeVisible();
 
-    await page.getByLabel('Model').selectOption({ index: 0 });
-    await page.getByLabel('Temperature').fill('0.5');
-    await page.getByLabel('Max Tokens').fill('256');
-
-    await page.getByRole('button', { name: 'Save Settings' }).click();
-    await expect(page.getByText('Settings saved')).toBeVisible({ timeout: 5_000 });
-
-    await page.getByRole('button', { name: 'Cancel' }).click();
-    await expect(page.getByText('Session Settings')).not.toBeVisible({ timeout: 5_000 });
+    await page.getByRole('button', { name: 'Close' }).click();
+    await expect(page.getByText('AI Runtime')).not.toBeVisible({ timeout: 5_000 });
   });
 
   test('opens repo dropdown, enters analyze flow, types a path, and dismisses it', async ({
@@ -110,7 +105,7 @@ test.describe('Shell interactions', () => {
     await openRepoDropdown(page);
 
     await page.getByText('Analyze a new repository...').click();
-    await expect(page.getByText('Local Folder Path')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByLabel('Repository Folder')).toBeVisible({ timeout: 5_000 });
 
     const pathInput = page.locator('input[type="text"]').first();
     await pathInput.fill(ABSOLUTE_LOCAL_PATH);
@@ -126,7 +121,7 @@ test.describe('Shell interactions', () => {
           .nth(1);
 
     await repoButton.click();
-    await expect(page.getByText('Local Folder Path')).not.toBeVisible({ timeout: 5_000 });
+    await expect(page.getByLabel('Repository Folder')).not.toBeVisible({ timeout: 5_000 });
     await expect(page.getByText('Repositories')).not.toBeVisible({ timeout: 5_000 });
   });
 
@@ -151,7 +146,7 @@ test.describe('Shell interactions', () => {
 
     await waitForGraphLoaded(page);
 
-    await page.getByRole('button', { name: 'Desk Chat' }).click();
+    await page.getByRole('button', { name: 'My AI' }).click();
     await expect(page.getByText('Ask me anything')).toBeVisible({ timeout: 10_000 });
 
     const composer = page.locator('textarea[placeholder="Ask about the codebase..."]');
@@ -212,7 +207,7 @@ test.describe('Shell interactions', () => {
     });
 
     await waitForGraphLoaded(page);
-    await page.getByRole('button', { name: 'Desk Chat' }).click();
+    await page.getByRole('button', { name: 'My AI' }).click();
 
     const composer = page.locator('textarea[placeholder="Ask about the codebase..."]');
     await composer.fill('slow request');

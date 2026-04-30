@@ -48,7 +48,7 @@ describe('SettingsPanel compatibility wrapper', () => {
   it('preserves the legacy component contract while rendering the local runtime UI', async () => {
     render(<SettingsPanel isOpen={true} onClose={() => {}} repoName="avmatrix" />);
 
-    expect(await screen.findByText('Session Settings')).toBeInTheDocument();
+    expect(await screen.findByText('AI Runtime')).toBeInTheDocument();
     expect(screen.getAllByText('Codex Account').length).toBeGreaterThan(0);
     expect(screen.queryByText('Configure your LLM provider')).not.toBeInTheDocument();
     expect(screen.queryByText('API Key')).not.toBeInTheDocument();

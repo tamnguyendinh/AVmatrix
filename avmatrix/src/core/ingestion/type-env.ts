@@ -1256,7 +1256,7 @@ export const buildTypeEnv = (
         const result = config.scanConstructorBinding!(node);
         if (result) {
           const scopeEnv = env.get(scope);
-          if (!scopeEnv?.has(result.varName)) {
+          if (result.overrideExisting || !scopeEnv?.has(result.varName)) {
             bindings.push({ scope, ...result });
           }
         }
@@ -1392,4 +1392,6 @@ export interface ConstructorBinding {
   calleeName: string;
   /** Enclosing class name when callee is a method on a known receiver (e.g. $this) */
   receiverClassName?: string;
+  /** Preserve constructor binding even when a declared type binding already exists. */
+  overrideExisting?: boolean;
 }

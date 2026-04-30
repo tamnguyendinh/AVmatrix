@@ -73,4 +73,29 @@ export const phpConfig: FieldExtractionConfig = {
   isReadonly(node) {
     return hasKeyword(node, 'readonly');
   },
+
+  extractPrimaryFields(ownerNode, context) {
+    const fields = [];
+    const promotedParameters = ownerNode.descendantsOfType('property_promotion_parameter');
+
+    for (const parameter of promotedParameters) {
+      const nameNode = parameter.childForFieldName('name');
+      const rawName = nameNode?.text;
+      if (!rawName) continue;
+
+      const typeNode = parameter.childForFieldName('type');
+      const type = typeNode ? (extractSimpleTypeName(typeNode) ?? typeNode.text?.trim()) : null;
+      fields.push({
+        name: rawName.startsWith('$') ? rawName.slice(1) : rawName,
+        type,
+        visibility: findVisibility(parameter, PHP_VIS, 'public'),
+        isStatic: false,
+        isReadonly: hasKeyword(parameter, 'readonly'),
+        sourceFile: context.filePath,
+        line: parameter.startPosition.row + 1,
+      });
+    }
+
+    return fields;
+  },
 };

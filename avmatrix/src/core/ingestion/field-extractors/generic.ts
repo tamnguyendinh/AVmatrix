@@ -27,6 +27,8 @@ export interface FieldExtractionConfig {
   language: SupportedLanguages;
   /** AST node types that are class/struct/interface declarations */
   typeDeclarationNodes: string[];
+  /** Optional owner name extractor for grammars that do not expose a named `name` field. */
+  extractOwnerName?: (node: SyntaxNode) => string | undefined;
   /** AST node types that represent field/property declarations inside a body */
   fieldNodeTypes: string[];
   /** AST node type(s) for the class body container (e.g., 'class_body', 'declaration_list') */
@@ -84,10 +86,10 @@ export function createFieldExtractor(config: FieldExtractionConfig): FieldExtrac
     extract(node: SyntaxNode, context: FieldExtractorContext): ExtractedFields | null {
       if (!this.isTypeDeclaration(node)) return null;
 
-      const nameNode = node.childForFieldName('name');
-      if (!nameNode) return null;
+      const ownerName = config.extractOwnerName?.(node) ?? node.childForFieldName('name')?.text;
+      if (!ownerName) return null;
 
-      const ownerFqn = nameNode.text;
+      const ownerFqn = ownerName;
       const fields: FieldInfo[] = [];
 
       // Find body container(s)

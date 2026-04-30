@@ -570,7 +570,8 @@ const verifyConstructorBindings = (
 
   for (const { scope, varName, calleeName, receiverClassName } of bindings) {
     const tiered = ctx.resolve(calleeName, filePath);
-    const isClass = tiered?.candidates.some((def) => def.type === 'Class') ?? false;
+    const isClass =
+      tiered?.candidates.some((def) => INSTANTIABLE_CLASS_TYPES.has(def.type)) ?? false;
 
     if (isClass) {
       verified.set(receiverKey(scope, varName), calleeName);
@@ -2833,11 +2834,13 @@ export const processCallsFromExtracted = async (
       let effectiveCall = call;
       let skipBrokenMixedChainCall = false;
 
-      // Step 1: resolve receiver type from constructor bindings
-      if (!call.receiverTypeName && call.receiverName && receiverMap) {
+      // Step 1: resolve receiver type from verified constructor bindings.
+      // This can intentionally override a declared base type in worker mode
+      // for virtual dispatch patterns such as `val a: Animal = Dog()`.
+      if (call.receiverName && receiverMap) {
         const callFuncName = extractFuncNameFromSourceId(call.sourceId);
         const resolvedType = lookupReceiverType(receiverMap, callFuncName, call.receiverName);
-        if (resolvedType) {
+        if (resolvedType && resolvedType !== call.receiverTypeName) {
           effectiveCall = { ...call, receiverTypeName: resolvedType };
         }
       }

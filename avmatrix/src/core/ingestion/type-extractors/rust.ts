@@ -206,7 +206,20 @@ const scanConstructorBinding: ConstructorBindingScanner = (node) => {
   if (patternNode.type !== 'identifier') return undefined;
   // Unwrap `.await`: `let user = get_user().await` → await_expression wraps call_expression
   const value = unwrapAwait(node.childForFieldName('value'));
-  if (!value || value.type !== 'call_expression') return undefined;
+  if (!value) return undefined;
+
+  // Rust unit struct construction can be a bare identifier:
+  //   let repo = SqlRepo;
+  //
+  // In the worker path buildTypeEnv does not have the global SymbolTable, so
+  // extractInitializer cannot verify imported structs via classNames. Emit an
+  // unverified constructor binding here and let verifyConstructorBindings check
+  // it against the SymbolTable before it is used for receiver resolution.
+  if (value.type === 'identifier') {
+    return { varName: patternNode.text, calleeName: value.text };
+  }
+
+  if (value.type !== 'call_expression') return undefined;
   const func = value.childForFieldName('function');
   if (!func) return undefined;
   if (func.type === 'scoped_identifier') {

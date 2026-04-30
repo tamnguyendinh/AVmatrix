@@ -76,6 +76,13 @@ const KOTLIN_VIS = new Set<FieldVisibility>(['public', 'private', 'protected', '
 export const kotlinConfig: FieldExtractionConfig = {
   language: SupportedLanguages.Kotlin,
   typeDeclarationNodes: ['class_declaration', 'object_declaration'],
+  extractOwnerName(node) {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i);
+      if (child?.type === 'type_identifier') return child.text;
+    }
+    return undefined;
+  },
   fieldNodeTypes: ['property_declaration'],
   bodyNodeTypes: ['class_body'],
   defaultVisibility: 'public',
@@ -132,5 +139,46 @@ export const kotlinConfig: FieldExtractionConfig = {
   isReadonly(node) {
     // 'val' = readonly, 'var' = mutable
     return hasKeyword(node, 'val');
+  },
+
+  extractPrimaryFields(ownerNode, context) {
+    const fields = [];
+    const parameters = ownerNode.descendantsOfType('class_parameter');
+
+    for (const parameter of parameters) {
+      let hasPropertyKeyword = false;
+      let name: string | undefined;
+      let type: string | undefined;
+
+      for (let i = 0; i < parameter.namedChildCount; i++) {
+        const child = parameter.namedChild(i);
+        if (!child) continue;
+        if (child.type === 'binding_pattern_kind') {
+          hasPropertyKeyword = child.text === 'val' || child.text === 'var';
+        } else if (child.type === 'simple_identifier') {
+          name = child.text;
+        } else if (
+          child.type === 'user_type' ||
+          child.type === 'type_identifier' ||
+          child.type === 'nullable_type' ||
+          child.type === 'generic_type'
+        ) {
+          type = extractSimpleTypeName(child) ?? child.text?.trim();
+        }
+      }
+
+      if (!hasPropertyKeyword || !name) continue;
+      fields.push({
+        name,
+        type: type ?? null,
+        visibility: findVisibility(parameter, KOTLIN_VIS, 'public', 'modifiers'),
+        isStatic: false,
+        isReadonly: parameter.text.trim().startsWith('val'),
+        sourceFile: context.filePath,
+        line: parameter.startPosition.row + 1,
+      });
+    }
+
+    return fields;
   },
 };

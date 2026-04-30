@@ -169,8 +169,8 @@ test.describe('Flow 2: Server detected — auto-connect', () => {
     await page.goto('/');
 
     // Should transition: onboarding → success → analyze (zero repos)
-    await expect(page.getByText('Local Folder Path')).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByText('Folder picker hint')).toBeVisible();
+    await expect(page.getByLabel('Repository Folder')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('button', { name: 'Choose Repository' })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('analyze-empty-state.png') });
   });
 });
@@ -197,7 +197,7 @@ test.describe('Flow 3: Analyze form', () => {
     await page.goto('/');
 
     // Wait for analyze form (transition: onboarding → success → analyze)
-    await expect(page.getByText('Local Folder Path')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByLabel('Repository Folder')).toBeVisible({ timeout: 20_000 });
 
     // Type an invalid relative path
     const input = page.locator('input[type="text"]').first();
@@ -214,18 +214,18 @@ test.describe('Flow 3: Analyze form', () => {
     await page.screenshot({ path: testInfo.outputPath('valid-local-path.png') });
   });
 
-  test('local-only analyze form shows folder picker hint', async ({ page }, testInfo) => {
+  test('local-only analyze form shows repository chooser', async ({ page }, testInfo) => {
     await page.goto('/');
 
-    await expect(page.getByText('Local Folder Path')).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByText('Folder picker hint')).toBeVisible();
+    await expect(page.getByLabel('Repository Folder')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('button', { name: 'Choose Repository' })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('local-folder-input.png') });
   });
 
   test('invalid path keeps analyze disabled until corrected', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.getByText('Local Folder Path')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByLabel('Repository Folder')).toBeVisible({ timeout: 20_000 });
 
     const pathInput = page.locator('input[type="text"]').first();
     await pathInput.fill('relative-folder');
@@ -295,8 +295,8 @@ test.describe('Flow 4: Repo dropdown in exploring view', () => {
     await page.getByText('Analyze a new repository').click();
 
     // Should show the local-only analyze form inline
-    await expect(page.getByText('Local Folder Path')).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByText('Folder picker hint')).toBeVisible();
+    await expect(page.getByLabel('Repository Folder')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole('button', { name: 'Choose Repository' })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('inline-analyze-form.png') });
   });
 });

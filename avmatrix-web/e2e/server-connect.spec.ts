@@ -87,11 +87,11 @@ test.describe('Server Connection & Graph Loading', () => {
   });
 });
 
-test.describe('Desk Chat', () => {
+test.describe('My AI', () => {
   test('panel opens and agent initializes without error', async ({ page }) => {
     await waitForGraphLoaded(page);
 
-    await page.getByRole('button', { name: 'Desk Chat' }).click();
+    await page.getByRole('button', { name: 'My AI' }).click();
     await expect(page.getByText('Ask me anything')).toBeVisible({ timeout: 15_000 });
 
     const errorBanner = page.getByText('Database not ready');
@@ -103,7 +103,7 @@ test.describe('Processes Panel', () => {
   test('shows process list and View button works', async ({ page }) => {
     await waitForGraphLoaded(page);
 
-    await page.getByRole('button', { name: 'Desk Chat' }).click();
+    await page.getByRole('button', { name: 'My AI' }).click();
     await page.getByText('Processes').click();
 
     await expect(page.locator('[data-testid="process-list-loaded"]')).toBeVisible({
@@ -123,7 +123,7 @@ test.describe('Processes Panel', () => {
   test('lightbulb highlights nodes in graph', async ({ page }) => {
     await waitForGraphLoaded(page);
 
-    await page.getByRole('button', { name: 'Desk Chat' }).click();
+    await page.getByRole('button', { name: 'My AI' }).click();
     await page.getByText('Processes').click();
     await expect(page.locator('[data-testid="process-list-loaded"]')).toBeVisible({
       timeout: 15_000,

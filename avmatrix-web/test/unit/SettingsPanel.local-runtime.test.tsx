@@ -1,7 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SettingsPanel } from '../../src/components/SettingsPanel.local-runtime';
-import { loadLocalRuntimeSettings } from '../../src/core/llm/settings-service-local-runtime';
 
 const fetchSessionStatusMock = vi.fn();
 
@@ -49,7 +48,7 @@ describe('SettingsPanel.local-runtime', () => {
   it('renders local runtime UI without API key fields', async () => {
     render(<SettingsPanel isOpen={true} onClose={() => {}} repoName="avmatrix" />);
 
-    expect(await screen.findByText('Session Settings')).toBeInTheDocument();
+    expect(await screen.findByText('AI Runtime')).toBeInTheDocument();
     expect(screen.getAllByText('Codex Account').length).toBeGreaterThan(0);
     expect(screen.getByText('Claude Code')).toBeInTheDocument();
     expect(screen.queryByText('API Key')).not.toBeInTheDocument();
@@ -64,7 +63,7 @@ describe('SettingsPanel.local-runtime', () => {
   it('re-checks local runtime status when the button is clicked', async () => {
     render(<SettingsPanel isOpen={true} onClose={() => {}} repoName="avmatrix" />);
 
-    await screen.findByText('Session Settings');
+    await screen.findByText('AI Runtime');
     await waitFor(() => expect(fetchSessionStatusMock).toHaveBeenCalledTimes(1));
 
     fireEvent.click(screen.getByTitle('Check connection'));
@@ -72,26 +71,15 @@ describe('SettingsPanel.local-runtime', () => {
     await waitFor(() => expect(fetchSessionStatusMock).toHaveBeenCalledTimes(2));
   });
 
-  it('saves codex runtime preferences and notifies the parent', async () => {
-    const onSettingsSaved = vi.fn();
+  it('closes the runtime panel', async () => {
+    const onClose = vi.fn();
 
-    render(
-      <SettingsPanel
-        isOpen={true}
-        onClose={() => {}}
-        onSettingsSaved={onSettingsSaved}
-        repoName="avmatrix"
-      />,
-    );
+    render(<SettingsPanel isOpen={true} onClose={onClose} repoName="avmatrix" />);
 
-    await screen.findByText('Session Settings');
+    await screen.findByText('AI Runtime');
 
-    const maxTokensInput = screen.getByLabelText('Max Tokens');
-    fireEvent.change(maxTokensInput, { target: { value: '4096' } });
-    fireEvent.click(screen.getByText('Save Settings'));
+    fireEvent.click(screen.getByText('Close'));
 
-    await waitFor(() => expect(onSettingsSaved).toHaveBeenCalled());
-    expect(loadLocalRuntimeSettings().codex?.maxTokens).toBe(4096);
-    expect(screen.getByText('Settings saved')).toBeInTheDocument();
+    expect(onClose).toHaveBeenCalled();
   });
 });

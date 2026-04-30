@@ -484,7 +484,7 @@ const scanKotlinConstructorBinding: ConstructorBindingScanner = (node) => {
   if (node.type !== 'property_declaration') return undefined;
   const varDecl = findChild(node, 'variable_declaration');
   if (!varDecl) return undefined;
-  if (findChild(varDecl, 'user_type')) return undefined;
+  const hasDeclaredType = findChild(varDecl, 'user_type') !== null;
   const callExpr = findChild(node, 'call_expression');
   if (!callExpr) return undefined;
   const callee = callExpr.firstNamedChild;
@@ -506,7 +506,11 @@ const scanKotlinConstructorBinding: ConstructorBindingScanner = (node) => {
   if (!calleeName) return undefined;
   const nameNode = findChild(varDecl, 'simple_identifier');
   if (!nameNode) return undefined;
-  return { varName: nameNode.text, calleeName };
+  return {
+    varName: nameNode.text,
+    calleeName,
+    ...(hasDeclaredType ? { overrideExisting: true } : {}),
+  };
 };
 
 const KOTLIN_FOR_LOOP_NODE_TYPES: ReadonlySet<string> = new Set(['for_statement']);

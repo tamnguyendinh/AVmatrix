@@ -162,8 +162,25 @@ export async function runFullAnalysis(
   if (existingMeta && !options.force && existingMeta.lastCommit === currentCommit) {
     // Non-git folders have currentCommit = '' — always rebuild since we can't detect changes
     if (currentCommit !== '') {
+      let repoName =
+        options.registryName ?? getInferredRepoName(repoPath) ?? path.basename(repoPath);
+
+      // Registry-only operations must still run even when the index is fresh.
+      // Example: a previous analyze may have built .avmatrix but failed on a
+      // registry name collision; retrying with --allow-duplicate-name should
+      // register the already-built index without forcing another pipeline pass.
+      if (options.registryName !== undefined || options.allowDuplicateName) {
+        repoName = await registerRepo(repoPath, existingMeta, {
+          name: options.registryName,
+          allowDuplicateName: options.allowDuplicateName,
+        });
+        if (repoHasGit) {
+          await addToGitignore(repoPath);
+        }
+      }
+
       return {
-        repoName: options.registryName ?? getInferredRepoName(repoPath) ?? path.basename(repoPath),
+        repoName,
         repoPath,
         stats: existingMeta.stats ?? {},
         alreadyUpToDate: true,

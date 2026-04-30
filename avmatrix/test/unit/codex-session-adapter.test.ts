@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionJob } from '../../src/runtime/session-adapter.js';
 
 const { spawnMock, execFileMock, readFileMock, unlinkMock } = vi.hoisted(() => {
@@ -29,9 +29,20 @@ class MockChildProcess extends EventEmitter {
   kill = vi.fn(() => true);
 }
 
+const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
+
+function mockPlatform(platform: NodeJS.Platform) {
+  Object.defineProperty(process, 'platform', {
+    configurable: true,
+    value: platform,
+  });
+}
+
 describe('CodexSessionAdapter', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.resetModules();
+    mockPlatform('win32');
     execFileMock.mockImplementation(
       (_file: string, _args: string[], callback: (...args: any[]) => void) => {
         callback(null, '', '');
@@ -39,6 +50,13 @@ describe('CodexSessionAdapter', () => {
     );
     readFileMock.mockResolvedValue('Final answer');
     unlinkMock.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.resetModules();
+    if (originalPlatform) {
+      Object.defineProperty(process, 'platform', originalPlatform);
+    }
   });
 
   it('prefers WSL2 on Windows when WSL Codex is available', async () => {

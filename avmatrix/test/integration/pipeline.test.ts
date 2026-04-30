@@ -187,7 +187,10 @@ describe('pipeline end-to-end', () => {
 
 describe('pipeline error handling', () => {
   it('returns empty result for non-existent repo path', async () => {
-    const result = await runPipelineFromRepo('/nonexistent/path/xyz123', () => {});
+    const missingPath = path.join(os.tmpdir(), `avmatrix-missing-${Date.now()}`, 'xyz123');
+    await fs.rm(path.dirname(missingPath), { recursive: true, force: true });
+
+    const result = await runPipelineFromRepo(missingPath, () => {});
     expect(result.totalFileCount).toBe(0);
   }, 30000);
 

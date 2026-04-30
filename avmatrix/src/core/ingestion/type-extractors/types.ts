@@ -26,9 +26,15 @@ export type InitializerExtractor = (
  *  Returns { varName, calleeName } if the node matches, undefined otherwise.
  *  `receiverClassName` — optional hint for method calls on known receivers
  *  (e.g. $this->getUser() in PHP provides the enclosing class name). */
-export type ConstructorBindingScanner = (
-  node: SyntaxNode,
-) => { varName: string; calleeName: string; receiverClassName?: string } | undefined;
+export type ConstructorBindingScanner = (node: SyntaxNode) =>
+  | {
+      varName: string;
+      calleeName: string;
+      receiverClassName?: string;
+      /** Emit even when Tier 0 already has a declared type for this variable. */
+      overrideExisting?: boolean;
+    }
+  | undefined;
 
 /** Infer the type name of a literal AST node for overload disambiguation.
  *  Returns the canonical type name (e.g. 'int', 'String', 'boolean') or undefined

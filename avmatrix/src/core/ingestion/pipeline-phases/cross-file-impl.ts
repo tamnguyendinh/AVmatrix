@@ -35,6 +35,26 @@ const CROSS_FILE_SKIP_THRESHOLD = 0.03;
 /** Hard cap on files re-processed during cross-file propagation. */
 const MAX_CROSS_FILE_REPROCESS = 2000;
 
+const hasIterableReturnType = (returnType: unknown): returnType is string =>
+  typeof returnType === 'string' &&
+  (returnType.includes('[]') ||
+    /\b(?:Array|Collection|Iterable|List|Set|Map|Sequence)\s*</.test(returnType));
+
+const collectGlobalReturnCandidateFiles = (graph: KnowledgeGraph): Set<string> => {
+  const candidates = new Set<string>();
+  graph.forEachRelationship((rel) => {
+    if (rel.type !== 'CALLS') return;
+    const source = graph.getNode(rel.sourceId);
+    const target = graph.getNode(rel.targetId);
+    const sourceFile = source?.properties?.filePath;
+    if (!sourceFile) return;
+    if (hasIterableReturnType(target?.properties?.returnType)) {
+      candidates.add(sourceFile);
+    }
+  });
+  return candidates;
+};
+
 export interface CrossFilePropagationResult {
   filesReprocessed: number;
   metrics: CrossFileMetrics;
@@ -111,7 +131,10 @@ export async function runCrossFileBindingPropagation(
   };
 
   if (parseExportedTypeMap.size === 0) return finish(0, 'no-exported-types');
-  if (ctx.namedImportMap.size === 0) return finish(0, 'no-named-imports');
+  const globalReturnCandidates = collectGlobalReturnCandidateFiles(graph);
+  if (ctx.namedImportMap.size === 0 && globalReturnCandidates.size === 0) {
+    return finish(0, 'no-named-imports');
+  }
 
   // Build a local mutable working copy. Per-file re-resolution below mutates
   // this map (each `processCalls` writes that file's exports back into it so
@@ -133,7 +156,7 @@ export async function runCrossFileBindingPropagation(
     console.log(`🔄 ${cycleCount} files in import cycles (processed last in undefined order)`);
   }
 
-  let filesWithGaps = 0;
+  let filesWithGaps = globalReturnCandidates.size;
   const gapThreshold = Math.max(1, Math.ceil(totalFiles * CROSS_FILE_SKIP_THRESHOLD));
   timeSync(metrics, 'candidateSelectionMs', () => {
     outer: for (const level of levels) {
@@ -187,7 +210,10 @@ export async function runCrossFileBindingPropagation(
   const crossFileStart = Date.now();
   const astCache = createASTCache(AST_CACHE_CAP);
 
-  for (const level of levels) {
+  const levelsToProcess =
+    globalReturnCandidates.size > 0 ? [...levels, [...globalReturnCandidates]] : levels;
+
+  for (const level of levelsToProcess) {
     const levelCandidates: {
       filePath: string;
       seeded: Map<string, string>;
@@ -198,17 +224,20 @@ export async function runCrossFileBindingPropagation(
       const selectionStart = performance.now();
       if (crossFileResolved + levelCandidates.length >= MAX_CROSS_FILE_REPROCESS) break;
       const imports = ctx.namedImportMap.get(filePath);
-      if (!imports) {
+      const isGlobalReturnCandidate = globalReturnCandidates.has(filePath);
+      if (!imports && !isGlobalReturnCandidate) {
         addTiming(metrics, 'candidateSelectionMs', performance.now() - selectionStart);
         continue;
       }
 
       const seeded = new Map<string, string>();
-      for (const [localName, binding] of imports) {
-        const upstream = exportedTypeMap.get(binding.sourcePath);
-        if (upstream) {
-          const type = upstream.get(binding.exportedName);
-          if (type) seeded.set(localName, type);
+      if (imports) {
+        for (const [localName, binding] of imports) {
+          const upstream = exportedTypeMap.get(binding.sourcePath);
+          if (upstream) {
+            const type = upstream.get(binding.exportedName);
+            if (type) seeded.set(localName, type);
+          }
         }
       }
       addTiming(metrics, 'candidateSelectionMs', performance.now() - selectionStart);
@@ -231,7 +260,7 @@ export async function runCrossFileBindingPropagation(
       );
 
       const postReturnSelectionStart = performance.now();
-      if (seeded.size === 0 && importedReturns.size === 0) {
+      if (seeded.size === 0 && importedReturns.size === 0 && !isGlobalReturnCandidate) {
         addTiming(metrics, 'candidateSelectionMs', performance.now() - postReturnSelectionStart);
         continue;
       }

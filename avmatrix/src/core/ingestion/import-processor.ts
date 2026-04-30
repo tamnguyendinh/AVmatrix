@@ -144,6 +144,9 @@ function applyImportResult(
   namedBindings?: NamedBinding[],
   namedImportMap?: NamedImportMap,
   moduleAliasMap?: ModuleAliasMap,
+  symbolLookup?: {
+    lookupExactFull(filePath: string, name: string): unknown;
+  },
 ): void {
   if (!result) return;
 
@@ -200,16 +203,25 @@ function applyImportResult(
         }
       } else {
         // Multi-file resolution (e.g., Rust `use crate::models::{User, Repo}`).
-        // Match each binding to a resolved file by comparing the lowercase binding name
-        // to the file's basename (without extension). If no match, skip the binding.
+        // Prefer the resolved file that actually defines the imported symbol. This also
+        // covers top-level JVM/PHP functions where the symbol name is not the file basename.
+        // If the symbol table cannot disambiguate, fall back to the historical basename
+        // match for class-per-file layouts.
         for (const binding of namedBindings) {
           if (binding.isModuleAlias) continue;
           const lowerName = binding.exported.toLowerCase();
-          const matchedFile = files.find((f) => {
-            const base = f.replace(/\\/g, '/').split('/').pop() ?? '';
-            const nameWithoutExt = base.substring(0, base.lastIndexOf('.')).toLowerCase();
-            return nameWithoutExt === lowerName;
-          });
+          const symbolMatches =
+            symbolLookup !== undefined
+              ? files.filter((f) => symbolLookup.lookupExactFull(f, binding.exported))
+              : [];
+          const matchedFile =
+            symbolMatches.length === 1
+              ? symbolMatches[0]
+              : files.find((f) => {
+                  const base = f.replace(/\\/g, '/').split('/').pop() ?? '';
+                  const nameWithoutExt = base.substring(0, base.lastIndexOf('.')).toLowerCase();
+                  return nameWithoutExt === lowerName;
+                });
           if (matchedFile) {
             const existing = fileBindings.get(binding.local);
             if (existing && existing.sourcePath !== matchedFile) {
@@ -365,6 +377,7 @@ export const processImports = async (
           bindings,
           namedImportMap,
           moduleAliasMap,
+          ctx.model.symbols,
         );
       }
 
@@ -481,6 +494,7 @@ export const processImportsFromExtracted = async (
         imp.namedBindings,
         namedImportMap,
         moduleAliasMap,
+        ctx.model.symbols,
       );
     }
   }
