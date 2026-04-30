@@ -102,7 +102,7 @@ export const RightPanelResizable = ({
 
   return (
     <aside
-      className="relative z-30 my-3 mr-3 ml-0 flex min-h-0 self-stretch animate-slide-in flex-col overflow-hidden rounded-[18px] border-[3px] border-border-default bg-surface shadow-[var(--shadow-dropdown)]"
+      className="relative z-30 my-3 mr-3 ml-3 flex min-h-0 self-stretch animate-slide-in flex-col overflow-hidden rounded-[18px] border-[3px] border-border-default bg-surface shadow-[var(--shadow-dropdown)]"
       style={{ width: panelWidth }}
     >
       <div

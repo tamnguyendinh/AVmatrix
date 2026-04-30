@@ -158,15 +158,15 @@ export const Header = ({
   };
 
   return (
-    <header className="flex min-h-[72px] items-center justify-between border-b-[3px] border-border-default bg-surface px-5 py-4">
+    <header className="flex min-h-[52px] items-center justify-between border-b-[3px] border-border-default bg-surface px-4 py-2">
       {/* Left section */}
       <div className="flex items-center gap-4">
         <div className="press-title text-2xl leading-none text-text-primary">AVmatrix</div>
       </div>
       {/* Center - Search */}
-      <div className="mr-6 ml-16 flex flex-1 items-center justify-start gap-6">
+      <div className="mr-5 ml-14 flex flex-1 items-center justify-start gap-5">
         <div className="relative w-full max-w-md" ref={searchRef}>
-          <div className="press-inset flex items-center gap-2.5 px-3.5 py-2 transition-all focus-within:border-border-strong">
+          <div className="press-inset flex items-center gap-2.5 px-3 py-1.5 transition-all focus-within:border-border-strong">
             <Search className="h-4 w-4 flex-shrink-0 text-text-muted" />
             <input
               ref={inputRef}
@@ -230,7 +230,7 @@ export const Header = ({
                 setIsRepoDropdownOpen((prev) => !prev);
                 setShowAnalyzer(false);
               }}
-              className={`flex w-[14rem] cursor-pointer items-center gap-2 rounded-md border-[2px] px-3 py-2 font-mono text-sm transition-all ${
+              className={`flex w-[14rem] cursor-pointer items-center gap-2 rounded-md border-[2px] px-3 py-1.5 font-mono text-sm transition-all ${
                 isRepoDropdownOpen
                   ? 'border-border-strong bg-inset text-text-primary'
                   : 'border-border-default bg-base text-text-secondary hover:border-border-strong'
@@ -258,7 +258,7 @@ export const Header = ({
                     />
                   </div>
                 ) : (
-                  <>
+                  <div className="repo-dropdown-menu">
                     {/* Repo list */}
                     {availableRepos.length > 0 && (
                       <div>
@@ -417,7 +417,7 @@ export const Header = ({
                         </span>
                       </button>
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
             )}
@@ -428,7 +428,7 @@ export const Header = ({
 
         <button
           onClick={() => setSettingsPanelOpen(true)}
-          className="press-ghost-button flex h-9 w-9 cursor-pointer items-center justify-center text-text-secondary"
+          className="press-ghost-button flex h-8 w-8 cursor-pointer items-center justify-center text-text-secondary"
           title="Session Settings"
         >
           <Settings className="h-4.5 w-4.5" />
@@ -436,14 +436,14 @@ export const Header = ({
         <button
           title="Help"
           onClick={() => setHelpDialogBoxOpen(true)}
-          className="press-ghost-button flex h-9 w-9 cursor-pointer items-center justify-center text-text-secondary"
+          className="press-ghost-button flex h-8 w-8 cursor-pointer items-center justify-center text-text-secondary"
         >
           <HelpCircle className="h-4.5 w-4.5" />
         </button>
 
         <button
           onClick={openChatPanel}
-          className={`press-filled-button flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium ${
+          className={`press-filled-button flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium ${
             isRightPanelOpen && rightPanelTab === 'chat'
               ? 'bg-accent-dim text-text-inverse'
               : 'text-text-inverse'

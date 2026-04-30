@@ -8,7 +8,7 @@ interface LoadingOverlayProps {
 
 export const LoadingOverlay = ({ progress }: LoadingOverlayProps) => {
   const { projectName } = useAppState();
-  const isGraphDownload = progress.message === 'Downloading graph...';
+  const isGraphDownload = progress.message === 'Loading graph...';
   const showPercent = !isGraphDownload && progress.showPercent !== false;
   const repoLabel = progress.targetRepoName || projectName || 'AVmatrix';
 

@@ -67,10 +67,7 @@ export const ChatTranscript = memo(function ChatTranscript({
       <div ref={scrollContainerRef} className="scrollbar-thin flex-1 overflow-y-auto p-4">
         {chatMessages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center px-4 text-center">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl border-[3px] border-border-strong bg-base text-2xl text-text-primary">
-              🧠
-            </div>
-            <p className="press-eyebrow mb-2">Editorial assistant</p>
+            <p className="press-eyebrow mb-2">AI assistant</p>
             <h3 className="press-title mb-2 text-2xl">Ask me anything</h3>
             <p className="press-reading mb-5 text-center text-text-secondary">
               I can help you understand the architecture, find functions, or explain

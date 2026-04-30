@@ -216,7 +216,7 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
             htmlFor={`${inputId}-local`}
             className="press-eyebrow block"
           >
-            Local Folder Path
+            Repository Folder
           </label>
           <div
             className={`press-inset flex items-center gap-3 px-4 py-3.5 transition-all duration-200 ${
@@ -266,7 +266,7 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
             {isPickingFolder ? 'Opening repository picker...' : 'Choose Repository'}
           </button>
           <p className="text-xs text-text-muted">
-            Choose a local repository folder or paste its absolute path manually.
+            Select a local repository folder, or paste an absolute path.
           </p>
         </div>
       )}

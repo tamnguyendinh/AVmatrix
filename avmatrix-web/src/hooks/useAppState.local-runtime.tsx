@@ -796,7 +796,7 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
                 phase: 'extracting',
                 percent: pct,
                 showPercent: hasTotal,
-                message: 'Downloading graph...',
+                message: 'Loading graph...',
                 detail: `${mb} MB downloaded`,
                 targetRepoName: repoName,
               });

@@ -280,7 +280,6 @@ export const QueryFAB = () => {
                 <Play className="h-3.5 w-3.5" />
               )}
               <span>Run</span>
-                <kbd className="ml-1 rounded border border-workspace-border-default bg-workspace-base px-1 py-0.5 text-[10px]">⌘↵</kbd>
             </button>
           </div>
         </div>

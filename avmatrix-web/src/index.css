@@ -130,14 +130,19 @@ body {
 button {
   --av-button-border: var(--color-border-default);
   --av-button-press-shadow: rgba(27, 24, 21, 0.28);
+  --av-button-raise-shadow: rgba(27, 24, 21, 0.14);
 
-  box-shadow: inset 0 0 0 2px var(--av-button-border);
+  box-shadow:
+    0 1px 0 var(--av-button-border),
+    0 3px 6px var(--av-button-raise-shadow);
+  transform: translateY(0);
   transition:
     background 80ms ease,
     border-color 80ms ease,
     color 80ms ease,
     box-shadow 80ms ease,
-    filter 80ms ease;
+    filter 80ms ease,
+    transform 80ms ease;
 }
 
 button:not(:disabled) {
@@ -145,18 +150,22 @@ button:not(:disabled) {
 }
 
 button:not(:disabled):hover {
-  box-shadow: inset 0 0 0 3px var(--av-button-border);
+  box-shadow:
+    0 2px 0 var(--av-button-border),
+    0 5px 10px var(--av-button-raise-shadow);
+  transform: translateY(-1px);
 }
 
 button:not(:disabled):active {
-  filter: brightness(0.94);
+  filter: brightness(0.96);
   box-shadow:
-    inset 0 0 0 3px var(--av-button-border),
-    inset 3px 3px 0 var(--av-button-press-shadow);
+    inset 1px 1px 2px var(--av-button-press-shadow),
+    0 0 0 1px var(--av-button-border);
+  transform: translateY(1px);
 }
 
 button:focus-visible {
-  outline: 3px solid var(--av-button-border);
+  outline: 2px solid var(--av-button-border);
   outline-offset: 2px;
 }
 
@@ -164,14 +173,21 @@ button:disabled {
   cursor: not-allowed;
 }
 
+button[class*='border-[2px]'],
+button[class*='border-[3px]'] {
+  border-width: 1px;
+}
+
 .file-tree-panel button {
   box-shadow: none;
+  transform: none;
 }
 
 .file-tree-panel button:not(:disabled):hover,
 .file-tree-panel button:not(:disabled):active {
   box-shadow: none;
   filter: none;
+  transform: none;
 }
 
 .file-tree-panel .press-ghost-button {
@@ -180,6 +196,43 @@ button:disabled {
 
 .file-tree-panel .press-ghost-button:hover {
   border-color: transparent;
+}
+
+.repo-dropdown-menu button {
+  box-shadow: none;
+  transform: none;
+}
+
+.repo-dropdown-menu button:not(:disabled):hover,
+.repo-dropdown-menu button:not(:disabled):active {
+  box-shadow: none;
+  filter: none;
+  transform: none;
+}
+
+.chat-panel button {
+  box-shadow:
+    0 1px 0 var(--av-button-border),
+    0 2px 4px rgba(27, 24, 21, 0.1);
+}
+
+.chat-panel button:not(:disabled):hover {
+  box-shadow:
+    0 1px 0 var(--av-button-border),
+    0 3px 6px rgba(27, 24, 21, 0.12);
+}
+
+.chat-panel button:not(:disabled):active {
+  filter: brightness(0.97);
+  box-shadow:
+    inset 1px 1px 2px rgba(27, 24, 21, 0.2),
+    0 0 0 1px var(--av-button-border);
+}
+
+.chat-panel .press-outline-button,
+.chat-panel .press-filled-button,
+.chat-panel .press-ghost-button {
+  border-width: 1px;
 }
 
 .scrollbar-thin {
@@ -233,7 +286,7 @@ button:disabled {
 .press-outline-button {
   background: transparent;
   color: var(--color-text-primary);
-  border: 3px solid var(--color-border-default);
+  border: 1px solid var(--color-border-default);
   border-radius: 4px;
   font-family: var(--font-mono);
   font-size: 12px;
@@ -255,7 +308,7 @@ button:disabled {
 
   background: var(--color-accent);
   color: var(--color-text-inverse);
-  border: 3px solid var(--color-border-strong);
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
   font-family: var(--font-mono);
   font-size: 13px;
@@ -277,7 +330,7 @@ button:disabled {
 .press-ghost-button {
   background: transparent;
   color: var(--color-text-secondary);
-  border: 3px solid var(--color-border-default);
+  border: 1px solid var(--color-border-default);
   border-radius: 4px;
   transition:
     background 80ms ease,
@@ -360,10 +413,11 @@ button:disabled {
 .workspace-outline-button {
   --av-button-border: var(--color-workspace-border-strong);
   --av-button-press-shadow: rgba(238, 231, 219, 0.18);
+  --av-button-raise-shadow: rgba(238, 231, 219, 0.12);
 
   background: transparent;
   color: var(--color-workspace-text-primary);
-  border: 3px solid var(--color-workspace-border-default);
+  border: 1px solid var(--color-workspace-border-default);
   border-radius: 6px;
   transition:
     background 80ms ease,
@@ -382,6 +436,7 @@ button:disabled {
 button[class*='workspace-'] {
   --av-button-border: var(--color-workspace-border-strong);
   --av-button-press-shadow: rgba(238, 231, 219, 0.18);
+  --av-button-raise-shadow: rgba(238, 231, 219, 0.12);
 }
 
 .workspace-badge {

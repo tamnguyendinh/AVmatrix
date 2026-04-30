@@ -149,20 +149,10 @@ export const RepoLanding = ({
     <div className="press-panel press-ruled relative animate-fade-in overflow-hidden p-8">
       <div className="relative mb-6">
         <div className="text-center">
-          <div className="mb-3 flex justify-center">
-            <span className="press-badge border-border-default bg-base text-text-primary">
-              AVmatrix
-            </span>
-          </div>
-          <p className="press-eyebrow mb-3">
-            Edition 03 · Repository desk
-          </p>
-
-          <h2 className="press-title text-3xl leading-snug">
-            Choose a repository
-          </h2>
-          <p className="press-reading mx-auto mt-3 text-center text-text-secondary">
-            Select an indexed repository to explore, or analyze a new one.
+          <h1 className="press-title text-4xl leading-snug">AVmatrix</h1>
+          <h2 className="press-title mt-6 text-2xl leading-snug">Open Repository</h2>
+          <p className="press-reading mx-auto mt-2 text-center text-text-secondary">
+            Choose an indexed local repository.
           </p>
         </div>
       </div>
@@ -188,7 +178,7 @@ export const RepoLanding = ({
       <div className="mb-5 flex items-center gap-3">
         <div className="h-px flex-1 bg-border-subtle" />
         <span className="press-eyebrow text-text-muted">
-          or analyze new
+          Analyze Another Repository
         </span>
         <div className="h-px flex-1 bg-border-subtle" />
       </div>
@@ -198,8 +188,7 @@ export const RepoLanding = ({
       </div>
 
       <p className="mt-5 text-center font-mono text-[11px] leading-relaxed text-text-secondary">
-        Public &amp; private repos &middot; Indexed locally by AVmatrix &middot; No data leaves
-        your machine
+        Local only. No repository data leaves this machine.
       </p>
     </div>
   );

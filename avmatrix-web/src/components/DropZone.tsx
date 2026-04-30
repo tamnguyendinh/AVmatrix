@@ -201,7 +201,7 @@ export const DropZone = ({ onServerConnect }: DropZoneProps) => {
             } else if (p === 'downloading') {
               const pct = total ? Math.round((downloaded / total) * 100) : null;
               const mb = (downloaded / (1024 * 1024)).toFixed(1);
-              setLoadingMessage(pct ? `Downloading graph... ${pct}%` : `Downloading... ${mb} MB`);
+              setLoadingMessage(pct ? `Loading graph... ${pct}%` : `Loading graph... ${mb} MB`);
             } else if (p === 'extracting') {
               setLoadingMessage('Processing graph...');
             }

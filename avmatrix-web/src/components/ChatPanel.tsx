@@ -32,7 +32,7 @@ export const ChatPanel = memo(function ChatPanel({ onRequestAnalyze }: ChatPanel
   }, []);
 
   return (
-    <div className="relative flex flex-1 flex-col overflow-hidden">
+    <div className="chat-panel relative flex flex-1 flex-col overflow-hidden">
       <ChatTranscript
         chatMessages={chatMessages}
         isChatLoading={isChatLoading}
