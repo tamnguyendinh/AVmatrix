@@ -127,6 +127,61 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+button {
+  --av-button-border: var(--color-border-default);
+  --av-button-press-shadow: rgba(27, 24, 21, 0.28);
+
+  box-shadow: inset 0 0 0 2px var(--av-button-border);
+  transition:
+    background 80ms ease,
+    border-color 80ms ease,
+    color 80ms ease,
+    box-shadow 80ms ease,
+    filter 80ms ease;
+}
+
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+button:not(:disabled):hover {
+  box-shadow: inset 0 0 0 3px var(--av-button-border);
+}
+
+button:not(:disabled):active {
+  filter: brightness(0.94);
+  box-shadow:
+    inset 0 0 0 3px var(--av-button-border),
+    inset 3px 3px 0 var(--av-button-press-shadow);
+}
+
+button:focus-visible {
+  outline: 3px solid var(--av-button-border);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+.file-tree-panel button {
+  box-shadow: none;
+}
+
+.file-tree-panel button:not(:disabled):hover,
+.file-tree-panel button:not(:disabled):active {
+  box-shadow: none;
+  filter: none;
+}
+
+.file-tree-panel .press-ghost-button {
+  border: 2px solid transparent;
+}
+
+.file-tree-panel .press-ghost-button:hover {
+  border-color: transparent;
+}
+
 .scrollbar-thin {
   scrollbar-width: thin;
   scrollbar-color: var(--color-border-default) var(--color-inset);
@@ -178,14 +233,16 @@ body {
 .press-outline-button {
   background: transparent;
   color: var(--color-text-primary);
-  border: 2px solid var(--color-border-default);
+  border: 3px solid var(--color-border-default);
   border-radius: 4px;
   font-family: var(--font-mono);
   font-size: 12px;
   transition:
     background 80ms ease,
     border-color 80ms ease,
-    color 80ms ease;
+    color 80ms ease,
+    box-shadow 80ms ease,
+    filter 80ms ease;
 }
 
 .press-outline-button:hover {
@@ -194,9 +251,11 @@ body {
 }
 
 .press-filled-button {
+  --av-button-border: var(--color-border-strong);
+
   background: var(--color-accent);
   color: var(--color-text-inverse);
-  border: 2px solid var(--color-accent);
+  border: 3px solid var(--color-border-strong);
   border-radius: 8px;
   font-family: var(--font-mono);
   font-size: 13px;
@@ -205,28 +264,33 @@ body {
   transition:
     background 80ms ease,
     border-color 80ms ease,
-    color 80ms ease;
+    color 80ms ease,
+    box-shadow 80ms ease,
+    filter 80ms ease;
 }
 
 .press-filled-button:hover {
   background: var(--color-accent-dim);
-  border-color: var(--color-accent-dim);
+  border-color: var(--color-border-strong);
 }
 
 .press-ghost-button {
   background: transparent;
   color: var(--color-text-secondary);
-  border: 2px solid transparent;
+  border: 3px solid var(--color-border-default);
   border-radius: 4px;
   transition:
     background 80ms ease,
     color 80ms ease,
-    border-color 80ms ease;
+    border-color 80ms ease,
+    box-shadow 80ms ease,
+    filter 80ms ease;
 }
 
 .press-ghost-button:hover {
   background: var(--color-surface);
   color: var(--color-text-primary);
+  border-color: var(--color-border-strong);
 }
 
 .press-eyebrow {
@@ -294,19 +358,30 @@ body {
 }
 
 .workspace-outline-button {
+  --av-button-border: var(--color-workspace-border-strong);
+  --av-button-press-shadow: rgba(238, 231, 219, 0.18);
+
   background: transparent;
   color: var(--color-workspace-text-primary);
-  border: 2px solid var(--color-workspace-border-default);
+  border: 3px solid var(--color-workspace-border-default);
   border-radius: 6px;
   transition:
     background 80ms ease,
     border-color 80ms ease,
-    color 80ms ease;
+    color 80ms ease,
+    box-shadow 80ms ease,
+    filter 80ms ease;
 }
 
 .workspace-outline-button:hover {
   background: var(--color-workspace-surface);
   border-color: var(--color-workspace-border-strong);
+}
+
+.workspace-shell button,
+button[class*='workspace-'] {
+  --av-button-border: var(--color-workspace-border-strong);
+  --av-button-press-shadow: rgba(238, 231, 219, 0.18);
 }
 
 .workspace-badge {

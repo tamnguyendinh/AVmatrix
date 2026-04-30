@@ -301,7 +301,7 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
 
   if (isCollapsed) {
     return (
-      <div className="flex h-full w-12 flex-shrink-0 flex-col items-center gap-2 border-r-[3px] border-border-default bg-surface py-3">
+      <div className="file-tree-panel flex h-full w-12 flex-shrink-0 flex-col items-center gap-2 border-r-[3px] border-border-default bg-surface py-3">
         <button
           onClick={() => setIsCollapsed(false)}
           className="press-ghost-button rounded p-2 text-text-secondary"
@@ -335,7 +335,7 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
   }
 
   return (
-    <div className="flex h-full w-[13rem] min-w-[12rem] flex-shrink-0 animate-slide-in flex-col border-r-[3px] border-border-default bg-surface">
+    <div className="file-tree-panel flex h-full w-[13rem] min-w-[12rem] flex-shrink-0 animate-slide-in flex-col border-r-[3px] border-border-default bg-surface">
       <div className="flex items-center justify-between border-b-[3px] border-border-default px-3 py-3">
         <div className="flex items-center gap-1">
           <button

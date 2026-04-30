@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { X, Server, Brain, RefreshCw, Loader2 } from '@/lib/lucide-icons';
+import { X, Server, RefreshCw, Loader2 } from '@/lib/lucide-icons';
 import type { SessionStatusResponse } from 'avmatrix-shared';
 import {
   fetchSessionStatus,
@@ -140,16 +140,11 @@ export const SettingsPanel = ({
 
       <div className="press-panel relative mx-4 flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden shadow-[var(--shadow-dropdown)]">
         <div className="flex items-center justify-between border-b-[3px] border-border-default bg-base px-6 py-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border-[3px] border-border-strong bg-inset">
-              <Brain className="h-5 w-5 text-border-strong" />
-            </div>
-            <div>
-              <h2 className="press-title text-2xl">AI Runtime</h2>
-              <p className="font-reading text-sm text-text-secondary">
-                Local Codex session status
-              </p>
-            </div>
+          <div>
+            <h2 className="press-title text-2xl">AI Runtime</h2>
+            <p className="font-reading text-sm text-text-secondary">
+              Local Codex session status
+            </p>
           </div>
           <button
             onClick={onClose}
