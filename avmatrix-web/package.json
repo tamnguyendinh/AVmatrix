@@ -20,7 +20,7 @@
   "dependencies": {
     "@sigma/edge-curve": "^3.1.0",
     "@tailwindcss/vite": "^4.1.18",
-    "axios": "^1.13.2",
+    "axios": "^1.15.2",
     "d3": "^7.9.0",
     "dompurify": "^3.3.3",
     "avmatrix-shared": "file:../avmatrix-shared",
