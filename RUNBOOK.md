@@ -1,163 +1,538 @@
-# Runbook — AVmatrix
+# Runbook - AVmatrix
 
-Short, copy-paste operations for **local development**, **MCP**, and **CI**. Commands assume a Unix shell; on Windows use Git Bash or equivalent paths.
+Copy-paste operations for the current local AVmatrix runtime: CLI, MCP, Web UI, packaged launcher, repo indexes, and recovery.
 
-## Prerequisites
-
-- **Node.js** ≥ 20 (`avmatrix-web/package.json` `engines`).  
-- **Git** (analyze requires a git repository).  
-- From repo root, install and build the CLI package:
-
-```bash
-cd avmatrix
-npm install
-npm run build
-```
-
-Use `avmatrix …` after the local CLI is on `PATH`, or `node dist/cli/index.js …` when developing from `avmatrix/` with a local build.
+Current CLI package version: `1.2.1` (`avmatrix/package.json`).
 
 ---
 
-## Index out of date / “stale” tools
+## Prerequisites
 
-**Symptom:** MCP or resources warn the index is behind `HEAD`, or results don’t reflect recent commits.
+Required for normal local development:
 
-**Fix (from the target repo root):**
+- Node.js 20+
+- npm
+- Git
 
-```bash
-avmatrix analyze
+Required only for the packaged Windows launcher:
+
+- Go
+- PowerShell
+
+Build and link the local CLI from source:
+
+```powershell
+cd avmatrix-shared
+npm install
+npm run build
+
+cd ..\avmatrix
+npm install
+npm run build
+npm link
+
+avmatrix --version
 ```
 
-**Force full rebuild** (same commit but suspect corruption or changed ignore rules):
+If you are using Codex CLI or Claude Code inside this repository, you can also ask the agent:
 
-```bash
-avmatrix analyze --force
+```text
+Install AVmatrix from this repository and configure its MCP integration.
 ```
 
-**Check status:**
+---
 
-```bash
+## Index A Repo
+
+From the target repo:
+
+```powershell
+avmatrix analyze .
+```
+
+Force a full rebuild:
+
+```powershell
+avmatrix analyze . --force
+```
+
+Analyze a folder without requiring `.git`:
+
+```powershell
+avmatrix analyze C:\path\to\repo --skip-git
+```
+
+Register the repo under a custom name:
+
+```powershell
+avmatrix analyze C:\path\to\repo --name MyRepo
+```
+
+Check what AVmatrix knows:
+
+```powershell
 avmatrix status
-```
-
-**List what MCP knows about:**
-
-```bash
 avmatrix list
 ```
+
+Index data is stored in the repo:
+
+```text
+<repo>\.avmatrix\
+  lbug
+  lbug.wal
+  lbug.lock
+  meta.json
+  settings.json
+```
+
+The global registry is stored at:
+
+```text
+~\.avmatrix\registry.json
+```
+
+---
+
+## Stale Index
+
+Symptom:
+
+- MCP/resources warn the index is behind `HEAD`
+- graph/query results do not match recent code
+
+Fix:
+
+```powershell
+cd C:\path\to\repo
+avmatrix analyze .
+```
+
+If the index may be corrupt or the schema/runtime changed:
+
+```powershell
+avmatrix analyze . --force
+```
+
+---
+
+## MCP Setup And Recovery
+
+Configure detected editors/agents:
+
+```powershell
+avmatrix setup
+```
+
+Manual examples:
+
+```powershell
+claude mcp add avmatrix -- avmatrix mcp
+codex mcp add avmatrix -- avmatrix mcp
+```
+
+Codex TOML:
+
+```toml
+[mcp_servers.avmatrix]
+command = "avmatrix"
+args = ["mcp"]
+```
+
+Start MCP manually:
+
+```powershell
+avmatrix mcp
+```
+
+If MCP says no repos are indexed:
+
+```powershell
+cd C:\path\to\repo
+avmatrix analyze .
+```
+
+If multiple repos are indexed, pass `repo` explicitly in MCP tool calls or call `list_repos` first.
+
+---
+
+## Web UI Local Backend
+
+Start the HTTP backend:
+
+```powershell
+cd avmatrix
+node dist\cli\index.js serve
+```
+
+Or, after `npm link`:
+
+```powershell
+avmatrix serve
+```
+
+Default backend:
+
+```text
+http://localhost:4747
+```
+
+Health checks:
+
+```powershell
+Invoke-WebRequest http://localhost:4747/api/info
+Invoke-WebRequest http://localhost:4747/api/repos
+```
+
+Start the Web UI dev server:
+
+```powershell
+cd avmatrix-web
+npm install
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:5173
+```
+
+Important behavior:
+
+- `avmatrix serve` is loopback-only by default.
+- Web graph loading uses explicit repo-scoped read targets.
+- The graph switch path is `/api/graph?repo=...&stream=true`.
+- The Web UI is a frontend over the local backend, not a separate index/runtime.
+
+---
+
+## Web UI Troubleshooting
+
+### Failed to fetch / backend disconnected
+
+Check backend:
+
+```powershell
+Invoke-WebRequest http://localhost:4747/api/info
+```
+
+If the port is down, restart:
+
+```powershell
+cd avmatrix
+node dist\cli\index.js serve
+```
+
+If port `4747` is already in use:
+
+```powershell
+avmatrix serve --port 4748
+```
+
+The default Web UI expects `4747`; use the packaged/default path unless you are deliberately testing another backend URL.
+
+### Loading graph hangs
+
+Check the target repo is registered:
+
+```powershell
+avmatrix list
+```
+
+Check the graph endpoint directly:
+
+```powershell
+Invoke-WebRequest "http://localhost:4747/api/graph?repo=MyRepo&stream=true"
+```
+
+If the response contains LadybugDB/WAL errors, stop active runtimes and rebuild the repo index.
+
+### Newly analyzed repo does not appear
+
+Check the registry response:
+
+```powershell
+Invoke-WebRequest http://localhost:4747/api/repos
+```
+
+If the repo exists in CLI but not the Web UI, refresh the browser. If needed, restart `avmatrix serve`.
+
+---
+
+## Packaged Windows Launcher
+
+Build the full packaged local runtime:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1
+```
+
+Artifacts:
+
+```text
+Start-AVmatrix.html
+avmatrix-launcher\AVmatrixLauncher.exe
+avmatrix-launcher\server-bundle\avmatrix-server.exe
+avmatrix-launcher\server-bundle\node.exe
+avmatrix-launcher\web-dist\
+```
+
+Start:
+
+```text
+Open Start-AVmatrix.html
+```
+
+Reset runtime:
+
+```powershell
+.\avmatrix-launcher\AVmatrixLauncher.exe reset
+```
+
+Stop runtime:
+
+```powershell
+.\avmatrix-launcher\AVmatrixLauncher.exe stop
+```
+
+Register protocol:
+
+```powershell
+.\avmatrix-launcher\AVmatrixLauncher.exe register
+```
+
+Logs:
+
+```text
+avmatrix-launcher\logs\launcher.log
+avmatrix-launcher\logs\backend.log
+avmatrix-launcher\logs\server-wrapper.log
+```
+
+The launcher is optional. It starts the same local backend that `avmatrix serve` starts directly.
+
+---
+
+## Session Chat Runtime
+
+The Web chat does not run an AI model inside AVmatrix. It sends chat requests through the local session bridge and currently executes them with the Codex CLI session available on this machine.
+
+Implemented chat provider:
+
+```text
+codex -> Codex CLI adapter
+```
+
+Reserved provider identifier:
+
+```text
+claude-code -> UI/status slot only until a backend adapter is added
+```
+
+Check Codex locally:
+
+```powershell
+codex --version
+codex login status
+```
+
+If chat is unavailable:
+
+- verify the local provider CLI is installed
+- verify the provider account is signed in
+- verify the selected repo is indexed
+- check `http://localhost:4747/api/session/status`
+
+AVmatrix does not store provider API keys in the browser and does not route chat through an AVmatrix cloud service.
 
 ---
 
 ## Embeddings
 
-**First time with vectors** (slower, more disk/RAM):
+Generate embeddings during full analyze:
 
-```bash
-avmatrix analyze --embeddings
+```powershell
+avmatrix analyze . --embeddings
 ```
 
-**Important:** If you already had embeddings, **always** pass `--embeddings` on later analyzes, or they can be dropped. The embedding metadata lives under `.avmatrix/meta.json`.
+If you want to preserve/regenerate embeddings on future rebuilds, keep passing `--embeddings`.
 
-**Large repos:** Analyze may skip or limit embedding work when node counts are very high; watch CLI output.
+Current behavior:
+
+- embeddings are optional
+- embeddings are stored in the `CodeEmbedding` table
+- embedding generation is skipped for repos over `100000` nodes
+- search still works without embeddings through BM25/FTS paths
+
+Backend embedding endpoint:
+
+```text
+POST /api/embed
+GET /api/embed/:jobId
+GET /api/embed/:jobId/progress
+DELETE /api/embed/:jobId
+```
+
+Analyze and embed jobs are locked per repo to avoid concurrent writes to the same LadybugDB store.
 
 ---
 
-## MCP: no repos / empty tools
+## Clean And Recover A Repo Index
 
-**Symptom:** `No indexed repos yet` on stderr when starting MCP.
+Current repo:
 
-**Fix:** In each project you want indexed:
-
-```bash
-cd /path/to/repo
-avmatrix analyze
-```
-
-Restart the editor MCP session if needed. The server **refreshes the registry lazily**; new analyzes are picked up without necessarily reinstalling MCP.
-
-**Symptom:** Wrong repo when multiple are indexed — pass `repo` on tools or use `list_repos` first.
-
----
-
-## Clean slate (corrupt or huge local index)
-
-**Current repo only** (prompts for confirmation):
-
-```bash
-avmatrix clean
-```
-
-**Skip confirmation:**
-
-```bash
+```powershell
 avmatrix clean --force
 ```
 
-**All registered repos:**
+All indexed repos:
 
-```bash
+```powershell
 avmatrix clean --all --force
 ```
 
-Then re-run `avmatrix analyze` (and `--embeddings` if you need vectors).
+Then rebuild:
 
----
-
-## Local bridge for the web UI
-
-```bash
-cd avmatrix
-node dist/cli/index.js serve
-# default http://127.0.0.1:4747 — see serve --help for port/host
+```powershell
+avmatrix analyze . --force
 ```
 
-Use when the browser UI should talk to **local** indexed repos instead of WASM-only mode.
+If you see WAL/checksum corruption:
+
+1. Stop the packaged launcher or `avmatrix serve`.
+2. Stop MCP sessions that may have the repo open.
+3. Clean the repo index.
+4. Re-run `avmatrix analyze . --force`.
+
+Do not manually delete `.avmatrix\lbug*` while launcher/backend/MCP is running.
 
 ---
 
-## CLI equivalents of MCP tools
+## Lock And Concurrent Job Errors
 
-Useful for debugging without an editor:
+Symptom:
 
-```bash
-cd avmatrix
-node dist/cli/index.js query "authentication flow" --repo MyRepo
-node dist/cli/index.js context SomeSymbol --repo MyRepo
-node dist/cli/index.js impact SomeSymbol --direction upstream --repo MyRepo
-node dist/cli/index.js cypher "MATCH (n) RETURN count(n) LIMIT 1" --repo MyRepo
+```text
+Another job is already active for this repository
+```
+
+Meaning:
+
+- analyze, delete, or embed is already active for that repo
+- the backend lock is protecting the repo-local LadybugDB store
+
+Fix:
+
+- wait for the current job to finish
+- cancel the Web UI job if available
+- restart the local backend if the job is stale
+
+---
+
+## CLI Equivalents Of MCP Tools
+
+Useful when debugging without an editor:
+
+```powershell
+avmatrix query "authentication flow" --repo MyRepo
+avmatrix context SomeSymbol --repo MyRepo
+avmatrix impact SomeSymbol --direction upstream --repo MyRepo
+avmatrix cypher "MATCH (n) RETURN count(n) LIMIT 1" --repo MyRepo
+avmatrix detect-changes --repo MyRepo
 ```
 
 ---
 
-## CI failures (contributors)
+## Wiki Capability
 
-Orchestrator: `.github/workflows/ci.yml`.
+The active local-only build has no remote wiki fallback.
 
-| Job | Typical local repro |
-|-----|---------------------|
-| **quality** | `cd avmatrix && npx tsc --noEmit` |
-| **unit-tests** | `cd avmatrix && npx vitest run test/unit` |
-| **integration** | `cd avmatrix && npx vitest run test/integration` (see workflow matrix for groups) |
-| **e2e** | Triggered when `avmatrix-web/` changes; `cd avmatrix-web && E2E=1 npx playwright test` (requires `avmatrix serve` or `node dist/cli/index.js serve` + `npm run dev`) |
+```powershell
+avmatrix wiki
+avmatrix wiki-mode
+avmatrix wiki-mode off
+avmatrix wiki-mode local
+```
 
-**Note:** Pushes that touch only certain markdown paths may be skipped by `paths-ignore` in CI — see workflow file for exact patterns.
-
----
-
-## Memory / analyze crashes
-
-Analyze re-execs Node with a **large old-space heap** when needed (`analyze.ts`). If you still OOM on huge repos, close other processes, avoid `--embeddings` for a first pass, or analyze a smaller path if supported by your workflow.
+`wiki-mode local` is reserved for a future local wiki engine.
 
 ---
 
-## LadybugDB / lock errors
+## Docker
 
-Only one process should open a repo’s local LadybugDB store at a time. The active local store lives under `.avmatrix/lbug`. If MCP and a second `analyze` run conflict, stop one process, then retry `analyze` or restart MCP.
+Docker is an advanced deployment path, separate from the primary local CLI/launcher flow.
+
+Required files:
+
+```text
+Dockerfile.cli
+Dockerfile.web
+docker-compose.yaml
+.env.example
+```
+
+Run:
+
+```powershell
+Copy-Item .env.example .env
+# edit SERVER_IMAGE and WEB_IMAGE
+docker compose --env-file .env up -d
+```
+
+Default ports:
+
+```text
+server: http://localhost:4747
+web:    http://localhost:4173
+```
+
+To analyze host repos inside Docker, set `WORKSPACE_DIR` to a local folder that contains those repos. It is mounted read-only at `/workspace`.
 
 ---
 
-## Where to dig deeper
+## Build And Validation Commands
 
-- Architecture overview: [ARCHITECTURE.md](ARCHITECTURE.md)  
-- Agent safety rules: [GUARDRAILS.md](GUARDRAILS.md)  
-- Tests: [TESTING.md](TESTING.md)
+Core:
+
+```powershell
+cd avmatrix
+npm run build
+npm test
+npx tsc --noEmit
+```
+
+Web:
+
+```powershell
+cd avmatrix-web
+npm run build
+npm test
+```
+
+Web e2e requires both backend and frontend running:
+
+```powershell
+cd avmatrix
+avmatrix serve
+
+cd ..\avmatrix-web
+npm run dev
+npm run test:e2e
+```
+
+Launcher package:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1
+```
+
+---
+
+## Where To Dig Deeper
+
+- [ARCHITECTURE.md](ARCHITECTURE.md)
+- [README.md](README.md)
+- [CHANGELOG.md](CHANGELOG.md)
+- [GUARDRAILS.md](GUARDRAILS.md)
+- [TESTING.md](TESTING.md)
