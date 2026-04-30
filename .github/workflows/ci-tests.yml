@@ -10,7 +10,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: ./.github/actions/setup-gitnexus
+      - uses: ./.github/actions/setup-avmatrix
         with:
           build: 'true'
 
@@ -26,20 +26,20 @@ jobs:
           --coverage.reporter=text
           --coverage.thresholdAutoUpdate=false
           --coverage.reportOnFailure=true
-        working-directory: gitnexus
+        working-directory: avmatrix
 
-      # gitnexus-shared already built by setup-gitnexus action above
-      - name: Install gitnexus-web dependencies
+      # avmatrix-shared already built by setup-avmatrix action above
+      - name: Install avmatrix-web dependencies
         run: npm ci
-        working-directory: gitnexus-web
+        working-directory: avmatrix-web
 
-      - name: Run gitnexus-web unit tests
+      - name: Run avmatrix-web unit tests
         run: >-
           npx vitest run
           --reporter=default
           --reporter=json
           --outputFile=web-test-results.json
-        working-directory: gitnexus-web
+        working-directory: avmatrix-web
 
       - name: Run docker-server integration tests
         run: node --test docker-server.test.mjs
@@ -50,10 +50,10 @@ jobs:
         with:
           name: test-reports
           path: |
-            gitnexus/coverage/coverage-summary.json
-            gitnexus/coverage/coverage-final.json
-            gitnexus/test-results.json
-            gitnexus-web/web-test-results.json
+            avmatrix/coverage/coverage-summary.json
+            avmatrix/coverage/coverage-final.json
+            avmatrix/test-results.json
+            avmatrix-web/web-test-results.json
           retention-days: 5
 
   cross-platform:
@@ -67,8 +67,8 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: ./.github/actions/setup-gitnexus
+      - uses: ./.github/actions/setup-avmatrix
         with:
           build: 'true'
       - run: npx vitest run
-        working-directory: gitnexus
+        working-directory: avmatrix

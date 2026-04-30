@@ -1,11 +1,11 @@
 name: Release Candidate
 
 on:
-  # Publish a release-candidate build whenever a merge/commit lands on main.
+  # Publish a release-candidate build whenever a merge/commit lands on master.
   # Docs/README-only changes are filtered out so prose updates don't
   # cut a release.
   push:
-    branches: [main]
+    branches: [master]
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -138,24 +138,24 @@ jobs:
           node-version: 20
           registry-url: https://registry.npmjs.org
           cache: npm
-          cache-dependency-path: gitnexus/package-lock.json
+          cache-dependency-path: avmatrix/package-lock.json
 
-      - name: Build gitnexus-shared
+      - name: Build avmatrix-shared
         run: npm install && npm run build
-        working-directory: gitnexus-shared
+        working-directory: avmatrix-shared
 
-      - name: Install gitnexus dependencies
+      - name: Install avmatrix dependencies
         run: npm ci
-        working-directory: gitnexus
+        working-directory: avmatrix
 
       - name: Resolve rc version
         id: version
         shell: bash
-        working-directory: gitnexus
+        working-directory: avmatrix
         env:
           BUMP_INPUT: ${{ inputs.bump }}
           EVENT_NAME: ${{ github.event_name }}
-          PKG_NAME: gitnexus
+          PKG_NAME: avmatrix
         run: |
           set -euo pipefail
 
@@ -283,19 +283,19 @@ jobs:
 
       - name: Apply rc version in-CI
         shell: bash
-        working-directory: gitnexus
+        working-directory: avmatrix
         run: |
           set -euo pipefail
           npm version "${{ steps.version.outputs.rc_version }}" \
             --no-git-tag-version --allow-same-version
 
-      - name: Build gitnexus
+      - name: Build avmatrix
         run: npm run build
-        working-directory: gitnexus
+        working-directory: avmatrix
 
       - name: Dry-run publish
         run: npm publish --dry-run --tag rc
-        working-directory: gitnexus
+        working-directory: avmatrix
 
       # ── Acquire the "rc lock" BEFORE publishing (fixes idempotency) ─────
       # We create two tags and push them atomically:
@@ -309,7 +309,7 @@ jobs:
       - name: Create and push rc tags
         id: reltag
         shell: bash
-        working-directory: gitnexus
+        working-directory: avmatrix
         env:
           RC_VERSION: ${{ steps.version.outputs.rc_version }}
           HEAD_SHA: ${{ needs.guard.outputs.head_sha }}
@@ -320,7 +320,7 @@ jobs:
           git config user.name  'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
 
-          # Detached release commit with the version bump — keeps `main`
+          # Detached release commit with the version bump — keeps `master`
           # pristine but gives the v-tag a tree that matches the published
           # package contents exactly (fixes release-integrity gap).
           git add package.json package-lock.json 2>/dev/null || git add package.json
@@ -343,7 +343,7 @@ jobs:
 
       - name: Publish to npm (rc dist-tag)
         run: npm publish --provenance --access public --tag rc
-        working-directory: gitnexus
+        working-directory: avmatrix
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -356,12 +356,12 @@ jobs:
           make_latest: 'false'
           generate_release_notes: true
           body: |
-            Automated release candidate build from `main`.
+            Automated release candidate build from `master`.
 
-            **npm:** `npm install gitnexus@rc`
+            **npm:** `npm install avmatrix@rc`
             **Version:** `${{ steps.version.outputs.rc_version }}`
             **Target base:** `${{ steps.version.outputs.base }}` (rc #${{ steps.version.outputs.rc_n }})
-            **Source commit (main):** ${{ needs.guard.outputs.head_sha }}
+            **Source commit (master):** ${{ needs.guard.outputs.head_sha }}
             **Release commit (versioned tree):** ${{ steps.reltag.outputs.release_sha }}
 
             Release candidates are pre-stable builds intended for early testing.
@@ -372,7 +372,7 @@ jobs:
   # attestation logic stays in one place. The publish job exposes `vtag`
   # (e.g. `v1.2.3-rc.1`) as an output so we can pass it as the tag input.
   # RC images are signed with Cosign keyless signing; the OIDC identity
-  # will be `docker.yml@refs/heads/main` (the caller's ref) rather than a
+  # will be `docker.yml@refs/heads/master` (the caller's ref) rather than a
   # tag ref — see README.md § Docker for the correct verify command for RCs.
   docker:
     name: Build & Push RC Docker images

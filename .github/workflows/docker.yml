@@ -5,7 +5,7 @@ on:
     tags:
       - 'v*'
   # No workflow_dispatch: publishing is exclusively tag-driven so that every
-  # signed image corresponds 1:1 to a published `gitnexus@X.Y.Z` on npm. A
+  # signed image corresponds 1:1 to a published `avmatrix@X.Y.Z` on npm. A
   # manual run from a branch ref would fail the version check below anyway.
   workflow_call:
     inputs:
@@ -13,7 +13,7 @@ on:
         description: >-
           The full v-prefixed tag to build (e.g. v1.2.3-rc.1).
           The tag must already exist in the repo and its tree must contain
-          a gitnexus/package.json whose version matches the tag.
+          an avmatrix/package.json whose version matches the tag.
         required: true
         type: string
 
@@ -47,17 +47,17 @@ jobs:
       matrix:
         image:
           # Static UI bundle. Small, fast image. Drop-in replacement for the
-          # legacy single-image setup at the same `gitnexus` repository slug
-          # is intentionally avoided — the UI now lives at `gitnexus-web` and
-          # the CLI/server takes the canonical `gitnexus` slug below.
-          - name: gitnexus-web
+          # legacy single-image setup at the same `avmatrix` repository slug
+          # is intentionally avoided — the UI now lives at `avmatrix-web` and
+          # the CLI/server takes the canonical `avmatrix` slug below.
+          - name: avmatrix-web
             dockerfile: Dockerfile.web
-            slug: gitnexus-web
-          # CLI / `gitnexus serve` backend. Heavy native deps (tree-sitter,
+            slug: avmatrix-web
+          # CLI / `avmatrix serve` backend. Heavy native deps (tree-sitter,
           # onnxruntime-node) live only in this image.
-          - name: gitnexus
+          - name: avmatrix
             dockerfile: Dockerfile.cli
-            slug: gitnexus
+            slug: avmatrix
 
     steps:
       - name: Validate tag input
@@ -80,10 +80,10 @@ jobs:
 
       # ── Lock the docker image version to the npm package version ──────────
       # Mirrors the check in publish.yml: refuse to build unless the git tag
-      # exactly matches `gitnexus/package.json`'s version. This guarantees
-      # `ghcr.io/<owner>/gitnexus:X.Y.Z` always corresponds to the same
-      # `gitnexus@X.Y.Z` published to npm — no drift, no surprises.
-      - name: Verify tag matches gitnexus/package.json version
+      # exactly matches `avmatrix/package.json`'s version. This guarantees
+      # `ghcr.io/<owner>/avmatrix:X.Y.Z` always corresponds to the same
+      # `avmatrix@X.Y.Z` published to npm — no drift, no surprises.
+      - name: Verify tag matches avmatrix/package.json version
         id: version
         shell: bash
         env:
@@ -100,9 +100,9 @@ jobs:
             echo "::error::Tag does not follow semver: v$TAG_VERSION"
             exit 1
           fi
-          PKG_VERSION=$(node -p "require('./gitnexus/package.json').version")
+          PKG_VERSION=$(node -p "require('./avmatrix/package.json').version")
           if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
-            echo "::error::Tag version (v$TAG_VERSION) does not match gitnexus/package.json version ($PKG_VERSION)"
+            echo "::error::Tag version (v$TAG_VERSION) does not match avmatrix/package.json version ($PKG_VERSION)"
             exit 1
           fi
           echo "version=$PKG_VERSION" >> "$GITHUB_OUTPUT"

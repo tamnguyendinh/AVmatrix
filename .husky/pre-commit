@@ -10,17 +10,17 @@ echo "pre-commit: formatting staged files..."
 "$ROOT/node_modules/.bin/lint-staged" || exit 1
 
 # 2. Typecheck changed packages
-WEB_CHANGED=$(git diff --cached --name-only -- 'gitnexus-web/' | head -1)
-CLI_CHANGED=$(git diff --cached --name-only -- 'gitnexus/' | head -1)
+WEB_CHANGED=$(git diff --cached --name-only -- 'avmatrix-web/' | head -1)
+CLI_CHANGED=$(git diff --cached --name-only -- 'avmatrix/' | head -1)
 
 if [ -n "$WEB_CHANGED" ]; then
-  echo "pre-commit: typechecking gitnexus-web (tsc -b)..."
-  cd "$ROOT/gitnexus-web" && ./node_modules/.bin/tsc -b --noEmit || exit 1
+  echo "pre-commit: typechecking avmatrix-web (tsc -b)..."
+  cd "$ROOT/avmatrix-web" && ./node_modules/.bin/tsc -b --noEmit || exit 1
 fi
 
 if [ -n "$CLI_CHANGED" ]; then
-  echo "pre-commit: typechecking gitnexus..."
-  cd "$ROOT/gitnexus" && ./node_modules/.bin/tsc --noEmit || exit 1
+  echo "pre-commit: typechecking avmatrix..."
+  cd "$ROOT/avmatrix" && ./node_modules/.bin/tsc --noEmit || exit 1
 fi
 
 echo "pre-commit: all checks passed"

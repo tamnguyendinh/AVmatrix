@@ -35,8 +35,8 @@ import urllib.error
 import urllib.request
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-GITNEXUS_DIR = REPO_ROOT / "gitnexus"
-VENDOR_PROTO_DIR = GITNEXUS_DIR / "vendor" / "tree-sitter-proto"
+AVMATRIX_DIR = REPO_ROOT / "avmatrix"
+VENDOR_PROTO_DIR = AVMATRIX_DIR / "vendor" / "tree-sitter-proto"
 
 # ── Upgrade target ──────────────────────────────────────────────────────
 # The runtime version we want to upgrade TO. Update this when the goal
@@ -84,7 +84,7 @@ UPSTREAM_PROTO_BRANCH = "main"
 
 def read_current_runtime() -> str:
     """Return the tree-sitter runtime version pinned in package.json (e.g. '0.21')."""
-    pkg = json.loads((GITNEXUS_DIR / "package.json").read_text())
+    pkg = json.loads((AVMATRIX_DIR / "package.json").read_text())
     raw = pkg["dependencies"]["tree-sitter"]
     match = re.search(r"(\d+)\.(\d+)", raw)
     if not match:
@@ -234,10 +234,10 @@ def main() -> int:
             compatible = satisfies_target(peer_range, TARGET_RUNTIME)
 
         # Check installed ABI using the same parser_path from GRAMMARS.
-        installed_parser = GITNEXUS_DIR / "node_modules" / name / parser_path
+        installed_parser = AVMATRIX_DIR / "node_modules" / name / parser_path
         if not installed_parser.is_file():
             # Fallback to default location.
-            installed_parser = GITNEXUS_DIR / "node_modules" / name / "src" / "parser.c"
+            installed_parser = AVMATRIX_DIR / "node_modules" / name / "src" / "parser.c"
         installed_abi = extract_language_version(installed_parser)
         abi_display = str(installed_abi) if installed_abi else "?"
 

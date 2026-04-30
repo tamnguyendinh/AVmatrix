@@ -15,14 +15,14 @@ updates:
       - dependencies
       - ci
 
-  # Gitnexus npm deps — tree-sitter grammars checked daily so we catch
+  # AVmatrix npm deps — tree-sitter grammars checked daily so we catch
   # new releases that unblock the tree-sitter 0.25 upgrade ASAP. Grammars
   # are grouped so lockstep bumps produce a single PR. The tree-sitter
   # RUNTIME is pinned — upgrade deliberately via the drift check workflow.
   # See .github/scripts/check-tree-sitter-upgrade-readiness.py for
   # the upgrade readiness tracker.
   - package-ecosystem: npm
-    directory: /gitnexus
+    directory: /avmatrix
     schedule:
       interval: daily
     open-pull-requests-limit: 10
@@ -49,9 +49,9 @@ updates:
       # regenerating vendor/tree-sitter-proto/src/parser.c, not on a schedule.
       - dependency-name: tree-sitter-cli
 
-  # gitnexus-web (thin frontend client).
+  # avmatrix-web (thin frontend client).
   - package-ecosystem: npm
-    directory: /gitnexus-web
+    directory: /avmatrix-web
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
@@ -64,7 +64,7 @@ updates:
 
   # Shared types package.
   - package-ecosystem: npm
-    directory: /gitnexus-shared
+    directory: /avmatrix-shared
     schedule:
       interval: weekly
     open-pull-requests-limit: 5

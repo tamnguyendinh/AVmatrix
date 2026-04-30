@@ -35,18 +35,18 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: ./.github/actions/setup-gitnexus
+      - uses: ./.github/actions/setup-avmatrix
       - run: npx tsc --noEmit
-        working-directory: gitnexus
+        working-directory: avmatrix
 
   typecheck-web:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: ./.github/actions/setup-gitnexus-web
+      - uses: ./.github/actions/setup-avmatrix-web
       - run: npx tsc -b --noEmit
-        working-directory: gitnexus-web
+        working-directory: avmatrix-web
 
   # Enforces the convention documented in CONTRIBUTING.md → "GitHub Actions —
   # Concurrency Convention":

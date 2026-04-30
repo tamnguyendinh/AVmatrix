@@ -122,7 +122,7 @@ Tests do **not** run in the pre-commit hook — they run in CI (`ci-tests.yml`) 
 
 Skip with `git commit --no-verify` (use sparingly).
 
-Maintenance note: if `.husky/pre-commit` still contains legacy GitNexus path strings, it will not detect AVmatrix package changes correctly. If you touch the hook, update it to the current package paths: `avmatrix/`, `avmatrix-web/`, and `avmatrix-shared/`.
+Maintenance note: if `.husky/pre-commit` is edited, keep it aligned with the current package paths: `avmatrix/`, `avmatrix-web/`, and `avmatrix-shared/`.
 
 ## Test categories
 

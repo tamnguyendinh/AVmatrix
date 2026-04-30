@@ -14,8 +14,8 @@ body:
       label: Area
       description: Where does the problem show up?
       options:
-        - gitnexus (CLI / core / indexing / MCP server)
-        - gitnexus-web (browser UI / WASM / workers)
+        - avmatrix (CLI / core / indexing / MCP server)
+        - avmatrix-web (browser UI / WASM / workers)
         - CI / GitHub Actions
         - Documentation / developer experience
         - Other
@@ -68,7 +68,7 @@ body:
     id: environment
     attributes:
       label: Environment
-      description: OS, Node version, browser (if web), GitNexus version or commit SHA.
+      description: OS, Node version, browser (if web), AVmatrix version or commit SHA.
       placeholder: |
         - OS:
         - Node:

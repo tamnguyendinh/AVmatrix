@@ -190,7 +190,7 @@ For graph/runtime changes, also manually verify repo switching across at least t
 
 The repo includes `.husky/pre-commit` for staged formatting and package typechecks. Tests are intended to run in CI, not in the pre-commit hook.
 
-Important maintenance note: some automation files may still contain legacy GitNexus path strings after the repo rename. If you touch `.husky/`, `.github/`, issue templates, or PR templates, audit those files and update paths to `avmatrix/`, `avmatrix-web/`, and `avmatrix-shared/` as part of the same change.
+If you touch `.husky/`, `.github/`, issue templates, or PR templates, keep paths aligned with the current package names: `avmatrix/`, `avmatrix-web/`, and `avmatrix-shared/`.
 
 Do not rely on the hook as the only verification. Run the commands relevant to your touched area.
 
@@ -269,12 +269,12 @@ Current workflow intent:
 - `.github/workflows/ci-e2e.yml` owns Playwright browser flows.
 - `.github/workflows/pr-labeler.yml` validates PR titles and applies labels.
 - `.github/workflows/publish.yml` publishes stable `v*` tags to npm.
-- `.github/workflows/release-candidate.yml` publishes RC builds from `main`.
+- `.github/workflows/release-candidate.yml` publishes RC builds from `master`.
 - `.github/workflows/docker.yml` builds tagged Docker images.
 
 Every entry-point workflow should have a top-level `concurrency:` block. Reusable workflows invoked through `workflow_call` should avoid `${{ github.workflow }}` in reusable group keys when that could collide with the caller. Use the existing workflow comments as the source of truth when editing CI.
 
-Before relying on release automation, verify package paths and package names use AVmatrix names, not legacy GitNexus names.
+Before relying on release automation, verify package paths and package names still use AVmatrix names.
 
 ## Release Notes
 
