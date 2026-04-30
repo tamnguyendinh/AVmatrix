@@ -32,11 +32,7 @@ describe('RightPanelResizable.local-runtime', () => {
 
     render(
       <AppStateProvider>
-        <RightPanelResizable
-          isOpen={true}
-          onClose={vi.fn()}
-          onRequestAnalyze={onRequestAnalyze}
-        />
+        <RightPanelResizable isOpen={true} onClose={vi.fn()} onRequestAnalyze={onRequestAnalyze} />
       </AppStateProvider>,
     );
 

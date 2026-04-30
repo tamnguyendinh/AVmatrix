@@ -74,10 +74,8 @@ function SuccessCard() {
         </div>
 
         <p className="press-eyebrow mb-2 text-center">Local bridge detected</p>
-        <h2 className="press-title mb-2 text-center text-2xl">
-          Server Connected
-        </h2>
-        <p className="mx-auto text-center text-base leading-relaxed font-reading text-text-secondary">
+        <h2 className="press-title mb-2 text-center text-2xl">Server Connected</h2>
+        <p className="mx-auto text-center font-reading leading-relaxed text-base text-text-secondary">
           Preparing your code knowledge graph...
         </p>
 
@@ -100,21 +98,15 @@ function SuccessCard() {
 function LoadingCard({ message }: { message: string }) {
   return (
     <div className="space-y-4">
-      <div
-        className="press-panel relative overflow-hidden p-8"
-        role="status"
-        aria-live="polite"
-      >
+      <div className="press-panel relative overflow-hidden p-8" role="status" aria-live="polite">
         <div className="relative">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-xl border-[3px] border-border-default bg-inset">
             <Loader2 className="h-8 w-8 animate-spin text-border-strong" />
           </div>
 
           <p className="press-eyebrow mb-2 text-center">Connecting</p>
-          <h2 className="press-title mb-2 text-center text-2xl">
-            {message || 'Connecting...'}
-          </h2>
-          <p className="mx-auto text-center text-base leading-relaxed font-reading text-text-secondary">
+          <h2 className="press-title mb-2 text-center text-2xl">{message || 'Connecting...'}</h2>
+          <p className="mx-auto text-center font-reading leading-relaxed text-base text-text-secondary">
             This may take a moment for large repositories
           </p>
         </div>
@@ -287,7 +279,6 @@ export const DropZone = ({ onServerConnect }: DropZoneProps) => {
 
   return (
     <div className="press-shell press-ruled flex min-h-screen items-center justify-center p-8">
-
       <div className="relative w-full max-w-lg">
         {error && (
           <div className="mb-4 animate-fade-in rounded-xl border-[3px] border-error bg-surface p-3 text-center text-sm text-error">

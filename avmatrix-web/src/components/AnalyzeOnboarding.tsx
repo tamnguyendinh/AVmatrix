@@ -33,17 +33,13 @@ export const AnalyzeOnboarding = ({ onComplete }: AnalyzeOnboardingProps) => {
               AVmatrix
             </span>
           </div>
-          <p className="press-eyebrow mb-3">
-            Edition 01 · First indexing run
-          </p>
+          <p className="press-eyebrow mb-3">Edition 01 · First indexing run</p>
 
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border-[3px] border-border-strong bg-inset">
             <FolderOpen className="h-7 w-7 text-border-strong" />
           </div>
 
-          <h2 className="press-title text-3xl leading-snug">
-            Analyze your first repository
-          </h2>
+          <h2 className="press-title text-3xl leading-snug">Analyze your first repository</h2>
           <p className="press-reading mx-auto mt-3 text-center text-text-secondary">
             Paste an absolute local repository path and AVmatrix will parse the code and build a
             live knowledge graph — entirely on this machine.

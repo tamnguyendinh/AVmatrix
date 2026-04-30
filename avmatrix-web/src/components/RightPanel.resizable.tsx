@@ -16,10 +16,7 @@ const RIGHT_PANEL_DEFAULT_WIDTH = 520;
 const RIGHT_PANEL_MAX_WIDTH = 760;
 
 const clampPanelWidth = (width: number, viewportWidth: number): number => {
-  const viewportMax = Math.max(
-    RIGHT_PANEL_MIN_WIDTH + 40,
-    Math.floor(viewportWidth * 0.58),
-  );
+  const viewportMax = Math.max(RIGHT_PANEL_MIN_WIDTH + 40, Math.floor(viewportWidth * 0.58));
   const maxWidth = Math.min(RIGHT_PANEL_MAX_WIDTH, viewportMax);
   return Math.max(RIGHT_PANEL_MIN_WIDTH, Math.min(width, maxWidth));
 };
@@ -78,10 +75,7 @@ export const RightPanelResizable = ({
 
       const onMove = (moveEvent: MouseEvent) => {
         const deltaX = moveEvent.clientX - startX;
-        const nextWidth = clampPanelWidth(
-          startWidth - deltaX,
-          window.innerWidth,
-        );
+        const nextWidth = clampPanelWidth(startWidth - deltaX, window.innerWidth);
         setPanelWidth(nextWidth);
       };
 
@@ -102,7 +96,7 @@ export const RightPanelResizable = ({
 
   return (
     <aside
-      className="relative z-30 my-3 mr-3 ml-3 flex min-h-0 self-stretch animate-slide-in flex-col overflow-hidden rounded-[18px] border-[3px] border-border-default bg-surface shadow-[var(--shadow-dropdown)]"
+      className="relative z-30 my-3 mr-3 ml-3 flex min-h-0 animate-slide-in flex-col self-stretch overflow-hidden rounded-[18px] border-[3px] border-border-default bg-surface shadow-[var(--shadow-dropdown)]"
       style={{ width: panelWidth }}
     >
       <div

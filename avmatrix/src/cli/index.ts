@@ -17,7 +17,9 @@ program.name('avmatrix').description('AVmatrix local CLI and MCP server').versio
 
 program
   .command('setup')
-  .description('One-time setup: configure local MCP/runtime access for Cursor, Claude Code, OpenCode, Codex')
+  .description(
+    'One-time setup: configure local MCP/runtime access for Cursor, Claude Code, OpenCode, Codex',
+  )
   .action(createLazyAction(() => import('./setup.js'), 'setupCommand'));
 
 program

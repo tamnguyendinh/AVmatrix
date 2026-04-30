@@ -152,7 +152,9 @@ const TreeItem = ({
         )}
 
         {/* Name */}
-        <span className={`truncate font-mono text-xs ${isSelected ? 'font-semibold' : 'font-medium'}`}>
+        <span
+          className={`truncate font-mono text-xs ${isSelected ? 'font-semibold' : 'font-medium'}`}
+        >
           {node.name}
         </span>
       </button>
@@ -409,9 +411,7 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
       {activeTab === 'filters' && (
         <div className="scrollbar-thin flex-1 overflow-y-auto p-3">
           <div className="mb-3">
-            <h3 className="press-eyebrow mb-2 text-text-secondary">
-              Node Types
-            </h3>
+            <h3 className="press-eyebrow mb-2 text-text-secondary">Node Types</h3>
             <p className="mb-3 text-[11px] text-text-muted">
               Toggle visibility of node types in the graph
             </p>
@@ -439,19 +439,17 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
                     <Icon className="h-3 w-3" style={{ color: NODE_COLORS[label] }} />
                   </div>
                   <span className="flex-1 text-xs">{label}</span>
-                    <div
-                      className={`h-2 w-2 rounded-full transition-colors ${isVisible ? 'bg-border-strong' : 'bg-border-subtle'}`}
-                    />
-                  </button>
+                  <div
+                    className={`h-2 w-2 rounded-full transition-colors ${isVisible ? 'bg-border-strong' : 'bg-border-subtle'}`}
+                  />
+                </button>
               );
             })}
           </div>
 
           {/* Edge Type Toggles */}
           <div className="mt-6 border-t border-border-subtle pt-4">
-            <h3 className="press-eyebrow mb-2 text-text-secondary">
-              Edge Types
-            </h3>
+            <h3 className="press-eyebrow mb-2 text-text-secondary">Edge Types</h3>
             <p className="mb-3 text-[11px] text-text-muted">
               Toggle visibility of relationship types
             </p>
@@ -524,9 +522,7 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
 
           {/* Legend */}
           <div className="mt-6 border-t border-border-subtle pt-4">
-            <h3 className="press-eyebrow mb-3 text-text-secondary">
-              Color Legend
-            </h3>
+            <h3 className="press-eyebrow mb-3 text-text-secondary">Color Legend</h3>
             <div className="grid grid-cols-2 gap-2">
               {(
                 [
@@ -554,7 +550,6 @@ export const FileTreePanel = ({ onFocusNode }: FileTreePanelProps) => {
           </div>
         </div>
       )}
-
     </div>
   );
 };

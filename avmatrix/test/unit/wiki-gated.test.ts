@@ -57,6 +57,8 @@ describe('wiki capability gate', () => {
   });
 
   it('formats local mode as fail-safe without remote fallback', () => {
-    expect(formatWikiModeStatus('local')).toContain('will not fall back to any remote wiki service');
+    expect(formatWikiModeStatus('local')).toContain(
+      'will not fall back to any remote wiki service',
+    );
   });
 });

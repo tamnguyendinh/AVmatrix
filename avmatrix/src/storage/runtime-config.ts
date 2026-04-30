@@ -33,4 +33,3 @@ export const saveRuntimeConfig = async (config: RuntimeConfig): Promise<void> =>
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(getRuntimeConfigPath(), JSON.stringify(config, null, 2), 'utf-8');
 };
-

@@ -76,12 +76,7 @@ export function compareGraphCorrectnessSnapshots(
   compareField(diffs, 'communityCount', expected.communityCount, actual.communityCount);
   compareField(diffs, 'processCount', expected.processCount, actual.processCount);
   compareField(diffs, 'byNodeLabel', expected.byNodeLabel, actual.byNodeLabel);
-  compareField(
-    diffs,
-    'byRelationshipType',
-    expected.byRelationshipType,
-    actual.byRelationshipType,
-  );
+  compareField(diffs, 'byRelationshipType', expected.byRelationshipType, actual.byRelationshipType);
   compareField(diffs, 'nodeDigest', expected.nodeDigest, actual.nodeDigest);
   compareField(diffs, 'relationshipDigest', expected.relationshipDigest, actual.relationshipDigest);
   compareField(diffs, 'usedWorkerPool', expected.usedWorkerPool, actual.usedWorkerPool);

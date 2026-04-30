@@ -1,10 +1,6 @@
 export type LocalSessionProvider = 'codex' | 'claude-code';
 
-export type SessionAvailability =
-  | 'ready'
-  | 'not_installed'
-  | 'not_signed_in'
-  | 'error';
+export type SessionAvailability = 'ready' | 'not_installed' | 'not_signed_in' | 'error';
 
 export type SessionExecutionMode = 'sandboxed' | 'bypass';
 export type SessionRuntimeEnvironment = 'native' | 'wsl2';

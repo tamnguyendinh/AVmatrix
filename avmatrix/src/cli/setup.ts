@@ -211,10 +211,7 @@ async function installClaudeCodeHooks(result: SetupResult): Promise<void> {
     ) {
       if (!existing.hooks[eventName]) existing.hooks[eventName] = [];
       existing.hooks[eventName] = existing.hooks[eventName].filter(
-        (h: HookEntry) =>
-          !h.hooks?.some((hh) =>
-            hh.command?.includes('avmatrix-hook'),
-          ),
+        (h: HookEntry) => !h.hooks?.some((hh) => hh.command?.includes('avmatrix-hook')),
       );
       const hasHook = existing.hooks[eventName].some((h: HookEntry) =>
         h.hooks?.some((hh) => hh.command?.includes('avmatrix-hook')),
@@ -303,7 +300,7 @@ async function setupCodex(result: SetupResult): Promise<void> {
       'codex',
       ['mcp', 'add', CANONICAL_MCP_SERVER, '--', entry.command, ...entry.args],
       {
-      shell: process.platform === 'win32',
+        shell: process.platform === 'win32',
       },
     );
     result.configured.push('Codex');

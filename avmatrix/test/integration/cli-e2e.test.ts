@@ -501,7 +501,12 @@ describe('CLI end-to-end', () => {
     it('wiki-mode local persists local mode and wiki reports it without remote fallback', () => {
       const gnHome = fs.mkdtempSync(path.join(os.tmpdir(), 'wiki-local-mode-home-'));
       try {
-        const setMode = runCliWithEnv(['wiki-mode', 'local'], repoRoot, { AVMATRIX_HOME: gnHome }, 15000);
+        const setMode = runCliWithEnv(
+          ['wiki-mode', 'local'],
+          repoRoot,
+          { AVMATRIX_HOME: gnHome },
+          15000,
+        );
         if (setMode.status === null) return;
         expect(setMode.status).toBe(0);
 
@@ -641,5 +646,4 @@ describe('CLI end-to-end', () => {
       });
     }, 25000);
   });
-
 });

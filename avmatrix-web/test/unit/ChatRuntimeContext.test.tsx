@@ -60,7 +60,9 @@ describe('ChatRuntimeProvider', () => {
     const bridge = createBridge();
 
     renderHook(() => useChatRuntime(), {
-      wrapper: ({ children }) => <ChatRuntimeProvider bridge={bridge}>{children}</ChatRuntimeProvider>,
+      wrapper: ({ children }) => (
+        <ChatRuntimeProvider bridge={bridge}>{children}</ChatRuntimeProvider>
+      ),
     });
 
     expect(fetchSessionStatus).not.toHaveBeenCalled();
@@ -76,7 +78,9 @@ describe('ChatRuntimeProvider', () => {
     toAgentStreamChunk.mockReturnValue({ type: 'done' });
 
     const { result } = renderHook(() => useChatRuntime(), {
-      wrapper: ({ children }) => <ChatRuntimeProvider bridge={bridge}>{children}</ChatRuntimeProvider>,
+      wrapper: ({ children }) => (
+        <ChatRuntimeProvider bridge={bridge}>{children}</ChatRuntimeProvider>
+      ),
     });
 
     await act(async () => {

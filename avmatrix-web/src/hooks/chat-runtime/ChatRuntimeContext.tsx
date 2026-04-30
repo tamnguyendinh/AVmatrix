@@ -8,7 +8,12 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import type { ChatMessage, MessageStep, ToolCallInfo, AgentStreamChunk } from '../../core/llm/types';
+import type {
+  ChatMessage,
+  MessageStep,
+  ToolCallInfo,
+  AgentStreamChunk,
+} from '../../core/llm/types';
 import {
   loadLocalRuntimeSettings,
   saveLocalRuntimeSettings,
@@ -134,7 +139,9 @@ export const ChatRuntimeProvider = ({ bridge, children }: ChatRuntimeProviderPro
 
         if (repoState === 'index_required') {
           setIsAgentReady(false);
-          setAgentError(status.repo?.message || 'Repository is not indexed yet. Run analyze first.');
+          setAgentError(
+            status.repo?.message || 'Repository is not indexed yet. Run analyze first.',
+          );
           return false;
         }
 

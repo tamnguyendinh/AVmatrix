@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createKnowledgeGraph } from '../../src/core/graph/graph';
 import { knowledgeGraphToGraphology } from '../../src/lib/graph-adapter';
-import {
-  createCallsRelationship,
-  createFileNode,
-  createFunctionNode,
-} from '../fixtures/graph';
+import { createCallsRelationship, createFileNode, createFunctionNode } from '../fixtures/graph';
 
 describe('knowledgeGraphToGraphology edge geometry', () => {
   it('creates straight edges without curved-edge metadata', () => {

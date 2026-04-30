@@ -23,9 +23,7 @@ export const serveCommand = async (options?: { port?: string; host?: string }) =
 
   if (!LOOPBACK_HOSTS.has(host)) {
     console.error('\nFailed to start AVmatrix server:\n');
-    console.error(
-      '  Local-only mode only allows loopback hosts: localhost, 127.0.0.1, or ::1.\n',
-    );
+    console.error('  Local-only mode only allows loopback hosts: localhost, 127.0.0.1, or ::1.\n');
     process.exit(1);
   }
 

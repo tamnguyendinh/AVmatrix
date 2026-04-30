@@ -7,11 +7,7 @@
  * companion passes parity tests.
  */
 
-import type {
-  LLMProvider,
-  LLMSettings,
-  ProviderConfig,
-} from './types.local-runtime';
+import type { LLMProvider, LLMSettings, ProviderConfig } from './types.local-runtime';
 import {
   clearLocalRuntimeSettings,
   getLocalRuntimeAvailableModels,

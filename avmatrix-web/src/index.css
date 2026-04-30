@@ -384,8 +384,7 @@ button[class*='border-[3px]'] {
 }
 
 .press-ruled {
-  background-image:
-    linear-gradient(to bottom, rgba(125, 101, 73, 0.14) 1px, transparent 1px);
+  background-image: linear-gradient(to bottom, rgba(125, 101, 73, 0.14) 1px, transparent 1px);
   background-size: 100% 28px;
 }
 

@@ -24,7 +24,8 @@ const parsePositiveInteger = (value: unknown): number | null => {
 };
 
 const normalizeSettings = (value: unknown): AVmatrixSettings => {
-  const parsed = typeof value === 'object' && value !== null ? (value as Partial<AVmatrixSettings>) : {};
+  const parsed =
+    typeof value === 'object' && value !== null ? (value as Partial<AVmatrixSettings>) : {};
   return {
     maxExecutionFlows:
       parsePositiveInteger(parsed.maxExecutionFlows) ?? DEFAULT_MAX_EXECUTION_FLOWS,

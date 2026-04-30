@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SessionStatus } from 'avmatrix-shared';
 import { RuntimeController } from '../../src/runtime/runtime-controller.js';
 import type { SessionAdapter, SessionChatContext } from '../../src/runtime/session-adapter.js';
-import { SessionRuntimeError } from '../../src/runtime/session-adapter.js';
 import type { SessionJob } from '../../src/runtime/session-adapter.js';
 
 const repoManagerMocks = vi.hoisted(() => ({
@@ -42,30 +41,27 @@ class FakeSessionAdapter implements SessionAdapter {
     repoPath: string;
   }> = [];
 
-  runImpl: (
-    job: SessionJob,
-    context: SessionChatContext,
-    signal: AbortSignal,
-  ) => Promise<void> = async (job, _context, signal) => {
-    await new Promise<void>((resolve) => {
-      signal.addEventListener(
-        'abort',
-        () => {
-          job.emit({
-            sessionId: job.id,
-            provider: job.provider,
-            repoName: job.repoName,
-            repoPath: job.repoPath,
-            timestamp: Date.now(),
-            type: 'cancelled',
-            reason: typeof signal.reason === 'string' ? signal.reason : 'Cancelled',
-          });
-          resolve();
-        },
-        { once: true },
-      );
-    });
-  };
+  runImpl: (job: SessionJob, context: SessionChatContext, signal: AbortSignal) => Promise<void> =
+    async (job, _context, signal) => {
+      await new Promise<void>((resolve) => {
+        signal.addEventListener(
+          'abort',
+          () => {
+            job.emit({
+              sessionId: job.id,
+              provider: job.provider,
+              repoName: job.repoName,
+              repoPath: job.repoPath,
+              timestamp: Date.now(),
+              type: 'cancelled',
+              reason: typeof signal.reason === 'string' ? signal.reason : 'Cancelled',
+            });
+            resolve();
+          },
+          { once: true },
+        );
+      });
+    };
 
   async getStatus(): Promise<SessionStatus> {
     return this.status;
@@ -113,7 +109,9 @@ describe('RuntimeController', () => {
     for (const runtime of runtimes.splice(0)) {
       runtime.dispose();
     }
-    await Promise.allSettled(tempDirs.splice(0).map((dir) => fs.rm(dir, { recursive: true, force: true })));
+    await Promise.allSettled(
+      tempDirs.splice(0).map((dir) => fs.rm(dir, { recursive: true, force: true })),
+    );
   });
 
   it('reports indexed repo binding in session status', async () => {
@@ -206,7 +204,9 @@ describe('RuntimeController', () => {
     const missingPath = path.join(os.tmpdir(), `avmatrix-missing-${Date.now()}-${Math.random()}`);
     const { runtime } = createRuntime();
 
-    await expect(runtime.startChat({ repoPath: missingPath, message: 'hello' })).rejects.toMatchObject({
+    await expect(
+      runtime.startChat({ repoPath: missingPath, message: 'hello' }),
+    ).rejects.toMatchObject({
       name: 'SessionRuntimeError',
       code: 'REPO_NOT_FOUND',
       status: 404,

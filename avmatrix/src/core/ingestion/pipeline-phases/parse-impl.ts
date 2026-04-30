@@ -18,10 +18,7 @@ import {
   type BindingEntry,
 } from '../binding-accumulator.js';
 import { processParsing } from '../parsing-processor.js';
-import {
-  processImportsFromExtracted,
-  buildImportResolutionContext,
-} from '../import-processor.js';
+import { processImportsFromExtracted, buildImportResolutionContext } from '../import-processor.js';
 import { EMPTY_INDEX } from '../import-resolvers/utils.js';
 import {
   processCallsFromExtracted,
@@ -220,27 +217,21 @@ export async function runChunkedParseAndResolve(
         .map((p) => ({ path: p, content: chunkContents.get(p)! }));
 
       const chunkWorkerData = await timeParseStep(metrics, 'workerParseMs', () =>
-        processParsing(
-          graph,
-          chunkFiles,
-          symbolTable,
-          workerPool!,
-          (current, _total, filePath) => {
-            const globalCurrent = filesParsedSoFar + current;
-            const parsingProgress = 20 + (globalCurrent / totalParseable) * 62;
-            onProgress({
-              phase: 'parsing',
-              percent: Math.round(parsingProgress),
-              message: `Parsing chunk ${chunkIdx + 1}/${numChunks}...`,
-              detail: filePath,
-              stats: {
-                filesProcessed: globalCurrent,
-                totalFiles: totalParseable,
-                nodesCreated: graph.nodeCount,
-              },
-            });
-          },
-        ),
+        processParsing(graph, chunkFiles, symbolTable, workerPool!, (current, _total, filePath) => {
+          const globalCurrent = filesParsedSoFar + current;
+          const parsingProgress = 20 + (globalCurrent / totalParseable) * 62;
+          onProgress({
+            phase: 'parsing',
+            percent: Math.round(parsingProgress),
+            message: `Parsing chunk ${chunkIdx + 1}/${numChunks}...`,
+            detail: filePath,
+            stats: {
+              filesProcessed: globalCurrent,
+              totalFiles: totalParseable,
+              nodesCreated: graph.nodeCount,
+            },
+          });
+        }),
       );
 
       const chunkBasePercent = 20 + (filesParsedSoFar / totalParseable) * 62;
@@ -297,24 +288,19 @@ export async function runChunkedParseAndResolve(
 
         await Promise.all([
           timeParseStep(metrics, 'heritageResolveMs', () =>
-            processHeritageFromExtracted(
-              graph,
-              chunkWorkerData.heritage,
-              ctx,
-              (current, total) => {
-                onProgress({
-                  phase: 'parsing',
-                  percent: Math.round(chunkBasePercent),
-                  message: `Resolving heritage (chunk ${chunkIdx + 1}/${numChunks})...`,
-                  detail: `${current}/${total} records`,
-                  stats: {
-                    filesProcessed: filesParsedSoFar,
-                    totalFiles: totalParseable,
-                    nodesCreated: graph.nodeCount,
-                  },
-                });
-              },
-            ),
+            processHeritageFromExtracted(graph, chunkWorkerData.heritage, ctx, (current, total) => {
+              onProgress({
+                phase: 'parsing',
+                percent: Math.round(chunkBasePercent),
+                message: `Resolving heritage (chunk ${chunkIdx + 1}/${numChunks})...`,
+                detail: `${current}/${total} records`,
+                stats: {
+                  filesProcessed: filesParsedSoFar,
+                  totalFiles: totalParseable,
+                  nodesCreated: graph.nodeCount,
+                },
+              });
+            }),
           ),
           timeParseStep(metrics, 'routeResolveMs', () =>
             processRoutesFromExtracted(

@@ -146,8 +146,8 @@ function TabContent({
             What is AVmatrix?
           </p>
           <p style={{ fontSize: 12, color: '#9ca3af', margin: 0, lineHeight: 1.6 }}>
-            A local-first graph explorer for your codebase. Every file, function, and import
-            becomes a node you can explore, query, and navigate visually.
+            A local-first graph explorer for your codebase. Every file, function, and import becomes
+            a node you can explore, query, and navigate visually.
           </p>
         </div>
 
@@ -703,9 +703,7 @@ export const HelpPanel = ({ isOpen, onClose, nodeCount, edgeCount }: HelpPanelPr
           <span style={{ fontSize: 11, color: '#4b5563' }}>
             AVmatrix — local-first codebase graph explorer
           </span>
-          <span style={{ fontSize: 11, color: '#a78bfa' }}>
-            Browser UI + local runtime
-          </span>
+          <span style={{ fontSize: 11, color: '#a78bfa' }}>Browser UI + local runtime</span>
         </div>
       </div>
     </div>

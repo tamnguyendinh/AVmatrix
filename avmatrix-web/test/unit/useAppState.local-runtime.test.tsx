@@ -149,12 +149,8 @@ describe('useAppState.local-runtime', () => {
       );
     });
 
-    expect(Array.from(appState!.aiToolHighlightedNodeIds)).toEqual([
-      'Function:src/foo.ts:loadFoo',
-    ]);
-    expect(Array.from(appState!.blastRadiusNodeIds)).toEqual([
-      'Function:src/foo.ts:saveFoo',
-    ]);
+    expect(Array.from(appState!.aiToolHighlightedNodeIds)).toEqual(['Function:src/foo.ts:loadFoo']);
+    expect(Array.from(appState!.blastRadiusNodeIds)).toEqual(['Function:src/foo.ts:saveFoo']);
   });
 
   it('defaults graph links to visible and persists toggle state', async () => {

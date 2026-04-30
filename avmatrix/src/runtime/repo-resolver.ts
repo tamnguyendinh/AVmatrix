@@ -8,10 +8,7 @@ import {
 } from '../storage/repo-manager.js';
 import type { ResolvedSessionRepo, SessionRepoBinding } from 'avmatrix-shared';
 
-export type RepoResolverErrorCode =
-  | 'INVALID_REPO_BINDING'
-  | 'INVALID_REPO_PATH'
-  | 'REPO_NOT_FOUND';
+export type RepoResolverErrorCode = 'INVALID_REPO_BINDING' | 'INVALID_REPO_PATH' | 'REPO_NOT_FOUND';
 
 export class RepoResolverError extends Error {
   constructor(
@@ -37,7 +34,8 @@ export interface RepoRuntimeCandidate extends RepoLookupCandidate {
 export const isLikelyRemoteUrl = (value: string): boolean =>
   /^[a-z][a-z0-9+.-]*:\/\//i.test(value) || /^git@/i.test(value);
 
-export const isUncPath = (value: string): boolean => value.startsWith('\\\\') || value.startsWith('//');
+export const isUncPath = (value: string): boolean =>
+  value.startsWith('\\\\') || value.startsWith('//');
 
 export const samePath = (a: string, b: string): boolean =>
   process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
@@ -54,7 +52,9 @@ export const buildRepoLabels = <T extends RepoLookupCandidate>(repos: Iterable<T
   }
 
   return all.map((repo) =>
-    (nameCounts.get(repo.name.toLowerCase()) ?? 0) > 1 ? `${repo.name} (${repo.repoPath})` : repo.name,
+    (nameCounts.get(repo.name.toLowerCase()) ?? 0) > 1
+      ? `${repo.name} (${repo.repoPath})`
+      : repo.name,
   );
 };
 
@@ -98,11 +98,7 @@ export const findRepoCandidate = <T extends RepoLookupCandidate>(
   repoParam?: string,
   options: FindRepoOptions = {},
 ): T | null => {
-  const {
-    allowPartialName = false,
-    allowSingleDefault = false,
-    matchId = false,
-  } = options;
+  const { allowPartialName = false, allowSingleDefault = false, matchId = false } = options;
   const all = [...repos];
   if (all.length === 0) return null;
 
@@ -144,7 +140,9 @@ const resolveExistingDirectory = async (
     realRepoPath = await fs.realpath(targetPath);
   } catch (error) {
     const code =
-      typeof error === 'object' && error && 'code' in error ? (error as NodeJS.ErrnoException).code : undefined;
+      typeof error === 'object' && error && 'code' in error
+        ? (error as NodeJS.ErrnoException).code
+        : undefined;
     if (code === 'ENOENT') {
       throw new RepoResolverError('REPO_NOT_FOUND', notFoundMessage, details);
     }
@@ -156,7 +154,9 @@ const resolveExistingDirectory = async (
     stat = await fs.stat(realRepoPath);
   } catch (error) {
     const code =
-      typeof error === 'object' && error && 'code' in error ? (error as NodeJS.ErrnoException).code : undefined;
+      typeof error === 'object' && error && 'code' in error
+        ? (error as NodeJS.ErrnoException).code
+        : undefined;
     if (code === 'ENOENT') {
       throw new RepoResolverError('REPO_NOT_FOUND', notFoundMessage, details);
     }
@@ -183,9 +183,13 @@ const resolveRepoFromName = async (repoName: string): Promise<ResolvedSessionRep
     ) ?? null;
 
   if (!entry) {
-    throw new RepoResolverError('REPO_NOT_FOUND', `Indexed repository "${repoName}" was not found`, {
-      repoName,
-    });
+    throw new RepoResolverError(
+      'REPO_NOT_FOUND',
+      `Indexed repository "${repoName}" was not found`,
+      {
+        repoName,
+      },
+    );
   }
 
   const realRepoPath = await resolveExistingDirectory(
@@ -203,13 +207,16 @@ const resolveRepoFromName = async (repoName: string): Promise<ResolvedSessionRep
     repoName: entry.name,
     repoPath: realRepoPath,
     indexed,
-    storagePath: indexed ? (entry.storagePath || getStoragePath(realRepoPath)) : undefined,
+    storagePath: indexed ? entry.storagePath || getStoragePath(realRepoPath) : undefined,
   };
 };
 
 const resolveRepoFromPath = async (repoPath: string): Promise<ResolvedSessionRepo> => {
   if (isLikelyRemoteUrl(repoPath)) {
-    throw new RepoResolverError('INVALID_REPO_PATH', 'Remote URLs are not allowed for local session runtime');
+    throw new RepoResolverError(
+      'INVALID_REPO_PATH',
+      'Remote URLs are not allowed for local session runtime',
+    );
   }
   if (isUncPath(repoPath)) {
     throw new RepoResolverError('INVALID_REPO_PATH', 'UNC and network-share paths are not allowed');
@@ -233,7 +240,7 @@ const resolveRepoFromPath = async (repoPath: string): Promise<ResolvedSessionRep
     repoName: entry?.name || path.basename(realRepoPath),
     repoPath: realRepoPath,
     indexed,
-    storagePath: indexed ? (entry?.storagePath || getStoragePath(realRepoPath)) : undefined,
+    storagePath: indexed ? entry?.storagePath || getStoragePath(realRepoPath) : undefined,
   };
 };
 

@@ -32,9 +32,7 @@ describe('mcpCommand runtime alignment', () => {
     expect(startMCPServerMock).toHaveBeenCalledTimes(1);
     expect(initMock).not.toHaveBeenCalled();
     expect(listReposMock).not.toHaveBeenCalled();
-    expect(stderrWriteMock).toHaveBeenCalledWith(
-      expect.stringContaining('stage=backend_created'),
-    );
+    expect(stderrWriteMock).toHaveBeenCalledWith(expect.stringContaining('stage=backend_created'));
     expect(stderrWriteMock).toHaveBeenCalledWith(
       expect.stringContaining('stage=transport_connected'),
     );

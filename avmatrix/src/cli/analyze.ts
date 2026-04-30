@@ -465,7 +465,9 @@ function printPerformanceSummary(performance: AnalyzePerformanceReport): void {
     );
     console.log(`  lbug csv rows: ${formatCountMap(lbugCounters?.csvRowsByTable)}`);
     console.log(`  lbug csv bytes: ${formatByteMap(lbugCounters?.csvBytesByTable)}`);
-    console.log(`  lbug nodeCopy detail: ${formatTimingMap(performance.lbugLoad?.nodeCopyByTableMs)}`);
+    console.log(
+      `  lbug nodeCopy detail: ${formatTimingMap(performance.lbugLoad?.nodeCopyByTableMs)}`,
+    );
     console.log(
       `  lbug nodeCopy throughput: ${formatThroughputMap(lbugCounters?.csvBytesByTable, performance.lbugLoad?.nodeCopyByTableMs)}`,
     );

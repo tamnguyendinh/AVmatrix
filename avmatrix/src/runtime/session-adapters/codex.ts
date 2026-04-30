@@ -44,8 +44,7 @@ const isWslMountedWindowsPath = (value: string): boolean => /^\/mnt\/[a-z]\//i.t
 const execFileAsync = promisify(execFile);
 
 const getNativeCodexExecutable = (): string =>
-  process.env.AVMATRIX_CODEX_EXECUTABLE ||
-  (process.platform === 'win32' ? 'codex.cmd' : 'codex');
+  process.env.AVMATRIX_CODEX_EXECUTABLE || (process.platform === 'win32' ? 'codex.cmd' : 'codex');
 
 const getWindowsCommandShell = (): string =>
   process.env.ComSpec ||
@@ -69,10 +68,7 @@ const toWslPath = (value: string): string => {
   return value.replace(/\\/g, '/');
 };
 
-const spawnCommand = (
-  target: CodexLaunchTarget,
-  options: Parameters<typeof spawn>[2] = {},
-) =>
+const spawnCommand = (target: CodexLaunchTarget, options: Parameters<typeof spawn>[2] = {}) =>
   spawn(target.executablePath, target.args, {
     ...options,
     shell: target.shell ?? false,
@@ -255,8 +251,8 @@ const emitCodexEvent = (
     completionUsage.value =
       payload.usage && typeof payload.usage === 'object'
         ? Object.fromEntries(
-            Object.entries(payload.usage as Record<string, unknown>).filter(([, value]) =>
-              typeof value === 'number',
+            Object.entries(payload.usage as Record<string, unknown>).filter(
+              ([, value]) => typeof value === 'number',
             ) as [string, number][],
           )
         : undefined;
@@ -292,7 +288,9 @@ const probeTargetStatus = async (target: CodexLaunchTarget): Promise<CodexStatus
       available: true,
       authenticated,
       version: versionResult.stdout.trim() || versionResult.stderr.trim() || undefined,
-      message: authenticated ? undefined : loginOutput || 'Codex CLI is installed but not signed in',
+      message: authenticated
+        ? undefined
+        : loginOutput || 'Codex CLI is installed but not signed in',
     };
   } catch (error) {
     return {
@@ -322,10 +320,20 @@ const resolveWindowsNativeBaseTarget = async (): Promise<CodexLaunchTarget> => {
       .split(/\r?\n/)
       .map((line) => line.trim())
       .filter(Boolean)
-      .find((entry) => entry.toLowerCase().endsWith('codex.cmd') || entry.toLowerCase().endsWith('\\codex'));
+      .find(
+        (entry) =>
+          entry.toLowerCase().endsWith('codex.cmd') || entry.toLowerCase().endsWith('\\codex'),
+      );
 
     if (shimPath) {
-      const codexJsPath = path.join(path.dirname(shimPath), 'node_modules', '@openai', 'codex', 'bin', 'codex.js');
+      const codexJsPath = path.join(
+        path.dirname(shimPath),
+        'node_modules',
+        '@openai',
+        'codex',
+        'bin',
+        'codex.js',
+      );
       try {
         await fs.access(codexJsPath);
         return {
@@ -372,7 +380,9 @@ const probeNativeStatus = async (): Promise<CodexStatusProbe> => {
       available: true,
       authenticated,
       version: versionResult.stdout.trim() || versionResult.stderr.trim() || undefined,
-      message: authenticated ? undefined : loginOutput || 'Codex CLI is installed but not signed in',
+      message: authenticated
+        ? undefined
+        : loginOutput || 'Codex CLI is installed but not signed in',
     };
   } catch (error) {
     return {
@@ -426,21 +436,18 @@ const probeWslStatus = async (): Promise<CodexStatusProbe> => {
 
   const quotedExecutable = shellQuotePosix(resolved.executablePath);
   try {
-    const versionResult = await runCommand(
-      buildWslShellTarget(`${quotedExecutable} --version`),
-    );
+    const versionResult = await runCommand(buildWslShellTarget(`${quotedExecutable} --version`));
     if (versionResult.code !== 0) {
       return {
         target: buildWslTarget(),
         available: false,
         authenticated: false,
-        message: versionResult.stderr || versionResult.stdout || 'codex --version failed inside WSL2',
+        message:
+          versionResult.stderr || versionResult.stdout || 'codex --version failed inside WSL2',
       };
     }
 
-    const loginResult = await runCommand(
-      buildWslShellTarget(`${quotedExecutable} login status`),
-    );
+    const loginResult = await runCommand(buildWslShellTarget(`${quotedExecutable} login status`));
     const loginOutput = `${loginResult.stdout}\n${loginResult.stderr}`.trim();
     const authenticated = /logged in/i.test(loginOutput) && !/not logged in/i.test(loginOutput);
 
@@ -449,7 +456,9 @@ const probeWslStatus = async (): Promise<CodexStatusProbe> => {
       available: true,
       authenticated,
       version: versionResult.stdout.trim() || versionResult.stderr.trim() || undefined,
-      message: authenticated ? undefined : loginOutput || 'Codex CLI is installed in WSL2 but not signed in',
+      message: authenticated
+        ? undefined
+        : loginOutput || 'Codex CLI is installed in WSL2 but not signed in',
     };
   } catch (error) {
     return {
@@ -510,7 +519,11 @@ export class CodexSessionAdapter implements SessionAdapter {
 
     return {
       provider: this.provider,
-      availability: probe.available ? (probe.authenticated ? 'ready' : 'not_signed_in') : 'not_installed',
+      availability: probe.available
+        ? probe.authenticated
+          ? 'ready'
+          : 'not_signed_in'
+        : 'not_installed',
       available: probe.available,
       authenticated: probe.authenticated,
       executablePath:
@@ -552,7 +565,9 @@ export class CodexSessionAdapter implements SessionAdapter {
 
     const outputFile = path.join(os.tmpdir(), `avmatrix-codex-${job.id}.txt`);
     const runtimeRepoPath =
-      status.runtimeEnvironment === 'wsl2' ? toWslPath(context.repo.repoPath) : context.repo.repoPath;
+      status.runtimeEnvironment === 'wsl2'
+        ? toWslPath(context.repo.repoPath)
+        : context.repo.repoPath;
     const runtimeOutputPath =
       status.runtimeEnvironment === 'wsl2' ? toWslPath(outputFile) : outputFile;
 

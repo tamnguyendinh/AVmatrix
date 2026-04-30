@@ -347,7 +347,9 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle>((_, ref) => {
       {isLayoutRunning && (
         <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 animate-fade-in items-center gap-2 rounded-full border-[2px] border-workspace-border-default bg-workspace-surface px-3 py-1.5 backdrop-blur-sm">
           <div className="h-2 w-2 animate-ping rounded-full bg-workspace-border-strong" />
-          <span className="text-xs font-medium text-workspace-text-primary">Layout optimizing...</span>
+          <span className="text-xs font-medium text-workspace-text-primary">
+            Layout optimizing...
+          </span>
         </div>
       )}
 
@@ -363,14 +365,10 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle>((_, ref) => {
               : 'flex h-10 w-10 items-center justify-center rounded-lg border-[2px] border-workspace-border-default bg-workspace-surface text-workspace-text-secondary transition-colors hover:bg-workspace-inset hover:text-workspace-text-primary'
           }
           title={
-            isAIHighlightsEnabled
-              ? 'Turn off AI-driven highlights'
-              : 'Turn on AI-driven highlights'
+            isAIHighlightsEnabled ? 'Turn off AI-driven highlights' : 'Turn on AI-driven highlights'
           }
           aria-label={
-            isAIHighlightsEnabled
-              ? 'Turn off AI-driven highlights'
-              : 'Turn on AI-driven highlights'
+            isAIHighlightsEnabled ? 'Turn off AI-driven highlights' : 'Turn on AI-driven highlights'
           }
           data-testid="ai-highlights-toggle"
         >
@@ -391,9 +389,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle>((_, ref) => {
               : 'flex h-10 w-10 items-center justify-center rounded-lg border-[2px] border-workspace-border-default bg-workspace-surface text-workspace-text-secondary transition-colors hover:bg-workspace-inset hover:text-workspace-text-primary'
           }
           title={areGraphLinksVisible ? 'Turn off all graph links' : 'Turn on all graph links'}
-          aria-label={
-            areGraphLinksVisible ? 'Turn off all graph links' : 'Turn on all graph links'
-          }
+          aria-label={areGraphLinksVisible ? 'Turn off all graph links' : 'Turn on all graph links'}
           data-testid="graph-links-toggle"
         >
           <GitBranch className="h-4 w-4" />

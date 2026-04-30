@@ -352,7 +352,7 @@ export const ProcessesPanel = () => {
           </div>
         </div>
         <div
-          className="press-eyebrow flex items-center gap-2 text-text-secondary normal-case tracking-normal"
+          className="press-eyebrow flex items-center gap-2 tracking-normal text-text-secondary normal-case"
           data-testid="process-list-loaded"
         >
           <span>{totalCount} processes detected</span>
@@ -371,17 +371,13 @@ export const ProcessesPanel = () => {
               <Layers className="h-5 w-5 text-border-strong" />
             </div>
             <div className="flex-1">
-              <h4 className="font-mono text-sm font-medium text-text-primary">
-                Full Process Map
-              </h4>
+              <h4 className="font-mono text-sm font-medium text-text-primary">Full Process Map</h4>
               <p className="font-reading text-xs text-text-secondary">
                 View combined map of {totalCount} processes
               </p>
             </div>
             {loadingProcess === 'all' ? (
-              <span className="mr-1 font-mono text-[11px] text-border-strong">
-                Loading...
-              </span>
+              <span className="mr-1 font-mono text-[11px] text-border-strong">Loading...</span>
             ) : (
               <Eye className="h-4 w-4 text-text-muted group-hover:text-border-strong" />
             )}
@@ -401,8 +397,10 @@ export const ProcessesPanel = () => {
                 <ChevronRight className="h-4 w-4 text-text-muted" />
               )}
               <Zap className="h-4 w-4 text-warning" />
-              <span className="font-mono text-sm font-medium text-text-primary">Cross-Community</span>
-              <span className="press-badge ml-auto border-border-default bg-base px-2 py-0.5 text-xs text-text-secondary normal-case tracking-normal">
+              <span className="font-mono text-sm font-medium text-text-primary">
+                Cross-Community
+              </span>
+              <span className="press-badge ml-auto border-border-default bg-base px-2 py-0.5 text-xs tracking-normal text-text-secondary normal-case">
                 {filteredProcesses.cross.length}
               </span>
             </button>
@@ -438,8 +436,10 @@ export const ProcessesPanel = () => {
                 <ChevronRight className="h-4 w-4 text-text-muted" />
               )}
               <Home className="h-4 w-4 text-success" />
-              <span className="font-mono text-sm font-medium text-text-primary">Intra-Community</span>
-              <span className="press-badge ml-auto border-border-default bg-base px-2 py-0.5 text-xs text-text-secondary normal-case tracking-normal">
+              <span className="font-mono text-sm font-medium text-text-primary">
+                Intra-Community
+              </span>
+              <span className="press-badge ml-auto border-border-default bg-base px-2 py-0.5 text-xs tracking-normal text-text-secondary normal-case">
                 {filteredProcesses.intra.length}
               </span>
             </button>

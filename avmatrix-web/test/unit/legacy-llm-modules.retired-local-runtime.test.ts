@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 describe('retired legacy LLM companion modules', () => {
   it('fails fast when legacy agent helpers are imported directly', async () => {
-    const { createChatModel, createGraphRAGAgent, invokeAgent } = await import('../../src/core/llm/agent');
+    const { createChatModel, createGraphRAGAgent, invokeAgent } =
+      await import('../../src/core/llm/agent');
 
     expect(() => createChatModel({})).toThrow(/local session runtime bridge/i);
     expect(() => createGraphRAGAgent({}, {} as never)).toThrow(/local session runtime bridge/i);

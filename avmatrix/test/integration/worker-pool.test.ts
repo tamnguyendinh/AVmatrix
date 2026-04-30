@@ -191,9 +191,7 @@ describe('worker pool integration', () => {
     const repoNode = result.nodes.find(
       (n: any) => n.label === 'Property' && n.properties.name === 'repo',
     );
-    const repoSymbol = result.symbols.find(
-      (s: any) => s.type === 'Property' && s.name === 'repo',
-    );
+    const repoSymbol = result.symbols.find((s: any) => s.type === 'Property' && s.name === 'repo');
 
     expect(repoNode?.properties.declaredType).toBe('OfflineQueueRepo');
     expect(repoSymbol?.declaredType).toBe('OfflineQueueRepo');

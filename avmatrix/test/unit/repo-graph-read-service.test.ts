@@ -21,25 +21,27 @@ describe('repo-graph-read-service', () => {
   });
 
   it('builds graph through the repo-scoped pool executor', async () => {
-    readExecutorMocks.executeRepoReadQuery.mockImplementation(async (target: any, query: string) => {
-      expect(target).toEqual({
-        repoId: 'demo',
-        lbugPath: 'F:/repos/demo/.avmatrix/lbug',
-      });
-      if (query.includes('MATCH (n:`File`)')) {
-        return [{ id: 'File:src/app.ts', name: 'app.ts', filePath: 'src/app.ts' }];
-      }
-      if (query.includes('CodeRelation')) {
-        return [
-          {
-            sourceId: 'File:src/app.ts',
-            targetId: 'Function:src/app.ts:main',
-            type: 'CONTAINS',
-          },
-        ];
-      }
-      return [];
-    });
+    readExecutorMocks.executeRepoReadQuery.mockImplementation(
+      async (target: any, query: string) => {
+        expect(target).toEqual({
+          repoId: 'demo',
+          lbugPath: 'F:/repos/demo/.avmatrix/lbug',
+        });
+        if (query.includes('MATCH (n:`File`)')) {
+          return [{ id: 'File:src/app.ts', name: 'app.ts', filePath: 'src/app.ts' }];
+        }
+        if (query.includes('CodeRelation')) {
+          return [
+            {
+              sourceId: 'File:src/app.ts',
+              targetId: 'Function:src/app.ts:main',
+              type: 'CONTAINS',
+            },
+          ];
+        }
+        return [];
+      },
+    );
 
     const graph = await buildRepoGraph({
       repoId: 'demo',

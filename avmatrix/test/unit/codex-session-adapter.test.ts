@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionJob } from '../../src/runtime/session-adapter.js';
 
 const { spawnMock, execFileMock, readFileMock, unlinkMock } = vi.hoisted(() => {
@@ -32,9 +32,11 @@ class MockChildProcess extends EventEmitter {
 describe('CodexSessionAdapter', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    execFileMock.mockImplementation((_file: string, _args: string[], callback: (...args: any[]) => void) => {
-      callback(null, '', '');
-    });
+    execFileMock.mockImplementation(
+      (_file: string, _args: string[], callback: (...args: any[]) => void) => {
+        callback(null, '', '');
+      },
+    );
     readFileMock.mockResolvedValue('Final answer');
     unlinkMock.mockResolvedValue(undefined);
   });
@@ -224,15 +226,17 @@ describe('CodexSessionAdapter', () => {
     );
     await completion;
 
-    expect(events.some((event) => event.type === 'reasoning' && event.reasoning === 'Thinking step')).toBe(true);
+    expect(
+      events.some((event) => event.type === 'reasoning' && event.reasoning === 'Thinking step'),
+    ).toBe(true);
     expect(
       events.some(
-        (event) =>
-          event.type === 'tool_result' &&
-          event.toolCall?.result === 'file-a\nfile-b',
+        (event) => event.type === 'tool_result' && event.toolCall?.result === 'file-a\nfile-b',
       ),
     ).toBe(true);
-    expect(events.some((event) => event.type === 'content' && event.content === 'Final answer')).toBe(true);
+    expect(
+      events.some((event) => event.type === 'content' && event.content === 'Final answer'),
+    ).toBe(true);
     expect(events.some((event) => event.type === 'done')).toBe(true);
   });
 });

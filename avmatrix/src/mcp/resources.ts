@@ -97,7 +97,9 @@ function parseUri(uri: string): { repoName?: string; resourceType: string; param
   if (uri === `${CANONICAL_RESOURCE_SCHEME}://setup`) return { resourceType: 'setup' };
 
   // Repo-scoped: avmatrix://repo/{name}/context
-  const repoMatch = uri.match(new RegExp(`^${CANONICAL_RESOURCE_SCHEME}:\\/\\/repo\\/([^/]+)\\/(.+)$`));
+  const repoMatch = uri.match(
+    new RegExp(`^${CANONICAL_RESOURCE_SCHEME}:\\/\\/repo\\/([^/]+)\\/(.+)$`),
+  );
   if (repoMatch) {
     const repoName = decodeURIComponent(repoMatch[1]);
     const rest = repoMatch[2];

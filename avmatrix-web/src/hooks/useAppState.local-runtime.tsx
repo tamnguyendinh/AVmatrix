@@ -17,8 +17,6 @@ import {
   connectToServer,
   runQuery as backendRunQuery,
   search as backendSearch,
-  grep as backendGrep,
-  readFile as backendReadFile,
   startEmbeddings as backendStartEmbeddings,
   streamEmbeddingProgress,
   probeBackend,

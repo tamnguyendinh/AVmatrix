@@ -36,7 +36,9 @@ describe('repo-resolver', () => {
   });
 
   afterEach(async () => {
-    await Promise.allSettled(tempDirs.splice(0).map((dir) => fs.rm(dir, { recursive: true, force: true })));
+    await Promise.allSettled(
+      tempDirs.splice(0).map((dir) => fs.rm(dir, { recursive: true, force: true })),
+    );
   });
 
   it('builds disambiguated labels only for colliding names', () => {
@@ -46,11 +48,7 @@ describe('repo-resolver', () => {
       { name: 'other', repoPath: 'F:/other/other', id: 'other' },
     ];
 
-    expect(buildRepoLabels(repos)).toEqual([
-      'demo (F:/one/demo)',
-      'demo (F:/two/demo)',
-      'other',
-    ]);
+    expect(buildRepoLabels(repos)).toEqual(['demo (F:/one/demo)', 'demo (F:/two/demo)', 'other']);
   });
 
   it('finds candidates by id, name, path, and partial name', () => {
@@ -120,7 +118,9 @@ describe('repo-resolver', () => {
       repoPath: differentRepoPath,
     };
 
-    await expect(resolveSessionRepoBinding(binding)).rejects.toMatchObject<Partial<RepoResolverError>>({
+    await expect(resolveSessionRepoBinding(binding)).rejects.toMatchObject<
+      Partial<RepoResolverError>
+    >({
       name: 'RepoResolverError',
       code: 'INVALID_REPO_BINDING',
     });

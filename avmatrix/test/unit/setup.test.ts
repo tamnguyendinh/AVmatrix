@@ -147,5 +147,4 @@ describe('setupClaudeCode', () => {
 
     expect(config.mcpServers.avmatrix).toBeDefined();
   });
-
 });

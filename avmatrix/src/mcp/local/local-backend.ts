@@ -41,10 +41,8 @@ import {
   IMPACT_ALLOWED_RELATION_TYPES,
   IMPACT_DEFAULTS,
   parseImpactInput,
-  type ImpactDirection,
   type ImpactInputLike,
   type ImpactValidationError,
-  type ParsedImpactInput,
 } from '../contracts/impact.js';
 // AI context generation is CLI-only (avmatrix analyze)
 // import { generateAIContextFiles } from '../../cli/ai-context.js';
@@ -108,9 +106,7 @@ export const VALID_NODE_LABELS = new Set([
 ]);
 
 /** Valid relation types for impact analysis filtering */
-export const VALID_RELATION_TYPES = new Set([
-  ...IMPACT_ALLOWED_RELATION_TYPES,
-]);
+export const VALID_RELATION_TYPES = new Set([...IMPACT_ALLOWED_RELATION_TYPES]);
 
 /**
  * Per-relation-type confidence floor for impact analysis.
@@ -2191,10 +2187,7 @@ export class LocalBackend {
     };
   }
 
-  private async impact(
-    repo: RepoHandle,
-    params: ImpactInputLike,
-  ): Promise<any> {
+  private async impact(repo: RepoHandle, params: ImpactInputLike): Promise<any> {
     const parsed = parseImpactInput(params);
     if ('error' in parsed) {
       const validationError = parsed.error;
@@ -2216,10 +2209,7 @@ export class LocalBackend {
     }
   }
 
-  private async _impactImpl(
-    repo: RepoHandle,
-    params: ImpactInputLike,
-  ): Promise<any> {
+  private async _impactImpl(repo: RepoHandle, params: ImpactInputLike): Promise<any> {
     await this.ensureInitialized(repo.id);
 
     const parsed = parseImpactInput(params);

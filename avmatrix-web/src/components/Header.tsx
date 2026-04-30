@@ -262,9 +262,7 @@ export const Header = ({
                     {/* Repo list */}
                     {availableRepos.length > 0 && (
                       <div>
-                        <div className="press-eyebrow px-3 pt-3 pb-2">
-                          Repositories
-                        </div>
+                        <div className="press-eyebrow px-3 pt-3 pb-2">Repositories</div>
                         {availableRepos.map((repo) => (
                           <div
                             key={repo.name}
@@ -286,7 +284,7 @@ export const Header = ({
                                 {repo.name}
                               </span>
                               {repo.name === projectName && (
-                                <span className="press-badge shrink-0 border-border-strong bg-base px-1.5 py-0.5 text-[10px] text-text-primary normal-case tracking-normal">
+                                <span className="press-badge shrink-0 border-border-strong bg-base px-1.5 py-0.5 text-[10px] tracking-normal text-text-primary normal-case">
                                   active
                                 </span>
                               )}

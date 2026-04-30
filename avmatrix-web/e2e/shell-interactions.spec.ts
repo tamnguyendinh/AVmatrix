@@ -2,7 +2,8 @@ import { test, expect, type Page } from '@playwright/test';
 
 const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:4747';
 const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173';
-const ABSOLUTE_LOCAL_PATH = process.platform === 'win32' ? 'C:\\repos\\shell-check' : '/tmp/shell-check';
+const ABSOLUTE_LOCAL_PATH =
+  process.platform === 'win32' ? 'C:\\repos\\shell-check' : '/tmp/shell-check';
 
 test.beforeAll(async () => {
   if (process.env.E2E) return;
@@ -56,7 +57,10 @@ async function openRepoDropdown(page: Page) {
 
   const repoButton = project
     ? page.locator('header button').filter({ hasText: project }).first()
-    : page.locator('header button').filter({ has: page.locator('svg') }).nth(1);
+    : page
+        .locator('header button')
+        .filter({ has: page.locator('svg') })
+        .nth(1);
 
   await repoButton.click();
   await expect(page.getByText('Repositories')).toBeVisible({ timeout: 5_000 });
@@ -116,7 +120,10 @@ test.describe('Shell interactions', () => {
     const project = url.searchParams.get('project');
     const repoButton = project
       ? page.locator('header button').filter({ hasText: project }).first()
-      : page.locator('header button').filter({ has: page.locator('svg') }).nth(1);
+      : page
+          .locator('header button')
+          .filter({ has: page.locator('svg') })
+          .nth(1);
 
     await repoButton.click();
     await expect(page.getByText('Local Folder Path')).not.toBeVisible({ timeout: 5_000 });
@@ -170,7 +177,10 @@ test.describe('Shell interactions', () => {
 
     await processRow.locator('[data-testid="process-view-button"]').click();
     await expect(page.locator('[data-testid="process-modal"]')).toBeVisible({ timeout: 5_000 });
-    await page.locator('[data-testid="process-modal"]').getByRole('button', { name: 'Close' }).click();
+    await page
+      .locator('[data-testid="process-modal"]')
+      .getByRole('button', { name: 'Close' })
+      .click();
     await expect(page.locator('[data-testid="process-modal"]')).not.toBeVisible({ timeout: 5_000 });
 
     await page.getByTitle('Close Panel').click();

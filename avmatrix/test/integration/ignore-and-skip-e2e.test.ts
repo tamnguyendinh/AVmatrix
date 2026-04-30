@@ -136,8 +136,9 @@ describe('ignore + language-skip E2E', () => {
       if (!isLanguageAvailable(SupportedLanguages.Swift)) {
         // The structure phase still creates the File node; parsing should not
         // create Swift code symbols when the grammar is unavailable.
-        const swiftNodes = nodes.filter((n) =>
-          (n.properties.filePath as string | undefined)?.endsWith('.swift') && n.label !== 'File',
+        const swiftNodes = nodes.filter(
+          (n) =>
+            (n.properties.filePath as string | undefined)?.endsWith('.swift') && n.label !== 'File',
         );
         expect(swiftNodes).toHaveLength(0);
       }

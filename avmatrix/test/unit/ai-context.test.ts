@@ -2,10 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import {
-  formatCrossRepoGroupsSection,
-  generateAIContextFiles,
-} from '../../src/cli/ai-context.js';
+import { formatCrossRepoGroupsSection, generateAIContextFiles } from '../../src/cli/ai-context.js';
 
 describe('generateAIContextFiles', () => {
   let tmpDir: string;

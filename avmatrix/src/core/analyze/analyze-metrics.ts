@@ -55,10 +55,7 @@ export interface LbugLoadTimingBreakdown {
 
 export interface LbugLoadMetrics {
   timings: LbugLoadTimingBreakdown;
-  counters: Pick<
-    AnalyzeCounters,
-    'csvNodeRows' | 'csvRelationshipRows' | 'ladybugCopyCount'
-  > & {
+  counters: Pick<AnalyzeCounters, 'csvNodeRows' | 'csvRelationshipRows' | 'ladybugCopyCount'> & {
     nodeCopyCount?: number;
     relationshipCopyCount?: number;
     insertedRelationships?: number;
@@ -85,7 +82,10 @@ export interface ParseMetrics {
   timings: ParseTimingBreakdown;
   counters: Pick<
     AnalyzeCounters,
-    'parseableFiles' | 'totalParseableMB' | 'workerCount' | 'parseChunkCount'
+    | 'parseableFiles'
+    | 'totalParseableMB'
+    | 'workerCount'
+    | 'parseChunkCount'
     | 'parserUnavailableFiles'
   >;
 }

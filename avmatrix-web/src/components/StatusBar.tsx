@@ -12,7 +12,9 @@ export const StatusBar = () => {
     if (!graph) return null;
     const languages = graph.nodes
       .map((n) => n.properties.language)
-      .filter((language): language is string => typeof language === 'string' && language.length > 0);
+      .filter(
+        (language): language is string => typeof language === 'string' && language.length > 0,
+      );
     if (languages.length === 0) return null;
 
     const counts = languages.reduce(

@@ -87,7 +87,9 @@ describe('AVMATRIX_TOOLS', () => {
 
   it('impact direction enum and defaults mirror the shared contract', () => {
     const impactTool = AVMATRIX_TOOLS.find((t) => t.name === 'impact')!;
-    expect(impactTool.inputSchema.properties.direction.enum).toEqual([...IMPACT_ALLOWED_DIRECTIONS]);
+    expect(impactTool.inputSchema.properties.direction.enum).toEqual([
+      ...IMPACT_ALLOWED_DIRECTIONS,
+    ]);
     expect(impactTool.inputSchema.properties.direction.default).toBe(IMPACT_DEFAULTS.direction);
     expect(impactTool.inputSchema.properties.maxDepth.default).toBe(IMPACT_DEFAULTS.maxDepth);
     expect(impactTool.inputSchema.properties.includeTests.default).toBe(

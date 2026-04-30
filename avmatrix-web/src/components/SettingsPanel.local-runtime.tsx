@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { X, Server, RefreshCw, Loader2 } from '@/lib/lucide-icons';
 import type { SessionStatusResponse } from 'avmatrix-shared';
-import {
-  fetchSessionStatus,
-  SessionClientError,
-} from '../core/llm/session-client';
+import { fetchSessionStatus, SessionClientError } from '../core/llm/session-client';
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -105,8 +102,14 @@ export const SettingsPanel = ({
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
 
   const tone = availabilityTone[sessionStatus?.availability ?? 'error'];
-  const codexConnected = !statusError && Boolean(sessionStatus?.available && sessionStatus.authenticated);
-  const codexStatusLabel = isCheckingStatus && !sessionStatus ? 'Checking' : codexConnected ? 'Connected' : 'Not connected';
+  const codexConnected =
+    !statusError && Boolean(sessionStatus?.available && sessionStatus.authenticated);
+  const codexStatusLabel =
+    isCheckingStatus && !sessionStatus
+      ? 'Checking'
+      : codexConnected
+        ? 'Connected'
+        : 'Not connected';
 
   const refreshStatus = useCallback(async () => {
     setIsCheckingStatus(true);
@@ -142,14 +145,9 @@ export const SettingsPanel = ({
         <div className="flex items-center justify-between border-b-[3px] border-border-default bg-base px-6 py-5">
           <div>
             <h2 className="press-title text-2xl">AI Runtime</h2>
-            <p className="font-reading text-sm text-text-secondary">
-              Local Codex session status
-            </p>
+            <p className="font-reading text-sm text-text-secondary">Local Codex session status</p>
           </div>
-          <button
-            onClick={onClose}
-            className="press-ghost-button rounded-lg p-2 text-text-muted"
-          >
+          <button onClick={onClose} className="press-ghost-button rounded-lg p-2 text-text-muted">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -167,7 +165,7 @@ export const SettingsPanel = ({
             >
               <p className="press-eyebrow text-text-secondary">Codex Account</p>
               <div className="mt-3 flex items-center justify-between gap-3">
-                <p className="font-mono text-base font-semibold text-text-primary">Codex CLI</p>
+                <p className="font-mono font-semibold text-base text-text-primary">Codex CLI</p>
                 <span
                   className={`rounded-full border-[2px] px-3 py-1 font-mono text-xs font-semibold ${
                     codexConnected
@@ -183,7 +181,7 @@ export const SettingsPanel = ({
             <div className="rounded-xl border-[3px] border-border-default bg-surface p-4">
               <p className="press-eyebrow text-text-secondary">Claude Code Account</p>
               <div className="mt-3 flex items-center justify-between gap-3">
-                <p className="font-mono text-base font-semibold text-text-primary">Claude Code</p>
+                <p className="font-mono font-semibold text-base text-text-primary">Claude Code</p>
                 <span className="rounded-full border-[2px] border-border-default px-3 py-1 font-mono text-xs font-semibold text-text-secondary">
                   Not connected
                 </span>
@@ -236,7 +234,13 @@ export const SettingsPanel = ({
               />
               <DetailRow
                 label="Account"
-                value={sessionStatus ? (sessionStatus.authenticated ? 'Signed in' : 'Not signed in') : 'Unknown'}
+                value={
+                  sessionStatus
+                    ? sessionStatus.authenticated
+                      ? 'Signed in'
+                      : 'Not signed in'
+                    : 'Unknown'
+                }
                 tone={sessionStatus?.authenticated ? 'success' : 'warning'}
               />
               <DetailRow
@@ -270,8 +274,8 @@ export const SettingsPanel = ({
                 <Server className="h-4 w-4" />
               </div>
               <div className="font-reading text-xs leading-relaxed text-text-secondary">
-                Local only. AVmatrix does not store API keys or route chat through an AVmatrix
-                cloud service.
+                Local only. AVmatrix does not store API keys or route chat through an AVmatrix cloud
+                service.
               </div>
             </div>
           </div>

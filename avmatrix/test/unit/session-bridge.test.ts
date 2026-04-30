@@ -75,7 +75,9 @@ class FakeRuntimeController {
 
   cancelResult = true;
   readonly getStatus = vi.fn(async () => this.statusResponse);
-  readonly startChat = vi.fn(async (request: { message: string }) => this.startChatImpl(request.message));
+  readonly startChat = vi.fn(async (request: { message: string }) =>
+    this.startChatImpl(request.message),
+  );
   readonly cancelSession = vi.fn((_sessionId: string, _reason?: string) => this.cancelResult);
 }
 

@@ -577,24 +577,29 @@ export const useSigma = (options: UseSigmaOptions = {}): UseSigmaReturn => {
     [runLayout, setSelectedNode],
   );
 
-  const focusNode = useCallback((nodeId: string) => {
-    const sigma = sigmaRef.current;
-    const graph = graphRef.current;
-    if (!sigma || !graph || !graph.hasNode(nodeId)) return;
+  const focusNode = useCallback(
+    (nodeId: string) => {
+      const sigma = sigmaRef.current;
+      const graph = graphRef.current;
+      if (!sigma || !graph || !graph.hasNode(nodeId)) return;
 
-    // Skip if already focused on this node (prevents double-click issues)
-    const alreadySelected = selectedNodeRef.current === nodeId;
+      // Skip if already focused on this node (prevents double-click issues)
+      const alreadySelected = selectedNodeRef.current === nodeId;
 
-    setSelectedNode(nodeId);
+      setSelectedNode(nodeId);
 
-    // Only animate camera if selecting a new node
-    if (!alreadySelected) {
-      const nodeAttrs = graph.getNodeAttributes(nodeId);
-      sigma.getCamera().animate({ x: nodeAttrs.x, y: nodeAttrs.y, ratio: 0.15 }, { duration: 400 });
-    }
+      // Only animate camera if selecting a new node
+      if (!alreadySelected) {
+        const nodeAttrs = graph.getNodeAttributes(nodeId);
+        sigma
+          .getCamera()
+          .animate({ x: nodeAttrs.x, y: nodeAttrs.y, ratio: 0.15 }, { duration: 400 });
+      }
 
-    sigma.refresh();
-  }, [setSelectedNode]);
+      sigma.refresh();
+    },
+    [setSelectedNode],
+  );
 
   const zoomIn = useCallback(() => {
     sigmaRef.current?.getCamera().animatedZoom({ duration: 200 });

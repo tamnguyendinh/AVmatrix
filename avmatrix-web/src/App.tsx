@@ -104,13 +104,7 @@ const AppContentBody = () => {
       // user actually sends a message or explicitly refreshes settings.
       startEmbeddingsWithFallback();
     },
-    [
-      setViewMode,
-      setGraph,
-      setProjectName,
-      setCurrentRepo,
-      startEmbeddingsWithFallback,
-    ],
+    [setViewMode, setGraph, setProjectName, setCurrentRepo, startEmbeddingsWithFallback],
   );
 
   // Auto-connect when ?server or ?project query param is present (bookmarkable shortcut)

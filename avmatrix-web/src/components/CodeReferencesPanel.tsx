@@ -336,7 +336,7 @@ export const CodeReferencesPanel = ({ onFocusNode }: CodeReferencesPanelProps) =
           {showCitations && (
             <button
               onClick={() => clearCodeReferences()}
-              className="workspace-outline-button rounded p-1.5 border-error text-workspace-text-secondary hover:bg-error/10 hover:text-error"
+              className="workspace-outline-button rounded border-error p-1.5 text-workspace-text-secondary hover:bg-error/10 hover:text-error"
               title="Clear AI citations"
             >
               <Trash2 className="h-4 w-4" />
@@ -496,26 +496,29 @@ export const CodeReferencesPanel = ({ onFocusNode }: CodeReferencesPanelProps) =
                               </span>
                             )}
                             {totalLines > 0 && (
-                              <span className="text-workspace-text-muted"> • {totalLines} lines</span>
+                              <span className="text-workspace-text-muted">
+                                {' '}
+                                • {totalLines} lines
+                              </span>
                             )}
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
                           {ref.nodeId && (
                             <button
-                            onClick={() => {
-                              const nodeId = ref.nodeId!;
+                              onClick={() => {
+                                const nodeId = ref.nodeId!;
                                 // Sync selection + focus graph
                                 if (graph) {
                                   const node = nodeById.get(nodeId);
                                   if (node) setSelectedNode(node);
                                 }
                                 onFocusNode(nodeId);
-                            }}
-                            className="workspace-outline-button rounded p-1.5 text-workspace-text-secondary hover:text-workspace-text-primary"
-                            title="Focus in graph"
-                          >
-                            <Target className="h-4 w-4" />
+                              }}
+                              className="workspace-outline-button rounded p-1.5 text-workspace-text-secondary hover:text-workspace-text-primary"
+                              title="Focus in graph"
+                            >
+                              <Target className="h-4 w-4" />
                             </button>
                           )}
                           <button

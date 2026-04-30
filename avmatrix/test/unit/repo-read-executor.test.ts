@@ -37,7 +37,10 @@ describe('repo-read-executor', () => {
 
     expect(poolMocks.initLbug).toHaveBeenCalledWith('demo', 'F:/repos/demo/.avmatrix/lbug');
     expect(poolMocks.touchRepo).toHaveBeenCalledWith('demo');
-    expect(poolMocks.executeQuery).toHaveBeenCalledWith('demo', 'MATCH (n:`File`) RETURN n.id AS id');
+    expect(poolMocks.executeQuery).toHaveBeenCalledWith(
+      'demo',
+      'MATCH (n:`File`) RETURN n.id AS id',
+    );
     expect(rows).toEqual([{ id: 'File:src/app.ts' }]);
   });
 

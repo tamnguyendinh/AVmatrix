@@ -133,9 +133,7 @@ export const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
         <div className="press-panel relative overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between border-b-[2px] border-border-default bg-base px-3 py-2">
-            <span className="press-eyebrow text-text-secondary">
-              Diagram
-            </span>
+            <span className="press-eyebrow text-text-secondary">Diagram</span>
             <button
               onClick={() => setShowModal(true)}
               className="press-ghost-button rounded p-1 text-text-secondary"
@@ -161,7 +159,9 @@ export const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
 
       {/* Use ProcessFlowModal for expansion */}
       {showModal && processData && (
-        <Suspense fallback={<div className="p-4 text-sm text-text-secondary">Loading diagram…</div>}>
+        <Suspense
+          fallback={<div className="p-4 text-sm text-text-secondary">Loading diagram…</div>}
+        >
           <ProcessFlowModal process={processData} onClose={() => setShowModal(false)} />
         </Suspense>
       )}

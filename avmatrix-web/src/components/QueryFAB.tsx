@@ -1,13 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import {
-  Terminal,
-  Play,
-  X,
-  ChevronDown,
-  ChevronUp,
-  Loader2,
-  Table,
-} from '@/lib/lucide-icons';
+import { Terminal, Play, X, ChevronDown, ChevronUp, Loader2, Table } from '@/lib/lucide-icons';
 import { useAppState } from '../hooks/useAppState.local-runtime';
 
 const EXAMPLE_QUERIES = [
@@ -296,15 +288,22 @@ export const QueryFAB = () => {
           <div className="flex items-center justify-between bg-workspace-base px-4 py-2.5">
             <div className="flex items-center gap-3 font-mono text-xs">
               <span className="text-workspace-text-secondary">
-                <span className="font-semibold text-workspace-text-primary">{queryResult.rows.length}</span> rows
+                <span className="font-semibold text-workspace-text-primary">
+                  {queryResult.rows.length}
+                </span>{' '}
+                rows
               </span>
               {queryResult.nodeIds.length > 0 && (
                 <span className="text-workspace-text-secondary">
-                  <span className="font-semibold text-workspace-text-primary">{queryResult.nodeIds.length}</span>{' '}
+                  <span className="font-semibold text-workspace-text-primary">
+                    {queryResult.nodeIds.length}
+                  </span>{' '}
                   highlighted
                 </span>
               )}
-              <span className="text-workspace-text-muted">{queryResult.executionTime.toFixed(1)}ms</span>
+              <span className="text-workspace-text-muted">
+                {queryResult.executionTime.toFixed(1)}ms
+              </span>
             </div>
             <div className="flex items-center gap-2">
               {queryResult.nodeIds.length > 0 && (

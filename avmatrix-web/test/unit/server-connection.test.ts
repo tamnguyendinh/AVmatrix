@@ -244,6 +244,5 @@ describe('fetchRepoInfo', () => {
       code: 'timeout',
       message: expect.stringContaining(`${REPO_INFO_TIMEOUT_MS}ms`),
     });
-
   });
 });

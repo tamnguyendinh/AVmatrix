@@ -54,7 +54,9 @@ test.describe('Flow 1: Onboarding — no server', () => {
     // Step 1 is active (done once polling starts)
     await expect(page.getByText('Copy the command')).toBeAttached({ timeout: 10_000 });
     // Step 2 title changes to "Waiting for server to start" once polling begins
-    await expect(page.getByText('Waiting for local bridge to start')).toBeAttached({ timeout: 10_000 });
+    await expect(page.getByText('Waiting for local bridge to start')).toBeAttached({
+      timeout: 10_000,
+    });
     // Step 3 is always rendered
     await expect(page.getByText('Auto-connects and opens the graph')).toBeAttached({
       timeout: 5_000,

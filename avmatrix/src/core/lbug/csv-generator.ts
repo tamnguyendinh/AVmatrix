@@ -210,11 +210,7 @@ class BufferedCSVWriter {
   private timings: CsvGenerationTimingBreakdown;
   rows = 0;
 
-  constructor(
-    filePath: string,
-    header: string,
-    timings: CsvGenerationTimingBreakdown = {},
-  ) {
+  constructor(filePath: string, header: string, timings: CsvGenerationTimingBreakdown = {}) {
     this.ws = createWriteStream(filePath, 'utf-8');
     this.timings = timings;
     // Large repos flush many times — raise listener cap to avoid MaxListenersExceededWarning
@@ -413,7 +409,11 @@ export const streamAllCSVsToDisk = async (
   for (const t of MULTI_LANG_TYPES) {
     multiLangWriters.set(
       t,
-      new BufferedCSVWriter(path.join(csvDir, `${t.toLowerCase()}.csv`), multiLangHeader, csvTimings),
+      new BufferedCSVWriter(
+        path.join(csvDir, `${t.toLowerCase()}.csv`),
+        multiLangHeader,
+        csvTimings,
+      ),
     );
   }
 

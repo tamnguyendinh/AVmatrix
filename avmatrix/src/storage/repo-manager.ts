@@ -240,7 +240,9 @@ export const readRegistry = async (): Promise<RegistryEntry[]> => {
         : { ...entry, storagePath: expectedStoragePath };
     }) as RegistryEntry[];
 
-    const changed = normalized.some((entry, index) => entry.storagePath !== data[index]?.storagePath);
+    const changed = normalized.some(
+      (entry, index) => entry.storagePath !== data[index]?.storagePath,
+    );
     if (changed) {
       await writeRegistry(normalized);
     }

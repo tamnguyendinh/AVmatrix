@@ -76,17 +76,17 @@ function RepoCard({
         {stats && (stats.files || stats.nodes) && (
           <div className="mt-3 flex flex-wrap gap-2 pl-6">
             {stats.files != null && (
-              <span className="press-badge inline-flex items-center gap-1 border-border-default bg-base px-2 py-0.5 text-[11px] text-text-secondary normal-case tracking-normal">
+              <span className="press-badge inline-flex items-center gap-1 border-border-default bg-base px-2 py-0.5 text-[11px] tracking-normal text-text-secondary normal-case">
                 <FileCode className="h-3 w-3" /> {stats.files.toLocaleString()} files
               </span>
             )}
             {stats.nodes != null && (
-              <span className="press-badge inline-flex items-center gap-1 border-border-default bg-base px-2 py-0.5 text-[11px] text-text-secondary normal-case tracking-normal">
+              <span className="press-badge inline-flex items-center gap-1 border-border-default bg-base px-2 py-0.5 text-[11px] tracking-normal text-text-secondary normal-case">
                 <Layers className="h-3 w-3" /> {stats.nodes.toLocaleString()} symbols
               </span>
             )}
             {stats.processes != null && stats.processes > 0 && (
-              <span className="press-badge inline-flex items-center border-border-default bg-base px-2 py-0.5 text-[11px] text-text-secondary normal-case tracking-normal">
+              <span className="press-badge inline-flex items-center border-border-default bg-base px-2 py-0.5 text-[11px] tracking-normal text-text-secondary normal-case">
                 {stats.processes} flows
               </span>
             )}
@@ -106,7 +106,11 @@ function RepoCard({
           aria-label={`Remove ${repo.name} from repository list`}
           title={`Remove ${repo.name}`}
         >
-          {isRemoving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+          {isRemoving ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <X className="h-3.5 w-3.5" />
+          )}
         </button>
       )}
     </div>
@@ -177,9 +181,7 @@ export const RepoLanding = ({
 
       <div className="mb-5 flex items-center gap-3">
         <div className="h-px flex-1 bg-border-subtle" />
-        <span className="press-eyebrow text-text-muted">
-          Analyze Another Repository
-        </span>
+        <span className="press-eyebrow text-text-muted">Analyze Another Repository</span>
         <div className="h-px flex-1 bg-border-subtle" />
       </div>
 

@@ -41,10 +41,7 @@ import {
   findRepoCandidate,
   normalizeRepoParam,
 } from '../runtime/repo-resolver.js';
-import {
-  buildRepoGraph,
-  streamRepoGraph,
-} from '../runtime/repo-runtime/graph-read-service.js';
+import { buildRepoGraph, streamRepoGraph } from '../runtime/repo-runtime/graph-read-service.js';
 import {
   ensureRepoReadReady,
   executeRepoParameterizedReadQuery,
@@ -277,18 +274,15 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
       })),
     );
     const normalizedName = normalizeRepoParam(repoName);
-    const foundCandidate = findRepoCandidate(
-      repos,
-      repoName,
-      { allowSingleDefault: true, matchId: true },
-    );
-    let found =
-      foundCandidate
-        ? repos.find(
-            (repo) =>
-              repo.id === foundCandidate.id && repo.repoPath === foundCandidate.repoPath,
-          ) || null
-        : null;
+    const foundCandidate = findRepoCandidate(repos, repoName, {
+      allowSingleDefault: true,
+      matchId: true,
+    });
+    const found = foundCandidate
+      ? repos.find(
+          (repo) => repo.id === foundCandidate.id && repo.repoPath === foundCandidate.repoPath,
+        ) || null
+      : null;
 
     // If not yet in the registry, check whether a background job is actively preparing or
     // analyzing this repo. Hold the connection open (up to 5 minutes) until it completes.
@@ -997,7 +991,9 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
       }
 
       if (repoUrl) {
-        res.status(400).json({ error: 'Remote repository URLs are no longer supported; provide "path" only' });
+        res
+          .status(400)
+          .json({ error: 'Remote repository URLs are no longer supported; provide "path" only' });
         return;
       }
       if (!repoLocalPath) {

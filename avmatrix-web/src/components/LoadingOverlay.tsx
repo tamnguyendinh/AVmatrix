@@ -17,7 +17,8 @@ export const LoadingOverlay = ({ progress }: LoadingOverlayProps) => {
       <div className="relative mb-10">
         <div className="max-w-[min(28rem,calc(100vw-3rem))] border-[2px] border-border-subtle bg-surface px-5 py-3 shadow-[var(--shadow-dropdown)]">
           <span className="font-mono text-sm font-semibold text-text-primary">
-            [ <span className="inline-block max-w-[20rem] truncate align-bottom">{repoLabel}</span> ]
+            [ <span className="inline-block max-w-[20rem] truncate align-bottom">{repoLabel}</span>{' '}
+            ]
           </span>
         </div>
       </div>
@@ -39,7 +40,9 @@ export const LoadingOverlay = ({ progress }: LoadingOverlayProps) => {
           <span className="animate-pulse">|</span>
         </p>
         {progress.detail && (
-          <p className="max-w-md truncate font-reading text-xs text-text-secondary">{progress.detail}</p>
+          <p className="max-w-md truncate font-reading text-xs text-text-secondary">
+            {progress.detail}
+          </p>
         )}
         <p className="mt-3 font-reading text-sm text-text-secondary">
           This may take a moment for large repositories

@@ -6,13 +6,7 @@
  */
 
 import { useState } from 'react';
-import {
-  ChevronDown,
-  ChevronRight,
-  Check,
-  Loader2,
-  AlertCircle,
-} from '@/lib/lucide-icons';
+import { ChevronDown, ChevronRight, Check, Loader2, AlertCircle } from '@/lib/lucide-icons';
 import type { ToolCallInfo } from '../core/llm/types';
 
 interface ToolCallCardProps {
@@ -129,7 +123,9 @@ export const ToolCallCard = ({ toolCall, defaultExpanded = false }: ToolCallCard
           {getToolDisplayName(toolCall.name)}
         </span>
 
-        <span className={`press-badge flex items-center gap-1 border-current bg-transparent px-2 py-1 text-xs normal-case tracking-normal ${status.color}`}>
+        <span
+          className={`press-badge flex items-center gap-1 border-current bg-transparent px-2 py-1 text-xs tracking-normal normal-case ${status.color}`}
+        >
           {status.icon}
           <span className="capitalize">{toolCall.status}</span>
         </span>
@@ -150,9 +146,7 @@ export const ToolCallCard = ({ toolCall, defaultExpanded = false }: ToolCallCard
 
           {toolCall.result && (
             <div className="px-3 py-3">
-              <div className="press-eyebrow mb-1.5 text-text-muted">
-                Result
-              </div>
+              <div className="press-eyebrow mb-1.5 text-text-muted">Result</div>
               <div className="max-h-[400px] overflow-y-auto rounded-lg border border-border-subtle bg-base">
                 <pre className="p-2 font-mono text-xs whitespace-pre-wrap text-text-secondary">
                   {toolCall.result.length > 3000

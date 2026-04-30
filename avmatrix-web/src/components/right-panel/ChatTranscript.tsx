@@ -1,10 +1,5 @@
 import { memo, type MutableRefObject } from 'react';
-import {
-  User,
-  Loader2,
-  AlertTriangle,
-  ArrowDown,
-} from '@/lib/lucide-icons';
+import { User, Loader2, AlertTriangle, ArrowDown } from '@/lib/lucide-icons';
 import type { ChatMessage } from '../../core/llm/types.local-runtime';
 import { ToolCallCard } from '../ToolCallCard';
 import { MarkdownRenderer } from '../MarkdownRenderer';
@@ -51,7 +46,7 @@ export const ChatTranscript = memo(function ChatTranscript({
     <>
       {isAgentInitializing && (
         <div className="flex items-center justify-end gap-2 border-b border-border-subtle bg-base px-4 py-2">
-          <span className="press-badge flex items-center gap-1 border-border-default bg-surface px-2 py-1 text-[11px] text-text-secondary normal-case tracking-normal">
+          <span className="press-badge flex items-center gap-1 border-border-default bg-surface px-2 py-1 text-[11px] tracking-normal text-text-secondary normal-case">
             <Loader2 className="h-3 w-3 animate-spin" /> Connecting
           </span>
         </div>
@@ -70,8 +65,7 @@ export const ChatTranscript = memo(function ChatTranscript({
             <p className="press-eyebrow mb-2">AI assistant</p>
             <h3 className="press-title mb-2 text-2xl">Ask me anything</h3>
             <p className="press-reading mb-5 text-center text-text-secondary">
-              I can help you understand the architecture, find functions, or explain
-              connections.
+              I can help you understand the architecture, find functions, or explain connections.
             </p>
             <div className="flex flex-wrap justify-center gap-2">
               {CHAT_SUGGESTIONS.map((suggestion) => (
@@ -109,9 +103,7 @@ export const ChatTranscript = memo(function ChatTranscript({
                 {message.role === 'assistant' && (
                   <div className="max-w-[92%]">
                     <div className="mb-3 flex items-center gap-2">
-                      <span className="press-eyebrow text-text-secondary">
-                        My AI
-                      </span>
+                      <span className="press-eyebrow text-text-secondary">My AI</span>
                       {isChatLoading && message === chatMessages[chatMessages.length - 1] && (
                         <Loader2 className="h-3 w-3 animate-spin text-border-strong" />
                       )}
@@ -131,10 +123,7 @@ export const ChatTranscript = memo(function ChatTranscript({
                               )}
                               {step.type === 'tool_call' && step.toolCall && (
                                 <div className="mb-3">
-                                  <ToolCallCard
-                                    toolCall={step.toolCall}
-                                    defaultExpanded={false}
-                                  />
+                                  <ToolCallCard toolCall={step.toolCall} defaultExpanded={false} />
                                 </div>
                               )}
                               {step.type === 'content' && step.content && (

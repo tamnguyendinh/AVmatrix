@@ -3,7 +3,6 @@ import type {
   ResolvedSessionRepo,
   SessionChatRequest,
   SessionRepoBinding,
-  SessionRepoResolution,
   SessionStatusResponse,
 } from 'avmatrix-shared';
 import { SessionJob, SessionRuntimeError } from './session-adapter.js';
@@ -43,7 +42,12 @@ export class RuntimeController {
           ...status,
           repo: {
             ...binding,
-            state: error.code === 'REPO_NOT_FOUND' ? 'not_found' : error.code === 'INDEX_REQUIRED' ? 'index_required' : 'invalid',
+            state:
+              error.code === 'REPO_NOT_FOUND'
+                ? 'not_found'
+                : error.code === 'INDEX_REQUIRED'
+                  ? 'index_required'
+                  : 'invalid',
             message: error.message,
           },
         };
@@ -72,7 +76,12 @@ export class RuntimeController {
       this.cancelSession(existingSessionId, 'Superseded by a newer chat on the same repository');
     }
 
-    const job = new SessionJob(this.adapter.provider, repo.repoName, repo.repoPath, new AbortController());
+    const job = new SessionJob(
+      this.adapter.provider,
+      repo.repoName,
+      repo.repoPath,
+      new AbortController(),
+    );
     this.jobs.set(job.id, job);
     this.activeRepoSessions.set(repo.repoPath, job.id);
 

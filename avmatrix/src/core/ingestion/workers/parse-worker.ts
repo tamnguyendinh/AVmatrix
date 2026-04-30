@@ -843,14 +843,7 @@ const processBatch = (
       if (isLanguageAvailable(language, tsxFiles[0].path)) {
         try {
           setLanguage(language, tsxFiles[0].path);
-          processFileGroup(
-            tsxFiles,
-            language,
-            queryString,
-            result,
-            onFileProcessed,
-            onHeartbeat,
-          );
+          processFileGroup(tsxFiles, language, queryString, result, onFileProcessed, onHeartbeat);
         } catch {
           // parser unavailable — skip this language group
         }

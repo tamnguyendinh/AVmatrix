@@ -215,11 +215,7 @@ export function normalizeServerUrl(input: string): string {
   let url = input.trim().replace(/\/+$/, '');
 
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    if (
-      url.startsWith('localhost') ||
-      url.startsWith('127.0.0.1') ||
-      url.startsWith('[::1]')
-    ) {
+    if (url.startsWith('localhost') || url.startsWith('127.0.0.1') || url.startsWith('[::1]')) {
       url = `http://${url}`;
     } else {
       throw new Error(LOCAL_BACKEND_ERROR);

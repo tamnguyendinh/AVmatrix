@@ -34,9 +34,7 @@ function CopyButton({ text }: { text: string }) {
       onClick={handleCopy}
       aria-label={copied ? 'Copied!' : 'Copy to clipboard'}
       className={`press-ghost-button shrink-0 cursor-pointer px-2 py-1 focus-visible:outline-none ${
-        copied
-          ? 'border-border-default bg-surface text-success'
-          : 'text-text-muted'
+        copied ? 'border-border-default bg-surface text-success' : 'text-text-muted'
       } `}
     >
       {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
@@ -93,11 +91,13 @@ function StepDot({ state, number }: { state: StepState; number: number }) {
     );
   }
   if (state === 'active') {
-      return (
-        <div className="relative flex h-6 w-6 shrink-0 items-center justify-center">
+    return (
+      <div className="relative flex h-6 w-6 shrink-0 items-center justify-center">
         <div className="absolute inset-0 animate-ping rounded-full border border-border-default/40" />
         <div className="flex h-6 w-6 items-center justify-center rounded-full border border-border-strong bg-inset">
-          <span className="text-[10px] leading-none font-semibold text-border-strong">{number}</span>
+          <span className="text-[10px] leading-none font-semibold text-border-strong">
+            {number}
+          </span>
         </div>
       </div>
     );
@@ -144,9 +144,9 @@ function StepRow({
               {title}
             </span>
             {state === 'done' && (
-                <span className="animate-fade-in font-mono text-[10px] tracking-wider text-success uppercase">
-                  done
-                </span>
+              <span className="animate-fade-in font-mono text-[10px] tracking-wider text-success uppercase">
+                done
+              </span>
             )}
           </div>
           {description && (
@@ -208,12 +208,8 @@ export const OnboardingGuide = ({ isPolling }: OnboardingGuideProps) => {
     <div className="press-panel press-ruled relative animate-fade-in overflow-hidden p-8">
       <div className="relative mb-6">
         <div className="text-center">
-          <p className="press-eyebrow mb-3">
-            Vol. XII · Local bridge
-          </p>
-          <h2 className="press-title text-3xl leading-snug">
-            Start AVmatrix locally
-          </h2>
+          <p className="press-eyebrow mb-3">Vol. XII · Local bridge</p>
+          <h2 className="press-title text-3xl leading-snug">Start AVmatrix locally</h2>
           <p className="press-reading mx-auto mt-3 text-center text-text-secondary">
             {isDev
               ? 'Start the local bridge in a separate terminal. The browser stays local and auto-connects when it is ready.'

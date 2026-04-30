@@ -6,13 +6,7 @@
  */
 
 import { useState, useRef, useEffect, useId } from 'react';
-import {
-  FolderOpen,
-  Loader2,
-  Check,
-  ArrowRight,
-  AlertCircle,
-} from '@/lib/lucide-icons';
+import { FolderOpen, Loader2, Check, ArrowRight, AlertCircle } from '@/lib/lucide-icons';
 import {
   pickLocalFolder,
   startAnalyze,
@@ -84,7 +78,7 @@ function DoneState({ repoName }: { repoName: string }) {
         <p className="press-eyebrow text-success">Analysis complete</p>
         <p className="mt-0.5 font-mono text-xs text-text-muted">{repoName}</p>
       </div>
-      <p className="text-xs font-reading text-text-secondary">Loading graph...</p>
+      <p className="font-reading text-xs text-text-secondary">Loading graph...</p>
     </div>
   );
 }
@@ -124,7 +118,9 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
   }, []);
 
   const canSubmit =
-    !isPickingFolder && isLikelyAbsoluteLocalPath(localPath) && (phase === 'input' || phase === 'error');
+    !isPickingFolder &&
+    isLikelyAbsoluteLocalPath(localPath) &&
+    (phase === 'input' || phase === 'error');
 
   const handleChooseRepository = async () => {
     if (isPickingFolder || phase === 'starting' || phase === 'analyzing') return;
@@ -212,10 +208,7 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
       {/* Local folder input */}
       {showInput && (
         <div className="space-y-2">
-          <label
-            htmlFor={`${inputId}-local`}
-            className="press-eyebrow block"
-          >
+          <label htmlFor={`${inputId}-local`} className="press-eyebrow block">
             Repository Folder
           </label>
           <div

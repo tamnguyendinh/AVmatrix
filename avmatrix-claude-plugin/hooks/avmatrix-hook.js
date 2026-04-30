@@ -134,9 +134,9 @@ function runAVmatrixCli(args, cwd, timeout) {
   }
   // npx fallback needs shell on Windows since npx is a .cmd script
   return spawnSync(isWin ? 'npx.cmd' : 'npx', ['-y', 'avmatrix', ...args], {
-      encoding: 'utf-8',
-      timeout: timeout + 5000,
-      cwd,
+    encoding: 'utf-8',
+    timeout: timeout + 5000,
+    cwd,
     stdio: ['pipe', 'pipe', 'pipe'],
   });
 }

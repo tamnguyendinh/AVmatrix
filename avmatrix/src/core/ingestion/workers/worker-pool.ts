@@ -129,8 +129,7 @@ export const createWorkerPool = (workerUrl: URL, poolSize?: number): WorkerPool 
         index,
         worker,
       }));
-      const inactivityTimeoutMs =
-        options.inactivityTimeoutMs ?? DEFAULT_INACTIVITY_TIMEOUT_MS;
+      const inactivityTimeoutMs = options.inactivityTimeoutMs ?? DEFAULT_INACTIVITY_TIMEOUT_MS;
       const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
       let nextUnitId = pending.length;
       let remainingUnits = pending.length;
@@ -308,8 +307,8 @@ export const createWorkerPool = (workerUrl: URL, poolSize?: number): WorkerPool 
         const leftItems = unit.items.slice(0, midpoint);
         const rightItems = unit.items.slice(midpoint);
         const childDepth = unit.retryDepth + 1;
-      const children = [
-        createWorkUnit(leftItems, unit.startIndex, nextUnitId++, childDepth, options),
+        const children = [
+          createWorkUnit(leftItems, unit.startIndex, nextUnitId++, childDepth, options),
           createWorkUnit(
             rightItems,
             unit.startIndex + leftItems.length,
@@ -317,16 +316,16 @@ export const createWorkerPool = (workerUrl: URL, poolSize?: number): WorkerPool 
             childDepth,
             options,
           ),
-      ].filter((child) => child.items.length > 0);
-      pending.unshift(...children);
-      remainingUnits += children.length - 1;
-      if (options.verbose) {
-        console.warn(
-          `[parse-worker] retry unit=${unit.unitId} files=${unit.items.length} retry=${unit.retryDepth}->${childDepth} split=${children.map((child) => `${child.unitId}:${child.items.length}`).join(',')}`,
-        );
-      }
-      return true;
-    };
+        ].filter((child) => child.items.length > 0);
+        pending.unshift(...children);
+        remainingUnits += children.length - 1;
+        if (options.verbose) {
+          console.warn(
+            `[parse-worker] retry unit=${unit.unitId} files=${unit.items.length} retry=${unit.retryDepth}->${childDepth} split=${children.map((child) => `${child.unitId}:${child.items.length}`).join(',')}`,
+          );
+        }
+        return true;
+      };
 
       const handleUnitFailure = (
         state: WorkerState<TInput>,
@@ -435,7 +434,10 @@ function itemSize<TInput>(item: TInput, options: WorkerDispatchOptions<TInput>):
   return typeof content === 'string' ? Buffer.byteLength(content) : 0;
 }
 
-function itemPath<TInput>(item: TInput, options: WorkerDispatchOptions<TInput>): string | undefined {
+function itemPath<TInput>(
+  item: TInput,
+  options: WorkerDispatchOptions<TInput>,
+): string | undefined {
   const explicit = options.getItemPath?.(item);
   if (explicit) return explicit;
   const value = (item as { path?: unknown; filePath?: unknown }).path;

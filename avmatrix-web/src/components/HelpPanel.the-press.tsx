@@ -1,13 +1,5 @@
 import React, { useState } from 'react';
-import {
-  X,
-  GitBranch,
-  Search,
-  Zap,
-  Keyboard,
-  BarChart2,
-  HelpCircle,
-} from 'lucide-react';
+import { X, GitBranch, Search, Zap, Keyboard, BarChart2, HelpCircle } from 'lucide-react';
 
 interface HelpPanelProps {
   isOpen: boolean;
@@ -170,7 +162,10 @@ function TabContent({
               key={label}
               className="flex items-start gap-3 rounded-xl border-[2px] border-border-default bg-base p-3"
             >
-              <span className="mt-1 h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+              <span
+                className="mt-1 h-3 w-3 shrink-0 rounded-full"
+                style={{ backgroundColor: color }}
+              />
               <div>
                 <p className="font-mono text-sm text-text-primary">{label} nodes</p>
                 <p className="font-reading text-sm text-text-secondary">{desc}</p>
@@ -205,8 +200,8 @@ function TabContent({
             <span className="font-mono text-xs text-text-secondary">/</span>
             <Kbd>Ctrl K</Kbd>
           </div>
-          Search by filename, function name, or import path. Matching nodes are highlighted live
-          in the graph.
+          Search by filename, function name, or import path. Matching nodes are highlighted live in
+          the graph.
         </InfoCard>
 
         <InfoCard title="Filter panel" tone="default">
@@ -241,13 +236,12 @@ function TabContent({
         <p className="press-eyebrow text-text-secondary">My AI</p>
 
         <InfoCard title="Semantic ready" tone="success">
-          Your repo is indexed and ready for semantic queries. My AI runs through the local
-          session runtime, so it understands code structure and relationships instead of only file
-          names.
+          Your repo is indexed and ready for semantic queries. My AI runs through the local session
+          runtime, so it understands code structure and relationships instead of only file names.
         </InfoCard>
 
         <div>
-          <p className="mb-2 font-mono text-xs uppercase tracking-[0.16em] text-text-secondary">
+          <p className="mb-2 font-mono text-xs tracking-[0.16em] text-text-secondary uppercase">
             Try asking
           </p>
           <div className="space-y-2">
@@ -259,7 +253,7 @@ function TabContent({
             ].map((q) => (
               <div
                 key={q}
-                className="rounded-xl border-[2px] border-border-default bg-base px-4 py-3 font-reading text-sm italic text-text-primary"
+                className="rounded-xl border-[2px] border-border-default bg-base px-4 py-3 font-reading text-sm text-text-primary italic"
               >
                 “{q}”
               </div>
@@ -268,8 +262,8 @@ function TabContent({
         </div>
 
         <p className="font-reading text-sm leading-relaxed text-text-secondary">
-          Open the prompt from the <span className="font-mono text-text-primary">My AI</span>{' '}
-          button in the top bar.
+          Open the prompt from the <span className="font-mono text-text-primary">My AI</span> button
+          in the top bar.
         </p>
       </div>
     );
@@ -349,7 +343,10 @@ export const HelpPanelThePress = ({ isOpen, onClose, nodeCount, edgeCount }: Hel
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="press-ghost-button rounded-lg p-2 text-text-secondary">
+          <button
+            onClick={onClose}
+            className="press-ghost-button rounded-lg p-2 text-text-secondary"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -369,7 +366,9 @@ export const HelpPanelThePress = ({ isOpen, onClose, nodeCount, edgeCount }: Hel
                         : 'border-[2px] border-transparent text-text-secondary hover:border-border-default hover:bg-base hover:text-text-primary'
                     }`}
                   >
-                    <span className={isActive ? 'text-border-strong' : 'text-text-muted'}>{icon}</span>
+                    <span className={isActive ? 'text-border-strong' : 'text-text-muted'}>
+                      {icon}
+                    </span>
                     <span className="font-mono text-xs">{label}</span>
                   </button>
                 );
@@ -383,7 +382,7 @@ export const HelpPanelThePress = ({ isOpen, onClose, nodeCount, edgeCount }: Hel
         </div>
 
         <div className="flex items-center justify-between border-t-[3px] border-border-default bg-surface px-6 py-3">
-          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-text-secondary">
+          <span className="font-mono text-[11px] tracking-[0.12em] text-text-secondary uppercase">
             AVmatrix · local-first graph explorer
           </span>
           <span className="font-reading text-xs text-text-secondary">

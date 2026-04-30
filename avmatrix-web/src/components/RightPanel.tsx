@@ -60,9 +60,7 @@ export const RightPanel = ({ isOpen, onClose, onRequestAnalyze }: RightPanelProp
         </div>
       )}
 
-      {rightPanelTab === 'chat' && (
-        <ChatPanel onRequestAnalyze={onRequestAnalyze} />
-      )}
+      {rightPanelTab === 'chat' && <ChatPanel onRequestAnalyze={onRequestAnalyze} />}
     </aside>
   );
 };

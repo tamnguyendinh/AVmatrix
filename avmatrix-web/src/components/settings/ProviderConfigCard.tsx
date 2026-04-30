@@ -40,7 +40,9 @@ export const ProviderConfigCard = ({
       <div className="flex items-center justify-between">
         <div>
           <h3 className="press-title text-xl">{title}</h3>
-          {description ? <p className="font-reading text-xs text-text-secondary">{description}</p> : null}
+          {description ? (
+            <p className="font-reading text-xs text-text-secondary">{description}</p>
+          ) : null}
         </div>
       </div>
 
@@ -86,9 +88,7 @@ export const ProviderConfigCard = ({
 
       {model && (
         <div className="space-y-2">
-          <label className="press-eyebrow text-text-secondary">
-            {model.label ?? 'Model'}
-          </label>
+          <label className="press-eyebrow text-text-secondary">{model.label ?? 'Model'}</label>
           <input
             type="text"
             value={model.value}
@@ -96,7 +96,9 @@ export const ProviderConfigCard = ({
             placeholder={model.placeholder}
             className="w-full rounded-xl border-[2px] border-border-default bg-inset px-4 py-3 font-mono text-sm text-text-primary transition-all outline-none placeholder:text-text-muted focus:border-border-strong"
           />
-          {model.helperText ? <p className="font-reading text-xs text-text-secondary">{model.helperText}</p> : null}
+          {model.helperText ? (
+            <p className="font-reading text-xs text-text-secondary">{model.helperText}</p>
+          ) : null}
         </div>
       )}
 

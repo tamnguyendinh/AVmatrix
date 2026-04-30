@@ -84,7 +84,10 @@ function asOptionalTrimmedString(value: unknown): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
-function parseOptionalBoolean(value: unknown, defaultValue: boolean): boolean | ImpactValidationError {
+function parseOptionalBoolean(
+  value: unknown,
+  defaultValue: boolean,
+): boolean | ImpactValidationError {
   if (value === undefined) return defaultValue;
   if (typeof value === 'boolean') return value;
   if (value === 'true') return true;

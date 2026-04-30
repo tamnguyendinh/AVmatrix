@@ -29,7 +29,9 @@ describe('settings', () => {
     expect(JSON.parse(raw)).toEqual({
       maxExecutionFlows: DEFAULT_MAX_EXECUTION_FLOWS,
     });
-    expect(path.dirname(getSettingsPath(tempRepo.dbPath))).toBe(path.join(tempRepo.dbPath, '.avmatrix'));
+    expect(path.dirname(getSettingsPath(tempRepo.dbPath))).toBe(
+      path.join(tempRepo.dbPath, '.avmatrix'),
+    );
   });
 
   it('persists maxExecutionFlows to repo-local settings.json', async () => {
