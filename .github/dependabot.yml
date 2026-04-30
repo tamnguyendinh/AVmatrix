@@ -14,6 +14,10 @@ updates:
     labels:
       - dependencies
       - ci
+    ignore:
+      # Dependabot currently errors on this pinned action; update it manually
+      # so one opaque updater failure does not block other Actions bumps.
+      - dependency-name: anthropics/claude-code-action
 
   # AVmatrix npm deps — tree-sitter grammars checked daily so we catch
   # new releases that unblock the tree-sitter 0.25 upgrade ASAP. Grammars
