@@ -157,17 +157,11 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle>((_, ref) => {
     ref,
     () => ({
       focusNode: (nodeId: string) => {
-        // Also update app state so the selection syncs properly
-        if (graph) {
-          const node = nodeById.get(nodeId);
-          if (node) {
-            setSelectedNode(node);
-          }
-        }
-        focusNode(nodeId);
+        setSigmaSelectedNode(nodeId);
+        handleNodeClick(nodeId);
       },
     }),
-    [focusNode, graph, nodeById, setSelectedNode],
+    [setSigmaSelectedNode, handleNodeClick],
   );
 
   // Update Sigma graph when KnowledgeGraph changes

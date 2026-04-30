@@ -585,12 +585,7 @@ export const useSigma = (options: UseSigmaOptions = {}): UseSigmaReturn => {
     // Skip if already focused on this node (prevents double-click issues)
     const alreadySelected = selectedNodeRef.current === nodeId;
 
-    // Set selection state directly (without the camera nudge from setSelectedNode)
-    selectedNodeRef.current = nodeId;
-    setSelectedNodeState(nodeId);
-    const selectedContext = buildSelectedGraphContext(graph, nodeId);
-    selectedNeighborNodeIdsRef.current = selectedContext.neighborNodeIds;
-    selectedDirectEdgeIdsRef.current = selectedContext.directEdgeIds;
+    setSelectedNode(nodeId);
 
     // Only animate camera if selecting a new node
     if (!alreadySelected) {
@@ -599,7 +594,7 @@ export const useSigma = (options: UseSigmaOptions = {}): UseSigmaReturn => {
     }
 
     sigma.refresh();
-  }, []);
+  }, [setSelectedNode]);
 
   const zoomIn = useCallback(() => {
     sigmaRef.current?.getCamera().animatedZoom({ duration: 200 });
