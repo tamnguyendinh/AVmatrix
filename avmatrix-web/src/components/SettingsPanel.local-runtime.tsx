@@ -1,17 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { X, Server, Brain, Check, AlertCircle, RefreshCw, Loader2 } from '@/lib/lucide-icons';
+import { useCallback, useEffect, useState } from 'react';
+import { X, Server, Brain, RefreshCw, Loader2 } from '@/lib/lucide-icons';
 import type { SessionStatusResponse } from 'avmatrix-shared';
 import {
   fetchSessionStatus,
   SessionClientError,
 } from '../core/llm/session-client';
-import {
-  getLocalRuntimeAvailableModels,
-  getLocalRuntimeProviderDisplayName,
-  loadLocalRuntimeSettings,
-  saveLocalRuntimeSettings,
-} from '../core/llm/settings-service-local-runtime';
-import type { LocalRuntimeSettings } from '../core/llm/settings-service-local-runtime';
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -66,34 +59,54 @@ const repoStateLabel = (status?: SessionStatusResponse['repo']): string => {
 
 const formatRuntimeEnvironment = (status?: SessionStatusResponse | null): string => {
   if (!status) return 'Unknown';
-  return `${status.runtimeEnvironment.toUpperCase()} · ${status.executionMode}`;
+  const runtime =
+    status.runtimeEnvironment === 'wsl2'
+      ? 'WSL2'
+      : status.runtimeEnvironment.charAt(0).toUpperCase() + status.runtimeEnvironment.slice(1);
+  return `${runtime} · ${status.executionMode}`;
 };
 
-const DetailRow = ({ label, value }: { label: string; value: string }) => (
+const DetailRow = ({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: 'success' | 'warning' | 'error';
+}) => (
   <div className="rounded-lg border-[2px] border-border-default bg-base px-3 py-2">
     <p className="press-eyebrow text-text-secondary">{label}</p>
-    <p className="mt-1 font-mono text-sm text-text-primary">{value}</p>
+    <p
+      className={`mt-1 font-mono text-sm font-semibold ${
+        tone === 'success'
+          ? 'text-success'
+          : tone === 'warning'
+            ? 'text-warning'
+            : tone === 'error'
+              ? 'text-error'
+              : 'text-text-primary'
+      }`}
+    >
+      {value}
+    </p>
   </div>
 );
 
 export const SettingsPanel = ({
   isOpen,
   onClose,
-  onSettingsSaved,
   backendUrl,
   isBackendConnected,
-  onBackendUrlChange,
   repoName,
 }: SettingsPanelProps) => {
-  const [settings, setSettings] = useState<LocalRuntimeSettings>(loadLocalRuntimeSettings);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle');
   const [sessionStatus, setSessionStatus] = useState<SessionStatusResponse | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const codexModels = useMemo(() => getLocalRuntimeAvailableModels('codex'), []);
   const tone = availabilityTone[sessionStatus?.availability ?? 'error'];
+  const codexConnected = !statusError && Boolean(sessionStatus?.available && sessionStatus.authenticated);
+  const codexStatusLabel = isCheckingStatus && !sessionStatus ? 'Checking' : codexConnected ? 'Connected' : 'Not connected';
 
   const refreshStatus = useCallback(async () => {
     setIsCheckingStatus(true);
@@ -115,33 +128,9 @@ export const SettingsPanel = ({
   }, [repoName]);
 
   useEffect(() => {
-    return () => {
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
     if (!isOpen) return;
-    setSettings(loadLocalRuntimeSettings());
-    setSaveStatus('idle');
     void refreshStatus();
   }, [isOpen, refreshStatus]);
-
-  const handleSave = () => {
-    try {
-      saveLocalRuntimeSettings(settings);
-      setSaveStatus('saved');
-      onSettingsSaved?.();
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current);
-      }
-      saveTimerRef.current = setTimeout(() => setSaveStatus('idle'), 2000);
-    } catch {
-      setSaveStatus('error');
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -149,17 +138,16 @@ export const SettingsPanel = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="press-panel relative mx-4 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden shadow-[var(--shadow-dropdown)]">
+      <div className="press-panel relative mx-4 flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden shadow-[var(--shadow-dropdown)]">
         <div className="flex items-center justify-between border-b-[3px] border-border-default bg-base px-6 py-5">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl border-[3px] border-border-strong bg-inset">
               <Brain className="h-5 w-5 text-border-strong" />
             </div>
             <div>
-              <p className="press-eyebrow">Session desk</p>
-              <h2 className="press-title text-2xl">Session Settings</h2>
+              <h2 className="press-title text-2xl">AI Runtime</h2>
               <p className="font-reading text-sm text-text-secondary">
-                Configure your local Codex / Claude Code session runtime
+                Local Codex session status
               </p>
             </div>
           </div>
@@ -171,73 +159,47 @@ export const SettingsPanel = ({
           </button>
         </div>
 
-        <div className="flex-1 space-y-6 overflow-y-auto p-6">
-          {backendUrl !== undefined && onBackendUrlChange && (
-            <div className="space-y-3">
-              <label className="press-eyebrow block text-text-secondary">Local Server</label>
-              <div className="space-y-2">
-                <div className="mb-2 flex items-center gap-2">
-                  <Server className="h-4 w-4 text-text-muted" />
-                  <span className="font-reading text-sm text-text-secondary">Backend URL</span>
-                  <span
-                    className={`h-2 w-2 rounded-full ${isBackendConnected ? 'bg-success' : 'bg-error'}`}
-                  />
-                  <span className="text-xs text-text-muted">
-                    {isBackendConnected ? 'Connected' : 'Not connected'}
-                  </span>
-                </div>
-                <input
-                  type="url"
-                  aria-label="Backend URL"
-                  value={backendUrl}
-                  onChange={(e) => onBackendUrlChange(e.target.value)}
-                  placeholder="http://localhost:4747"
-                  className="w-full rounded-xl border-[2px] border-border-default bg-inset px-4 py-3 font-mono text-sm text-text-primary transition-all outline-none placeholder:text-text-muted focus:border-border-strong"
-                />
-                <p className="font-reading text-xs text-text-secondary">
-                  Run <code className="rounded border border-border-subtle bg-surface px-1 py-0.5 font-mono">avmatrix serve</code> to
-                  host the local runtime bridge on this machine.
-                </p>
+        <div className="flex-1 space-y-5 overflow-y-auto p-6">
+          <p className="font-reading text-sm leading-relaxed text-text-secondary">
+            AVmatrix uses the Codex CLI session already available on this machine.
+          </p>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div
+              className={`rounded-xl border-[3px] bg-base p-4 ${
+                codexConnected ? 'border-success' : 'border-border-default'
+              }`}
+            >
+              <p className="press-eyebrow text-text-secondary">Codex Account</p>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <p className="font-mono text-base font-semibold text-text-primary">Codex CLI</p>
+                <span
+                  className={`rounded-full border-[2px] px-3 py-1 font-mono text-xs font-semibold ${
+                    codexConnected
+                      ? 'border-success text-success'
+                      : 'border-border-default text-text-secondary'
+                  }`}
+                >
+                  {codexStatusLabel}
+                </span>
               </div>
             </div>
-          )}
 
-          <div className="space-y-3">
-            <label className="press-eyebrow block text-text-secondary">Session Runtime</label>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="flex items-center gap-3 rounded-xl border-[3px] border-border-strong bg-base p-4 text-text-primary">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg border-[2px] border-border-default bg-surface text-lg">
-                  🧠
-                </div>
-                <div className="min-w-0">
-                  <p className="font-mono font-medium">{getLocalRuntimeProviderDisplayName('codex')}</p>
-                  <p className="font-reading text-xs text-text-secondary">Active in Phase 2</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 rounded-xl border-[3px] border-border-default bg-surface p-4 text-text-secondary opacity-70">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg border-[2px] border-border-subtle bg-base text-lg">
-                  ✨
-                </div>
-                <div className="min-w-0">
-                  <p className="font-mono font-medium">Claude Code</p>
-                  <p className="font-reading text-xs text-text-secondary">Adapter slot reserved</p>
-                </div>
+            <div className="rounded-xl border-[3px] border-border-default bg-surface p-4">
+              <p className="press-eyebrow text-text-secondary">Claude Code Account</p>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <p className="font-mono text-base font-semibold text-text-primary">Claude Code</p>
+                <span className="rounded-full border-[2px] border-border-default px-3 py-1 font-mono text-xs font-semibold text-text-secondary">
+                  Not connected
+                </span>
               </div>
             </div>
-          </div>
-
-          <div className="rounded-xl border-[2px] border-border-default bg-base p-3 font-reading text-xs text-text-secondary">
-            No API keys are stored here. AVmatrix uses your local session runtime and the account
-            already signed in on this machine.
           </div>
 
           <div className="animate-fade-in space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="press-title text-xl">Codex Account</h3>
-                <p className="font-reading text-xs text-text-secondary">
-                  Local session status for the current browser + CLI workflow.
-                </p>
+                <h3 className="press-title text-xl">Connection</h3>
               </div>
               <button
                 type="button"
@@ -254,120 +216,38 @@ export const SettingsPanel = ({
               </button>
             </div>
 
-            <div className={`rounded-xl border-[3px] p-4 ${statusError ? 'border-error bg-base text-text-primary' : tone.panel}`}>
-              <div className="flex items-start gap-3">
-                <div
-                  className={`mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full ${statusError ? 'bg-error' : tone.badge}`}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">
-                    {statusError ? 'Connection failed' : tone.label}
-                  </p>
-                  <p className="mt-1 text-xs leading-relaxed">
-                    {statusError ||
-                      sessionStatus?.message ||
-                      'The local session runtime is ready for chat and tool execution.'}
-                  </p>
+            {statusError && (
+              <div className="rounded-xl border-[3px] border-error bg-base p-4 text-text-primary">
+                <div className="flex items-start gap-3">
+                  <div className="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-error" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">Connection failed</p>
+                    <p className="mt-1 text-xs leading-relaxed">{statusError}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="press-eyebrow text-text-secondary">Model</label>
-              <select
-                aria-label="Model"
-                value={settings.codex?.model ?? 'codex-account'}
-                onChange={(e) =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    activeProvider: 'codex',
-                    codex: { ...prev.codex, model: e.target.value },
-                  }))
-                }
-                className="w-full rounded-xl border-[2px] border-border-default bg-inset px-4 py-3 font-mono text-sm text-text-primary transition-all outline-none focus:border-border-strong"
-              >
-                {codexModels.map((model) => (
-                  <option key={model} value={model}>
-                    {model}
-                  </option>
-                ))}
-              </select>
-              <p className="font-reading text-xs text-text-secondary">
-                The browser stores only the local runtime preference. Authentication stays in the
-                Codex CLI session.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="press-eyebrow text-text-secondary">Temperature</label>
-                <input
-                  type="number"
-                  aria-label="Temperature"
-                  min="0"
-                  max="2"
-                  step="0.1"
-                  value={settings.codex?.temperature ?? 0}
-                  onChange={(e) =>
-                    setSettings((prev) => ({
-                      ...prev,
-                      activeProvider: 'codex',
-                      codex: {
-                        ...prev.codex,
-                        temperature: Number(e.target.value),
-                      },
-                    }))
-                  }
-                  className="w-full rounded-xl border-[2px] border-border-default bg-inset px-4 py-3 font-mono text-sm text-text-primary transition-all outline-none focus:border-border-strong"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="press-eyebrow text-text-secondary">Max Tokens</label>
-                <input
-                  type="number"
-                  aria-label="Max Tokens"
-                  min="0"
-                  step="1"
-                  value={settings.codex?.maxTokens ?? ''}
-                  onChange={(e) =>
-                    setSettings((prev) => ({
-                      ...prev,
-                      activeProvider: 'codex',
-                      codex: {
-                        ...prev.codex,
-                        maxTokens: e.target.value ? Number(e.target.value) : undefined,
-                      },
-                    }))
-                  }
-                  placeholder="Optional"
-                  className="w-full rounded-xl border-[2px] border-border-default bg-inset px-4 py-3 font-mono text-sm text-text-primary transition-all outline-none placeholder:text-text-muted focus:border-border-strong"
-                />
-              </div>
-            </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <DetailRow
-                label="Account"
-                value={
-                  sessionStatus
-                    ? sessionStatus.authenticated
-                      ? 'Signed in'
-                      : 'Not signed in'
-                    : 'Unknown'
-                }
+                label="Local Server"
+                value={isBackendConnected ? 'Connected' : 'Not connected'}
+                tone={isBackendConnected ? 'success' : 'error'}
               />
               <DetailRow
-                label="Runtime"
-                value={formatRuntimeEnvironment(sessionStatus)}
+                label="Codex CLI"
+                value={tone.label}
+                tone={sessionStatus?.availability === 'ready' ? 'success' : 'warning'}
+              />
+              <DetailRow
+                label="Account"
+                value={sessionStatus ? (sessionStatus.authenticated ? 'Signed in' : 'Not signed in') : 'Unknown'}
+                tone={sessionStatus?.authenticated ? 'success' : 'warning'}
               />
               <DetailRow
                 label="Repository"
                 value={repoStateLabel(sessionStatus?.repo)}
-              />
-              <DetailRow
-                label="Version"
-                value={sessionStatus?.version ?? 'Unknown'}
+                tone={sessionStatus?.repo?.state === 'indexed' ? 'success' : 'warning'}
               />
             </div>
 
@@ -377,60 +257,38 @@ export const SettingsPanel = ({
                 session. The runtime will not auto-index from the chat path.
               </div>
             )}
+          </div>
 
-            {sessionStatus?.executablePath && (
-              <div className="rounded-xl border-[2px] border-border-default bg-base p-3">
-                <p className="press-eyebrow text-text-muted">Executable</p>
-                <p className="mt-1 break-all font-mono text-xs text-text-secondary">
-                  {sessionStatus.executablePath}
-                </p>
-              </div>
-            )}
+          <div className="space-y-3">
+            <h3 className="press-title text-xl">Runtime Details</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <DetailRow label="Mode" value={formatRuntimeEnvironment(sessionStatus)} />
+              <DetailRow label="Version" value={sessionStatus?.version ?? 'Unknown'} />
+              <DetailRow label="Executable" value={sessionStatus?.executablePath ?? 'Unknown'} />
+              <DetailRow label="Backend URL" value={backendUrl ?? 'http://localhost:4747'} />
+            </div>
           </div>
 
           <div className="rounded-xl border-[3px] border-border-default bg-base p-4">
             <div className="flex gap-3">
               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border-[2px] border-border-default bg-surface text-success">
-                🔒
+                <Server className="h-4 w-4" />
               </div>
               <div className="font-reading text-xs leading-relaxed text-text-secondary">
-                <span className="font-medium text-text-secondary">Privacy:</span> AVmatrix keeps
-                only lightweight UI settings in browser storage. Repository data stays on this
-                machine, and no AVmatrix-hosted proxy is involved in the session path.
+                Local only. AVmatrix does not store API keys or route chat through an AVmatrix
+                cloud service.
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between border-t-[3px] border-border-default bg-base px-6 py-4">
-          <div className="flex items-center gap-2 text-sm">
-            {saveStatus === 'saved' && (
-              <span className="flex animate-fade-in items-center gap-1.5 text-success">
-                <Check className="h-4 w-4" />
-                Settings saved
-              </span>
-            )}
-            {saveStatus === 'error' && (
-              <span className="flex animate-fade-in items-center gap-1.5 text-error">
-                <AlertCircle className="h-4 w-4" />
-                Failed to save
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onClose}
-              className="press-ghost-button px-4 py-2 text-sm text-text-secondary"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              className="press-filled-button rounded-lg px-5 py-2 text-sm font-medium"
-            >
-              Save Settings
-            </button>
-          </div>
+        <div className="flex items-center justify-end border-t-[3px] border-border-default bg-base px-6 py-4">
+          <button
+            onClick={onClose}
+            className="press-filled-button rounded-lg px-5 py-2 text-sm font-medium"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>
