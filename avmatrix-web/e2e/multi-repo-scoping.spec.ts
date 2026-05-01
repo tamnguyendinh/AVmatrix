@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
  * E2E tests for multi-repo scoping and URL persistence.
  *
  * Verifies that:
- * - Connecting via ?server= loads data and sets ?project= in the URL
+ * - Connecting via ?server=&project= loads repo-scoped data
  * - The repo name appears in the UI after connecting
  * - F5 with ?server=&project= reconnects to the correct repo
  *
@@ -68,17 +68,20 @@ test.beforeAll(async () => {
 // server-connect.spec.ts which has been stable on the same backend.
 const READY_TIMEOUT_MS = 45_000;
 
+function graphUrl(repoName = firstRepoName) {
+  return `${FRONTEND_URL}/?server=${encodeURIComponent(BACKEND_URL)}&project=${encodeURIComponent(repoName)}`;
+}
+
 test.describe('Multi-Repo Scoping', () => {
-  test('auto-connect via ?server= sets ?project= in URL', async ({ page }) => {
-    // Navigate with ?server= param (the bookmarkable shortcut)
-    await page.goto(`/?server=${encodeURIComponent(BACKEND_URL)}`);
+  test('explicit ?server=&project= connects to the repo-scoped graph', async ({ page }) => {
+    await page.goto(graphUrl());
 
     // Wait for graph to load
     await expect(page.locator('[data-testid="status-ready"]')).toBeVisible({
       timeout: READY_TIMEOUT_MS,
     });
 
-    // URL should now contain ?project= with the repo name
+    // URL should contain the explicit repo context.
     const url = new URL(page.url());
     const project = url.searchParams.get('project');
     expect(project).toBeTruthy();
@@ -90,7 +93,7 @@ test.describe('Multi-Repo Scoping', () => {
     // can exceed the default 60s test timeout under parallel workers.
     test.slow();
 
-    await page.goto(`/?server=${encodeURIComponent(BACKEND_URL)}`);
+    await page.goto(graphUrl());
     await expect(page.locator('[data-testid="status-ready"]')).toBeVisible({
       timeout: READY_TIMEOUT_MS,
     });
@@ -107,7 +110,7 @@ test.describe('Multi-Repo Scoping', () => {
   });
 
   test('node count in status bar matches backend data', async ({ page }) => {
-    await page.goto(`/?server=${encodeURIComponent(BACKEND_URL)}`);
+    await page.goto(graphUrl());
     await expect(page.locator('[data-testid="status-ready"]')).toBeVisible({
       timeout: READY_TIMEOUT_MS,
     });

@@ -2880,7 +2880,7 @@ class User : BaseModel<string> {
       expect(typeEnv.constructorBindings[0].calleeName).toBe('UnknownClass');
     });
 
-    it('does NOT emit constructor binding when TypeEnv already resolved', () => {
+    it('emits override constructor binding when TypeEnv already resolved by Kotlin annotation', () => {
       const tree = parse(
         `
         fun main() {
@@ -2890,9 +2890,14 @@ class User : BaseModel<string> {
         Kotlin,
       );
       const typeEnv = buildTypeEnv(tree, 'kotlin');
-      // Explicit annotation resolves it — no unverified binding needed
+      // Explicit annotation resolves it, while the constructor binding lets
+      // downstream call processing prefer the concrete constructor receiver.
       expect(flatGet(typeEnv, 'user')).toBe('User');
-      expect(typeEnv.constructorBindings.find((b) => b.varName === 'user')).toBeUndefined();
+      expect(typeEnv.constructorBindings.find((b) => b.varName === 'user')).toMatchObject({
+        varName: 'user',
+        calleeName: 'User',
+        overrideExisting: true,
+      });
     });
 
     it('returns constructor bindings for Python x = UnknownClass()', () => {

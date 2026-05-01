@@ -6,9 +6,9 @@ import { NODE_TABLES, REL_TYPES } from 'avmatrix-shared';
 // production without exporting private helpers.
 //
 // Source locations:
-//   validLabel / validRelType  -- avmatrix-web/src/core/llm/tools.ts
+//   validLabel / validRelType  -- avmatrix-shared graph schema exports
 //   isSafeId                   -- avmatrix-web/src/components/ProcessesPanel.tsx
-//   readOnly guard (regex)     -- avmatrix-web/src/core/lbug/lbug-adapter.ts
+//   readOnly guard (regex)     -- avmatrix/src/core/lbug/lbug-adapter.ts
 // ---------------------------------------------------------------------------
 
 const validLabel = (label: string): boolean => (NODE_TABLES as readonly string[]).includes(label);

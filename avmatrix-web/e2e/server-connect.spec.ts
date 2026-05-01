@@ -14,8 +14,16 @@ import { test, expect } from '@playwright/test';
 const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:4747';
 const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173';
 
+let firstRepoName = '';
+
 test.beforeAll(async () => {
-  if (process.env.E2E) return;
+  if (process.env.E2E) {
+    const res = await fetch(`${BACKEND_URL}/api/repos`);
+    const repos = await res.json();
+    firstRepoName = repos[0]?.name ?? '';
+    if (!firstRepoName) test.skip(true, 'No indexed repos - run avmatrix analyze first');
+    return;
+  }
   try {
     const [backendRes, frontendRes] = await Promise.allSettled([
       fetch(`${BACKEND_URL}/api/repos`),
@@ -42,6 +50,7 @@ test.beforeAll(async () => {
         test.skip(true, 'No indexed repos — run avmatrix analyze first');
         return;
       }
+      firstRepoName = repos[0].name;
     }
   } catch {
     test.skip(true, 'servers not available');
@@ -49,30 +58,14 @@ test.beforeAll(async () => {
 });
 
 /**
- * Wait for the server-detection flow to complete.
- *
- * The app auto-detects the server, then either:
- *   - shows the landing screen when indexed repos exist, or
- *   - goes straight into analyze onboarding when there are zero repos.
- *
- * For these tests we require at least one indexed repo, so pick the first
- * landing card when present and then wait for the exploring view.
+ * Wait for the repo-scoped graph flow to complete.
+ * The current architecture does not rely on a process-global active repo, so
+ * E2E tests must pass the target repo context explicitly.
  */
 async function waitForGraphLoaded(page: import('@playwright/test').Page) {
-  await page.goto('/');
-
-  const landingCards = page.locator('[data-testid="landing-repo-card"]');
-  const preferredLandingCard = landingCards
-    .filter({ hasText: /avmatrix|local-integration/ })
-    .first();
-  try {
-    await landingCards.first().waitFor({ state: 'visible', timeout: 15_000 });
-    const landingCard =
-      (await preferredLandingCard.count()) > 0 ? preferredLandingCard : landingCards.first();
-    await landingCard.click();
-  } catch {
-    // Landing screen may not appear (e.g. ?server auto-connect)
-  }
+  await page.goto(
+    `${FRONTEND_URL}/?server=${encodeURIComponent(BACKEND_URL)}&project=${encodeURIComponent(firstRepoName)}`,
+  );
 
   const statusBar = page.getByRole('contentinfo');
   await expect(statusBar.getByText('Ready', { exact: true })).toBeVisible({ timeout: 45_000 });
@@ -151,12 +144,12 @@ test.describe('Turn Off All Highlights', () => {
     await fileItem.click();
 
     const highlightToggle = page.locator('[data-testid="ai-highlights-toggle"]');
-    await expect(highlightToggle).toHaveAttribute('title', 'Turn off all highlights', {
+    await expect(highlightToggle).toHaveAttribute('title', 'Turn off AI-driven highlights', {
       timeout: 5_000,
     });
 
     await highlightToggle.click();
-    await expect(highlightToggle).toHaveAttribute('title', 'Turn on AI highlights', {
+    await expect(highlightToggle).toHaveAttribute('title', 'Turn on AI-driven highlights', {
       timeout: 5_000,
     });
   });

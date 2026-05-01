@@ -15,8 +15,16 @@ import { test, expect } from '@playwright/test';
 const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:4747';
 const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173';
 
+let firstRepoName = '';
+
 test.beforeAll(async () => {
-  if (process.env.E2E) return;
+  if (process.env.E2E) {
+    const res = await fetch(`${BACKEND_URL}/api/repos`);
+    const repos = await res.json();
+    firstRepoName = repos[0]?.name ?? '';
+    if (!firstRepoName) test.skip(true, 'No indexed repos');
+    return;
+  }
   try {
     const [backendRes, frontendRes] = await Promise.allSettled([
       fetch(`${BACKEND_URL}/api/repos`),
@@ -42,11 +50,16 @@ test.beforeAll(async () => {
         test.skip(true, 'No indexed repos');
         return;
       }
+      firstRepoName = repos[0].name;
     }
   } catch {
     test.skip(true, 'servers not available');
   }
 });
+
+function graphUrl() {
+  return `${FRONTEND_URL}/?server=${encodeURIComponent(BACKEND_URL)}&project=${encodeURIComponent(firstRepoName)}`;
+}
 
 test.describe('Heartbeat Reconnect', () => {
   test('shows reconnecting banner instead of onboarding reset when heartbeat is unavailable', async ({
@@ -56,16 +69,8 @@ test.describe('Heartbeat Reconnect', () => {
     // immediately on every connection attempt, triggering onReconnecting.
     await page.route('**/api/heartbeat', (route) => route.abort('connectionrefused'));
 
-    // Load the app and connect to a repo (all other endpoints work normally)
-    await page.goto('/');
-
-    const landingCard = page.locator('[data-testid="landing-repo-card"]').first();
-    try {
-      await landingCard.waitFor({ state: 'visible', timeout: 15_000 });
-      await landingCard.click();
-    } catch {
-      // auto-connect may skip the landing screen
-    }
+    // Load the app with an explicit repo context (all other endpoints work normally).
+    await page.goto(graphUrl());
 
     // Wait for graph to load (heartbeat is blocked, but graph loads fine)
     await expect(page.locator('[data-testid="status-ready"]')).toBeVisible({ timeout: 30_000 });
@@ -82,14 +87,7 @@ test.describe('Heartbeat Reconnect', () => {
     // Start with heartbeat blocked
     await page.route('**/api/heartbeat', (route) => route.abort('connectionrefused'));
 
-    await page.goto('/');
-    const landingCard = page.locator('[data-testid="landing-repo-card"]').first();
-    try {
-      await landingCard.waitFor({ state: 'visible', timeout: 15_000 });
-      await landingCard.click();
-    } catch {
-      // auto-connect may skip the landing screen
-    }
+    await page.goto(graphUrl());
 
     await expect(page.locator('[data-testid="status-ready"]')).toBeVisible({ timeout: 30_000 });
 

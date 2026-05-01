@@ -227,7 +227,7 @@ describe('highlight clearing — state management', () => {
     const aiCitationHighlights = new Set(['File:b.ts']);
     const blastRadius = new Set(['Function:c.ts:bar']);
 
-    // Simulate "Turn off all highlights" — clear all sets
+    // Simulate turning off AI-driven highlights by clearing all highlight sets.
     const clearedProcess = new Set<string>();
     const clearedAITool = new Set<string>();
     const clearedAICitation = new Set<string>();

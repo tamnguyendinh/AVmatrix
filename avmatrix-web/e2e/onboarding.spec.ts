@@ -13,19 +13,16 @@ import { test, expect } from '@playwright/test';
  * require a live avmatrix server.
  */
 
-const BACKEND_URL = 'http://localhost:4747';
+const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:4747';
+const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173';
 const ABSOLUTE_LOCAL_PATH = process.platform === 'win32' ? 'C:\\repos\\demo' : '/tmp/demo';
 
-async function enterExploringView(page: import('@playwright/test').Page) {
-  await page.goto('/');
+let firstRepoName = '';
 
-  const landingCard = page.locator('[data-testid="landing-repo-card"]').first();
-  try {
-    await landingCard.waitFor({ state: 'visible', timeout: 15_000 });
-    await landingCard.click();
-  } catch {
-    // Landing screen may not appear (e.g. ?server auto-connect)
-  }
+async function enterExploringView(page: import('@playwright/test').Page) {
+  await page.goto(
+    `${FRONTEND_URL}/?server=${encodeURIComponent(BACKEND_URL)}&project=${encodeURIComponent(firstRepoName)}`,
+  );
 
   // Match the 45s budget used by waitForGraphLoaded() in
   // server-connect.spec.ts; under parallel CI workers, downloading the full
@@ -200,7 +197,7 @@ test.describe('Flow 3: Analyze form', () => {
     await expect(page.getByLabel('Repository Folder')).toBeVisible({ timeout: 20_000 });
 
     // Type an invalid relative path
-    const input = page.locator('input[type="text"]').first();
+    const input = page.getByLabel('Repository Folder');
     await input.fill('not-a-path');
 
     // Analyze button should be visible but disabled
@@ -227,7 +224,7 @@ test.describe('Flow 3: Analyze form', () => {
 
     await expect(page.getByLabel('Repository Folder')).toBeVisible({ timeout: 20_000 });
 
-    const pathInput = page.locator('input[type="text"]').first();
+    const pathInput = page.getByLabel('Repository Folder');
     await pathInput.fill('relative-folder');
     const analyzeButton = page.getByRole('button', { name: /Analyze Repository/i });
     await expect(analyzeButton).toBeDisabled();
@@ -247,7 +244,6 @@ test.describe('Flow 4: Repo dropdown in exploring view', () => {
   test.slow();
 
   test.beforeAll(async () => {
-    if (process.env.E2E) return;
     try {
       const res = await fetch(`${BACKEND_URL}/api/repos`);
       if (!res.ok) {
@@ -259,6 +255,7 @@ test.describe('Flow 4: Repo dropdown in exploring view', () => {
         test.skip(true, 'Server has no indexed repos');
         return;
       }
+      firstRepoName = repos[0].name;
     } catch {
       test.skip(true, SKIP_MSG);
     }

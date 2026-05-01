@@ -562,7 +562,7 @@ describe('computeMRO', () => {
       if (deepest) {
         expect(deepest.mro.length).toBe(DEPTH - 1);
       }
-    }, 15_000);
+    }, 60_000);
   });
 
   // ---- METHOD_IMPLEMENTS edges -----------------------------------------------

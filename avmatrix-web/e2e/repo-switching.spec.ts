@@ -110,7 +110,7 @@ test.describe('Hold-queue timeout error', () => {
       }),
     );
 
-    await page.goto(`/?server=${encodeURIComponent(BACKEND_URL)}`);
+    await page.goto(graphUrl());
 
     // UI should show the 503 error message
     await expect(page.getByText(/taking longer than expected/i)).toBeVisible({
@@ -130,9 +130,13 @@ test.describe('Hold-queue timeout error', () => {
 // server-connect.spec.ts which has been stable on the same backend.
 const READY_TIMEOUT_MS = 45_000;
 
+function graphUrl(repoName = firstRepoName) {
+  return `${FRONTEND_URL}/?server=${encodeURIComponent(BACKEND_URL)}&project=${encodeURIComponent(repoName)}`;
+}
+
 test.describe('?project= URL persistence', () => {
-  test('?project= is set in URL after connecting via ?server=', async ({ page }) => {
-    await page.goto(`/?server=${encodeURIComponent(BACKEND_URL)}`);
+  test('?project= remains in URL after explicit repo-scoped connect', async ({ page }) => {
+    await page.goto(graphUrl());
 
     await expect(page.locator('[data-testid="status-ready"]')).toBeVisible({
       timeout: READY_TIMEOUT_MS,
@@ -150,7 +154,7 @@ test.describe('?project= URL persistence', () => {
     // can exceed the default 60s test timeout under parallel workers.
     test.slow();
 
-    await page.goto(`/?server=${encodeURIComponent(BACKEND_URL)}`);
+    await page.goto(graphUrl());
     await expect(page.locator('[data-testid="status-ready"]')).toBeVisible({
       timeout: READY_TIMEOUT_MS,
     });
@@ -174,9 +178,7 @@ test.describe('?project= auto-connect', () => {
   }, testInfo) => {
     if (!firstRepoName) test.skip(true, 'no repo name available');
 
-    await page.goto(
-      `/?server=${encodeURIComponent(BACKEND_URL)}&project=${encodeURIComponent(firstRepoName)}`,
-    );
+    await page.goto(graphUrl(firstRepoName));
 
     await expect(page.locator('[data-testid="status-ready"]')).toBeVisible({
       timeout: READY_TIMEOUT_MS,
@@ -211,7 +213,7 @@ test.describe('Windows path normalization', () => {
       }),
     );
 
-    await page.goto(`/?server=${encodeURIComponent(BACKEND_URL)}`);
+    await page.goto(graphUrl());
 
     await expect(page.locator('[data-testid="status-ready"]')).toBeVisible({
       timeout: READY_TIMEOUT_MS,

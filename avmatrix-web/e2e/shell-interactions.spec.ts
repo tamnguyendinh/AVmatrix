@@ -5,8 +5,16 @@ const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173';
 const ABSOLUTE_LOCAL_PATH =
   process.platform === 'win32' ? 'C:\\repos\\shell-check' : '/tmp/shell-check';
 
+let firstRepoName = '';
+
 test.beforeAll(async () => {
-  if (process.env.E2E) return;
+  if (process.env.E2E) {
+    const res = await fetch(`${BACKEND_URL}/api/repos`);
+    const repos = await res.json();
+    firstRepoName = repos[0]?.name ?? '';
+    if (!firstRepoName) test.skip(true, 'No indexed repos');
+    return;
+  }
   try {
     const [backendRes, frontendRes] = await Promise.allSettled([
       fetch(`${BACKEND_URL}/api/repos`),
@@ -30,7 +38,9 @@ test.beforeAll(async () => {
       const repos = await backendRes.value.json();
       if (!repos.length) {
         test.skip(true, 'No indexed repos');
+        return;
       }
+      firstRepoName = repos[0].name;
     }
   } catch {
     test.skip(true, 'servers not available');
@@ -38,15 +48,9 @@ test.beforeAll(async () => {
 });
 
 async function waitForGraphLoaded(page: Page) {
-  await page.goto('/');
-
-  const landingCard = page.locator('[data-testid="landing-repo-card"]').first();
-  try {
-    await landingCard.waitFor({ state: 'visible', timeout: 15_000 });
-    await landingCard.click();
-  } catch {
-    // Some flows auto-connect directly.
-  }
+  await page.goto(
+    `${FRONTEND_URL}/?server=${encodeURIComponent(BACKEND_URL)}&project=${encodeURIComponent(firstRepoName)}`,
+  );
 
   await expect(page.locator('[data-testid="status-ready"]')).toBeVisible({ timeout: 45_000 });
 }
@@ -107,7 +111,7 @@ test.describe('Shell interactions', () => {
     await page.getByText('Analyze a new repository...').click();
     await expect(page.getByLabel('Repository Folder')).toBeVisible({ timeout: 5_000 });
 
-    const pathInput = page.locator('input[type="text"]').first();
+    const pathInput = page.getByLabel('Repository Folder');
     await pathInput.fill(ABSOLUTE_LOCAL_PATH);
     await expect(page.getByRole('button', { name: /Analyze Repository/i })).toBeEnabled();
 

@@ -48,7 +48,10 @@ describe('AVmatrix branding on active local surfaces', () => {
     render(<RepoLanding repos={[]} onSelectRepo={() => {}} onAnalyzeComplete={() => {}} />);
 
     expect(screen.getByText('AVmatrix')).toBeInTheDocument();
-    expect(screen.getByText(/Indexed locally by AVmatrix/i)).toBeInTheDocument();
+    expect(screen.getByText('Open Repository')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Local only\. No repository data leaves this machine\./i),
+    ).toBeInTheDocument();
   });
 
   it('uses AVmatrix copy in HelpPanel', () => {
@@ -63,14 +66,14 @@ describe('AVmatrix branding on active local surfaces', () => {
     render(<Header availableRepos={[]} />);
 
     expect(screen.getByText('AVmatrix')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /about avmatrix/i })).toBeInTheDocument();
+    expect(screen.getByTitle('Help')).toBeInTheDocument();
     expect(screen.queryByText('avmatrix')).not.toBeInTheDocument();
   });
 
-  it('routes the header brand action to local help instead of upstream GitHub', () => {
+  it('routes the header help action to local help instead of upstream GitHub', () => {
     render(<Header availableRepos={[]} />);
 
-    fireEvent.click(screen.getByRole('button', { name: /about avmatrix/i }));
+    fireEvent.click(screen.getByTitle('Help'));
 
     expect(setHelpDialogBoxOpen).toHaveBeenCalledWith(true);
   });

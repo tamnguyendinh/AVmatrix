@@ -6,6 +6,7 @@ import { test, expect } from '@playwright/test';
  * Run directly: DEBUG_E2E=1 npx playwright test e2e/debug-issues.spec.ts
  */
 const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:4747';
+const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173';
 const debugTest = process.env.DEBUG_E2E ? test : test.skip;
 
 async function connectToServer(page: import('@playwright/test').Page) {
@@ -13,13 +14,15 @@ async function connectToServer(page: import('@playwright/test').Page) {
     if (msg.type() === 'error') console.log(`[error] ${msg.text()}`);
   });
 
-  await page.goto('/');
-  await page.getByText('Server').click();
-  const serverInput = page.locator('input[name="server-url-input"]');
-  await serverInput.fill(BACKEND_URL);
-  await page.getByRole('button', { name: /Connect/ }).click();
-  await expect(page.locator('[data-testid="status-ready"]')).toBeVisible({ timeout: 30_000 });
-  // Wait for LadybugDB to finish loading — poll isDatabaseReady via process list visibility
+  const repos = await fetch(`${BACKEND_URL}/api/repos`)
+    .then((res) => res.json())
+    .catch(() => []);
+  const firstRepoName = repos[0]?.name ?? '';
+  const url = new URL(FRONTEND_URL);
+  url.searchParams.set('server', BACKEND_URL);
+  if (firstRepoName) url.searchParams.set('project', firstRepoName);
+
+  await page.goto(url.toString());
   await expect(page.locator('[data-testid="status-ready"]')).toBeVisible({ timeout: 30_000 });
 }
 
@@ -27,7 +30,7 @@ debugTest('debug: process view Reset View button', async ({ page }, testInfo) =>
   await connectToServer(page);
 
   // Open Processes tab
-  await page.getByRole('button', { name: 'Nexus AI' }).click();
+  await page.getByRole('button', { name: 'My AI' }).click();
   await page.getByText('Processes').click();
   await expect(page.getByText(/\d+ processes detected/)).toBeVisible({ timeout: 10_000 });
 
