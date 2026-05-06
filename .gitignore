@@ -82,13 +82,9 @@ avmatrix/vendor/**/node_modules/
 /github/scripts/triage/__pycache__/
 
 .claude-flow/
-
-.claude/agents/
-.claude/commands/
-.claude/helpers
-.claude/skills/
-!.claude/skills/avmatrix/
-
+.gitignore
+.claude/
+.claude-plugin/
 .history/
 
 .swarm/
