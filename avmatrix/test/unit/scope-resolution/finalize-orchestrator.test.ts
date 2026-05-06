@@ -118,6 +118,22 @@ describe('finalizeScopeModel: single file', () => {
     expect(out.referenceSites[0]!.name).toBe('save');
   });
 
+  it('aggregates large referenceSite lists without relying on spread argument limits', () => {
+    const referenceSites = Array.from({ length: 150_000 }, (_, index) => ({
+      name: `ref${index}`,
+      atRange: { startLine: index + 1, startCol: 0, endLine: index + 1, endCol: 4 },
+      inScope: 'scope:a.ts#module',
+      kind: 'call' as const,
+    }));
+    const file = mkFile('a.ts', { referenceSites });
+
+    const out = finalizeScopeModel([file]);
+
+    expect(out.referenceSites).toHaveLength(referenceSites.length);
+    expect(out.referenceSites[0]!.name).toBe('ref0');
+    expect(out.referenceSites.at(-1)!.name).toBe('ref149999');
+  });
+
   it('builds MethodDispatchIndex from inherits reference sites', () => {
     const baseClass = mkDef('def:Base', 'models.ts', 'Base');
     const childClass = mkDef('def:Child', 'models.ts', 'Child');

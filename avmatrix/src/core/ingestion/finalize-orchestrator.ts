@@ -121,7 +121,7 @@ export function finalizeScopeModel(
     moduleEntries.push({ filePath: file.filePath, moduleScopeId: file.moduleScope });
   }
   // References kept out of the loop above to centralize list-init.
-  allReferenceSites.push(...collectReferenceSites(parsedFiles));
+  appendAll(allReferenceSites, collectReferenceSites(parsedFiles));
 
   const scopeTree = buildScopeTree(allScopes);
   const defs = buildDefIndex(allDefs);
@@ -292,6 +292,10 @@ function appendUnique(map: Map<DefId, DefId[]>, owner: DefId, target: DefId): vo
   const bucket = map.get(owner) ?? [];
   if (!bucket.includes(target)) bucket.push(target);
   map.set(owner, bucket);
+}
+
+function appendAll<T>(target: T[], items: readonly T[]): void {
+  for (const item of items) target.push(item);
 }
 
 function isDispatchOwner(def: SymbolDefinition): boolean {

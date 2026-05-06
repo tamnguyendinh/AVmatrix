@@ -712,7 +712,8 @@ function unwrapAwaitExpression(node: SyntaxNode): SyntaxNode {
 function isCallFunctionMember(node: SyntaxNode): boolean {
   const parent = node.parent;
   if (parent?.type !== 'call_expression') return false;
-  return parent.childForFieldName('function') === node;
+  const fn = parent.childForFieldName('function');
+  return fn !== null && isSameSyntaxNode(fn, node);
 }
 
 function memberAccessKind(node: SyntaxNode): 'read' | 'write' {
@@ -724,11 +725,15 @@ function memberAccessKind(node: SyntaxNode): 'read' | 'write' {
     parent.type === 'augmented_assignment_expression'
   ) {
     const left = parent.childForFieldName('left') ?? parent.namedChild(0);
-    return left === node ? 'write' : 'read';
+    return left !== null && isSameSyntaxNode(left, node) ? 'write' : 'read';
   }
 
   if (parent.type === 'update_expression') return 'write';
   return 'read';
+}
+
+function isSameSyntaxNode(a: SyntaxNode, b: SyntaxNode): boolean {
+  return a.type === b.type && a.startIndex === b.startIndex && a.endIndex === b.endIndex;
 }
 
 function countArguments(args: SyntaxNode | null): number | undefined {
@@ -761,7 +766,7 @@ function firstDescendantOfType(node: SyntaxNode, type: string): SyntaxNode | und
 function descendantsOfType(node: SyntaxNode, type: string): SyntaxNode[] {
   const out: SyntaxNode[] = [];
   walk(node, (candidate) => {
-    if (candidate !== node && candidate.type === type) out.push(candidate);
+    if (!isSameSyntaxNode(candidate, node) && candidate.type === type) out.push(candidate);
   });
   return out;
 }

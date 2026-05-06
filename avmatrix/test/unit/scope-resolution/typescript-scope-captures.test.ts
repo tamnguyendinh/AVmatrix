@@ -215,6 +215,55 @@ class Service {
     expect(returnTypeRefs).toHaveLength(3);
   });
 
+  it('does not emit duplicate read facts for member calls and classifies writes by stable node range', () => {
+    const source = `
+class User {
+  name = '';
+  save() {}
+}
+
+function run(user: User) {
+  user.save();
+  user.name = 'Ada';
+  user.name++;
+}
+`;
+    const tree = parser.parse(source);
+    const result = extractParsedFileWithStats(
+      typescriptProvider,
+      source,
+      'src/member-access.ts',
+      SupportedLanguages.TypeScript,
+      tree.rootNode,
+    );
+
+    expect(result.mode).toBe('ast-reused');
+    const parsed = result.parsedFile;
+    expect(parsed).toBeDefined();
+
+    expect(
+      parsed!.referenceSites.filter(
+        (site) =>
+          site.kind === 'call' &&
+          site.name === 'save' &&
+          site.callForm === 'member' &&
+          site.explicitReceiver?.name === 'user',
+      ),
+    ).toHaveLength(1);
+    expect(
+      parsed!.referenceSites.filter(
+        (site) =>
+          site.kind === 'read' && site.name === 'save' && site.explicitReceiver?.name === 'user',
+      ),
+    ).toHaveLength(0);
+    expect(
+      parsed!.referenceSites.filter(
+        (site) =>
+          site.kind === 'write' && site.name === 'name' && site.explicitReceiver?.name === 'user',
+      ),
+    ).toHaveLength(2);
+  });
+
   it('emits interface property and type-alias RHS facts from the already-parsed AST', () => {
     const source = `
 class User {}
