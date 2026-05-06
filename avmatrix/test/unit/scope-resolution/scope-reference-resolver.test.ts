@@ -424,6 +424,57 @@ function run(result: PipelineResult) {
     });
   });
 
+  it('resolves calls to function-valued properties on chained receivers', () => {
+    const source = `
+interface Graph {
+  forEachNode: () => Graph;
+}
+
+interface PipelineResult {
+  graph: Graph;
+}
+
+function run(result: PipelineResult) {
+  result.graph.forEachNode();
+}
+`;
+    const parsed = extractParsedFileWithStats(
+      typescriptProvider,
+      source,
+      'src/callable-property-receiver.ts',
+      SupportedLanguages.TypeScript,
+      parser.parse(source).rootNode,
+    ).parsedFile;
+    expect(parsed).toBeDefined();
+
+    const indexes = finalizeScopeModel([parsed!]);
+    const result = resolveScopeReferenceSites(indexes);
+
+    const forEachNode = parsed!.localDefs.find(
+      (def) => def.type === 'Property' && def.qualifiedName === 'Graph.forEachNode',
+    );
+    const graphProperty = parsed!.localDefs.find(
+      (def) => def.type === 'Property' && def.qualifiedName === 'PipelineResult.graph',
+    );
+    expect(forEachNode).toBeDefined();
+    expect(graphProperty).toBeDefined();
+
+    expect(
+      result.referenceIndex.byTargetDef.get(forEachNode!.nodeId)?.map((ref) => ref.kind),
+    ).toEqual(['call']);
+    expect(
+      result.referenceIndex.byTargetDef.get(graphProperty!.nodeId)?.map((ref) => ref.kind),
+    ).toEqual(['read']);
+    expect(result.stats).toMatchObject({
+      totalReferenceSites: 5,
+      resolvedReferences: 5,
+      unresolvedReferences: 0,
+      resolvedCalls: 1,
+      resolvedAccesses: 1,
+      resolvedTypeReferences: 3,
+    });
+  });
+
   it('resolves interface property reads and type-alias RHS type references', () => {
     const source = `
 class User {}

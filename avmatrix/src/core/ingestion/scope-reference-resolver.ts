@@ -422,7 +422,16 @@ function bestResolutionForSite(
         ctx.methodRegistry.lookup(site.name, site.inScope, methodOptions(site))[0]
       );
     }
-    return ctx.methodRegistry.lookup(site.name, site.inScope, methodOptions(site))[0];
+    return (
+      ctx.methodRegistry.lookup(site.name, site.inScope, methodOptions(site))[0] ??
+      ctx.fieldRegistry
+        .lookup(site.name, site.inScope, {
+          ...(site.explicitReceiver !== undefined
+            ? { explicitReceiver: site.explicitReceiver }
+            : {}),
+        })
+        .find((resolution) => isCallablePropertyDefinition(resolution.def))
+    );
   }
 
   if (site.kind === 'read' || site.kind === 'write') {
@@ -579,6 +588,13 @@ function methodOptions(site: ReferenceSite) {
     ...(site.arity !== undefined ? { callsite: { arity: site.arity } } : {}),
     ...(site.explicitReceiver !== undefined ? { explicitReceiver: site.explicitReceiver } : {}),
   };
+}
+
+function isCallablePropertyDefinition(def: SymbolDefinition): boolean {
+  if (def.type !== 'Property' && def.type !== 'Variable' && def.type !== 'Const') return false;
+  const declaredType = def.declaredType;
+  if (declaredType === undefined) return false;
+  return /\bFunction\b|=>|\([^)]*\)\s*:/.test(declaredType);
 }
 
 function buildOwnedMemberIndex(

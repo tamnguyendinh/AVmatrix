@@ -278,6 +278,7 @@ Use this checklist to update implementation progress. Do not mark the target arc
 - [x] Move the TypeScript/JavaScript imported exported-variable receiver propagation path into `resolutionPhase`, for example `service.ts` exports `const user = getUser()` and `app.ts` imports `user; user.save()` without a second source read or AST parse.
 - [x] Add a diagnostic `--skip-legacy-cross-file` benchmark mode that keeps the phase boundary and accumulator disposal but skips legacy source reread/reprocess work, so scope-only graph parity can be measured directly.
 - [x] Resolve TypeScript/JavaScript chained field receivers through finalized field type facts, for example `result.graph.forEachNode()` where `result: PipelineResult` and `PipelineResult.graph: Graph`.
+- [x] Resolve TypeScript/JavaScript calls to function-valued properties through the scope graph, for example `forEachNode: () => Graph` followed by `result.graph.forEachNode()`.
 - [ ] Move useful `crossFilePhase` type propagation into `resolutionPhase`.
 - [ ] Retire or narrow `crossFilePhase` only after parity is proven.
 - [x] Add duplicate-edge checks so legacy and scope-aware paths do not emit overlapping edges.
@@ -314,6 +315,8 @@ Current benchmark artifact:
 - `reports/benchmark/2026-05-07-avmatrix-scope-only-crossfile-skip-gitnexus-main.json`
 - `reports/benchmark/2026-05-07-avmatrix-chained-receiver-scope-gitnexus-main.json`
 - `reports/benchmark/2026-05-07-avmatrix-chained-receiver-scope-only-crossfile-skip-gitnexus-main.json`
+- `reports/benchmark/2026-05-07-avmatrix-callable-property-scope-gitnexus-main.json`
+- `reports/benchmark/2026-05-07-avmatrix-callable-property-scope-only-crossfile-skip-gitnexus-main.json`
 - Target: `E:\Lap_trinh\GitNexus-main` using `--skip-git` because that local copy has no `.git` directory.
 - Runtime command used built AVmatrix CLI with `--skip-agents-md --no-stats --benchmark-json` and `node --stack-size=4096`; the default stack failed in parse with `Maximum call stack size exceeded`, so the stack-size requirement is part of the recorded run context.
 - Result: `110714.1ms` total wall time, `847` files, `19538` nodes, `31037` persisted relationships.
@@ -342,6 +345,8 @@ Current benchmark artifact:
 - `reports/benchmark/2026-05-07-avmatrix-scope-only-crossfile-skip-gitnexus-main.json` records the first diagnostic scope-only run with `--skip-legacy-cross-file`. It removed `18990ms` of crossFile work and improved wall time by `19.1%`, but raw graph parity failed (`graphDiffs=9`, `CALLS` `5550 -> 5112`, process/community counts changed). A pipeline-level audit with graph phases skipped showed `438` missing raw `CALLS`; `424` were duplicate-only semantic keys and `14` semantic call keys were absent. Therefore this flag is a measurement tool only, not a default path, until the remaining unique gaps are either resolved by scope facts or classified as legacy false positives with an explicit accuracy decision.
 - `reports/benchmark/2026-05-07-avmatrix-chained-receiver-scope-gitnexus-main.json` records the chained receiver slice. Scope lookup can now resolve receiver owners through finalized field types for dotted receivers such as `result.graph.forEachNode()` without source rereads. The targeted fixture proves the `Graph.forEachNode` call and `PipelineResult.graph` read both resolve. On `E:\Lap_trinh\GitNexus-main`, persisted graph counts stayed identical to the imported exported-variable slice (`graphDiffs=0`), while scope resolution improved by `+41` resolved references and `-41` unresolved references (`resolvedReferences=14586`, `unresolvedReferences=112999`). Wall time was `112344.7ms`, crossFile was `19085ms`, and resolution was `1483ms`; treat the wall-time increase as single-run noise plus extra lookup work, not a speedup claim.
 - `reports/benchmark/2026-05-07-avmatrix-chained-receiver-scope-only-crossfile-skip-gitnexus-main.json` repeats the diagnostic scope-only run after chained receiver support. It still fails raw parity (`graphDiffs=9`, `CALLS` `5550 -> 5112`) while saving `19085ms` of crossFile work and improving wall time by `17.0%`. This confirms that the next work is not to skip crossFile wholesale; it is to close or classify the remaining non-duplicate semantic gaps, then narrow the legacy phase only where parity is proven.
+- `reports/benchmark/2026-05-07-avmatrix-callable-property-scope-gitnexus-main.json` records the callable-property slice. Scope `CALLS` resolution now falls back to function-valued `Property`/`Variable`/`Const` definitions only when their `declaredType` is callable, so TypeScript interface properties such as `forEachNode: () => Graph` can be call targets without source rereads. The targeted fixture proves `result.graph.forEachNode()` resolves to the callable property and keeps the chained `graph` read resolved. On `E:\Lap_trinh\GitNexus-main`, scope resolution improved by `+282` resolved calls and `-282` unresolved references (`resolvedReferences=14868`, `unresolvedReferences=112717`). The graph gained `+4 CALLS` and one process change, so this is an accuracy-increasing slice rather than a parity-only optimization. Wall time was `109156.7ms`, crossFile was `19111ms`, and resolution was `1978ms`.
+- `reports/benchmark/2026-05-07-avmatrix-callable-property-scope-only-crossfile-skip-gitnexus-main.json` repeats the diagnostic scope-only run after callable-property support. It still fails raw parity (`graphDiffs=9`, `CALLS` `5554 -> 5116`) while saving `19110ms` of crossFile work and improving wall time by `18.9%`. Because scope-only counters are now identical between default and skip runs, the remaining default/skip delta is legacy graph emission, duplicate relationships, process derivation effects, or semantic gaps outside current scope facts.
 
 Full build for UI/manual validation through `Start-AVmatrix.html`:
 
@@ -351,10 +356,10 @@ powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1
 
 This script builds `avmatrix`, builds `avmatrix-web`, builds `avmatrix-launcher\AVmatrixLauncher.exe`, builds `avmatrix-launcher\server-bundle\avmatrix-server.exe`, copies `node.exe`, copies the web build to `avmatrix-launcher\web-dist\`, and registers the `avmatrix://` protocol. A CLI-only `cd avmatrix && npm run build` is not enough before asking the user to test through the root launcher HTML.
 
-Latest validation after the chained receiver and diagnostic crossFile-skip slice:
+Latest validation after the callable-property scope slice:
 
 - Full launcher build passed with `powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1`.
-- Targeted unit tests passed cleanly: `23/23` across `cross-file.test.ts` and `scope-reference-resolver.test.ts`, including the diagnostic skip option, imported exported-variable receiver propagation, and chained field receiver resolution.
+- Targeted unit scope-reference resolver tests passed cleanly: `21/21`, including imported exported-variable receiver propagation, chained field receiver resolution, and function-valued property calls.
 - Full `cd avmatrix && npm test` passed for this slice. The accepted captured log contained no `Unhandled Errors`, `Unhandled Error`, `Worker vmForks emitted error`, `Worker exited unexpectedly`, `Test Files .*failed`, `Tests .*failed`, or `FAIL` patterns.
 
 ### Milestone 1: Baseline And Parity Targets
