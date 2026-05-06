@@ -19,6 +19,8 @@ interface ScopeCaptureContext {
   readonly importedLocalNames: ReadonlySet<string>;
 }
 
+const JSDOC_PARAM_RE = /@param\s*\{([^}]+)\}\s+\[?(\w+)[\]=]?[^\s]*/g;
+
 export function emitTsJsScopeCapturesFromTree(
   input: ScopeCaptureTreeInput,
 ): readonly CaptureMatch[] {
@@ -294,6 +296,10 @@ function emitTypeBinding(
   out: CaptureMatch[],
   context: ScopeCaptureContext,
 ): void {
+  if (node.type === 'function_declaration' || node.type === 'method_definition') {
+    emitJsDocParamTypeBindings(node, out);
+  }
+
   if (node.type === 'required_parameter' || node.type === 'optional_parameter') {
     const nameNode = node.childForFieldName('pattern') ?? firstIdentifierChild(node);
     const typeNode = node.childForFieldName('type');
@@ -406,6 +412,18 @@ function emitTypeBinding(
   if (isFunctionScopeNode(node)) {
     const returnTypeNode = node.childForFieldName('return_type');
     if (returnTypeNode !== null) emitTypeReferenceMatches(returnTypeNode, out);
+  }
+}
+
+function emitJsDocParamTypeBindings(node: SyntaxNode, out: CaptureMatch[]): void {
+  const params = jsDocParamTypesFor(node);
+  if (params.size === 0) return;
+
+  for (const [paramName, typeName] of params) {
+    const nameNode = parameterNameNodeForCallable(node, paramName);
+    if (nameNode === undefined) continue;
+    out.push(syntheticTypeBindingMatch(node, paramName, typeName, 'parameter-annotation'));
+    out.push(syntheticTypeReferenceMatch(node, typeName));
   }
 }
 
@@ -527,6 +545,61 @@ function declaredTypeNameForNode(node: SyntaxNode): string | undefined {
 function callableName(node: SyntaxNode): string | undefined {
   const name = node.childForFieldName('name');
   return name?.text;
+}
+
+function jsDocParamTypesFor(node: SyntaxNode): Map<string, string> {
+  const commentTexts: string[] = [];
+  let sibling = node.previousSibling;
+  while (sibling !== null) {
+    if (sibling.type === 'comment') {
+      commentTexts.unshift(sibling.text);
+    } else if (sibling.isNamed && sibling.type !== 'decorator') {
+      break;
+    }
+    sibling = sibling.previousSibling;
+  }
+
+  const params = new Map<string, string>();
+  if (commentTexts.length === 0) return params;
+
+  JSDOC_PARAM_RE.lastIndex = 0;
+  const commentBlock = commentTexts.join('\n');
+  let match: RegExpExecArray | null;
+  while ((match = JSDOC_PARAM_RE.exec(commentBlock)) !== null) {
+    const typeName = normalizeJsDocTypeName(match[1] ?? '');
+    const paramName = match[2];
+    if (typeName !== undefined && paramName !== undefined) params.set(paramName, typeName);
+  }
+  return params;
+}
+
+function normalizeJsDocTypeName(raw: string): string | undefined {
+  let type = raw.trim();
+  if (type.startsWith('?') || type.startsWith('!')) type = type.slice(1);
+  const parts = type
+    .split('|')
+    .map((part) => part.trim())
+    .filter((part) => part !== 'null' && part !== 'undefined' && part !== 'void');
+  if (parts.length !== 1) return undefined;
+  type = parts[0] ?? '';
+  if (type.startsWith('module:')) type = type.slice('module:'.length);
+  const segments = type.split('.');
+  type = segments[segments.length - 1] ?? '';
+  const generic = type.match(/^(\w+)\s*</);
+  if (generic !== null) type = generic[1] ?? '';
+  return /^\w+$/.test(type) && !BUILTIN_TYPE_NAMES.has(type) ? type : undefined;
+}
+
+function parameterNameNodeForCallable(node: SyntaxNode, paramName: string): SyntaxNode | undefined {
+  const paramsNode =
+    node.childForFieldName('parameters') ?? firstNamedChildOfType(node, 'formal_parameters');
+  if (paramsNode === undefined || paramsNode === null) return undefined;
+  let found: SyntaxNode | undefined;
+  walk(paramsNode, (candidate) => {
+    if (found !== undefined) return;
+    if (candidate.type === 'identifier' && candidate.text === paramName) found = candidate;
+  });
+  return found;
 }
 
 function returnTypeNameFromCallValue(
@@ -787,6 +860,13 @@ function syntheticTypeBindingMatch(
     '@type-binding.name': textCapture('@type-binding.name', anchor, boundName),
     '@type-binding.type': textCapture('@type-binding.type', anchor, typeName),
     '@type-binding.source': textCapture('@type-binding.source', anchor, source),
+  };
+}
+
+function syntheticTypeReferenceMatch(anchor: SyntaxNode, typeName: string): CaptureMatch {
+  return {
+    '@reference.type': capture('@reference.type', anchor),
+    '@reference.name': textCapture('@reference.name', anchor, typeName),
   };
 }
 

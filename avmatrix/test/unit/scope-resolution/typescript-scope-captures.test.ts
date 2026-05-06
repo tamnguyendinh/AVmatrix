@@ -384,6 +384,47 @@ type MaybeUser = User | null;
     expect(typeRefs).toEqual(['Result', 'Task', 'User', 'User']);
   });
 
+  it('emits JSDoc parameter type bindings from comments in the already-parsed AST', () => {
+    const source = `
+class User {
+  save() {}
+}
+
+/**
+ * @param {User} user
+ */
+function run(user) {
+  user.save();
+}
+`;
+    const tree = parser.parse(source);
+    const result = extractParsedFileWithStats(
+      typescriptProvider,
+      source,
+      'src/jsdoc-param.ts',
+      SupportedLanguages.TypeScript,
+      tree.rootNode,
+    );
+
+    expect(result.mode).toBe('ast-reused');
+    const parsed = result.parsedFile;
+    expect(parsed).toBeDefined();
+
+    const userBinding = parsed!.scopes
+      .map((scope) => scope.typeBindings.get('user'))
+      .find((binding) => binding !== undefined);
+    expect(userBinding).toMatchObject({
+      rawName: 'User',
+      source: 'parameter-annotation',
+    });
+
+    expect(
+      parsed!.referenceSites.filter(
+        (site) => site.kind === 'type-reference' && site.name === 'User',
+      ),
+    ).toHaveLength(1);
+  });
+
   it('infers local variable type bindings from local function return annotations', () => {
     const source = `
 class User {}

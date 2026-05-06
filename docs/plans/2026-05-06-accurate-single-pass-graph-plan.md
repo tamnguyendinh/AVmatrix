@@ -274,6 +274,7 @@ Use this checklist to update implementation progress. Do not mark the target arc
 - [x] Move a TypeScript/JavaScript object-pattern destructuring propagation slice into AST-reused scope facts with `field-access`, for example `const { profile } = user; profile.save()`.
 - [x] Move a TypeScript/JavaScript object-pattern call-result propagation slice into AST-reused scope facts with synthetic receivers, for example `const { profile } = await makeUser(); profile.save()` and `const { profile } = provider.getUser(); profile.save()`.
 - [x] Move a TypeScript/JavaScript for-of variable element propagation slice into AST-reused scope facts, for example `const users = listUsers(); for (const user of users) user.save()`.
+- [x] Move TypeScript/JavaScript JSDoc `@param` receiver type propagation into AST-reused scope facts, for example `/** @param {User} user */ function run(user) { user.save(); }`.
 - [ ] Move useful `crossFilePhase` type propagation into `resolutionPhase`.
 - [ ] Retire or narrow `crossFilePhase` only after parity is proven.
 - [x] Add duplicate-edge checks so legacy and scope-aware paths do not emit overlapping edges.
@@ -285,6 +286,7 @@ Use this checklist to update implementation progress. Do not mark the target arc
 - [x] Validate targeted parity fixtures and audit persistence tests cleanly.
 - [x] Make aggregate full `cd avmatrix && npm test` pass without Vitest worker-fork unhandled errors on Windows.
 - [x] Keep `local-backend.test.ts` in the single-process forked Vitest path so native DB full-suite validation stays clean on Windows.
+- [x] Keep `api-impact-e2e.test.ts` in the single-process forked Vitest path so hidden `vmForks` worker exits do not invalidate full-suite validation on Windows.
 - [x] Define full UI validation build as `avmatrix-launcher\build.ps1`, not CLI-only build.
 - [x] Add TypeScript/JavaScript AST-reused interface property signatures and type-alias RHS type-reference facts.
 - [x] Add a precomputed owner-member index for receiver method/field dispatch so expanded scope facts do not force O(total defs) member scans per lookup.
@@ -304,6 +306,7 @@ Current benchmark artifact:
 - `reports/benchmark/2026-05-07-avmatrix-for-of-variable-element-gitnexus-main.json`
 - `reports/benchmark/2026-05-07-avmatrix-resolution-workers-gitnexus-main.json`
 - `reports/benchmark/2026-05-07-avmatrix-resolution-workers-estimated-index-gitnexus-main.json`
+- `reports/benchmark/2026-05-07-avmatrix-jsdoc-param-scope-gitnexus-main.json`
 - Target: `E:\Lap_trinh\GitNexus-main` using `--skip-git` because that local copy has no `.git` directory.
 - Runtime command used built AVmatrix CLI with `--skip-agents-md --no-stats --benchmark-json` and `node --stack-size=4096`; the default stack failed in parse with `Maximum call stack size exceeded`, so the stack-size requirement is part of the recorded run context.
 - Result: `110714.1ms` total wall time, `847` files, `19538` nodes, `31037` persisted relationships.
@@ -327,6 +330,7 @@ Current benchmark artifact:
 - `reports/benchmark/2026-05-07-avmatrix-object-pattern-call-result-gitnexus-main.json` records the object-pattern call-result propagation slice. TypeScript/JavaScript now emits a synthetic receiver binding from the reused AST for destructuring call results, using `call-return` for imported/free calls and `method-return` for receiver method calls, then emits destructured fields as `field-access` bindings against that synthetic receiver. The targeted fixture proves `const { profile } = await makeUser()` and `const { profile } = provider.getUser()` can both resolve later `Profile.save()` calls without source rereads. Compared to the object-pattern field-access slice on `E:\Lap_trinh\GitNexus-main`, persisted graph counts and digest stayed identical (`graphDiffs=0`, `ACCESSES=180`, `CALLS=5550`, `USES=816`), while scope resolution resolved `36` additional references (`14330` -> `14366`), resolved accesses increased `4774` -> `4810`, and unresolved references dropped by `36`. Wall time was `120518.7ms`, crossFile was `20527ms`, and resolution was `1190ms`; treat this as correctness/crossFile-migration coverage, not a speedup claim.
 - `reports/benchmark/2026-05-07-avmatrix-for-of-variable-element-gitnexus-main.json` records the for-of variable element propagation slice. TypeScript/JavaScript now emits `call-return-element` facts for loop variables iterating over a previously typed collection variable, and registry lookup can resolve the element owner through that collection's `call-return`, `call-return-element`, propagated, or iterable annotation binding. The targeted fixture proves `const users = listUsers(); for (const user of users) user.save()` resolves through scope facts without source rereads. Compared to the object-pattern call-result slice on `E:\Lap_trinh\GitNexus-main`, persisted graph counts and digest stayed identical (`graphDiffs=0`, `ACCESSES=180`, `CALLS=5550`, `USES=816`), while scope resolution resolved `171` additional references (`14366` -> `14537`), resolved accesses increased `4810` -> `4980`, resolved calls increased `8299` -> `8300`, and unresolved references dropped by `171`. Wall time was `108150.9ms`, crossFile was `18852ms`, and resolution was `1234ms`; treat this as correctness/crossFile-migration coverage plus a useful single-run timing observation, not a final speedup claim.
 - `reports/benchmark/2026-05-07-avmatrix-resolution-workers-estimated-index-gitnexus-main.json` records the workerized reference-resolution overhead slice. Worker mode still has graph parity with serial default on `E:\Lap_trinh\GitNexus-main` (`graphDiffs=0`, identical edge counts, `resolvedReferences=14537`, `unresolvedReferences=113048`), but it remains slower than serial default: resolution `1234ms` serial vs `3435ms` worker. The change removes an avoidable `JSON.stringify` pass used only for byte metrics, dropping worker readonly index bytes from exact JSON `32975703` to the same estimator used by serial `16898514`, and reducing worker resolution from `3628ms` to `3435ms`. Keep worker mode opt-in; do not mark default parallel resolution complete until index transfer/build overhead is lower than serial.
+- `reports/benchmark/2026-05-07-avmatrix-jsdoc-param-scope-gitnexus-main.json` records the JSDoc parameter propagation slice. TypeScript/JavaScript now emits AST-reused `parameter-annotation` bindings and synthetic type-reference sites from preceding `@param {Type} name` comments, so JavaScript-style receivers can resolve without source rereads. The targeted fixture proves `/** @param {User} user */ function run(user) { user.save(); }` resolves both the type-reference and receiver method call. On `E:\Lap_trinh\GitNexus-main`, graph counts, digest, and resolution counters stayed identical to the for-of variable slice (`graphDiffs=0`, `resolvedReferences=14537`, `unresolvedReferences=113048`), meaning this repository did not exercise persisted graph changes for this pattern. Wall time was `109619.9ms`, crossFile was `19086ms`, and resolution was `1212ms`; treat this as provider coverage, not a speedup claim.
 
 Full build for UI/manual validation through `Start-AVmatrix.html`:
 
@@ -336,11 +340,11 @@ powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1
 
 This script builds `avmatrix`, builds `avmatrix-web`, builds `avmatrix-launcher\AVmatrixLauncher.exe`, builds `avmatrix-launcher\server-bundle\avmatrix-server.exe`, copies `node.exe`, copies the web build to `avmatrix-launcher\web-dist\`, and registers the `avmatrix://` protocol. A CLI-only `cd avmatrix && npm run build` is not enough before asking the user to test through the root launcher HTML.
 
-Latest validation after the worker init byte-measurement slice:
+Latest validation after the JSDoc parameter scope slice:
 
 - Full launcher build passed with `powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1`.
-- Targeted worker/resolver test passed cleanly: `17/17` in `scope-reference-resolver`.
-- Full `cd avmatrix && npm test` was rerun after this slice and exited `0`; the accepted rerun log contained no `Unhandled Errors`, `Unhandled Error`, `Worker vmForks emitted error`, `Worker exited unexpectedly`, or failed-test patterns.
+- Targeted unit scope-resolution tests passed cleanly: `32/32` across `typescript-scope-captures` and `scope-reference-resolver`.
+- Full `cd avmatrix && npm test` passed after moving `api-impact-e2e.test.ts` to the single-process forked Vitest path. The accepted captured log contained no `Unhandled Errors`, `Unhandled Error`, `Worker vmForks emitted error`, `Worker exited unexpectedly`, `Test Files .*failed`, `Tests .*failed`, or `FAIL` patterns.
 
 ### Milestone 1: Baseline And Parity Targets
 

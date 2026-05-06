@@ -31,6 +31,7 @@ const forkSingleProcessTests = new Set([
   'test/integration/local-backend.test.ts',
   'test/integration/local-backend-calltool.test.ts',
   'test/integration/staleness-and-stability.test.ts',
+  'test/integration/api-impact-e2e.test.ts',
 ]);
 
 const commands = [

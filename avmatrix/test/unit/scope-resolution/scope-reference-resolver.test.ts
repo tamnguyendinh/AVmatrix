@@ -80,6 +80,55 @@ function run(user: User) {
     });
   });
 
+  it('resolves JSDoc parameter receiver bindings without source rereads', () => {
+    const source = `
+class User {
+  save() {}
+}
+
+/**
+ * @param {User} user
+ */
+function run(user) {
+  user.save();
+}
+`;
+    const parsed = extractParsedFileWithStats(
+      typescriptProvider,
+      source,
+      'src/app.ts',
+      SupportedLanguages.TypeScript,
+      parser.parse(source).rootNode,
+    ).parsedFile;
+    expect(parsed).toBeDefined();
+
+    const indexes = finalizeScopeModel([parsed!]);
+    const result = resolveScopeReferenceSites(indexes);
+
+    const save = parsed!.localDefs.find(
+      (def) => def.type === 'Method' && def.qualifiedName === 'User.save',
+    );
+    const user = parsed!.localDefs.find(
+      (def) => def.type === 'Class' && def.qualifiedName === 'User',
+    );
+    expect(save).toBeDefined();
+    expect(user).toBeDefined();
+
+    expect(result.referenceIndex.byTargetDef.get(save!.nodeId)?.map((ref) => ref.kind)).toEqual([
+      'call',
+    ]);
+    expect(result.referenceIndex.byTargetDef.get(user!.nodeId)?.map((ref) => ref.kind)).toEqual([
+      'type-reference',
+    ]);
+    expect(result.stats).toMatchObject({
+      totalReferenceSites: 2,
+      resolvedReferences: 2,
+      unresolvedReferences: 0,
+      resolvedCalls: 1,
+      resolvedTypeReferences: 1,
+    });
+  });
+
   it('resolves member calls through the pre-resolution method dispatch index', () => {
     const source = `
 class Base {
