@@ -19,6 +19,11 @@ import {
 } from '../binding-accumulator.js';
 import { processParsing } from '../parsing-processor.js';
 import { processImportsFromExtracted, buildImportResolutionContext } from '../import-processor.js';
+import { loadImportConfigs } from '../language-config.js';
+import {
+  buildImportTargetWorkspace,
+  resolveImportTargetAcrossLanguages,
+} from '../import-target-adapter.js';
 import { EMPTY_INDEX } from '../import-resolvers/utils.js';
 import {
   processCallsFromExtracted,
@@ -34,7 +39,7 @@ import {
   getHeritageStrategyForLanguage,
 } from '../heritage-processor.js';
 import { createResolutionContext } from '../model/resolution-context.js';
-import { type PipelineProgress, getLanguageFromFilename } from 'avmatrix-shared';
+import { type PipelineProgress, type ParsedFile, getLanguageFromFilename } from 'avmatrix-shared';
 import { readFileContents } from '../filesystem-walker.js';
 import { isLanguageAvailable } from '../../tree-sitter/parser-loader.js';
 import { createWorkerPool } from '../workers/worker-pool.js';
@@ -58,6 +63,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { isDev } from '../utils/env.js';
 import { synthesizeWildcardImportBindings, needsSynthesis } from './wildcard-synthesis.js';
+import { providers } from '../languages/index.js';
+import { finalizeScopeModel } from '../finalize-orchestrator.js';
 import type { ParseMetrics, ParseTimingBreakdown } from '../../analyze/analyze-metrics.js';
 import { roundMs } from '../../analyze/analyze-metrics.js';
 
@@ -97,6 +104,7 @@ export async function runChunkedParseAndResolve(
   allDecoratorRoutes: ExtractedDecoratorRoute[];
   allToolDefs: ExtractedToolDef[];
   allORMQueries: ExtractedORMQuery[];
+  parsedFiles: ParsedFile[];
   bindingAccumulator: BindingAccumulator;
   resolutionContext: ReturnType<typeof createResolutionContext>;
   usedWorkerPool: boolean;
@@ -200,6 +208,7 @@ export async function runChunkedParseAndResolve(
   const allDecoratorRoutes: ExtractedDecoratorRoute[] = [];
   const allToolDefs: ExtractedToolDef[] = [];
   const allORMQueries: ExtractedORMQuery[] = [];
+  const allParsedFiles: ParsedFile[] = [];
   const deferredWorkerCalls: ExtractedCall[] = [];
   const deferredWorkerHeritage: ExtractedHeritage[] = [];
   const deferredConstructorBindings: FileConstructorBindings[] = [];
@@ -355,6 +364,21 @@ export async function runChunkedParseAndResolve(
         if (chunkWorkerData.ormQueries?.length) {
           for (const item of chunkWorkerData.ormQueries) allORMQueries.push(item);
         }
+        if (chunkWorkerData.parsedFiles?.length) {
+          for (const item of chunkWorkerData.parsedFiles) allParsedFiles.push(item);
+        }
+        metrics.counters.scopeExtractionAstReusedFiles =
+          (metrics.counters.scopeExtractionAstReusedFiles ?? 0) +
+          chunkWorkerData.scopeExtraction.astReusedFiles;
+        metrics.counters.scopeExtractionCompatibilityFiles =
+          (metrics.counters.scopeExtractionCompatibilityFiles ?? 0) +
+          chunkWorkerData.scopeExtraction.compatibilityHookFiles;
+        metrics.counters.scopeExtractionNoHookFiles =
+          (metrics.counters.scopeExtractionNoHookFiles ?? 0) +
+          chunkWorkerData.scopeExtraction.noHookFiles;
+        metrics.counters.scopeExtractionFailedFiles =
+          (metrics.counters.scopeExtractionFailedFiles ?? 0) +
+          chunkWorkerData.scopeExtraction.failedFiles;
       }
 
       filesParsedSoFar += chunkFiles.length;
@@ -440,6 +464,32 @@ export async function runChunkedParseAndResolve(
     for (const [fp, exports] of graphExports) exportedTypeMap.set(fp, exports);
   }
 
+  const scopeIndexes = await timeParseStep(metrics, 'scopeFinalizeMs', async () => {
+    const configs = await loadImportConfigs(repoPath);
+    const resolveCtx = {
+      allFilePaths: importCtx.allFilePaths,
+      allFileList: importCtx.allFileList,
+      normalizedFileList: importCtx.normalizedFileList,
+      index: importCtx.index,
+      resolveCache: importCtx.resolveCache,
+      configs,
+    };
+    const providerMap = new Map(
+      Object.values(providers).map((provider) => [provider.id, provider]),
+    );
+    return finalizeScopeModel(allParsedFiles, {
+      hooks: {
+        resolveImportTarget: resolveImportTargetAcrossLanguages,
+      },
+      workspaceIndex: buildImportTargetWorkspace(providerMap, resolveCtx),
+    });
+  });
+  ctx.model.attachScopeIndexes(scopeIndexes);
+  metrics.counters.scopeFinalizedFiles = scopeIndexes.stats.totalFiles;
+  metrics.counters.scopeFinalizeTotalImports = scopeIndexes.stats.totalEdges;
+  metrics.counters.scopeFinalizeLinkedImports = scopeIndexes.stats.linkedEdges;
+  metrics.counters.scopeFinalizeUnresolvedImports = scopeIndexes.stats.unresolvedEdges;
+
   allPathObjects.length = 0;
   // Safe to reset importCtx caches here: `importCtx` (ImportResolutionContext)
   // is a scratch workspace used only during import path resolution. The
@@ -458,6 +508,20 @@ export async function runChunkedParseAndResolve(
   metrics.counters.parseChunkCount = numChunks;
   metrics.counters.workerCount = metrics.counters.workerCount ?? 0;
   metrics.counters.parserUnavailableFiles = parserUnavailableFiles;
+  metrics.counters.scopeParsedFiles = allParsedFiles.length;
+  metrics.counters.scopeCount = allParsedFiles.reduce((sum, file) => sum + file.scopes.length, 0);
+  metrics.counters.scopeLocalDefs = allParsedFiles.reduce(
+    (sum, file) => sum + file.localDefs.length,
+    0,
+  );
+  metrics.counters.scopeParsedImports = allParsedFiles.reduce(
+    (sum, file) => sum + file.parsedImports.length,
+    0,
+  );
+  metrics.counters.scopeReferenceSites = allParsedFiles.reduce(
+    (sum, file) => sum + file.referenceSites.length,
+    0,
+  );
 
   return {
     exportedTypeMap,
@@ -466,6 +530,7 @@ export async function runChunkedParseAndResolve(
     allDecoratorRoutes,
     allToolDefs,
     allORMQueries,
+    parsedFiles: allParsedFiles,
     bindingAccumulator,
     resolutionContext: ctx,
     // Whether a worker pool was live for this run. False only means there

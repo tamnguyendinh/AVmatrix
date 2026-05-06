@@ -376,6 +376,46 @@ describe('missing target', () => {
   });
 });
 
+// ─── Duplicate graph-edge guard ───────────────────────────────────────────
+
+describe('duplicate graph-edge guard', () => {
+  it('skips scope-resolved edges when an equivalent legacy graph edge already exists', () => {
+    const callerFn = def('def:caller', 'Function');
+    const targetFn = def('def:target', 'Method');
+    const mod = scope('scope:m', null, 'Module', [callerFn, targetFn]);
+    const indexes = makeIndexes([mod], [callerFn, targetFn]);
+
+    const ref: Reference = {
+      fromScope: 'scope:m',
+      toDef: 'def:target',
+      atRange: range(5, 0, 5, 4),
+      kind: 'call',
+      confidence: 0.9,
+      evidence: [],
+    };
+
+    const graph = createKnowledgeGraph();
+    graph.addRelationship({
+      id: 'legacy:def:caller->def:target',
+      sourceId: 'def:caller',
+      targetId: 'def:target',
+      type: 'CALLS',
+      confidence: 0.9,
+      reason: 'direct',
+    });
+
+    const stats = emitReferencesToGraph({
+      graph,
+      scopes: indexes,
+      referenceIndex: buildRefIndex('scope:m', [ref]),
+    });
+
+    expect(stats.edgesEmitted).toBe(0);
+    expect(stats.skippedDuplicateEdge).toBe(1);
+    expect(graph.relationships).toHaveLength(1);
+  });
+});
+
 // ─── Scope-graph emission (INGESTION_EMIT_SCOPES) ─────────────────────────
 
 describe('scope-graph emission', () => {
@@ -486,6 +526,7 @@ describe('empty input', () => {
       edgesEmitted: 0,
       skippedNoCaller: 0,
       skippedMissingTarget: 0,
+      skippedDuplicateEdge: 0,
       scopeNodesEmitted: 0,
       scopeEdgesEmitted: 0,
     });

@@ -108,6 +108,41 @@ describe('finalizeScopeModel: single file', () => {
     expect(out.referenceSites).toHaveLength(1);
     expect(out.referenceSites[0]!.name).toBe('save');
   });
+
+  it('builds MethodDispatchIndex from inherits reference sites', () => {
+    const baseClass = mkDef('def:Base', 'models.ts', 'Base');
+    const childClass = mkDef('def:Child', 'models.ts', 'Child');
+    const moduleScope = mkScope('scope:module', null, 'models.ts', {
+      Base: [{ def: baseClass, origin: 'local' }],
+      Child: [{ def: childClass, origin: 'local' }],
+    });
+    const baseScope: Scope = {
+      ...mkScope('scope:base', 'scope:module', 'models.ts'),
+      range: { startLine: 2, startCol: 0, endLine: 10, endCol: 0 },
+      ownedDefs: [baseClass],
+    };
+    const childScope: Scope = {
+      ...mkScope('scope:child', 'scope:module', 'models.ts'),
+      range: { startLine: 20, startCol: 0, endLine: 30, endCol: 0 },
+      ownedDefs: [childClass],
+    };
+    const file = mkFile('models.ts', {
+      moduleScope: 'scope:module',
+      scopes: [moduleScope, baseScope, childScope],
+      localDefs: [baseClass, childClass],
+      referenceSites: [
+        {
+          name: 'Base',
+          atRange: { startLine: 20, startCol: 20, endLine: 20, endCol: 24 },
+          inScope: 'scope:child',
+          kind: 'inherits',
+        },
+      ],
+    });
+
+    const out = finalizeScopeModel([file]);
+    expect(out.methodDispatch.mroFor('def:Child')).toEqual(['def:Base']);
+  });
 });
 
 // ─── Multi-file with cross-file imports ────────────────────────────────────
@@ -136,6 +171,35 @@ describe('finalizeScopeModel: cross-file imports', () => {
     expect(appImports[0]!.linkStatus).toBeUndefined();
     expect(appImports[0]!.targetFile).toBe('models.ts');
     expect(appImports[0]!.targetDefId).toBe('def:User');
+  });
+
+  it('makes finalized import bindings visible from the module scope tree', () => {
+    const userClass = mkDef('def:User', 'models.ts', 'models.User');
+    const modelsFile = mkFile('models.ts', { localDefs: [userClass] });
+    const appFile = mkFile('app.ts', {
+      parsedImports: [
+        {
+          kind: 'named',
+          localName: 'User',
+          importedName: 'User',
+          targetRaw: 'models.ts',
+        },
+      ],
+    });
+
+    const out = finalizeScopeModel([appFile, modelsFile], {
+      hooks: {
+        resolveImportTarget: (targetRaw) => (targetRaw === 'models.ts' ? 'models.ts' : null),
+      },
+    });
+
+    const appScope = out.scopeTree.getScope(appFile.moduleScope);
+    const userBindings = appScope?.bindings.get('User') ?? [];
+    expect(userBindings).toHaveLength(1);
+    expect(userBindings[0]).toMatchObject({
+      def: userClass,
+      origin: 'import',
+    });
   });
 
   it('leaves imports unresolved when no resolveImportTarget is supplied (default hook)', () => {

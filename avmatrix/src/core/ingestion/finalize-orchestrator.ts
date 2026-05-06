@@ -34,11 +34,14 @@
 
 import type {
   BindingRef,
+  DefId,
   FinalizeFile,
   FinalizeHooks,
   ParsedFile,
+  ReferenceSite,
   Scope,
   ScopeId,
+  ScopeTree,
   SymbolDefinition,
   WorkspaceIndex,
 } from 'avmatrix-shared';
@@ -109,7 +112,9 @@ export function finalizeScopeModel(
   const allReferenceSites = [] as ReturnType<typeof collectReferenceSites>;
 
   for (const file of parsedFiles) {
-    for (const s of file.scopes) allScopes.push(s);
+    for (const s of file.scopes) {
+      allScopes.push(withFinalizedImportBindings(s, file.moduleScope, finalizeOut.bindings));
+    }
     for (const d of file.localDefs) allDefs.push(d);
     moduleEntries.push({ filePath: file.filePath, moduleScopeId: file.moduleScope });
   }
@@ -121,17 +126,10 @@ export function finalizeScopeModel(
   const qualifiedNames = buildQualifiedNameIndex(allDefs);
   const moduleScopes = buildModuleScopeIndex(moduleEntries);
 
-  // ── Step 3: MethodDispatchIndex. Today we lack per-language MRO
-  // strategies wired into this orchestrator (that belongs with the
-  // HeritageMap bridge, a separate piece of work). Ship an EMPTY index
-  // so the bundle shape is consistent; the callbacks return `[]` for
-  // every owner and `implementsOf` returns `[]`. Populating this
-  // properly is tracked alongside the per-language provider hooks.
-  const methodDispatch = buildMethodDispatchIndex({
-    owners: [], // empty → no MRO entries; `mroFor(x)` returns the frozen empty array
-    computeMro: () => [],
-    implementsOf: () => [],
-  });
+  // ── Step 3: MethodDispatchIndex. Use pre-resolution `inherits`
+  // reference sites to materialize a deterministic owner → ancestor view
+  // before the resolution phase asks method/field registries to walk MRO.
+  const methodDispatch = buildMethodDispatchFromReferenceSites(allReferenceSites, scopeTree, defs);
 
   return {
     scopeTree,
@@ -145,6 +143,188 @@ export function finalizeScopeModel(
     sccs: finalizeOut.sccs,
     stats: finalizeOut.stats,
   };
+}
+
+const DISPATCH_OWNER_TYPES: ReadonlySet<SymbolDefinition['type']> = new Set([
+  'Class',
+  'Interface',
+  'Struct',
+  'Trait',
+  'Record',
+]);
+
+const IMPLEMENTS_TARGET_TYPES: ReadonlySet<SymbolDefinition['type']> = new Set([
+  'Interface',
+  'Trait',
+]);
+
+const EMPTY_DEF_IDS: readonly DefId[] = Object.freeze([]);
+
+function buildMethodDispatchFromReferenceSites(
+  referenceSites: readonly ReferenceSite[],
+  scopeTree: ScopeTree,
+  defs: ReturnType<typeof buildDefIndex>,
+) {
+  const directParentsByOwner = new Map<DefId, DefId[]>();
+  const directInterfacesByOwner = new Map<DefId, DefId[]>();
+  const owners = new Set<DefId>();
+
+  for (const def of defs.byId.values()) {
+    if (isDispatchOwner(def)) owners.add(def.nodeId);
+  }
+
+  for (const site of referenceSites) {
+    if (site.kind !== 'inherits') continue;
+
+    const owner = findOwnerDefForScope(site.inScope, scopeTree);
+    if (owner === undefined) continue;
+
+    const target = resolveInheritanceTarget(site, scopeTree, defs);
+    if (target === undefined || target.nodeId === owner.nodeId) continue;
+
+    owners.add(owner.nodeId);
+    if (IMPLEMENTS_TARGET_TYPES.has(target.type)) {
+      appendUnique(directInterfacesByOwner, owner.nodeId, target.nodeId);
+    } else if (isDispatchOwner(target)) {
+      appendUnique(directParentsByOwner, owner.nodeId, target.nodeId);
+    }
+  }
+
+  return buildMethodDispatchIndex({
+    owners: Array.from(owners),
+    computeMro: (ownerDefId) => computeMro(ownerDefId, directParentsByOwner),
+    implementsOf: (ownerDefId) => directInterfacesByOwner.get(ownerDefId) ?? EMPTY_DEF_IDS,
+  });
+}
+
+function findOwnerDefForScope(
+  startScope: ScopeId,
+  scopeTree: ScopeTree,
+): SymbolDefinition | undefined {
+  let current: ScopeId | null = startScope;
+  const visited = new Set<ScopeId>();
+
+  while (current !== null) {
+    if (visited.has(current)) return undefined;
+    visited.add(current);
+
+    const scope = scopeTree.getScope(current);
+    if (scope === undefined) return undefined;
+    const owner = scope.ownedDefs.find(isDispatchOwner);
+    if (owner !== undefined) return owner;
+    current = scope.parent;
+  }
+
+  return undefined;
+}
+
+function resolveInheritanceTarget(
+  site: ReferenceSite,
+  scopeTree: ScopeTree,
+  defs: ReturnType<typeof buildDefIndex>,
+): SymbolDefinition | undefined {
+  const bound = resolveLexicalDispatchOwner(site.name, site.inScope, scopeTree);
+  if (bound !== undefined) return bound;
+  return resolveUniqueDispatchOwnerByName(site.name, defs);
+}
+
+function resolveLexicalDispatchOwner(
+  name: string,
+  startScope: ScopeId,
+  scopeTree: ScopeTree,
+): SymbolDefinition | undefined {
+  let current: ScopeId | null = startScope;
+  const visited = new Set<ScopeId>();
+
+  while (current !== null) {
+    if (visited.has(current)) return undefined;
+    visited.add(current);
+
+    const scope = scopeTree.getScope(current);
+    if (scope === undefined) return undefined;
+
+    const bucket = scope.bindings.get(name);
+    if (bucket !== undefined && bucket.length > 0) {
+      const matches = bucket.map((binding) => binding.def).filter(isDispatchOwner);
+      return matches.length === 1 ? matches[0] : undefined;
+    }
+
+    current = scope.parent;
+  }
+
+  return undefined;
+}
+
+function resolveUniqueDispatchOwnerByName(
+  name: string,
+  defs: ReturnType<typeof buildDefIndex>,
+): SymbolDefinition | undefined {
+  const matches: SymbolDefinition[] = [];
+  for (const def of defs.byId.values()) {
+    if (!isDispatchOwner(def)) continue;
+    if (def.qualifiedName === name || simpleNameOf(def) === name) matches.push(def);
+  }
+  return matches.length === 1 ? matches[0] : undefined;
+}
+
+function computeMro(ownerDefId: DefId, directParentsByOwner: ReadonlyMap<DefId, readonly DefId[]>) {
+  const out: DefId[] = [];
+  const visited = new Set<DefId>([ownerDefId]);
+
+  const visit = (id: DefId): void => {
+    const parents = directParentsByOwner.get(id) ?? EMPTY_DEF_IDS;
+    for (const parent of parents) {
+      if (visited.has(parent)) continue;
+      visited.add(parent);
+      out.push(parent);
+      visit(parent);
+    }
+  };
+
+  visit(ownerDefId);
+  return out;
+}
+
+function appendUnique(map: Map<DefId, DefId[]>, owner: DefId, target: DefId): void {
+  const bucket = map.get(owner) ?? [];
+  if (!bucket.includes(target)) bucket.push(target);
+  map.set(owner, bucket);
+}
+
+function isDispatchOwner(def: SymbolDefinition): boolean {
+  return DISPATCH_OWNER_TYPES.has(def.type);
+}
+
+function simpleNameOf(def: SymbolDefinition): string | undefined {
+  const qualifiedName = def.qualifiedName;
+  if (qualifiedName === undefined || qualifiedName.length === 0) return undefined;
+  const dot = qualifiedName.lastIndexOf('.');
+  return dot === -1 ? qualifiedName : qualifiedName.slice(dot + 1);
+}
+
+function withFinalizedImportBindings(
+  scope: Scope,
+  moduleScope: ScopeId,
+  finalizedBindings: ReadonlyMap<ScopeId, ReadonlyMap<string, readonly BindingRef[]>>,
+): Scope {
+  if (scope.id !== moduleScope) return scope;
+
+  const moduleBindings = finalizedBindings.get(moduleScope);
+  if (moduleBindings === undefined || moduleBindings.size === 0) return scope;
+
+  const bindings = new Map(scope.bindings);
+  let changed = false;
+  for (const [name, refs] of moduleBindings) {
+    if (bindings.has(name)) continue;
+
+    const importedRefs = refs.filter((ref) => ref.origin !== 'local');
+    if (importedRefs.length === 0) continue;
+
+    bindings.set(name, Object.freeze(importedRefs.slice()));
+    changed = true;
+  }
+
+  return changed ? { ...scope, bindings } : scope;
 }
 
 // ─── Internal ───────────────────────────────────────────────────────────────

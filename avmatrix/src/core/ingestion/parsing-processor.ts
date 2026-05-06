@@ -15,6 +15,7 @@ import type {
   FileConstructorBindings,
   FileScopeBindings,
   ExtractedORMQuery,
+  ScopeExtractionWorkerStats,
 } from './workers/parse-worker.js';
 
 export type FileProgressCallback = (current: number, total: number, filePath: string) => void;
@@ -37,6 +38,7 @@ export interface WorkerExtractedData {
    * `emitScopeCaptures` — additive to the legacy DAG path.
    */
   parsedFiles: ParsedFile[];
+  scopeExtraction: ScopeExtractionWorkerStats;
 }
 
 const emptyWorkerExtractedData = (): WorkerExtractedData => ({
@@ -52,6 +54,12 @@ const emptyWorkerExtractedData = (): WorkerExtractedData => ({
   constructorBindings: [],
   fileScopeBindings: [],
   parsedFiles: [],
+  scopeExtraction: {
+    astReusedFiles: 0,
+    compatibilityHookFiles: 0,
+    noHookFiles: 0,
+    failedFiles: 0,
+  },
 });
 
 /**
@@ -108,6 +116,12 @@ export const processParsing = async (
   const allConstructorBindings: FileConstructorBindings[] = [];
   const fileScopeBindingsByFile: FileScopeBindings[] = [];
   const allParsedFiles: ParsedFile[] = [];
+  const scopeExtraction: ScopeExtractionWorkerStats = {
+    astReusedFiles: 0,
+    compatibilityHookFiles: 0,
+    noHookFiles: 0,
+    failedFiles: 0,
+  };
 
   for (const result of chunkResults) {
     for (const node of result.nodes) {
@@ -150,6 +164,12 @@ export const processParsing = async (
     if (result.parsedFiles) {
       for (const item of result.parsedFiles) allParsedFiles.push(item);
     }
+    if (result.scopeExtraction) {
+      scopeExtraction.astReusedFiles += result.scopeExtraction.astReusedFiles;
+      scopeExtraction.compatibilityHookFiles += result.scopeExtraction.compatibilityHookFiles;
+      scopeExtraction.noHookFiles += result.scopeExtraction.noHookFiles;
+      scopeExtraction.failedFiles += result.scopeExtraction.failedFiles;
+    }
   }
 
   const skippedLanguages = new Map<string, number>();
@@ -179,5 +199,6 @@ export const processParsing = async (
     constructorBindings: allConstructorBindings,
     fileScopeBindings: fileScopeBindingsByFile,
     parsedFiles: allParsedFiles,
+    scopeExtraction,
   };
 };

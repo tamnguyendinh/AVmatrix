@@ -461,6 +461,7 @@ export async function runFullAnalysis(
       lbugLoad: lbugLoadMetrics,
       parse: pipelineResult.performance?.parse,
       crossFile: pipelineResult.performance?.crossFile,
+      resolution: pipelineResult.performance?.resolution,
     });
 
     return {

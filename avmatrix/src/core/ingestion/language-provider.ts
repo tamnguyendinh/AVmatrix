@@ -48,6 +48,14 @@ import type { NodeLabel } from 'avmatrix-shared';
 /** Tree-sitter query captures: capture name → AST node (or undefined if not captured). */
 export type CaptureMap = Record<string, SyntaxNode | undefined>;
 
+export interface ScopeCaptureTreeInput {
+  readonly sourceText: string;
+  readonly filePath: string;
+  readonly language: SupportedLanguages;
+  /** Root node from the parse worker's already-built tree-sitter tree. */
+  readonly rootNode: SyntaxNode;
+}
+
 // ── Strategy tag types ─────────────────────────────────────────────────────
 // NOTE: `MroStrategy` is defined in `avmatrix-shared` and re-exported above
 // so `core/ingestion/model/resolve.ts` can consume it without importing from
@@ -330,6 +338,16 @@ interface LanguageProviderConfig {
    * Default: undefined (language continues to use legacy DAG).
    */
   readonly emitScopeCaptures?: (sourceText: string, filePath: string) => readonly CaptureMatch[];
+
+  /**
+   * AST-aware scope capture path for the optimized single-pass graph.
+   *
+   * Providers should prefer this over `emitScopeCaptures` so the parse worker
+   * can reuse the tree-sitter tree it already built for legacy extraction.
+   * The source-text-only hook remains a compatibility path and must not be
+   * used by the optimized default for migrated providers.
+   */
+  readonly emitScopeCapturesFromTree?: (input: ScopeCaptureTreeInput) => readonly CaptureMatch[];
 
   /**
    * Interpret a raw `@import.statement` capture group into a `ParsedImport`.

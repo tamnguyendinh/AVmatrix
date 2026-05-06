@@ -8,7 +8,7 @@
  */
 
 import { SupportedLanguages } from 'avmatrix-shared';
-import type { NodeLabel } from 'avmatrix-shared';
+import type { CaptureMatch, NodeLabel, Scope, ScopeId } from 'avmatrix-shared';
 import { defineLanguage } from '../language-provider.js';
 import { createClassExtractor } from '../class-extractors/generic.js';
 import {
@@ -44,6 +44,11 @@ import {
   javascriptCallConfig,
 } from '../call-extractors/configs/typescript-javascript.js';
 import { createHeritageExtractor } from '../heritage-extractors/generic.js';
+import {
+  emitTsJsScopeCapturesFromTree,
+  interpretTsJsImport,
+  interpretTsJsTypeBinding,
+} from '../scope-captures/typescript-javascript.js';
 
 /**
  * TypeScript/JavaScript: arrow_function and function_expression get their name
@@ -68,6 +73,40 @@ const tsExtractFunctionName = (
     }
   }
   return { funcName: nameNode?.text ?? null, label: 'Function' };
+};
+
+const TS_JS_DECLARATION_SUBTAGS: ReadonlySet<string> = new Set([
+  '@declaration.name',
+  '@declaration.owner',
+  '@declaration.qualified_name',
+]);
+
+const tsJsBindingScopeFor = (match: CaptureMatch, innermostScope: Scope): ScopeId | null => {
+  const declarationAnchor = Object.keys(match).find(
+    (name) => name.startsWith('@declaration.') && !TS_JS_DECLARATION_SUBTAGS.has(name),
+  );
+  if (declarationAnchor === undefined) return null;
+
+  const declarationKind = declarationAnchor.slice('@declaration.'.length);
+  if (
+    declarationKind === 'class' ||
+    declarationKind === 'interface' ||
+    declarationKind === 'enum' ||
+    declarationKind === 'typealias' ||
+    declarationKind === 'function'
+  ) {
+    return innermostScope.parent ?? null;
+  }
+
+  if (
+    declarationKind === 'method' ||
+    declarationKind === 'constructor' ||
+    declarationKind === 'property'
+  ) {
+    return innermostScope.kind === 'Function' ? innermostScope.parent : null;
+  }
+
+  return null;
 };
 
 export const BUILT_INS: ReadonlySet<string> = new Set([
@@ -184,6 +223,10 @@ export const typescriptProvider = defineLanguage({
   variableExtractor: createVariableExtractor(typescriptVariableConfig),
   classExtractor: createClassExtractor(typescriptClassConfig),
   heritageExtractor: createHeritageExtractor(SupportedLanguages.TypeScript),
+  emitScopeCapturesFromTree: emitTsJsScopeCapturesFromTree,
+  interpretImport: interpretTsJsImport,
+  interpretTypeBinding: interpretTsJsTypeBinding,
+  bindingScopeFor: tsJsBindingScopeFor,
   builtInNames: BUILT_INS,
 });
 
@@ -204,5 +247,9 @@ export const javascriptProvider = defineLanguage({
   variableExtractor: createVariableExtractor(javascriptVariableConfig),
   classExtractor: createClassExtractor(javascriptClassConfig),
   heritageExtractor: createHeritageExtractor(SupportedLanguages.JavaScript),
+  emitScopeCapturesFromTree: emitTsJsScopeCapturesFromTree,
+  interpretImport: interpretTsJsImport,
+  interpretTypeBinding: interpretTsJsTypeBinding,
+  bindingScopeFor: tsJsBindingScopeFor,
   builtInNames: BUILT_INS,
 });

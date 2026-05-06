@@ -494,12 +494,14 @@ function buildDefFromDeclarationMatch(
 
   const qualifiedCap = match['@declaration.qualified_name'];
   const qualifiedName = qualifiedCap?.text;
+  const ownerCap = match['@declaration.owner'];
 
   return {
     nodeId: makeDefId(filePath, anchor.range, type, nameCap.text),
     filePath,
     type,
     ...(qualifiedName !== undefined ? { qualifiedName } : { qualifiedName: nameCap.text }),
+    ...(ownerCap !== undefined && ownerCap.text.length > 0 ? { ownerId: ownerCap.text } : {}),
   };
 }
 
@@ -782,6 +784,7 @@ function rangeStrictlyContains(outer: Range, inner: Range): boolean {
  */
 const KNOWN_SUB_TAGS: ReadonlySet<string> = new Set<string>([
   '@declaration.name',
+  '@declaration.owner',
   '@declaration.qualified_name',
   '@import.name',
   '@import.source',

@@ -16,6 +16,23 @@ describe('analyze metrics', () => {
       counters: {
         totalFiles: 12,
       },
+      resolution: {
+        timings: {
+          referenceResolveMs: 3,
+          graphEmitMs: 0,
+        },
+        counters: {
+          scopeResolutionReferenceSites: 4,
+          scopeResolutionResolvedReferences: 3,
+          scopeResolutionUnresolvedReferences: 1,
+          scopeResolutionResolvedCalls: 2,
+          scopeResolutionResolvedAccesses: 0,
+          scopeResolutionResolvedTypeReferences: 0,
+          scopeResolutionResolvedInheritance: 1,
+          scopeResolutionResolvedImportUses: 0,
+          scopeResolutionEdgesEmitted: 0,
+        },
+      },
     });
 
     expect(report.bottlenecks.map((b) => b.bucket)).toEqual(['parse', 'lbugLoad', 'fts', 'scan']);
@@ -26,5 +43,6 @@ describe('analyze metrics', () => {
     });
     expect(report.overheadMs).toBe(15);
     expect(report.counters.totalFiles).toBe(12);
+    expect(report.resolution?.counters.scopeResolutionResolvedReferences).toBe(3);
   });
 });

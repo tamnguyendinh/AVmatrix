@@ -516,4 +516,13 @@ function printPerformanceSummary(performance: AnalyzePerformanceReport): void {
       `  crossFile typeEnv: walk ${(crossFileTimings.processCallsTypeEnvWalkMs ?? 0).toFixed(1)}ms | extract ${(crossFileTimings.processCallsTypeEnvExtractTypeBindingMs ?? 0).toFixed(1)}ms | pattern ${(crossFileTimings.processCallsTypeEnvPatternBindingMs ?? 0).toFixed(1)}ms | pending ${(crossFileTimings.processCallsTypeEnvPendingAssignmentMs ?? 0).toFixed(1)}ms | ctorScan ${(crossFileTimings.processCallsTypeEnvConstructorBindingScanMs ?? 0).toFixed(1)}ms | seed ${(crossFileTimings.processCallsTypeEnvSeedImportedBindingsMs ?? 0).toFixed(1)}ms | fixpoint ${(crossFileTimings.processCallsTypeEnvFixpointMs ?? 0).toFixed(1)}ms | forLoopReplay ${(crossFileTimings.processCallsTypeEnvForLoopReplayMs ?? 0).toFixed(1)}ms`,
     );
   }
+  const resolutionTimings = performance.resolution?.timings;
+  if (resolutionTimings) {
+    const resolutionCounters = performance.resolution?.counters;
+    const phaseTotalMs =
+      performance.pipelinePhaseMs.resolution ?? performance.buckets.resolution ?? 0;
+    console.log(
+      `  resolution detail: total ${phaseTotalMs.toFixed(1)}ms | references ${(resolutionTimings.referenceResolveMs ?? 0).toFixed(1)}ms | emit ${(resolutionTimings.graphEmitMs ?? 0).toFixed(1)}ms | sites ${resolutionCounters?.scopeResolutionReferenceSites ?? 0} | resolved ${resolutionCounters?.scopeResolutionResolvedReferences ?? 0} | unresolved ${resolutionCounters?.scopeResolutionUnresolvedReferences ?? 0} | emitted ${resolutionCounters?.scopeResolutionEdgesEmitted ?? 0} | skippedDuplicate ${resolutionCounters?.scopeResolutionDuplicateEdgesSkipped ?? 0}`,
+    );
+  }
 }

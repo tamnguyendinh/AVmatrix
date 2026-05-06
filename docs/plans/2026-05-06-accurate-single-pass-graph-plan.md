@@ -197,6 +197,53 @@ In-memory-only evidence is not sufficient for the optimized accurate graph becau
 
 ## Implementation Plan
 
+### Progress Checklist
+
+Last updated: 2026-05-06.
+
+Use this checklist to update implementation progress. Do not mark the target architecture complete until the default analyze path emits accurate scope-aware edges without duplicate parse/read/resolution work.
+
+- [x] Define the target clearly: GitNexus is the accuracy baseline, not the performance target.
+- [x] Confirm the plan reuses existing shared contracts (`ParsedFile`, `ReferenceSite`, `Reference`, `ReferenceIndex`, `ResolutionEvidence`) instead of adding a duplicate local `ScopeIR`.
+- [x] Add an AST-aware provider contract path for scope capture extraction.
+- [x] Keep source-text scope capture as a compatibility path, not the optimized default.
+- [x] Preserve worker-produced `ParsedFile[]` through the parse worker and parsing processor.
+- [x] Thread `ParsedFile[]` into `ParseOutput`.
+- [x] Add parse/scope counters for parsed files, scopes, local defs, imports, reference sites, AST reuse, compatibility fallback, no-hook files, and failed files.
+- [x] Call `finalizeScopeModel(parsedFiles, hooks)` in the default parse path.
+- [x] Attach finalized scope indexes to the semantic model once per analyze run.
+- [x] Add unit coverage for AST-aware scope extraction bridge behavior.
+- [x] Add a first TypeScript/JavaScript AST-aware scope-capture provider slice for core imports, declarations, type bindings, inheritance reference sites, and call reference sites.
+- [x] Add unit coverage proving TypeScript scope facts can be produced from an already-parsed tree-sitter AST.
+- [x] Preserve owner metadata for provider-emitted method/property declarations so later method-dispatch resolution has an owner anchor.
+- [x] Add a pure `ReferenceSite` to `ReferenceIndex` resolver over finalized scope indexes, with TypeScript unit coverage for member calls, constructor calls, and inheritance.
+- [x] Wire a non-duplicating `resolutionPhase` into the default pipeline to populate `ReferenceIndex` metrics before graph edge emission is enabled.
+- [x] Emit currently resolved scope references from `resolutionPhase` through `emitReferencesToGraph` with a semantic duplicate-edge guard.
+- [x] Surface resolution timings and counters in the top-level analyze performance report and CLI summary.
+- [x] Make finalized import bindings visible to scope lookup so imported constructor/type references resolve without source rereads.
+- [x] Add TypeScript/JavaScript AST-reused member read/write access facts and resolve them into `ACCESSES` edges.
+- [x] Add TypeScript/JavaScript AST-reused type-reference facts from annotations and emit them as `USES` edges.
+- [ ] Capture AVmatrix baseline metrics on the selected representative repositories.
+- [ ] Capture GitNexus deep/scope graph baseline metrics on the same repositories.
+- [ ] Define fixture-level parity expectations for `CALLS`, `IMPORTS`, `ACCESSES`, `USES`, and `INHERITS`.
+- [ ] Migrate the first provider, preferably TypeScript, to emit complete AST-reused scope captures.
+- [ ] Prove the migrated provider does not re-read or reparse source for scope extraction.
+- [x] Build an initial `MethodDispatchIndex` from finalized `inherits` reference sites before scope-aware call resolution depends on it.
+- [ ] Expand `MethodDispatchIndex` construction to full per-language Heritage/MRO strategy inputs before claiming parity for inherited dispatch.
+- [x] Implement `resolutionPhase`.
+- [x] Populate `ReferenceIndex` from finalized scope indexes and reference sites.
+- [x] Resolve imported constructor references through finalized import bindings in `ScopeTree`.
+- [x] Resolve TypeScript member read/write access facts to property definitions and emit graph `ACCESSES` edges.
+- [x] Resolve TypeScript type annotation facts to class/interface definitions and emit graph `USES` edges.
+- [ ] Complete scope-resolved `CALLS`, `ACCESSES`, `USES`, `INHERITS`, and import-use edge coverage across migrated providers through one graph emission path.
+- [ ] Parallelize reference resolution by file/chunk against readonly indexes.
+- [ ] Persist audit metadata (`resolutionSource`, `confidence`, `evidence`, `fileHash`) through LadybugDB load.
+- [ ] Move useful `crossFilePhase` type propagation into `resolutionPhase`.
+- [ ] Retire or narrow `crossFilePhase` only after parity is proven.
+- [x] Add duplicate-edge checks so legacy and scope-aware paths do not emit overlapping edges.
+- [ ] Validate full test suite and targeted parity fixtures.
+- [ ] Benchmark equivalent-accuracy runs and confirm the speed target is met.
+
 ### Milestone 1: Baseline And Parity Targets
 
 - Run AVmatrix analyze metrics on representative repos.

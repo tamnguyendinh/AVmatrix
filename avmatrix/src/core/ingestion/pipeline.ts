@@ -31,6 +31,7 @@ import {
   toolsPhase,
   ormPhase,
   crossFilePhase,
+  resolutionPhase,
   mroPhase,
   communitiesPhase,
   processesPhase,
@@ -39,6 +40,7 @@ import {
   type ProcessesOutput,
   type ParseOutput,
   type CrossFileOutput,
+  type ResolutionOutput,
 } from './pipeline-phases/index.js';
 
 export interface PipelineOptions {
@@ -70,6 +72,7 @@ function buildPhaseList(options?: PipelineOptions): PipelinePhase[] {
     toolsPhase,
     ormPhase,
     crossFilePhase,
+    resolutionPhase,
   ];
 
   if (!options?.skipGraphPhases) {
@@ -106,6 +109,7 @@ export const runPipelineFromRepo = async (
   }>(results, 'parse');
   const parseOutput = getPhaseOutput<ParseOutput>(results, 'parse');
   const crossFileOutput = getPhaseOutput<CrossFileOutput>(results, 'crossFile');
+  const resolutionOutput = getPhaseOutput<ResolutionOutput>(results, 'resolution');
 
   let communityResult: CommunitiesOutput['communityResult'] | undefined;
   let processResult: ProcessesOutput['processResult'] | undefined;
@@ -141,6 +145,41 @@ export const runPipelineFromRepo = async (
     workerCount: parseOutput.metrics?.counters.workerCount,
     parseChunkCount: parseOutput.metrics?.counters.parseChunkCount,
     parserUnavailableFiles: parseOutput.metrics?.counters.parserUnavailableFiles,
+    scopeParsedFiles: parseOutput.metrics?.counters.scopeParsedFiles,
+    scopeCount: parseOutput.metrics?.counters.scopeCount,
+    scopeLocalDefs: parseOutput.metrics?.counters.scopeLocalDefs,
+    scopeParsedImports: parseOutput.metrics?.counters.scopeParsedImports,
+    scopeReferenceSites: parseOutput.metrics?.counters.scopeReferenceSites,
+    scopeExtractionAstReusedFiles: parseOutput.metrics?.counters.scopeExtractionAstReusedFiles,
+    scopeExtractionCompatibilityFiles:
+      parseOutput.metrics?.counters.scopeExtractionCompatibilityFiles,
+    scopeExtractionNoHookFiles: parseOutput.metrics?.counters.scopeExtractionNoHookFiles,
+    scopeExtractionFailedFiles: parseOutput.metrics?.counters.scopeExtractionFailedFiles,
+    scopeFinalizedFiles: parseOutput.metrics?.counters.scopeFinalizedFiles,
+    scopeFinalizeTotalImports: parseOutput.metrics?.counters.scopeFinalizeTotalImports,
+    scopeFinalizeLinkedImports: parseOutput.metrics?.counters.scopeFinalizeLinkedImports,
+    scopeFinalizeUnresolvedImports: parseOutput.metrics?.counters.scopeFinalizeUnresolvedImports,
+    scopeResolutionReferenceSites: resolutionOutput.metrics.counters.scopeResolutionReferenceSites,
+    scopeResolutionResolvedReferences:
+      resolutionOutput.metrics.counters.scopeResolutionResolvedReferences,
+    scopeResolutionUnresolvedReferences:
+      resolutionOutput.metrics.counters.scopeResolutionUnresolvedReferences,
+    scopeResolutionResolvedCalls: resolutionOutput.metrics.counters.scopeResolutionResolvedCalls,
+    scopeResolutionResolvedAccesses:
+      resolutionOutput.metrics.counters.scopeResolutionResolvedAccesses,
+    scopeResolutionResolvedTypeReferences:
+      resolutionOutput.metrics.counters.scopeResolutionResolvedTypeReferences,
+    scopeResolutionResolvedInheritance:
+      resolutionOutput.metrics.counters.scopeResolutionResolvedInheritance,
+    scopeResolutionResolvedImportUses:
+      resolutionOutput.metrics.counters.scopeResolutionResolvedImportUses,
+    scopeResolutionEdgesEmitted: resolutionOutput.metrics.counters.scopeResolutionEdgesEmitted,
+    scopeResolutionDuplicateEdgesSkipped:
+      resolutionOutput.metrics.counters.scopeResolutionDuplicateEdgesSkipped,
+    scopeResolutionEdgesSkippedNoCaller:
+      resolutionOutput.metrics.counters.scopeResolutionEdgesSkippedNoCaller,
+    scopeResolutionEdgesSkippedMissingTarget:
+      resolutionOutput.metrics.counters.scopeResolutionEdgesSkippedMissingTarget,
     nodeCount: graph.nodeCount,
     edgeCount: graph.relationshipCount,
     usedWorkerPool,
@@ -159,6 +198,7 @@ export const runPipelineFromRepo = async (
       counters,
       parse: parseOutput.metrics,
       crossFile: crossFileOutput.metrics,
+      resolution: resolutionOutput.metrics,
     },
   };
 };

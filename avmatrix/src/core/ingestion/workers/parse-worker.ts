@@ -78,7 +78,7 @@ import {
 } from '../utils/method-props.js';
 import type { LanguageProvider } from '../language-provider.js';
 import type { ParsedFile } from 'avmatrix-shared';
-import { extractParsedFile } from '../scope-extractor-bridge.js';
+import { extractParsedFileWithStats } from '../scope-extractor-bridge.js';
 import { extractSimpleTypeName } from '../type-extractors/shared.js';
 
 // ============================================================================
@@ -256,6 +256,13 @@ export interface FileScopeBindings {
   bindings: [string, string][];
 }
 
+export interface ScopeExtractionWorkerStats {
+  astReusedFiles: number;
+  compatibilityHookFiles: number;
+  noHookFiles: number;
+  failedFiles: number;
+}
+
 export interface ParseWorkerResult {
   nodes: ParsedNode[];
   relationships: ParsedRelationship[];
@@ -280,6 +287,7 @@ export interface ParseWorkerResult {
    * finalize-orchestrator.
    */
   parsedFiles: ParsedFile[];
+  scopeExtraction: ScopeExtractionWorkerStats;
   skippedLanguages: Record<string, number>;
   fileCount: number;
 }
@@ -762,6 +770,12 @@ const processBatch = (
     constructorBindings: [],
     fileScopeBindings: [],
     parsedFiles: [],
+    scopeExtraction: {
+      astReusedFiles: 0,
+      compatibilityHookFiles: 0,
+      noHookFiles: 0,
+      failedFiles: 0,
+    },
     skippedLanguages: {},
     fileCount: 0,
   };
@@ -1461,15 +1475,31 @@ const processFileGroup = (
 
     // RFC #909 Ring 2: produce a `ParsedFile` for the new scope-based
     // resolution pipeline. No-op (returns undefined) for every language
-    // today — only fires once a provider implements `emitScopeCaptures`.
+    // today — only fires once a provider implements a scope-capture hook.
     // Runs BEFORE legacy extraction and its result is independent: a
-    // failure here is caught inside `extractParsedFile` and does NOT
+    // failure here is caught inside `extractParsedFileWithStats` and does NOT
     // affect the legacy DAG path that follows.
-    const parsedFile = extractParsedFile(provider, parseContent, file.path, (message) => {
-      if (parentPort) parentPort.postMessage({ type: 'warning', message });
-      else console.warn(message);
-    });
-    if (parsedFile !== undefined) result.parsedFiles.push(parsedFile);
+    const scopeResult = extractParsedFileWithStats(
+      provider,
+      parseContent,
+      file.path,
+      language,
+      tree.rootNode,
+      (message) => {
+        if (parentPort) parentPort.postMessage({ type: 'warning', message });
+        else console.warn(message);
+      },
+    );
+    if (scopeResult.mode === 'ast-reused') {
+      result.scopeExtraction.astReusedFiles++;
+    } else if (scopeResult.mode === 'compatibility-source') {
+      result.scopeExtraction.compatibilityHookFiles++;
+    } else if (scopeResult.mode === 'no-hook') {
+      result.scopeExtraction.noHookFiles++;
+    } else {
+      result.scopeExtraction.failedFiles++;
+    }
+    if (scopeResult.parsedFile !== undefined) result.parsedFiles.push(scopeResult.parsedFile);
 
     // Pre-pass: extract heritage from query matches to build parentMap for buildTypeEnv.
     // Heritage edges (EXTENDS/IMPLEMENTS) are created by heritage-processor which runs
@@ -2376,6 +2406,12 @@ let accumulated: ParseWorkerResult = {
   constructorBindings: [],
   fileScopeBindings: [],
   parsedFiles: [],
+  scopeExtraction: {
+    astReusedFiles: 0,
+    compatibilityHookFiles: 0,
+    noHookFiles: 0,
+    failedFiles: 0,
+  },
   skippedLanguages: {},
   fileCount: 0,
 };
@@ -2404,6 +2440,10 @@ const mergeResult = (target: ParseWorkerResult, src: ParseWorkerResult) => {
   appendAll(target.constructorBindings, src.constructorBindings);
   appendAll(target.fileScopeBindings, src.fileScopeBindings);
   appendAll(target.parsedFiles, src.parsedFiles);
+  target.scopeExtraction.astReusedFiles += src.scopeExtraction.astReusedFiles;
+  target.scopeExtraction.compatibilityHookFiles += src.scopeExtraction.compatibilityHookFiles;
+  target.scopeExtraction.noHookFiles += src.scopeExtraction.noHookFiles;
+  target.scopeExtraction.failedFiles += src.scopeExtraction.failedFiles;
   for (const [lang, count] of Object.entries(src.skippedLanguages)) {
     target.skippedLanguages[lang] = (target.skippedLanguages[lang] || 0) + count;
   }
@@ -2472,6 +2512,12 @@ parentPort!.on('message', (msg: WorkerIncomingMessage) => {
         constructorBindings: [],
         fileScopeBindings: [],
         parsedFiles: [],
+        scopeExtraction: {
+          astReusedFiles: 0,
+          compatibilityHookFiles: 0,
+          noHookFiles: 0,
+          failedFiles: 0,
+        },
         skippedLanguages: {},
         fileCount: 0,
       };

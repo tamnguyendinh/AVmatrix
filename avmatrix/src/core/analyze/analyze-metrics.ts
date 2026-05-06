@@ -10,6 +10,7 @@ export type AnalyzeTimingBucket =
   | 'tools'
   | 'orm'
   | 'crossFile'
+  | 'resolution'
   | 'mro'
   | 'communities'
   | 'processes'
@@ -37,6 +38,31 @@ export interface AnalyzeCounters {
   parserUnavailableFiles?: number;
   usedWorkerPool?: boolean;
   crossFileReprocessedFiles?: number;
+  scopeParsedFiles?: number;
+  scopeCount?: number;
+  scopeLocalDefs?: number;
+  scopeParsedImports?: number;
+  scopeReferenceSites?: number;
+  scopeExtractionAstReusedFiles?: number;
+  scopeExtractionCompatibilityFiles?: number;
+  scopeExtractionNoHookFiles?: number;
+  scopeExtractionFailedFiles?: number;
+  scopeFinalizedFiles?: number;
+  scopeFinalizeTotalImports?: number;
+  scopeFinalizeLinkedImports?: number;
+  scopeFinalizeUnresolvedImports?: number;
+  scopeResolutionReferenceSites?: number;
+  scopeResolutionResolvedReferences?: number;
+  scopeResolutionUnresolvedReferences?: number;
+  scopeResolutionResolvedCalls?: number;
+  scopeResolutionResolvedAccesses?: number;
+  scopeResolutionResolvedTypeReferences?: number;
+  scopeResolutionResolvedInheritance?: number;
+  scopeResolutionResolvedImportUses?: number;
+  scopeResolutionEdgesEmitted?: number;
+  scopeResolutionDuplicateEdgesSkipped?: number;
+  scopeResolutionEdgesSkippedNoCaller?: number;
+  scopeResolutionEdgesSkippedMissingTarget?: number;
 }
 
 export interface LbugLoadTimingBreakdown {
@@ -76,6 +102,7 @@ export interface ParseTimingBreakdown {
   assignmentResolveMs?: number;
   wildcardSynthesisMs?: number;
   exportedTypeMapEnrichMs?: number;
+  scopeFinalizeMs?: number;
 }
 
 export interface ParseMetrics {
@@ -87,6 +114,19 @@ export interface ParseMetrics {
     | 'workerCount'
     | 'parseChunkCount'
     | 'parserUnavailableFiles'
+    | 'scopeParsedFiles'
+    | 'scopeCount'
+    | 'scopeLocalDefs'
+    | 'scopeParsedImports'
+    | 'scopeReferenceSites'
+    | 'scopeExtractionAstReusedFiles'
+    | 'scopeExtractionCompatibilityFiles'
+    | 'scopeExtractionNoHookFiles'
+    | 'scopeExtractionFailedFiles'
+    | 'scopeFinalizedFiles'
+    | 'scopeFinalizeTotalImports'
+    | 'scopeFinalizeLinkedImports'
+    | 'scopeFinalizeUnresolvedImports'
   >;
 }
 
@@ -127,6 +167,30 @@ export interface CrossFileMetrics {
   };
 }
 
+export interface ResolutionTimingBreakdown {
+  referenceResolveMs?: number;
+  graphEmitMs?: number;
+}
+
+export interface ResolutionMetrics {
+  timings: ResolutionTimingBreakdown;
+  counters: Pick<
+    AnalyzeCounters,
+    | 'scopeResolutionReferenceSites'
+    | 'scopeResolutionResolvedReferences'
+    | 'scopeResolutionUnresolvedReferences'
+    | 'scopeResolutionResolvedCalls'
+    | 'scopeResolutionResolvedAccesses'
+    | 'scopeResolutionResolvedTypeReferences'
+    | 'scopeResolutionResolvedInheritance'
+    | 'scopeResolutionResolvedImportUses'
+    | 'scopeResolutionEdgesEmitted'
+    | 'scopeResolutionDuplicateEdgesSkipped'
+    | 'scopeResolutionEdgesSkippedNoCaller'
+    | 'scopeResolutionEdgesSkippedMissingTarget'
+  >;
+}
+
 export interface AnalyzeBottleneck {
   bucket: string;
   durationMs: number;
@@ -144,6 +208,7 @@ export interface AnalyzePerformanceReport {
   lbugLoad?: LbugLoadMetrics;
   parse?: ParseMetrics;
   crossFile?: CrossFileMetrics;
+  resolution?: ResolutionMetrics;
 }
 
 export class AnalyzeMetricsCollector {
@@ -211,6 +276,7 @@ export function buildAnalyzePerformanceReport(params: {
   lbugLoad?: LbugLoadMetrics;
   parse?: ParseMetrics;
   crossFile?: CrossFileMetrics;
+  resolution?: ResolutionMetrics;
 }): AnalyzePerformanceReport {
   const pipelinePhaseMs = params.pipelinePhaseMs ?? {};
   const buckets = { ...pipelinePhaseMs, ...params.buckets };
@@ -238,5 +304,6 @@ export function buildAnalyzePerformanceReport(params: {
     lbugLoad: params.lbugLoad,
     parse: params.parse,
     crossFile: params.crossFile,
+    resolution: params.resolution,
   };
 }

@@ -20,6 +20,7 @@ import type { PipelinePhase, PipelineContext, PhaseResult } from './types.js';
 import { getPhaseOutput } from './types.js';
 import type { StructureOutput } from './structure.js';
 import type { BindingAccumulator } from '../binding-accumulator.js';
+import type { ParsedFile } from 'avmatrix-shared';
 import type {
   ExtractedFetchCall,
   ExtractedRoute,
@@ -48,6 +49,7 @@ export interface ParseOutput {
   readonly allDecoratorRoutes: readonly ExtractedDecoratorRoute[];
   readonly allToolDefs: readonly ExtractedToolDef[];
   readonly allORMQueries: readonly ExtractedORMQuery[];
+  readonly parsedFiles: readonly ParsedFile[];
   bindingAccumulator: BindingAccumulator;
   /** Resolution context from the parse phase — carries importMap, namedImportMap, etc. */
   resolutionContext: ReturnType<typeof createResolutionContext>;

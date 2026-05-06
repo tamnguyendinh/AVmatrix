@@ -16,9 +16,13 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import type { Capture, CaptureMatch } from 'avmatrix-shared';
-import { extractParsedFile } from '../../../src/core/ingestion/scope-extractor-bridge.js';
+import { SupportedLanguages, type Capture, type CaptureMatch } from 'avmatrix-shared';
+import {
+  extractParsedFile,
+  extractParsedFileWithStats,
+} from '../../../src/core/ingestion/scope-extractor-bridge.js';
 import type { LanguageProvider } from '../../../src/core/ingestion/language-provider.js';
+import type { SyntaxNode } from '../../../src/core/ingestion/utils/ast-helpers.js';
 
 // ─── Capture helpers ────────────────────────────────────────────────────────
 
@@ -43,7 +47,10 @@ const moduleScopeMatch = (): CaptureMatch => ({
  */
 function fakeProvider(
   hooks: Partial<
-    Pick<LanguageProvider, 'emitScopeCaptures' | 'shouldCreateScope' | 'resolveScopeKind'>
+    Pick<
+      LanguageProvider,
+      'emitScopeCaptures' | 'emitScopeCapturesFromTree' | 'shouldCreateScope' | 'resolveScopeKind'
+    >
   >,
 ): LanguageProvider {
   return hooks as unknown as LanguageProvider;
@@ -69,6 +76,55 @@ describe('extractParsedFile', () => {
   });
 
   describe('provider HAS migrated', () => {
+    it('prefers the AST-aware hook when a worker root node is available', () => {
+      let sourceHookCalls = 0;
+      let astHookCalls = 0;
+      let seenRoot: SyntaxNode | undefined;
+      const rootNode = {} as SyntaxNode;
+      const provider = fakeProvider({
+        emitScopeCaptures: () => {
+          sourceHookCalls++;
+          return [moduleScopeMatch()];
+        },
+        emitScopeCapturesFromTree: ({ rootNode }) => {
+          astHookCalls++;
+          seenRoot = rootNode;
+          return [moduleScopeMatch()];
+        },
+      });
+
+      const result = extractParsedFileWithStats(
+        provider,
+        'source text',
+        'src/file.ts',
+        SupportedLanguages.TypeScript,
+        rootNode,
+      );
+
+      expect(result.mode).toBe('ast-reused');
+      expect(result.parsedFile).toBeDefined();
+      expect(astHookCalls).toBe(1);
+      expect(sourceHookCalls).toBe(0);
+      expect(seenRoot).toBe(rootNode);
+    });
+
+    it('reports compatibility mode when only the source-text hook is available', () => {
+      const provider = fakeProvider({
+        emitScopeCaptures: () => [moduleScopeMatch()],
+      });
+
+      const result = extractParsedFileWithStats(
+        provider,
+        'source text',
+        'src/file.ts',
+        SupportedLanguages.TypeScript,
+        {} as SyntaxNode,
+      );
+
+      expect(result.mode).toBe('compatibility-source');
+      expect(result.parsedFile).toBeDefined();
+    });
+
     it('threads emitScopeCaptures output through ScopeExtractor', () => {
       const provider = fakeProvider({
         emitScopeCaptures: () => [moduleScopeMatch()],

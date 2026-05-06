@@ -47,6 +47,7 @@
 
 import type {
   NodeLabel,
+  GraphRelationship,
   RelationshipType,
   Reference,
   ReferenceIndex,
@@ -66,6 +67,8 @@ export interface EmitStats {
   readonly skippedNoCaller: number;
   /** References dropped because `toDef` was not found in the DefIndex. */
   readonly skippedMissingTarget: number;
+  /** References dropped because an equivalent graph edge already exists. */
+  readonly skippedDuplicateEdge: number;
   /** Scope nodes emitted — `0` unless `INGESTION_EMIT_SCOPES=1`. */
   readonly scopeNodesEmitted: number;
   /** Scope-tree structural edges emitted — `0` unless `INGESTION_EMIT_SCOPES=1`. */
@@ -94,6 +97,8 @@ export function emitReferencesToGraph(input: EmitReferencesInput): EmitStats {
   let edgesEmitted = 0;
   let skippedNoCaller = 0;
   let skippedMissingTarget = 0;
+  let skippedDuplicateEdge = 0;
+  const existingEdges = buildExistingEdgeKeySet(graph);
 
   for (const [fromScope, refs] of referenceIndex.bySourceScope) {
     for (const ref of refs) {
@@ -107,7 +112,14 @@ export function emitReferencesToGraph(input: EmitReferencesInput): EmitStats {
         skippedNoCaller++;
         continue;
       }
-      graph.addRelationship(buildRelationship(ref, callerId, targetDef, sourceLabel));
+      const relationship = buildRelationship(ref, callerId, targetDef, sourceLabel);
+      const edgeKey = semanticEdgeKey(relationship);
+      if (existingEdges.has(edgeKey)) {
+        skippedDuplicateEdge++;
+        continue;
+      }
+      graph.addRelationship(relationship);
+      existingEdges.add(edgeKey);
       edgesEmitted++;
     }
   }
@@ -116,7 +128,13 @@ export function emitReferencesToGraph(input: EmitReferencesInput): EmitStats {
     ? emitScopeGraph({ graph, scopes })
     : { scopeNodesEmitted: 0, scopeEdgesEmitted: 0 };
 
-  return { edgesEmitted, skippedNoCaller, skippedMissingTarget, ...scopeStats };
+  return {
+    edgesEmitted,
+    skippedNoCaller,
+    skippedMissingTarget,
+    skippedDuplicateEdge,
+    ...scopeStats,
+  };
 }
 
 /**
@@ -296,4 +314,28 @@ function serializeEvidence(e: ResolutionEvidence): {
     weight: e.weight,
     ...(e.note !== undefined ? { note: e.note } : {}),
   };
+}
+
+function buildExistingEdgeKeySet(graph: KnowledgeGraph): Set<string> {
+  const keys = new Set<string>();
+  graph.forEachRelationship((relationship) => {
+    keys.add(semanticEdgeKey(relationship));
+  });
+  return keys;
+}
+
+function semanticEdgeKey(relationship: GraphRelationship): string {
+  const accessKind =
+    relationship.type === 'ACCESSES' ? `:${accessKindDiscriminator(relationship)}` : '';
+  return `${relationship.sourceId}\0${relationship.targetId}\0${relationship.type}${accessKind}`;
+}
+
+function accessKindDiscriminator(relationship: GraphRelationship): string {
+  if (relationship.step === 1) return 'read';
+  if (relationship.step === 2) return 'write';
+
+  const reason = relationship.reason.trim().toLowerCase();
+  if (reason === 'read' || reason.includes(': read |')) return 'read';
+  if (reason === 'write' || reason.includes(': write |')) return 'write';
+  return 'unknown';
 }

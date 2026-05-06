@@ -5,6 +5,7 @@ import type {
   AnalyzeCounters,
   CrossFileMetrics,
   ParseMetrics,
+  ResolutionMetrics,
   TimingMap,
 } from '../core/analyze/analyze-metrics.js';
 
@@ -17,6 +18,8 @@ export interface PipelinePerformance {
   parse?: ParseMetrics;
   /** Cross-file propagation sub-step timings and counters. */
   crossFile?: CrossFileMetrics;
+  /** Scope-aware reference-resolution timings and counters. */
+  resolution?: ResolutionMetrics;
 }
 
 // CLI-specific: in-memory result with graph + detection results
