@@ -349,4 +349,36 @@ function run() {
       source: 'call-return',
     });
   });
+
+  it('emits call-return type binding facts for awaited imported calls', () => {
+    const source = `
+import { makeUser } from './models';
+
+async function run() {
+  const user = await makeUser();
+  user.save();
+}
+`;
+    const tree = parser.parse(source);
+    const result = extractParsedFileWithStats(
+      typescriptProvider,
+      source,
+      'src/app.ts',
+      SupportedLanguages.TypeScript,
+      tree.rootNode,
+    );
+
+    expect(result.mode).toBe('ast-reused');
+    const parsed = result.parsedFile;
+    expect(parsed).toBeDefined();
+
+    const userBinding = parsed!.scopes
+      .map((scope) => scope.typeBindings.get('user'))
+      .find((binding) => binding !== undefined);
+
+    expect(userBinding).toMatchObject({
+      rawName: 'makeUser',
+      source: 'call-return',
+    });
+  });
 });

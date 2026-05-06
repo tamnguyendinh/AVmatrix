@@ -417,7 +417,7 @@ function returnTypeNameFromCallValue(
   returnTypesByCallableName: ReadonlyMap<string, string>,
 ): string | undefined {
   if (value === null) return undefined;
-  const expression = unwrapExpression(value);
+  const expression = unwrapAwaitExpression(unwrapExpression(value));
   if (expression.type !== 'call_expression') return undefined;
   const fn = unwrapAwaitExpression(expression.childForFieldName('function') ?? expression);
   if (fn.type === 'identifier') return returnTypesByCallableName.get(fn.text);
@@ -426,7 +426,7 @@ function returnTypeNameFromCallValue(
 
 function callNameFromCallValue(value: SyntaxNode | null): string | undefined {
   if (value === null) return undefined;
-  const expression = unwrapExpression(value);
+  const expression = unwrapAwaitExpression(unwrapExpression(value));
   if (expression.type !== 'call_expression') return undefined;
   const fn = unwrapAwaitExpression(expression.childForFieldName('function') ?? expression);
   return fn.type === 'identifier' ? fn.text : undefined;

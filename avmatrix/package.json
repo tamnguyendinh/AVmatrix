@@ -41,7 +41,7 @@
     "build": "node scripts/build.js",
     "serve": "tsx src/cli/index.ts serve",
     "dev": "tsx watch src/cli/index.ts",
-    "test": "vitest run",
+    "test": "node scripts/run-vitest-suite.cjs",
     "test:unit": "vitest run test/unit",
     "test:integration": "vitest run test/integration",
     "test:watch": "vitest",
