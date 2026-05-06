@@ -379,15 +379,20 @@ function emitTypeBinding(
   }
 
   if (node.type === 'for_in_statement' && isForOfStatement(node)) {
-    const nameNode = node.childForFieldName('left');
-    if (nameNode?.type !== 'identifier') return;
-    const callName = callNameFromCallValue(node.childForFieldName('right'));
-    if (callName === undefined) return;
+    const nameNode = forOfBindingNameNode(node.childForFieldName('left'));
+    if (nameNode === undefined) return;
+    const rightNode = node.childForFieldName('right');
+    const callName = callNameFromCallValue(rightNode);
     if (
-      context.returnTypesByCallableName.has(callName) ||
-      context.importedLocalNames.has(callName)
+      callName !== undefined &&
+      (context.returnTypesByCallableName.has(callName) || context.importedLocalNames.has(callName))
     ) {
       out.push(inferredTypeBindingMatch(node, nameNode, callName, 'call-return-element'));
+      return;
+    }
+    const receiverName = receiverNameFromCopyValue(rightNode);
+    if (receiverName !== undefined) {
+      out.push(inferredTypeBindingMatch(node, nameNode, receiverName, 'call-return-element'));
     }
     return;
   }
@@ -850,6 +855,13 @@ function isForOfStatement(node: SyntaxNode): boolean {
     if (node.child(i)?.type === 'of') return true;
   }
   return false;
+}
+
+function forOfBindingNameNode(leftNode: SyntaxNode | null): SyntaxNode | undefined {
+  if (leftNode?.type === 'identifier') return leftNode;
+  if (leftNode?.type !== 'variable_declarator') return undefined;
+  const nameNode = leftNode.childForFieldName('name') ?? leftNode.firstNamedChild;
+  return nameNode?.type === 'identifier' ? nameNode : undefined;
 }
 
 function constructorNameFromValue(node: SyntaxNode | null): string | undefined {

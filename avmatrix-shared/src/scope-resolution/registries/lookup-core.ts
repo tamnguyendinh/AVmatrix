@@ -396,7 +396,28 @@ function resolveCallReturnOwner(
   ctx: RegistryContext,
   source: 'call-return' | 'call-return-element',
 ): DefId | undefined {
-  const callable = resolveCallableBinding(typeRef.rawName, typeRef.declaredAtScope, ctx);
+  const directOwner = resolveCallableReturnOwner(
+    typeRef.rawName,
+    typeRef.declaredAtScope,
+    ctx,
+    source,
+  );
+  if (directOwner !== undefined) return directOwner;
+
+  if (source === 'call-return-element') {
+    return resolveIterableElementBindingOwner(typeRef.rawName, typeRef.declaredAtScope, ctx);
+  }
+
+  return undefined;
+}
+
+function resolveCallableReturnOwner(
+  name: string,
+  startScope: ScopeId,
+  ctx: RegistryContext,
+  source: 'call-return' | 'call-return-element',
+): DefId | undefined {
+  const callable = resolveCallableBinding(name, startScope, ctx);
   if (callable?.returnType === undefined) return undefined;
 
   const returnTypeName =
@@ -405,7 +426,7 @@ function resolveCallReturnOwner(
       : extractReturnTypeName(callable.returnType);
   if (returnTypeName === undefined) return undefined;
 
-  const returnScope = ctx.moduleScopes.get(callable.filePath) ?? typeRef.declaredAtScope;
+  const returnScope = ctx.moduleScopes.get(callable.filePath) ?? startScope;
   const resolved = resolveTypeRef(
     {
       rawName: returnTypeName,
@@ -419,6 +440,76 @@ function resolveCallReturnOwner(
     },
   );
   return resolved?.nodeId;
+}
+
+function resolveIterableElementBindingOwner(
+  receiverName: string,
+  startScope: ScopeId,
+  ctx: RegistryContext,
+): DefId | undefined {
+  return resolveIterableElementBindingOwnerInner(receiverName, startScope, ctx, new Set());
+}
+
+function resolveIterableElementBindingOwnerInner(
+  receiverName: string,
+  startScope: ScopeId,
+  ctx: RegistryContext,
+  visitedReceivers: Set<string>,
+): DefId | undefined {
+  const receiverVisitKey = `${startScope}\0${receiverName}`;
+  if (visitedReceivers.has(receiverVisitKey)) return undefined;
+  visitedReceivers.add(receiverVisitKey);
+
+  let currentId: ScopeId | null = startScope;
+  const visitedScopes = new Set<ScopeId>();
+  while (currentId !== null) {
+    if (visitedScopes.has(currentId)) return undefined;
+    visitedScopes.add(currentId);
+
+    const scope = ctx.scopes.getScope(currentId);
+    if (scope === undefined) return undefined;
+
+    const receiverType = scope.typeBindings.get(receiverName);
+    if (receiverType !== undefined) {
+      if (receiverType.source === 'receiver-propagated') {
+        return resolveIterableElementBindingOwnerInner(
+          receiverType.rawName,
+          receiverType.declaredAtScope,
+          ctx,
+          visitedReceivers,
+        );
+      }
+
+      if (receiverType.source === 'call-return' || receiverType.source === 'call-return-element') {
+        return resolveCallableReturnOwner(
+          receiverType.rawName,
+          receiverType.declaredAtScope,
+          ctx,
+          'call-return-element',
+        );
+      }
+
+      const elementTypeName = extractIterableElementReturnTypeName(receiverType.rawName);
+      if (elementTypeName === undefined) return undefined;
+      const resolved = resolveTypeRef(
+        {
+          rawName: elementTypeName,
+          declaredAtScope: receiverType.declaredAtScope,
+          source: 'return-annotation',
+        },
+        {
+          scopes: ctx.scopes,
+          defIndex: ctx.defs,
+          qualifiedNameIndex: ctx.qualifiedNames,
+        },
+      );
+      return resolved?.nodeId;
+    }
+
+    currentId = scope.parent;
+  }
+
+  return undefined;
 }
 
 function resolveMemberDerivedOwner(

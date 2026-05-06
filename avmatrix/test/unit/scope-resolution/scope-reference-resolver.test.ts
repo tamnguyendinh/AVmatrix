@@ -942,6 +942,73 @@ function run() {
       resolvedTypeReferences: 1,
     });
   });
+
+  it('resolves iterable variable return element bindings without source rereads', () => {
+    const modelsSource = `
+export class User {
+  save() {}
+}
+
+export function listUsers(): User[] {
+  return [];
+}
+`;
+    const appSource = `
+import { listUsers } from './models';
+
+function run() {
+  const users = listUsers();
+  for (const user of users) {
+    user.save();
+  }
+}
+`;
+    const modelsParsed = extractParsedFileWithStats(
+      typescriptProvider,
+      modelsSource,
+      'src/models.ts',
+      SupportedLanguages.TypeScript,
+      parser.parse(modelsSource).rootNode,
+    ).parsedFile;
+    const appParsed = extractParsedFileWithStats(
+      typescriptProvider,
+      appSource,
+      'src/app.ts',
+      SupportedLanguages.TypeScript,
+      parser.parse(appSource).rootNode,
+    ).parsedFile;
+    expect(modelsParsed).toBeDefined();
+    expect(appParsed).toBeDefined();
+
+    const indexes = finalizeScopeModel([appParsed!, modelsParsed!], {
+      hooks: {
+        resolveImportTarget: (targetRaw) => (targetRaw === './models' ? 'src/models.ts' : null),
+      },
+    });
+    const result = resolveScopeReferenceSites(indexes);
+
+    const save = modelsParsed!.localDefs.find(
+      (def) => def.type === 'Method' && def.qualifiedName === 'User.save',
+    );
+    const listUsers = modelsParsed!.localDefs.find(
+      (def) => def.type === 'Function' && def.qualifiedName === 'listUsers',
+    );
+    expect(save).toBeDefined();
+    expect(listUsers).toBeDefined();
+
+    const refsToSave = result.referenceIndex.byTargetDef.get(save!.nodeId) ?? [];
+    const refsToListUsers = result.referenceIndex.byTargetDef.get(listUsers!.nodeId) ?? [];
+
+    expect(refsToSave.map((ref) => ref.kind)).toEqual(['call']);
+    expect(refsToListUsers.map((ref) => ref.kind)).toEqual(['call']);
+    expect(result.stats).toMatchObject({
+      totalReferenceSites: 3,
+      resolvedReferences: 3,
+      unresolvedReferences: 0,
+      resolvedCalls: 2,
+      resolvedTypeReferences: 1,
+    });
+  });
 });
 
 function sourceHash(source: string): string {

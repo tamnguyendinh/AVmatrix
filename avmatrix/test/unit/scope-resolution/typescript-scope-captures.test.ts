@@ -283,6 +283,10 @@ function run() {
   for (const importedUser of listUsers()) {
     importedUser.save();
   }
+  const users = listUsers();
+  for (const aliasedUser of users) {
+    aliasedUser.save();
+  }
 }
 `;
     const tree = parser.parse(source);
@@ -311,6 +315,14 @@ function run() {
     });
     expect(typeBindings.get('importedUser')).toEqual({
       rawName: 'listUsers',
+      source: 'call-return-element',
+    });
+    expect(typeBindings.get('users')).toEqual({
+      rawName: 'listUsers',
+      source: 'call-return',
+    });
+    expect(typeBindings.get('aliasedUser')).toEqual({
+      rawName: 'users',
       source: 'call-return-element',
     });
   });
