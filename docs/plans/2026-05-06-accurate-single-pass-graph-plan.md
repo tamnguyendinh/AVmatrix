@@ -65,9 +65,9 @@ AVmatrix already contains the beginning of the correct architecture:
 - shared scope-resolution types already define `ParsedFile`, `ReferenceSite`, `Reference`, `ReferenceIndex`, and `ResolutionEvidence`;
 - `finalizeScopeModel(parsedFiles)` already materializes scope indexes;
 - `emitReferencesToGraph(...)` already drains a `ReferenceIndex` into graph edges with confidence and evidence;
-- `GraphRelationship.evidence` exists in memory, but LadybugDB CSV/schema currently persist only `type`, `confidence`, `reason`, and `step`.
-- `finalizeScopeModel` currently builds an empty `methodDispatch` index until heritage/MRO integration is wired.
-- `emitScopeCaptures` currently accepts only `sourceText` and `filePath`. If a provider reparses inside this hook, it violates the single-AST goal.
+- available audit metadata (`resolutionSource`, `evidence`, `fileHash`) is now persisted through LadybugDB and surfaced in graph/context/impact read paths; remaining work is coverage, not storage plumbing.
+- `finalizeScopeModel` now builds an initial `methodDispatch` index from finalized inheritance reference sites; full per-language Heritage/MRO inputs remain to be integrated before parity claims.
+- providers can emit scope captures through an AST-aware hook; source-text capture remains a compatibility path and any provider relying on it is not on the optimized default path.
 - the existing graph-level `mroPhase` currently depends on `crossFile`; it cannot serve as the pre-resolution method-dispatch dependency without being split or reordered.
 
 Therefore this plan must not introduce a parallel `ScopeIR` schema unless the existing shared model is proven insufficient. The default approach is to reuse and extend the existing shared scope-resolution contracts.
@@ -223,15 +223,17 @@ Use this checklist to update implementation progress. Do not mark the target arc
 - [x] Emit currently resolved scope references from `resolutionPhase` through `emitReferencesToGraph` with a semantic duplicate-edge guard.
 - [x] Surface resolution timings and counters in the top-level analyze performance report and CLI summary.
 - [x] Add analyze benchmark JSON output that combines graph correctness snapshot, performance timings, and key optimization counters.
+- [x] Expose edge-count, scope-finalize, chunk/index, and resolution-kind counters directly in benchmark JSON key metrics.
+- [x] Record AVmatrix version, Node runtime, platform, and target repo git commit/dirty state in benchmark JSON.
 - [x] Make finalized import bindings visible to scope lookup so imported constructor/type references resolve without source rereads.
 - [x] Add TypeScript/JavaScript AST-reused member read/write access facts and resolve them into `ACCESSES` edges.
 - [x] Add TypeScript/JavaScript AST-reused type-reference facts from annotations and emit them as `USES` edges.
 - [ ] Capture AVmatrix baseline metrics on the selected representative repositories.
 - [ ] Capture GitNexus deep/scope graph baseline metrics on the same repositories.
-- [ ] Define fixture-level parity expectations for `CALLS`, `IMPORTS`, `ACCESSES`, `USES`, and `INHERITS`.
+- [x] Define fixture-level parity expectations for `CALLS`, `IMPORTS`, `ACCESSES`, `USES`, and `INHERITS`.
 - [ ] Require a benchmark JSON artifact before and after each optimization slice that claims speedup.
 - [ ] Migrate the first provider, preferably TypeScript, to emit complete AST-reused scope captures.
-- [ ] Prove the migrated provider does not re-read or reparse source for scope extraction.
+- [x] Prove the migrated provider does not re-read or reparse source for scope extraction.
 - [x] Build an initial `MethodDispatchIndex` from finalized `inherits` reference sites before scope-aware call resolution depends on it.
 - [ ] Expand `MethodDispatchIndex` construction to full per-language Heritage/MRO strategy inputs before claiming parity for inherited dispatch.
 - [x] Implement `resolutionPhase`.
@@ -239,12 +241,15 @@ Use this checklist to update implementation progress. Do not mark the target arc
 - [x] Resolve imported constructor references through finalized import bindings in `ScopeTree`.
 - [x] Resolve TypeScript member read/write access facts to property definitions and emit graph `ACCESSES` edges.
 - [x] Resolve TypeScript type annotation facts to class/interface definitions and emit graph `USES` edges.
+- [x] Resolve receiver method dispatch through imported type aliases, for example `current: U` followed by `current.save()`, without reparsing.
+- [x] Add a TypeScript accurate single-pass parity fixture covering AST reuse, finalized imports, resolved reference counts, emitted edge counts, unresolved count, and audit metadata.
 - [ ] Complete scope-resolved `CALLS`, `ACCESSES`, `USES`, `INHERITS`, and import-use edge coverage across migrated providers through one graph emission path.
 - [x] Add deterministic reference-site chunk scheduling plus chunk/index cardinality metrics as the scaffold for workerized resolution.
 - [ ] Parallelize reference resolution by file/chunk against readonly indexes.
 - [x] Persist available audit metadata (`resolutionSource`, `confidence`, `evidence`, `fileHash` column) through LadybugDB CSV/load/read-back.
 - [x] Populate real `fileHash` values on scope-resolved edges from parse-time `ParsedFile.fileHash` without rereading source.
 - [x] Expose scope-resolution audit metadata in MCP context/impact readers, not only graph read-back.
+- [x] Attach audit metadata to finalized scope `IMPORTS` edges so import parity is inspectable after graph emission.
 - [ ] Move useful `crossFilePhase` type propagation into `resolutionPhase`.
 - [ ] Retire or narrow `crossFilePhase` only after parity is proven.
 - [x] Add duplicate-edge checks so legacy and scope-aware paths do not emit overlapping edges.

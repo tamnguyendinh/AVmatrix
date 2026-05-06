@@ -81,6 +81,7 @@ import { composeEvidence, confidenceFromEvidence, type RawSignals } from './evid
 import { compareByConfidenceWithTiebreaks, type TieBreakKey } from './tie-breaks.js';
 import { lookupQualified } from './lookup-qualified.js';
 import type { ArityVerdict, OwnerScopedContributor, RegistryContext } from './context.js';
+import { resolveTypeRef } from '../resolve-type-ref.js';
 
 // ─── Public entry point ─────────────────────────────────────────────────────
 
@@ -312,15 +313,18 @@ function lookupReceiverType(
 
     const typeRef = scope.typeBindings.get(receiverName);
     if (typeRef !== undefined) {
-      // rawName must resolve to a def via qualifiedNames; if it doesn't, we
-      // can't claim the receiver type. No fallback — that's what
-      // `resolveTypeRef` would do, but we keep this path lean and let
-      // callers pre-resolve if they want the richer semantics.
+      const resolved = resolveTypeRef(typeRef, {
+        scopes: ctx.scopes,
+        defIndex: ctx.defs,
+        qualifiedNameIndex: ctx.qualifiedNames,
+      });
+      if (resolved !== null) return resolved.nodeId;
+
+      // Compatibility fallback for older/manual registry fixtures that
+      // provide typeBindings without the corresponding lexical bindings.
       const candidateIds = ctx.qualifiedNames.get(typeRef.rawName);
       if (candidateIds.length === 1) return candidateIds[0];
-      // Ambiguous (≥ 2) or missing (0) — caller must pre-resolve via
-      // `resolveTypeRef` (#916) if they want the richer semantics. We
-      // intentionally do NOT re-implement a simple-name fallback here.
+      // Ambiguous (≥ 2) or missing (0): cannot claim the receiver type.
       return undefined;
     }
     currentId = scope.parent;

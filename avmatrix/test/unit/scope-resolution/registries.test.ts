@@ -557,6 +557,37 @@ describe('Step 2: type-binding + MRO walk', () => {
     expect(typeBinding?.weight).toBe(EvidenceWeights.typeBindingByMroDepth[0]);
   });
 
+  it('resolves receiver types through imported aliases before method dispatch', () => {
+    const userClass = mkDef({ nodeId: 'def:User', type: 'Class', qualifiedName: 'User' });
+    const saveMethod = mkDef({
+      nodeId: 'def:User.save',
+      type: 'Method',
+      qualifiedName: 'User.save',
+      ownerId: 'def:User',
+    });
+    const mod = mkScope({
+      id: 'scope:m',
+      parent: null,
+      bindings: { U: [mkBinding(userClass, 'import')] },
+    });
+    const callScope = mkScope({
+      id: 'scope:call',
+      parent: 'scope:m',
+      kind: 'Function',
+      range: r(2, 0, 10, 0),
+      typeBindings: { current: typeRef('U', 'scope:call') },
+    });
+    const ctx = makeCtx([mod, callScope], [userClass, saveMethod]);
+
+    const results = buildMethodRegistry(ctx).lookup('save', 'scope:call', {
+      explicitReceiver: { name: 'current' },
+    });
+
+    expect(results).toHaveLength(1);
+    expect(results[0]!.def).toBe(saveMethod);
+    expect(evidenceOfKind(results[0]!, 'type-binding')).toBeDefined();
+  });
+
   it('demotes Step-2-only candidates to tieBreakKey.origin=import (pins rank vs same-origin siblings)', () => {
     // Two method defs named `impl`, both owned by the same interface and
     // both reached ONLY via the Step 2 type-binding MRO walk (no lexical

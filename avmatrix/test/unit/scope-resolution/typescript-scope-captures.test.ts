@@ -12,6 +12,11 @@ describe('TypeScript AST-aware scope captures', () => {
     parser = await createParserForLanguage(SupportedLanguages.TypeScript, 'sample.ts');
   });
 
+  it('uses the AST-aware optimized hook without a source-text compatibility hook', () => {
+    expect(typescriptProvider.emitScopeCapturesFromTree).toBeDefined();
+    expect(typescriptProvider.emitScopeCaptures).toBeUndefined();
+  });
+
   it('emits ParsedFile facts from the already-parsed AST', () => {
     const source = `
 import DefaultUser, { Repo, User as U } from './models';

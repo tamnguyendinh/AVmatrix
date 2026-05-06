@@ -48,6 +48,7 @@
 import type {
   NodeLabel,
   GraphRelationship,
+  ImportEdge,
   RelationshipType,
   Reference,
   ReferenceIndex,
@@ -193,6 +194,7 @@ export function emitScopeGraph(input: {
   for (const [scopeId, edges] of scopes.imports) {
     for (const edge of edges) {
       if (edge.targetModuleScope === undefined) continue;
+      const fileHash = fileHashForScope(scopeId, scopes);
       graph.addRelationship({
         id: `rel:imports:${scopeId}->${edge.targetModuleScope}:${edge.localName}`,
         sourceId: scopeId,
@@ -200,12 +202,32 @@ export function emitScopeGraph(input: {
         type: 'IMPORTS',
         confidence: edge.linkStatus === 'unresolved' ? 0.5 : 1,
         reason: `import ${edge.kind} ${edge.localName}`,
+        resolutionSource: 'scope-finalize',
+        ...(fileHash !== undefined ? { fileHash } : {}),
+        evidence: importEvidence(edge),
       });
       scopeEdgesEmitted++;
     }
   }
 
   return { scopeNodesEmitted, scopeEdgesEmitted };
+}
+
+function fileHashForScope(scopeId: ScopeId, scopes: ScopeResolutionIndexes): string | undefined {
+  const scope = scopes.scopeTree.getScope(scopeId);
+  if (scope === undefined) return undefined;
+  return scopes.fileHashes.get(scope.filePath);
+}
+
+function importEvidence(edge: ImportEdge): GraphRelationship['evidence'] {
+  const target = edge.targetFile ?? edge.targetExportedName;
+  return [
+    {
+      kind: 'import',
+      weight: edge.linkStatus === 'unresolved' ? 0.5 : 1,
+      note: `${edge.kind} ${edge.localName} -> ${target}`,
+    },
+  ];
 }
 
 // ─── Internal ───────────────────────────────────────────────────────────────

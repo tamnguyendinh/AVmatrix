@@ -10,6 +10,7 @@
 
 import path from 'path';
 import { execFileSync } from 'child_process';
+import { createRequire } from 'node:module';
 import v8 from 'v8';
 import cliProgress from 'cli-progress';
 import { closeLbug } from '../core/lbug/lbug-adapter.js';
@@ -23,9 +24,13 @@ import { runFullAnalysis } from '../core/run-analyze.js';
 import type { AnalyzePerformanceReport } from '../core/analyze/analyze-metrics.js';
 import {
   createAnalyzeBenchmarkSnapshot,
+  type AnalyzeBenchmarkEnvironment,
   writeAnalyzeBenchmarkSnapshot,
 } from '../core/analyze/analyze-benchmark-snapshot.js';
 import fs from 'fs/promises';
+
+const require = createRequire(import.meta.url);
+const pkg = require('../../package.json') as { readonly version?: string };
 
 const HEAP_MB = 8192;
 const HEAP_FLAG = `--max-old-space-size=${HEAP_MB}`;
@@ -328,6 +333,7 @@ export const analyzeCommand = async (inputPath?: string, options?: AnalyzeOption
       const benchmark = createAnalyzeBenchmarkSnapshot({
         repoName: result.repoName,
         repoPath,
+        environment: collectBenchmarkEnvironment(repoPath),
         stats: result.stats,
         pipelineResult: result.pipelineResult,
         performance: result.performance,
@@ -422,6 +428,30 @@ export const analyzeCommand = async (inputPath?: string, options?: AnalyzeOption
   // platforms (#38, #40). Force-exit to ensure clean termination.
   process.exit(0);
 };
+
+function collectBenchmarkEnvironment(repoPath: string): AnalyzeBenchmarkEnvironment {
+  const repoGitCommit = readGitValue(repoPath, ['rev-parse', 'HEAD']);
+  const repoGitStatus = readGitValue(repoPath, ['status', '--porcelain']);
+  return {
+    avmatrixVersion: pkg.version,
+    nodeVersion: process.version,
+    platform: process.platform,
+    arch: process.arch,
+    ...(repoGitCommit !== undefined ? { repoGitCommit } : {}),
+    ...(repoGitStatus !== undefined ? { repoGitDirty: repoGitStatus.length > 0 } : {}),
+  };
+}
+
+function readGitValue(repoPath: string, args: readonly string[]): string | undefined {
+  try {
+    return execFileSync('git', ['-C', repoPath, ...args], {
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch {
+    return undefined;
+  }
+}
 
 function formatTimingMap(map: Record<string, number> | undefined): string {
   const entries = Object.entries(map ?? {}).sort((a, b) => b[1] - a[1]);
