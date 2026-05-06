@@ -23,6 +23,7 @@ describe('analyze metrics', () => {
         },
         counters: {
           scopeResolutionReferenceSites: 4,
+          scopeResolutionReadonlyIndexBytes: 2048,
           scopeResolutionResolvedReferences: 3,
           scopeResolutionUnresolvedReferences: 1,
           scopeResolutionResolvedCalls: 2,
@@ -31,6 +32,10 @@ describe('analyze metrics', () => {
           scopeResolutionResolvedInheritance: 1,
           scopeResolutionResolvedImportUses: 0,
           scopeResolutionEdgesEmitted: 0,
+          scopeResolutionFinalizedImportsEmitted: 1,
+          scopeResolutionDuplicateImportsSkipped: 0,
+          scopeResolutionFinalizedImportUsesEmitted: 1,
+          scopeResolutionDuplicateImportUsesSkipped: 0,
         },
       },
     });
@@ -44,5 +49,8 @@ describe('analyze metrics', () => {
     expect(report.overheadMs).toBe(15);
     expect(report.counters.totalFiles).toBe(12);
     expect(report.resolution?.counters.scopeResolutionResolvedReferences).toBe(3);
+    expect(report.resolution?.counters.scopeResolutionReadonlyIndexBytes).toBe(2048);
+    expect(report.resolution?.counters.scopeResolutionFinalizedImportsEmitted).toBe(1);
+    expect(report.resolution?.counters.scopeResolutionFinalizedImportUsesEmitted).toBe(1);
   });
 });

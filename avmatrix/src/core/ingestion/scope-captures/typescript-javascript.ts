@@ -14,18 +14,23 @@ interface CaptureOptions {
   readonly language: TsJsLanguage;
 }
 
+interface ScopeCaptureContext {
+  readonly returnTypesByCallableName: ReadonlyMap<string, string>;
+}
+
 export function emitTsJsScopeCapturesFromTree(
   input: ScopeCaptureTreeInput,
 ): readonly CaptureMatch[] {
   const language = input.language as TsJsLanguage;
   const out: CaptureMatch[] = [];
+  const context = buildScopeCaptureContext(input.rootNode);
 
   out.push(scopeMatch('module', input.rootNode));
   walk(input.rootNode, (node) => {
     emitScope(node, out);
     emitDeclaration(node, out, input.filePath);
     emitImport(node, out);
-    emitTypeBinding(node, out);
+    emitTypeBinding(node, out, context);
     emitReference(node, out);
   });
 
@@ -118,7 +123,9 @@ function emitDeclaration(node: SyntaxNode, out: CaptureMatch[], filePath: string
     return;
   }
   if (node.type === 'function_declaration' || node.type === 'function_signature') {
-    emitNamedDeclaration(out, node, 'function', node.childForFieldName('name'));
+    emitNamedDeclaration(out, node, 'function', node.childForFieldName('name'), undefined, {
+      returnType: returnTypeNameForCallable(node),
+    });
     return;
   }
   if (
@@ -134,6 +141,7 @@ function emitDeclaration(node: SyntaxNode, out: CaptureMatch[], filePath: string
       nameNode?.text === 'constructor' ? 'constructor' : 'method',
       nameNode,
       ownerDefIdFor(node, filePath),
+      { returnType: returnTypeNameForCallable(node) },
     );
     if (ownerName !== undefined)
       out.push(syntheticTypeBindingMatch(node, 'this', ownerName, 'annotation'));
@@ -146,6 +154,7 @@ function emitDeclaration(node: SyntaxNode, out: CaptureMatch[], filePath: string
       'property',
       node.childForFieldName('name'),
       ownerDefIdFor(node, filePath),
+      { declaredType: declaredTypeNameForNode(node) },
     );
     return;
   }
@@ -158,6 +167,11 @@ function emitDeclaration(node: SyntaxNode, out: CaptureMatch[], filePath: string
       node,
       isFunctionExpression(value) ? 'function' : 'variable',
       nameNode,
+      undefined,
+      {
+        returnType: value === null ? undefined : returnTypeNameForCallable(value),
+        declaredType: declaredTypeNameForNode(node),
+      },
     );
   }
 }
@@ -237,7 +251,11 @@ function emitImport(node: SyntaxNode, out: CaptureMatch[]): void {
   }
 }
 
-function emitTypeBinding(node: SyntaxNode, out: CaptureMatch[]): void {
+function emitTypeBinding(
+  node: SyntaxNode,
+  out: CaptureMatch[],
+  context: ScopeCaptureContext,
+): void {
   if (node.type === 'required_parameter' || node.type === 'optional_parameter') {
     const nameNode = node.childForFieldName('pattern') ?? firstIdentifierChild(node);
     const typeNode = node.childForFieldName('type');
@@ -272,8 +290,75 @@ function emitTypeBinding(node: SyntaxNode, out: CaptureMatch[]): void {
     const ctorName = constructorNameFromValue(node.childForFieldName('value'));
     if (ctorName !== undefined) {
       out.push(inferredTypeBindingMatch(node, nameNode, ctorName, 'constructor-inferred'));
+      return;
+    }
+
+    const returnTypeName = returnTypeNameFromCallValue(
+      node.childForFieldName('value'),
+      context.returnTypesByCallableName,
+    );
+    if (returnTypeName !== undefined) {
+      out.push(inferredTypeBindingMatch(node, nameNode, returnTypeName, 'return-annotation'));
     }
   }
+
+  if (isFunctionScopeNode(node)) {
+    const returnTypeNode = node.childForFieldName('return_type');
+    if (returnTypeNode !== null) emitTypeReferenceMatches(returnTypeNode, out);
+  }
+}
+
+function buildScopeCaptureContext(rootNode: SyntaxNode): ScopeCaptureContext {
+  const returnTypesByCallableName = new Map<string, string>();
+  walk(rootNode, (node) => {
+    if (isFunctionScopeNode(node)) {
+      const returnType = returnTypeNameForCallable(node);
+      if (returnType === undefined) return;
+      const name = callableName(node);
+      if (name !== undefined) returnTypesByCallableName.set(name, returnType);
+    }
+
+    if (node.type === 'variable_declarator') {
+      const name = node.childForFieldName('name');
+      const value = node.childForFieldName('value');
+      const returnType = value === null ? undefined : returnTypeNameForCallable(value);
+      if (name?.type === 'identifier' && isFunctionExpression(value) && returnType !== undefined) {
+        returnTypesByCallableName.set(name.text, returnType);
+      }
+    }
+  });
+  return { returnTypesByCallableName };
+}
+
+function returnTypeNameForCallable(node: SyntaxNode): string | undefined {
+  const returnTypeNode = node.childForFieldName('return_type');
+  if (returnTypeNode === null) return undefined;
+  const stripped = stripTypeAnnotation(returnTypeNode.text);
+  return stripped.length > 0 ? stripped : undefined;
+}
+
+function declaredTypeNameForNode(node: SyntaxNode): string | undefined {
+  const typeNode = node.childForFieldName('type');
+  if (typeNode === null) return undefined;
+  const stripped = stripTypeAnnotation(typeNode.text);
+  return stripped.length > 0 ? stripped : undefined;
+}
+
+function callableName(node: SyntaxNode): string | undefined {
+  const name = node.childForFieldName('name');
+  return name?.text;
+}
+
+function returnTypeNameFromCallValue(
+  value: SyntaxNode | null,
+  returnTypesByCallableName: ReadonlyMap<string, string>,
+): string | undefined {
+  if (value === null) return undefined;
+  const expression = unwrapExpression(value);
+  if (expression.type !== 'call_expression') return undefined;
+  const fn = unwrapAwaitExpression(expression.childForFieldName('function') ?? expression);
+  if (fn.type === 'identifier') return returnTypesByCallableName.get(fn.text);
+  return undefined;
 }
 
 function emitTypeReferenceMatches(typeNode: SyntaxNode, out: CaptureMatch[]): void {
@@ -351,6 +436,10 @@ function emitNamedDeclaration(
   kind: string,
   nameNode: SyntaxNode | null,
   ownerId?: string,
+  metadata: {
+    readonly returnType?: string;
+    readonly declaredType?: string;
+  } = {},
 ): void {
   if (nameNode === null) return;
   out.push({
@@ -358,6 +447,24 @@ function emitNamedDeclaration(
     '@declaration.name': capture('@declaration.name', nameNode),
     ...(ownerId !== undefined
       ? { '@declaration.owner': textCapture('@declaration.owner', node, ownerId) }
+      : {}),
+    ...(metadata.returnType !== undefined
+      ? {
+          '@declaration.return_type': textCapture(
+            '@declaration.return_type',
+            node,
+            metadata.returnType,
+          ),
+        }
+      : {}),
+    ...(metadata.declaredType !== undefined
+      ? {
+          '@declaration.declared_type': textCapture(
+            '@declaration.declared_type',
+            node,
+            metadata.declaredType,
+          ),
+        }
       : {}),
   });
 }

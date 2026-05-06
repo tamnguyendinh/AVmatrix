@@ -30,10 +30,19 @@ export const isIgnorableGraphQueryError = (err: unknown): boolean => {
   );
 };
 
+export const isMissingRelationshipAuditPropertyError = (err: unknown): boolean => {
+  const message = err instanceof Error ? err.message : String(err);
+  return /Cannot find property (resolutionSource|evidence|fileHash)\b/i.test(message);
+};
+
 export const GRAPH_RELATIONSHIP_QUERY =
   `MATCH (a)-[r:CodeRelation]->(b) RETURN a.id AS sourceId, b.id AS targetId, ` +
   `r.type AS type, r.confidence AS confidence, r.reason AS reason, r.step AS step, ` +
   `r.resolutionSource AS resolutionSource, r.evidence AS evidence, r.fileHash AS fileHash`;
+
+export const LEGACY_GRAPH_RELATIONSHIP_QUERY =
+  `MATCH (a)-[r:CodeRelation]->(b) RETURN a.id AS sourceId, b.id AS targetId, ` +
+  `r.type AS type, r.confidence AS confidence, r.reason AS reason, r.step AS step`;
 
 export const quoteNodeTable = (table: string): string => `\`${table.replace(/`/g, '``')}\``;
 
@@ -148,7 +157,13 @@ export const buildGraphFromExecutor = async (
   }
 
   const relationships: GraphRelationship[] = [];
-  const relRows = await executeQuery(GRAPH_RELATIONSHIP_QUERY);
+  let relRows: any[];
+  try {
+    relRows = await executeQuery(GRAPH_RELATIONSHIP_QUERY);
+  } catch (err) {
+    if (!isMissingRelationshipAuditPropertyError(err)) throw err;
+    relRows = await executeQuery(LEGACY_GRAPH_RELATIONSHIP_QUERY);
+  }
   for (const row of relRows) {
     relationships.push(mapGraphRelationshipRow(row));
   }
@@ -177,12 +192,21 @@ export const streamGraphFromExecutor = async (
     }
   }
 
-  await streamQuery(GRAPH_RELATIONSHIP_QUERY, async (row) => {
-    await sink.write({
-      type: 'relationship',
-      data: mapGraphRelationshipRow(row),
+  const streamRelationships = async (query: string): Promise<void> => {
+    await streamQuery(query, async (row) => {
+      await sink.write({
+        type: 'relationship',
+        data: mapGraphRelationshipRow(row),
+      });
     });
-  });
+  };
+
+  try {
+    await streamRelationships(GRAPH_RELATIONSHIP_QUERY);
+  } catch (err) {
+    if (!isMissingRelationshipAuditPropertyError(err)) throw err;
+    await streamRelationships(LEGACY_GRAPH_RELATIONSHIP_QUERY);
+  }
   await sink.flush?.();
 };
 

@@ -16,6 +16,7 @@ import {
   buildScopeTree,
   type BindingRef,
   type DefId,
+  type ImportEdge,
   type Range,
   type Reference,
   type ReferenceIndex,
@@ -82,7 +83,12 @@ const scope = (
   typeBindings: new Map(),
 });
 
-function makeIndexes(scopes: Scope[], allDefs: SymbolDefinition[]): ScopeResolutionIndexes {
+function makeIndexes(
+  scopes: Scope[],
+  allDefs: SymbolDefinition[],
+  imports: ReadonlyMap<ScopeId, readonly ImportEdge[]> = new Map(),
+  fileHashes: ReadonlyMap<string, string> = new Map(),
+): ScopeResolutionIndexes {
   return {
     scopeTree: buildScopeTree(scopes),
     defs: buildDefIndex(allDefs),
@@ -97,9 +103,9 @@ function makeIndexes(scopes: Scope[], allDefs: SymbolDefinition[]): ScopeResolut
       computeMro: () => [],
       implementsOf: () => [],
     }),
-    imports: new Map(),
+    imports,
     bindings: new Map(),
-    fileHashes: new Map(),
+    fileHashes,
     referenceSites: [],
     sccs: [],
     stats: {
@@ -415,6 +421,60 @@ describe('duplicate graph-edge guard', () => {
     expect(stats.skippedDuplicateEdge).toBe(1);
     expect(graph.relationships).toHaveLength(1);
   });
+
+  it('maps scope def ids onto existing graph node ids before duplicate checks', () => {
+    const callerFn: SymbolDefinition = {
+      nodeId: 'def:caller',
+      filePath: 'src/app.ts',
+      type: 'Function',
+      qualifiedName: 'run',
+    };
+    const targetFn: SymbolDefinition = {
+      nodeId: 'def:target',
+      filePath: 'src/model.ts',
+      type: 'Method',
+      qualifiedName: 'save',
+    };
+    const mod = scope('scope:m', null, 'Module', [callerFn, targetFn], range(), 'src/app.ts');
+    const indexes = makeIndexes([mod], [callerFn, targetFn]);
+    const ref: Reference = {
+      fromScope: 'scope:m',
+      toDef: 'def:target',
+      atRange: range(5, 0, 5, 4),
+      kind: 'call',
+      confidence: 0.9,
+      evidence: [],
+    };
+    const graph = createKnowledgeGraph();
+    graph.addNode({
+      id: 'Function:src/app.ts:run',
+      label: 'Function',
+      properties: { name: 'run', filePath: 'src/app.ts' },
+    });
+    graph.addNode({
+      id: 'Method:src/model.ts:save',
+      label: 'Method',
+      properties: { name: 'save', filePath: 'src/model.ts' },
+    });
+    graph.addRelationship({
+      id: 'legacy:run->save',
+      sourceId: 'Function:src/app.ts:run',
+      targetId: 'Method:src/model.ts:save',
+      type: 'CALLS',
+      confidence: 0.9,
+      reason: 'direct',
+    });
+
+    const stats = emitReferencesToGraph({
+      graph,
+      scopes: indexes,
+      referenceIndex: buildRefIndex('scope:m', [ref]),
+    });
+
+    expect(stats.edgesEmitted).toBe(0);
+    expect(stats.skippedDuplicateEdge).toBe(1);
+    expect(graph.relationships).toHaveLength(1);
+  });
 });
 
 // ─── Scope-graph emission (INGESTION_EMIT_SCOPES) ─────────────────────────
@@ -509,6 +569,110 @@ describe('scope-graph emission', () => {
     expect(stats.scopeNodesEmitted).toBe(1);
     expect(stats.scopeEdgesEmitted).toBe(1); // only the DEFINES edge; no parent scope
   });
+
+  it('emits finalized file-level IMPORTS edges without enabling scope nodes', () => {
+    const appModule = scope('scope:app', null, 'Module', [], range(1, 0, 20, 0), 'src/app.ts');
+    const modelModule = scope(
+      'scope:models',
+      null,
+      'Module',
+      [],
+      range(1, 0, 20, 0),
+      'src/models.ts',
+    );
+    const imports = new Map<ScopeId, readonly ImportEdge[]>([
+      [
+        'scope:app',
+        [
+          {
+            localName: 'User',
+            targetFile: 'src/models.ts',
+            targetExportedName: 'User',
+            targetModuleScope: 'scope:models',
+            kind: 'named',
+          },
+        ],
+      ],
+    ]);
+    const indexes = makeIndexes(
+      [appModule, modelModule],
+      [],
+      imports,
+      new Map([['src/app.ts', 'sha256:app']]),
+    );
+
+    const graph = createKnowledgeGraph();
+    const stats = emitReferencesToGraph({
+      graph,
+      scopes: indexes,
+      referenceIndex: { bySourceScope: new Map(), byTargetDef: new Map() },
+    });
+
+    expect(stats.finalizedImportEdgesEmitted).toBe(1);
+    expect(stats.finalizedImportUseEdgesEmitted).toBe(0);
+    expect(stats.scopeNodesEmitted).toBe(0);
+    expect(graph.relationships).toHaveLength(1);
+    expect(graph.relationships[0]).toMatchObject({
+      sourceId: 'File:src/app.ts',
+      targetId: 'File:src/models.ts',
+      type: 'IMPORTS',
+      resolutionSource: 'scope-finalize',
+      fileHash: 'sha256:app',
+    });
+  });
+
+  it('emits finalized per-symbol import-use USES edges with evidence', () => {
+    const user = def('def:User', 'Class', 'User');
+    const appModule = scope('scope:app', null, 'Module', [], range(1, 0, 20, 0), 'src/app.ts');
+    const modelModule = scope(
+      'scope:models',
+      null,
+      'Module',
+      [user],
+      range(1, 0, 20, 0),
+      'src/models.ts',
+    );
+    const imports = new Map<ScopeId, readonly ImportEdge[]>([
+      [
+        'scope:app',
+        [
+          {
+            localName: 'User',
+            targetFile: 'src/models.ts',
+            targetExportedName: 'User',
+            targetModuleScope: 'scope:models',
+            targetDefId: 'def:User',
+            kind: 'named',
+          },
+        ],
+      ],
+    ]);
+    const indexes = makeIndexes(
+      [appModule, modelModule],
+      [user],
+      imports,
+      new Map([['src/app.ts', 'sha256:app']]),
+    );
+
+    const graph = createKnowledgeGraph();
+    const stats = emitReferencesToGraph({
+      graph,
+      scopes: indexes,
+      referenceIndex: { bySourceScope: new Map(), byTargetDef: new Map() },
+    });
+
+    expect(stats.finalizedImportEdgesEmitted).toBe(1);
+    expect(stats.finalizedImportUseEdgesEmitted).toBe(1);
+    expect(graph.relationships.map((rel) => rel.type).sort()).toEqual(['IMPORTS', 'USES']);
+    const uses = graph.relationships.find((rel) => rel.type === 'USES');
+    expect(uses).toMatchObject({
+      sourceId: 'File:src/app.ts',
+      targetId: 'def:User',
+      resolutionSource: 'scope-finalize',
+      fileHash: 'sha256:app',
+    });
+    expect(uses?.evidence?.some((entry) => entry.kind === 'import')).toBe(true);
+  });
 });
 
 // ─── Empty input ──────────────────────────────────────────────────────────
@@ -528,6 +692,10 @@ describe('empty input', () => {
       skippedNoCaller: 0,
       skippedMissingTarget: 0,
       skippedDuplicateEdge: 0,
+      finalizedImportEdgesEmitted: 0,
+      skippedDuplicateImportEdge: 0,
+      finalizedImportUseEdgesEmitted: 0,
+      skippedDuplicateImportUseEdge: 0,
       scopeNodesEmitted: 0,
       scopeEdgesEmitted: 0,
     });

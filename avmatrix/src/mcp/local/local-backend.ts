@@ -176,6 +176,45 @@ function relationshipAuditFields(row: any, offset: number): Record<string, unkno
   };
 }
 
+function relationshipAuditReturnFields(alias = 'r', includeOptionalAuditFields = true): string {
+  const base = `${alias}.confidence AS confidence, ${alias}.reason AS reason`;
+  if (!includeOptionalAuditFields) return base;
+  return (
+    `${base}, ${alias}.resolutionSource AS resolutionSource, ` +
+    `${alias}.evidence AS evidence, ${alias}.fileHash AS fileHash`
+  );
+}
+
+function isMissingRelationshipAuditPropertyError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /Cannot find property (resolutionSource|evidence|fileHash)\b/i.test(message);
+}
+
+async function executeParameterizedWithRelationshipAuditFallback(
+  repoId: string,
+  queryFactory: (includeOptionalAuditFields: boolean) => string,
+  params: Record<string, unknown>,
+): Promise<any[]> {
+  try {
+    return await executeParameterized(repoId, queryFactory(true), params);
+  } catch (err) {
+    if (!isMissingRelationshipAuditPropertyError(err)) throw err;
+    return executeParameterized(repoId, queryFactory(false), params);
+  }
+}
+
+async function executeQueryWithRelationshipAuditFallback(
+  repoId: string,
+  queryFactory: (includeOptionalAuditFields: boolean) => string,
+): Promise<any[]> {
+  try {
+    return await executeQuery(repoId, queryFactory(true));
+  } catch (err) {
+    if (!isMissingRelationshipAuditPropertyError(err)) throw err;
+    return executeQuery(repoId, queryFactory(false));
+  }
+}
+
 /** Structured error logging for query failures — replaces empty catch blocks */
 function logQueryError(context: string, err: unknown): void {
   const msg = err instanceof Error ? err.message : String(err);
@@ -1500,14 +1539,13 @@ export class LocalBackend {
     const symId = sym.id;
 
     // Categorized incoming refs
-    const incomingRows = await executeParameterized(
+    const incomingRows = await executeParameterizedWithRelationshipAuditFallback(
       repo.id,
-      `
+      (includeOptionalAuditFields) => `
       MATCH (caller)-[r:CodeRelation]->(n {id: $symId})
       WHERE r.type IN ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS', 'HAS_METHOD', 'HAS_PROPERTY', 'METHOD_OVERRIDES', 'OVERRIDES', 'METHOD_IMPLEMENTS', 'ACCESSES']
       RETURN r.type AS relType, caller.id AS uid, caller.name AS name, caller.filePath AS filePath, labels(caller)[0] AS kind,
-             r.confidence AS confidence, r.reason AS reason, r.resolutionSource AS resolutionSource,
-             r.evidence AS evidence, r.fileHash AS fileHash
+             ${relationshipAuditReturnFields('r', includeOptionalAuditFields)}
       LIMIT 30
     `,
       { symId },
@@ -1547,30 +1585,28 @@ export class LocalBackend {
       try {
         // Run both incoming-ref queries in parallel — they are independent.
         const [ctorIncoming, fileIncoming] = await Promise.all([
-          executeParameterized(
+          executeParameterizedWithRelationshipAuditFallback(
             repo.id,
-            `
+            (includeOptionalAuditFields) => `
             MATCH (n)-[hm:CodeRelation]->(ctor:Constructor)
             WHERE n.id = $symId AND hm.type = 'HAS_METHOD'
             MATCH (caller)-[r:CodeRelation]->(ctor)
             WHERE r.type IN ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS', 'ACCESSES']
             RETURN r.type AS relType, caller.id AS uid, caller.name AS name, caller.filePath AS filePath, labels(caller)[0] AS kind,
-                   r.confidence AS confidence, r.reason AS reason, r.resolutionSource AS resolutionSource,
-                   r.evidence AS evidence, r.fileHash AS fileHash
+                   ${relationshipAuditReturnFields('r', includeOptionalAuditFields)}
             LIMIT 30
           `,
             { symId },
           ),
-          executeParameterized(
+          executeParameterizedWithRelationshipAuditFallback(
             repo.id,
-            `
+            (includeOptionalAuditFields) => `
             MATCH (f:File)-[rel:CodeRelation]->(n)
             WHERE n.id = $symId AND rel.type = 'DEFINES'
             MATCH (caller)-[r:CodeRelation]->(f)
             WHERE r.type IN ['CALLS', 'IMPORTS']
             RETURN r.type AS relType, caller.id AS uid, caller.name AS name, caller.filePath AS filePath, labels(caller)[0] AS kind,
-                   r.confidence AS confidence, r.reason AS reason, r.resolutionSource AS resolutionSource,
-                   r.evidence AS evidence, r.fileHash AS fileHash
+                   ${relationshipAuditReturnFields('r', includeOptionalAuditFields)}
             LIMIT 30
           `,
             { symId },
@@ -1596,14 +1632,13 @@ export class LocalBackend {
     }
 
     // Categorized outgoing refs
-    const outgoingRows = await executeParameterized(
+    const outgoingRows = await executeParameterizedWithRelationshipAuditFallback(
       repo.id,
-      `
+      (includeOptionalAuditFields) => `
       MATCH (n {id: $symId})-[r:CodeRelation]->(target)
       WHERE r.type IN ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS', 'HAS_METHOD', 'HAS_PROPERTY', 'METHOD_OVERRIDES', 'OVERRIDES', 'METHOD_IMPLEMENTS', 'ACCESSES']
       RETURN r.type AS relType, target.id AS uid, target.name AS name, target.filePath AS filePath, labels(target)[0] AS kind,
-             r.confidence AS confidence, r.reason AS reason, r.resolutionSource AS resolutionSource,
-             r.evidence AS evidence, r.fileHash AS fileHash
+             ${relationshipAuditReturnFields('r', includeOptionalAuditFields)}
       LIMIT 30
     `,
       { symId },
@@ -2400,13 +2435,13 @@ export class LocalBackend {
 
       // Batch frontier nodes into a single Cypher query per depth level
       const idList = frontier.map((id) => `'${id.replace(/'/g, "''")}'`).join(', ');
-      const query =
+      const queryFactory = (includeOptionalAuditFields: boolean) =>
         direction === 'upstream'
-          ? `MATCH (caller)-[r:CodeRelation]->(n) WHERE n.id IN [${idList}] AND r.type IN [${relTypeFilter}]${confidenceFilter} RETURN n.id AS sourceId, caller.id AS id, caller.name AS name, labels(caller)[0] AS type, caller.filePath AS filePath, r.type AS relType, r.confidence AS confidence, r.reason AS reason, r.resolutionSource AS resolutionSource, r.evidence AS evidence, r.fileHash AS fileHash`
-          : `MATCH (n)-[r:CodeRelation]->(callee) WHERE n.id IN [${idList}] AND r.type IN [${relTypeFilter}]${confidenceFilter} RETURN n.id AS sourceId, callee.id AS id, callee.name AS name, labels(callee)[0] AS type, callee.filePath AS filePath, r.type AS relType, r.confidence AS confidence, r.reason AS reason, r.resolutionSource AS resolutionSource, r.evidence AS evidence, r.fileHash AS fileHash`;
+          ? `MATCH (caller)-[r:CodeRelation]->(n) WHERE n.id IN [${idList}] AND r.type IN [${relTypeFilter}]${confidenceFilter} RETURN n.id AS sourceId, caller.id AS id, caller.name AS name, labels(caller)[0] AS type, caller.filePath AS filePath, r.type AS relType, ${relationshipAuditReturnFields('r', includeOptionalAuditFields)}`
+          : `MATCH (n)-[r:CodeRelation]->(callee) WHERE n.id IN [${idList}] AND r.type IN [${relTypeFilter}]${confidenceFilter} RETURN n.id AS sourceId, callee.id AS id, callee.name AS name, labels(callee)[0] AS type, callee.filePath AS filePath, r.type AS relType, ${relationshipAuditReturnFields('r', includeOptionalAuditFields)}`;
 
       try {
-        const related = await executeQuery(repo.id, query);
+        const related = await executeQueryWithRelationshipAuditFallback(repo.id, queryFactory);
 
         for (const rel of related) {
           const relId = rel.id || rel[1];

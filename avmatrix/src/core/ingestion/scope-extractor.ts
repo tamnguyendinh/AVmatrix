@@ -495,6 +495,8 @@ function buildDefFromDeclarationMatch(
   const qualifiedCap = match['@declaration.qualified_name'];
   const qualifiedName = qualifiedCap?.text;
   const ownerCap = match['@declaration.owner'];
+  const returnTypeCap = match['@declaration.return_type'];
+  const declaredTypeCap = match['@declaration.declared_type'];
 
   return {
     nodeId: makeDefId(filePath, anchor.range, type, nameCap.text),
@@ -502,6 +504,12 @@ function buildDefFromDeclarationMatch(
     type,
     ...(qualifiedName !== undefined ? { qualifiedName } : { qualifiedName: nameCap.text }),
     ...(ownerCap !== undefined && ownerCap.text.length > 0 ? { ownerId: ownerCap.text } : {}),
+    ...(returnTypeCap !== undefined && returnTypeCap.text.length > 0
+      ? { returnType: returnTypeCap.text }
+      : {}),
+    ...(declaredTypeCap !== undefined && declaredTypeCap.text.length > 0
+      ? { declaredType: declaredTypeCap.text }
+      : {}),
   };
 }
 
@@ -786,6 +794,8 @@ const KNOWN_SUB_TAGS: ReadonlySet<string> = new Set<string>([
   '@declaration.name',
   '@declaration.owner',
   '@declaration.qualified_name',
+  '@declaration.return_type',
+  '@declaration.declared_type',
   '@import.name',
   '@import.source',
   '@import.alias',

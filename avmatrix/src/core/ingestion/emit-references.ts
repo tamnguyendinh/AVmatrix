@@ -46,6 +46,7 @@
  */
 
 import type {
+  GraphNode,
   NodeLabel,
   GraphRelationship,
   ImportEdge,
@@ -59,6 +60,7 @@ import type {
 } from 'avmatrix-shared';
 import type { KnowledgeGraph } from '../graph/types.js';
 import type { ScopeResolutionIndexes } from './model/scope-resolution-indexes.js';
+import { generateId } from '../../lib/utils.js';
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 
@@ -70,6 +72,14 @@ export interface EmitStats {
   readonly skippedMissingTarget: number;
   /** References dropped because an equivalent graph edge already exists. */
   readonly skippedDuplicateEdge: number;
+  /** Finalized file-level IMPORTS edges emitted from scope finalize output. */
+  readonly finalizedImportEdgesEmitted: number;
+  /** Finalized IMPORTS edges skipped because an equivalent edge already exists. */
+  readonly skippedDuplicateImportEdge: number;
+  /** Finalized per-symbol import-use USES edges emitted from scope finalize output. */
+  readonly finalizedImportUseEdgesEmitted: number;
+  /** Finalized import-use USES edges skipped because an equivalent edge already exists. */
+  readonly skippedDuplicateImportUseEdge: number;
   /** Scope nodes emitted — `0` unless `INGESTION_EMIT_SCOPES=1`. */
   readonly scopeNodesEmitted: number;
   /** Scope-tree structural edges emitted — `0` unless `INGESTION_EMIT_SCOPES=1`. */
@@ -100,6 +110,7 @@ export function emitReferencesToGraph(input: EmitReferencesInput): EmitStats {
   let skippedMissingTarget = 0;
   let skippedDuplicateEdge = 0;
   const existingEdges = buildExistingEdgeKeySet(graph);
+  const graphNodeResolver = createGraphNodeResolver(graph);
 
   for (const [fromScope, refs] of referenceIndex.bySourceScope) {
     for (const ref of refs) {
@@ -108,18 +119,21 @@ export function emitReferencesToGraph(input: EmitReferencesInput): EmitStats {
         skippedMissingTarget++;
         continue;
       }
-      const callerId = resolveCallerNodeId(fromScope, scopes);
-      if (callerId === undefined) {
+      const callerDef = resolveCallerDef(fromScope, scopes);
+      if (callerDef === undefined) {
         skippedNoCaller++;
         continue;
       }
+      const callerId = graphNodeResolver(callerDef);
+      const targetId = graphNodeResolver(targetDef);
       const relationship = buildRelationship(ref, callerId, targetDef, sourceLabel);
-      const edgeKey = semanticEdgeKey(relationship);
+      const mappedRelationship = { ...relationship, targetId };
+      const edgeKey = semanticEdgeKey(mappedRelationship);
       if (existingEdges.has(edgeKey)) {
         skippedDuplicateEdge++;
         continue;
       }
-      graph.addRelationship(relationship);
+      graph.addRelationship(mappedRelationship);
       existingEdges.add(edgeKey);
       edgesEmitted++;
     }
@@ -128,12 +142,14 @@ export function emitReferencesToGraph(input: EmitReferencesInput): EmitStats {
   const scopeStats = isScopeEmissionEnabled()
     ? emitScopeGraph({ graph, scopes })
     : { scopeNodesEmitted: 0, scopeEdgesEmitted: 0 };
+  const importStats = emitFinalizedFileImports({ graph, scopes, existingEdges, graphNodeResolver });
 
   return {
     edgesEmitted,
     skippedNoCaller,
     skippedMissingTarget,
     skippedDuplicateEdge,
+    ...importStats,
     ...scopeStats,
   };
 }
@@ -213,6 +229,87 @@ export function emitScopeGraph(input: {
   return { scopeNodesEmitted, scopeEdgesEmitted };
 }
 
+function emitFinalizedFileImports(input: {
+  readonly graph: KnowledgeGraph;
+  readonly scopes: ScopeResolutionIndexes;
+  readonly existingEdges: Set<string>;
+  readonly graphNodeResolver: (def: SymbolDefinition) => string;
+}): {
+  readonly finalizedImportEdgesEmitted: number;
+  readonly skippedDuplicateImportEdge: number;
+  readonly finalizedImportUseEdgesEmitted: number;
+  readonly skippedDuplicateImportUseEdge: number;
+} {
+  const { graph, scopes, existingEdges, graphNodeResolver } = input;
+  let finalizedImportEdgesEmitted = 0;
+  let skippedDuplicateImportEdge = 0;
+  let finalizedImportUseEdgesEmitted = 0;
+  let skippedDuplicateImportUseEdge = 0;
+
+  for (const [scopeId, edges] of scopes.imports) {
+    const sourceScope = scopes.scopeTree.getScope(scopeId);
+    if (sourceScope === undefined) continue;
+    for (const edge of edges) {
+      if (edge.targetFile === null || edge.linkStatus === 'unresolved') continue;
+      const fileHash = scopes.fileHashes.get(sourceScope.filePath);
+      const importRelationship = {
+        id: generateId('IMPORTS', `${sourceScope.filePath}->${edge.targetFile}`),
+        sourceId: generateId('File', sourceScope.filePath),
+        targetId: generateId('File', edge.targetFile),
+        type: 'IMPORTS' as const,
+        confidence: 1,
+        reason: `scope-finalize import ${edge.kind} ${edge.localName}`,
+        resolutionSource: 'scope-finalize',
+        ...(fileHash !== undefined ? { fileHash } : {}),
+        evidence: importEvidence(edge),
+      };
+      const importEdgeKey = semanticEdgeKey(importRelationship);
+      if (existingEdges.has(importEdgeKey)) {
+        skippedDuplicateImportEdge++;
+      } else {
+        graph.addRelationship(importRelationship);
+        existingEdges.add(importEdgeKey);
+        finalizedImportEdgesEmitted++;
+      }
+
+      if (edge.targetDefId === undefined || scopes.defs.get(edge.targetDefId) === undefined) {
+        continue;
+      }
+      const targetDef = scopes.defs.get(edge.targetDefId);
+      if (targetDef === undefined) continue;
+      const importUseRelationship = {
+        id: generateId(
+          'USES',
+          `${sourceScope.filePath}->${edge.targetDefId}:import:${edge.localName}`,
+        ),
+        sourceId: generateId('File', sourceScope.filePath),
+        targetId: graphNodeResolver(targetDef),
+        type: 'USES' as const,
+        confidence: 1,
+        reason: `scope-finalize import-use ${edge.kind} ${edge.localName}`,
+        resolutionSource: 'scope-finalize',
+        ...(fileHash !== undefined ? { fileHash } : {}),
+        evidence: importEvidence(edge),
+      };
+      const importUseEdgeKey = semanticEdgeKey(importUseRelationship);
+      if (existingEdges.has(importUseEdgeKey)) {
+        skippedDuplicateImportUseEdge++;
+        continue;
+      }
+      graph.addRelationship(importUseRelationship);
+      existingEdges.add(importUseEdgeKey);
+      finalizedImportUseEdgesEmitted++;
+    }
+  }
+
+  return {
+    finalizedImportEdgesEmitted,
+    skippedDuplicateImportEdge,
+    finalizedImportUseEdgesEmitted,
+    skippedDuplicateImportUseEdge,
+  };
+}
+
 function fileHashForScope(scopeId: ScopeId, scopes: ScopeResolutionIndexes): string | undefined {
   const scope = scopes.scopeTree.getScope(scopeId);
   if (scope === undefined) return undefined;
@@ -247,14 +344,14 @@ function isScopeEmissionEnabled(): boolean {
  * Constructor). Fall back to the innermost ancestor's first `ownedDef`
  * if none is found; return `undefined` if all ancestors have no defs.
  */
-function resolveCallerNodeId(
+function resolveCallerDef(
   startScope: ScopeId,
   scopes: ScopeResolutionIndexes,
-): string | undefined {
+): SymbolDefinition | undefined {
   const tree = scopes.scopeTree;
   let current: ScopeId | null = startScope;
   const visited = new Set<ScopeId>();
-  let firstOwnedFallback: string | undefined;
+  let firstOwnedFallback: SymbolDefinition | undefined;
 
   while (current !== null) {
     if (visited.has(current)) break;
@@ -265,11 +362,11 @@ function resolveCallerNodeId(
 
     // Prefer a Function-like owner.
     const fnDef = scope.ownedDefs.find((d) => isFunctionLike(d.type));
-    if (fnDef !== undefined) return fnDef.nodeId;
+    if (fnDef !== undefined) return fnDef;
 
     // Stash the first owned def we see as a conservative fallback.
     if (firstOwnedFallback === undefined && scope.ownedDefs.length > 0) {
-      firstOwnedFallback = scope.ownedDefs[0]!.nodeId;
+      firstOwnedFallback = scope.ownedDefs[0]!;
     }
 
     current = scope.parent;
@@ -282,6 +379,67 @@ function isFunctionLike(type: NodeLabel): boolean {
   return type === 'Function' || type === 'Method' || type === 'Constructor';
 }
 
+function createGraphNodeResolver(graph: KnowledgeGraph): (def: SymbolDefinition) => string {
+  const bySemanticKey = new Map<string, string[]>();
+  graph.forEachNode((node) => {
+    for (const key of graphNodeSemanticKeys(node)) {
+      const bucket = bySemanticKey.get(key) ?? [];
+      bucket.push(node.id);
+      bySemanticKey.set(key, bucket);
+    }
+  });
+
+  return (def: SymbolDefinition): string => {
+    if (graph.getNode(def.nodeId) !== undefined) return def.nodeId;
+    for (const key of defSemanticKeys(def)) {
+      const matches = bySemanticKey.get(key);
+      if (matches !== undefined && matches.length === 1) return matches[0]!;
+    }
+    return def.nodeId;
+  };
+}
+
+function graphNodeSemanticKeys(node: GraphNode): readonly string[] {
+  const filePath = stringProperty(node.properties.filePath);
+  if (filePath === undefined) return [];
+  const names = uniqueStrings([
+    stringProperty(node.properties.name),
+    stringProperty(node.properties.qualifiedName),
+    simpleName(stringProperty(node.properties.qualifiedName)),
+  ]);
+  return names.map((name) => semanticNodeKey(node.label, filePath, name));
+}
+
+function defSemanticKeys(def: SymbolDefinition): readonly string[] {
+  const names = uniqueStrings([def.qualifiedName, simpleName(def.qualifiedName)]);
+  return names.map((name) => semanticNodeKey(def.type, def.filePath, name));
+}
+
+function semanticNodeKey(label: NodeLabel, filePath: string, name: string): string {
+  return `${label}\0${filePath}\0${name}`;
+}
+
+function simpleName(value: string | undefined): string | undefined {
+  if (value === undefined || value.length === 0) return undefined;
+  const dot = value.lastIndexOf('.');
+  return dot === -1 ? value : value.slice(dot + 1);
+}
+
+function stringProperty(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function uniqueStrings(values: readonly (string | undefined)[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const value of values) {
+    if (value === undefined || seen.has(value)) continue;
+    seen.add(value);
+    out.push(value);
+  }
+  return out;
+}
+
 function buildRelationship(
   ref: Reference,
   callerId: string,
@@ -289,7 +447,10 @@ function buildRelationship(
   sourceLabel: string,
 ): Parameters<KnowledgeGraph['addRelationship']>[0] {
   const type = mapKindToType(ref.kind);
-  const reason = `${sourceLabel}: ${ref.kind} | confidence ${ref.confidence.toFixed(3)}`;
+  const reason =
+    ref.kind === 'read' || ref.kind === 'write'
+      ? ref.kind
+      : `${sourceLabel}: ${ref.kind} | confidence ${ref.confidence.toFixed(3)}`;
   // `step` encodes read/write discriminator for ACCESSES edges (1=read, 2=write).
   // Other kinds omit `step`.
   const step = ref.kind === 'read' ? 1 : ref.kind === 'write' ? 2 : undefined;

@@ -58,6 +58,7 @@ export const resolutionPhase: PipelinePhase<ResolutionOutput> = {
       metrics.counters.scopeResolutionChunkSize = 0;
       metrics.counters.scopeResolutionChunks = 0;
       metrics.counters.scopeResolutionMaxChunkReferenceSites = 0;
+      metrics.counters.scopeResolutionReadonlyIndexBytes = 0;
       metrics.counters.scopeResolutionReferenceIndexSourceScopes = 0;
       metrics.counters.scopeResolutionReferenceIndexTargetDefs = 0;
       metrics.counters.scopeResolutionResolvedReferences = 0;
@@ -69,14 +70,41 @@ export const resolutionPhase: PipelinePhase<ResolutionOutput> = {
       metrics.counters.scopeResolutionResolvedImportUses = 0;
       metrics.counters.scopeResolutionEdgesEmitted = 0;
       metrics.counters.scopeResolutionDuplicateEdgesSkipped = 0;
-      metrics.counters.scopeResolutionEdgesSkippedNoCaller = 0;
-      metrics.counters.scopeResolutionEdgesSkippedMissingTarget = 0;
+      if (scopes !== undefined) {
+        const emitStart = performance.now();
+        const emitStats = emitReferencesToGraph({
+          graph: ctx.graph,
+          scopes,
+          referenceIndex: EMPTY_REFERENCE_INDEX,
+        });
+        metrics.timings.graphEmitMs = roundMs(performance.now() - emitStart);
+        metrics.counters.scopeResolutionFinalizedImportsEmitted =
+          emitStats.finalizedImportEdgesEmitted;
+        metrics.counters.scopeResolutionDuplicateImportsSkipped =
+          emitStats.skippedDuplicateImportEdge;
+        metrics.counters.scopeResolutionFinalizedImportUsesEmitted =
+          emitStats.finalizedImportUseEdgesEmitted;
+        metrics.counters.scopeResolutionDuplicateImportUsesSkipped =
+          emitStats.skippedDuplicateImportUseEdge;
+        metrics.counters.scopeResolutionEdgesSkippedNoCaller = emitStats.skippedNoCaller;
+        metrics.counters.scopeResolutionEdgesSkippedMissingTarget = emitStats.skippedMissingTarget;
+      } else {
+        metrics.counters.scopeResolutionFinalizedImportsEmitted = 0;
+        metrics.counters.scopeResolutionDuplicateImportsSkipped = 0;
+        metrics.counters.scopeResolutionFinalizedImportUsesEmitted = 0;
+        metrics.counters.scopeResolutionDuplicateImportUsesSkipped = 0;
+        metrics.counters.scopeResolutionEdgesSkippedNoCaller = 0;
+        metrics.counters.scopeResolutionEdgesSkippedMissingTarget = 0;
+      }
       return { referenceIndex: EMPTY_REFERENCE_INDEX, metrics };
     }
 
     const start = performance.now();
     const result = resolveScopeReferenceSites(scopes);
     metrics.timings.referenceResolveMs = roundMs(performance.now() - start);
+    metrics.timings.readonlyIndexInitMs = roundMs(result.timings.readonlyIndexInitMs);
+    metrics.timings.referenceWorkerResolveMs = roundMs(result.timings.referenceWorkerResolveMs);
+    metrics.timings.referenceMergeMs = roundMs(result.timings.referenceMergeMs);
     metrics.timings.referenceIndexBuildMs = roundMs(result.timings.referenceIndexBuildMs);
 
     const emitStart = performance.now();
@@ -91,6 +119,7 @@ export const resolutionPhase: PipelinePhase<ResolutionOutput> = {
     metrics.counters.scopeResolutionChunkSize = result.stats.chunkSize;
     metrics.counters.scopeResolutionChunks = result.stats.chunksResolved;
     metrics.counters.scopeResolutionMaxChunkReferenceSites = result.stats.maxChunkReferenceSites;
+    metrics.counters.scopeResolutionReadonlyIndexBytes = result.stats.readonlyIndexBytes;
     metrics.counters.scopeResolutionReferenceIndexSourceScopes =
       result.stats.referenceIndexSourceScopes;
     metrics.counters.scopeResolutionReferenceIndexTargetDefs =
@@ -104,6 +133,12 @@ export const resolutionPhase: PipelinePhase<ResolutionOutput> = {
     metrics.counters.scopeResolutionResolvedImportUses = result.stats.resolvedImportUses;
     metrics.counters.scopeResolutionEdgesEmitted = emitStats.edgesEmitted;
     metrics.counters.scopeResolutionDuplicateEdgesSkipped = emitStats.skippedDuplicateEdge;
+    metrics.counters.scopeResolutionFinalizedImportsEmitted = emitStats.finalizedImportEdgesEmitted;
+    metrics.counters.scopeResolutionDuplicateImportsSkipped = emitStats.skippedDuplicateImportEdge;
+    metrics.counters.scopeResolutionFinalizedImportUsesEmitted =
+      emitStats.finalizedImportUseEdgesEmitted;
+    metrics.counters.scopeResolutionDuplicateImportUsesSkipped =
+      emitStats.skippedDuplicateImportUseEdge;
     metrics.counters.scopeResolutionEdgesSkippedNoCaller = emitStats.skippedNoCaller;
     metrics.counters.scopeResolutionEdgesSkippedMissingTarget = emitStats.skippedMissingTarget;
 

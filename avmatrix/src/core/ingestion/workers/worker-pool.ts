@@ -3,6 +3,7 @@ import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { WorkerOptions } from 'node:worker_threads';
 
 export interface WorkerPool {
   /**
@@ -67,6 +68,11 @@ export interface WorkerDispatchOptions<TInput> {
   verbose?: boolean;
 }
 
+export interface WorkerPoolOptions {
+  /** Structured-clone payload passed once when each worker is created. */
+  workerData?: WorkerOptions['workerData'];
+}
+
 interface WorkUnit<TInput> {
   unitId: number;
   startIndex: number;
@@ -95,7 +101,11 @@ interface WorkerState<TInput> {
 /**
  * Create a pool of worker threads.
  */
-export const createWorkerPool = (workerUrl: URL, poolSize?: number): WorkerPool => {
+export const createWorkerPool = (
+  workerUrl: URL,
+  poolSize?: number,
+  options: WorkerPoolOptions = {},
+): WorkerPool => {
   // Validate worker script exists before spawning to prevent uncaught
   // MODULE_NOT_FOUND crashes in worker threads (e.g. when running from src/ via vitest)
   const workerPath = fileURLToPath(workerUrl);
@@ -106,9 +116,10 @@ export const createWorkerPool = (workerUrl: URL, poolSize?: number): WorkerPool 
   const size = poolSize ?? Math.min(8, Math.max(1, os.cpus().length - 1));
   const workers: Worker[] = [];
   let terminated = false;
+  const createWorker = (): Worker => new Worker(workerUrl, { workerData: options.workerData });
 
   for (let i = 0; i < size; i++) {
-    workers.push(new Worker(workerUrl));
+    workers.push(createWorker());
   }
 
   const dispatch = <TInput, TResult>(
@@ -274,7 +285,7 @@ export const createWorkerPool = (workerUrl: URL, poolSize?: number): WorkerPool 
         state.cleanup = undefined;
         void state.worker.terminate().catch(() => undefined);
         try {
-          const replacement = new Worker(workerUrl);
+          const replacement = createWorker();
           workers[state.index] = replacement;
           state.worker = replacement;
           attachHandlers(state);

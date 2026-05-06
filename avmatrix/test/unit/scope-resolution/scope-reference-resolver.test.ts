@@ -160,6 +160,7 @@ function run(user: User) {
       chunkSize: 1,
       chunksResolved: unchunked.stats.totalReferenceSites,
       maxChunkReferenceSites: 1,
+      readonlyIndexBytes: unchunked.stats.readonlyIndexBytes,
       resolvedReferences: unchunked.stats.resolvedReferences,
       unresolvedReferences: unchunked.stats.unresolvedReferences,
       referenceIndexSourceScopes: unchunked.stats.referenceIndexSourceScopes,
@@ -168,6 +169,10 @@ function run(user: User) {
     expect([...chunked.referenceIndex.byTargetDef.keys()].sort()).toEqual(
       [...unchunked.referenceIndex.byTargetDef.keys()].sort(),
     );
+    expect(chunked.stats.readonlyIndexBytes).toBeGreaterThan(0);
+    expect(chunked.timings.readonlyIndexInitMs).toBeGreaterThanOrEqual(0);
+    expect(chunked.timings.referenceWorkerResolveMs).toBeGreaterThanOrEqual(0);
+    expect(chunked.timings.referenceMergeMs).toBeGreaterThanOrEqual(0);
   });
 
   it('resolves constructor calls through finalized import bindings without source rereads', () => {
@@ -266,6 +271,84 @@ function run(user: User) {
       unresolvedReferences: 0,
       resolvedTypeReferences: 1,
       resolvedAccesses: 2,
+    });
+  });
+
+  it('resolves return type annotation facts to class definitions', () => {
+    const source = `
+class User {}
+
+function create(): User {
+  return new User();
+}
+`;
+    const parsed = extractParsedFileWithStats(
+      typescriptProvider,
+      source,
+      'src/app.ts',
+      SupportedLanguages.TypeScript,
+      parser.parse(source).rootNode,
+    ).parsedFile;
+    expect(parsed).toBeDefined();
+
+    const indexes = finalizeScopeModel([parsed!]);
+    const result = resolveScopeReferenceSites(indexes);
+
+    const user = parsed!.localDefs.find(
+      (def) => def.type === 'Class' && def.qualifiedName === 'User',
+    );
+    expect(user).toBeDefined();
+
+    const refsToUser = result.referenceIndex.byTargetDef.get(user!.nodeId) ?? [];
+    expect(refsToUser.map((ref) => ref.kind).sort()).toEqual(['call', 'type-reference']);
+    expect(result.stats).toMatchObject({
+      totalReferenceSites: 2,
+      resolvedReferences: 2,
+      unresolvedReferences: 0,
+      resolvedCalls: 1,
+      resolvedTypeReferences: 1,
+    });
+  });
+
+  it('resolves member calls through local function return annotation bindings', () => {
+    const source = `
+class User {
+  save() {}
+}
+
+function makeUser(): User {
+  return new User();
+}
+
+function run() {
+  const user = makeUser();
+  user.save();
+}
+`;
+    const parsed = extractParsedFileWithStats(
+      typescriptProvider,
+      source,
+      'src/app.ts',
+      SupportedLanguages.TypeScript,
+      parser.parse(source).rootNode,
+    ).parsedFile;
+    expect(parsed).toBeDefined();
+
+    const indexes = finalizeScopeModel([parsed!]);
+    const result = resolveScopeReferenceSites(indexes);
+
+    const save = parsed!.localDefs.find(
+      (def) => def.type === 'Method' && def.qualifiedName === 'save',
+    );
+    expect(save).toBeDefined();
+
+    const refsToSave = result.referenceIndex.byTargetDef.get(save!.nodeId) ?? [];
+    expect(refsToSave.map((ref) => ref.kind)).toEqual(['call']);
+    expect(result.stats).toMatchObject({
+      resolvedReferences: 4,
+      unresolvedReferences: 0,
+      resolvedCalls: 3,
+      resolvedTypeReferences: 1,
     });
   });
 });

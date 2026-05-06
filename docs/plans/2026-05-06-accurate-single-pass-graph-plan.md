@@ -225,6 +225,10 @@ Use this checklist to update implementation progress. Do not mark the target arc
 - [x] Add analyze benchmark JSON output that combines graph correctness snapshot, performance timings, and key optimization counters.
 - [x] Expose edge-count, scope-finalize, chunk/index, and resolution-kind counters directly in benchmark JSON key metrics.
 - [x] Record AVmatrix version, Node runtime, platform, and target repo git commit/dirty state in benchmark JSON.
+- [x] Add benchmark snapshot comparison helper for before/after timing, edge-count, unresolved-count, and graph-diff deltas.
+- [x] Expose benchmark before/after comparison through `avmatrix benchmark-compare <before.json> <after.json>` so optimization claims have a usable CLI check.
+- [x] Emit finalized file-level `IMPORTS` edges through default resolution emission with duplicate guard, without enabling full scope graph.
+- [x] Emit finalized per-symbol import-use `USES` edges through the default graph emission path with audit evidence.
 - [x] Make finalized import bindings visible to scope lookup so imported constructor/type references resolve without source rereads.
 - [x] Add TypeScript/JavaScript AST-reused member read/write access facts and resolve them into `ACCESSES` edges.
 - [x] Add TypeScript/JavaScript AST-reused type-reference facts from annotations and emit them as `USES` edges.
@@ -241,15 +245,22 @@ Use this checklist to update implementation progress. Do not mark the target arc
 - [x] Resolve imported constructor references through finalized import bindings in `ScopeTree`.
 - [x] Resolve TypeScript member read/write access facts to property definitions and emit graph `ACCESSES` edges.
 - [x] Resolve TypeScript type annotation facts to class/interface definitions and emit graph `USES` edges.
+- [x] Add TypeScript/JavaScript AST-reused return type reference facts and resolve them into `USES` edges.
+- [x] Infer TypeScript/JavaScript local variable type bindings from same-file function return annotations without source rereads.
+- [x] Preserve TypeScript/JavaScript declaration `returnType` and `declaredType` metadata in `ParsedFile` facts from the reused AST.
 - [x] Resolve receiver method dispatch through imported type aliases, for example `current: U` followed by `current.save()`, without reparsing.
 - [x] Add a TypeScript accurate single-pass parity fixture covering AST reuse, finalized imports, resolved reference counts, emitted edge counts, unresolved count, and audit metadata.
 - [ ] Complete scope-resolved `CALLS`, `ACCESSES`, `USES`, `INHERITS`, and import-use edge coverage across migrated providers through one graph emission path.
 - [x] Add deterministic reference-site chunk scheduling plus chunk/index cardinality metrics as the scaffold for workerized resolution.
+- [x] Add readonly resolution index size plus init/worker/merge timing metrics as workerization scaffolding.
+- [x] Refactor scope reference resolution into deterministic chunk functions with serializable readonly-index payloads.
+- [x] Add worker-pool `workerData` support so future resolution workers can receive readonly indexes once at startup.
 - [ ] Parallelize reference resolution by file/chunk against readonly indexes.
 - [x] Persist available audit metadata (`resolutionSource`, `confidence`, `evidence`, `fileHash` column) through LadybugDB CSV/load/read-back.
 - [x] Populate real `fileHash` values on scope-resolved edges from parse-time `ParsedFile.fileHash` without rereading source.
 - [x] Expose scope-resolution audit metadata in MCP context/impact readers, not only graph read-back.
 - [x] Attach audit metadata to finalized scope `IMPORTS` edges so import parity is inspectable after graph emission.
+- [x] Add legacy relationship-schema fallback so existing indexes without `resolutionSource`, `evidence`, or `fileHash` remain queryable.
 - [ ] Move useful `crossFilePhase` type propagation into `resolutionPhase`.
 - [ ] Retire or narrow `crossFilePhase` only after parity is proven.
 - [x] Add duplicate-edge checks so legacy and scope-aware paths do not emit overlapping edges.

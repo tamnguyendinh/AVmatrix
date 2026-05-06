@@ -78,9 +78,14 @@ export function run(service: Service) {
     const current = parsed!.localDefs.find(
       (def) => def.type === 'Property' && def.qualifiedName === 'current',
     );
+    const makeService = parsed!.localDefs.find(
+      (def) => def.type === 'Function' && def.qualifiedName === 'makeService',
+    );
     expect(service).toBeDefined();
     expect(save?.ownerId).toBe(service!.nodeId);
     expect(current?.ownerId).toBe(service!.nodeId);
+    expect(current?.declaredType).toBe('U');
+    expect(makeService?.returnType).toBe('Service');
 
     expect(parsed!.parsedImports).toEqual(
       expect.arrayContaining([
@@ -173,5 +178,86 @@ export function run(service: Service) {
         { name: 'Repo', kind: 'call', callForm: 'constructor', receiver: undefined, arity: 0 },
       ]),
     );
+  });
+
+  it('emits return type references from the already-parsed AST', () => {
+    const source = `
+class User {}
+
+export function makeUser(): User {
+  return new User();
+}
+
+const makeOther = (): User => new User();
+
+class Service {
+  current(): User {
+    return new User();
+  }
+}
+`;
+    const tree = parser.parse(source);
+    const result = extractParsedFileWithStats(
+      typescriptProvider,
+      source,
+      'src/returns.ts',
+      SupportedLanguages.TypeScript,
+      tree.rootNode,
+    );
+
+    expect(result.mode).toBe('ast-reused');
+    const parsed = result.parsedFile;
+    expect(parsed).toBeDefined();
+
+    const returnTypeRefs = parsed!.referenceSites.filter(
+      (site) => site.kind === 'type-reference' && site.name === 'User',
+    );
+    expect(returnTypeRefs).toHaveLength(3);
+  });
+
+  it('infers local variable type bindings from local function return annotations', () => {
+    const source = `
+class User {}
+
+function makeUser(): User {
+  return new User();
+}
+
+const makeOther = (): User => new User();
+
+function run() {
+  const user = makeUser();
+  const other = makeOther();
+}
+`;
+    const tree = parser.parse(source);
+    const result = extractParsedFileWithStats(
+      typescriptProvider,
+      source,
+      'src/inferred-return.ts',
+      SupportedLanguages.TypeScript,
+      tree.rootNode,
+    );
+
+    expect(result.mode).toBe('ast-reused');
+    const parsed = result.parsedFile;
+    expect(parsed).toBeDefined();
+
+    const typeBindings = new Map<string, string>();
+    for (const scope of parsed!.scopes) {
+      for (const [name, typeRef] of scope.typeBindings) {
+        typeBindings.set(name, typeRef.rawName);
+      }
+    }
+    expect(typeBindings.get('user')).toBe('User');
+    expect(typeBindings.get('other')).toBe('User');
+    const makeUser = parsed!.localDefs.find(
+      (def) => def.type === 'Function' && def.qualifiedName === 'makeUser',
+    );
+    const makeOther = parsed!.localDefs.find(
+      (def) => def.type === 'Function' && def.qualifiedName === 'makeOther',
+    );
+    expect(makeUser?.returnType).toBe('User');
+    expect(makeOther?.returnType).toBe('User');
   });
 });

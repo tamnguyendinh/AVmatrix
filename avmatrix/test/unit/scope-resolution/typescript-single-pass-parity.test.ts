@@ -3,10 +3,7 @@ import type Parser from 'tree-sitter';
 import { SupportedLanguages, type ParsedFile } from 'avmatrix-shared';
 import { createKnowledgeGraph } from '../../../src/core/graph/graph.js';
 import { finalizeScopeModel } from '../../../src/core/ingestion/finalize-orchestrator.js';
-import {
-  emitReferencesToGraph,
-  emitScopeGraph,
-} from '../../../src/core/ingestion/emit-references.js';
+import { emitReferencesToGraph } from '../../../src/core/ingestion/emit-references.js';
 import { typescriptProvider } from '../../../src/core/ingestion/languages/typescript.js';
 import { extractParsedFileWithStats } from '../../../src/core/ingestion/scope-extractor-bridge.js';
 import { resolveScopeReferenceSites } from '../../../src/core/ingestion/scope-reference-resolver.js';
@@ -69,7 +66,6 @@ export function run(repo: Repo, user: User) {
       scopes: indexes,
       referenceIndex: resolution.referenceIndex,
     });
-    emitScopeGraph({ graph, scopes: indexes });
 
     expect(countFinalizedImports(indexes.imports)).toBe(3);
     expect(resolution.stats.unresolvedReferences).toBe(0);
@@ -77,14 +73,14 @@ export function run(repo: Repo, user: User) {
     expect(resolution.stats.resolvedCalls).toBe(4);
     expect(edgeCounts(graph.relationships)).toMatchObject({
       CALLS: 3,
-      IMPORTS: 3,
+      IMPORTS: 1,
       ACCESSES: 2,
-      USES: 3,
+      USES: 6,
       INHERITS: 2,
     });
     expect(
       graph.relationships
-        .filter((rel) => ['CALLS', 'ACCESSES', 'USES', 'INHERITS'].includes(rel.type))
+        .filter((rel) => rel.resolutionSource === 'scope-resolution')
         .every((rel) => rel.resolutionSource === 'scope-resolution' && rel.fileHash !== undefined),
     ).toBe(true);
     expect(
@@ -93,6 +89,15 @@ export function run(repo: Repo, user: User) {
         .every(
           (rel) =>
             rel.resolutionSource === 'scope-finalize' &&
+            rel.fileHash !== undefined &&
+            rel.evidence?.some((entry) => entry.kind === 'import') === true,
+        ),
+    ).toBe(true);
+    expect(
+      graph.relationships
+        .filter((rel) => rel.type === 'USES' && rel.resolutionSource === 'scope-finalize')
+        .every(
+          (rel) =>
             rel.fileHash !== undefined &&
             rel.evidence?.some((entry) => entry.kind === 'import') === true,
         ),
@@ -136,7 +141,8 @@ export function run(current: U) {
     expect(resolution.stats.resolvedTypeReferences).toBe(1);
     expect(edgeCounts(graph.relationships)).toMatchObject({
       CALLS: 1,
-      USES: 1,
+      IMPORTS: 1,
+      USES: 2,
     });
   });
 });

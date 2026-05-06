@@ -2,7 +2,9 @@ import fs from 'fs/promises';
 import path from 'path';
 import type { AnalyzePerformanceReport } from './analyze-metrics.js';
 import {
+  compareGraphCorrectnessSnapshots,
   createGraphCorrectnessSnapshot,
+  type GraphCorrectnessDiff,
   type GraphCorrectnessSnapshot,
 } from './graph-correctness-snapshot.js';
 import type { PipelineResult } from '../../types/pipeline.js';
@@ -33,6 +35,24 @@ export interface AnalyzeBenchmarkEnvironment {
   readonly arch?: string;
   readonly repoGitCommit?: string;
   readonly repoGitDirty?: boolean;
+}
+
+export interface AnalyzeBenchmarkComparison {
+  readonly beforeLabel?: string;
+  readonly afterLabel?: string;
+  readonly totalWallMs?: NumericDelta;
+  readonly phaseMs: Record<string, NumericDelta>;
+  readonly relationshipCountsByType: Record<string, NumericDelta>;
+  readonly nodeCountsByLabel: Record<string, NumericDelta>;
+  readonly keyMetrics: Record<string, NumericDelta>;
+  readonly graphDiffs: readonly GraphCorrectnessDiff[];
+}
+
+export interface NumericDelta {
+  readonly before?: number;
+  readonly after?: number;
+  readonly delta?: number;
+  readonly percentChange?: number;
 }
 
 export interface AnalyzeBenchmarkKeyMetrics {
@@ -67,6 +87,7 @@ export interface AnalyzeBenchmarkKeyMetrics {
   readonly scopeResolutionChunkSize?: number;
   readonly scopeResolutionChunks?: number;
   readonly scopeResolutionMaxChunkReferenceSites?: number;
+  readonly scopeResolutionReadonlyIndexBytes?: number;
   readonly scopeResolutionReferenceIndexSourceScopes?: number;
   readonly scopeResolutionReferenceIndexTargetDefs?: number;
   readonly scopeResolutionResolvedReferences?: number;
@@ -78,6 +99,10 @@ export interface AnalyzeBenchmarkKeyMetrics {
   readonly scopeResolutionResolvedImportUses?: number;
   readonly scopeResolutionEdgesEmitted?: number;
   readonly scopeResolutionDuplicateEdgesSkipped?: number;
+  readonly scopeResolutionFinalizedImportsEmitted?: number;
+  readonly scopeResolutionDuplicateImportsSkipped?: number;
+  readonly scopeResolutionFinalizedImportUsesEmitted?: number;
+  readonly scopeResolutionDuplicateImportUsesSkipped?: number;
   readonly scopeResolutionEdgesSkippedNoCaller?: number;
   readonly scopeResolutionEdgesSkippedMissingTarget?: number;
   readonly crossFileReprocessedFiles?: number;
@@ -123,6 +148,31 @@ export async function writeAnalyzeBenchmarkSnapshot(
   await fs.writeFile(filePath, `${JSON.stringify(snapshot, null, 2)}\n`, 'utf-8');
 }
 
+export function compareAnalyzeBenchmarkSnapshots(
+  before: AnalyzeBenchmarkSnapshot,
+  after: AnalyzeBenchmarkSnapshot,
+): AnalyzeBenchmarkComparison {
+  return {
+    ...(before.label !== undefined ? { beforeLabel: before.label } : {}),
+    ...(after.label !== undefined ? { afterLabel: after.label } : {}),
+    totalWallMs: compareNumbers(before.keyMetrics.totalWallMs, after.keyMetrics.totalWallMs),
+    phaseMs: compareNumberRecords(before.keyMetrics.phaseMs, after.keyMetrics.phaseMs),
+    relationshipCountsByType: compareNumberRecords(
+      before.keyMetrics.relationshipCountsByType,
+      after.keyMetrics.relationshipCountsByType,
+    ),
+    nodeCountsByLabel: compareNumberRecords(
+      before.keyMetrics.nodeCountsByLabel,
+      after.keyMetrics.nodeCountsByLabel,
+    ),
+    keyMetrics: compareNumericKeyMetrics(before.keyMetrics, after.keyMetrics),
+    graphDiffs:
+      before.graph !== undefined && after.graph !== undefined
+        ? compareGraphCorrectnessSnapshots(before.graph, after.graph)
+        : [],
+  };
+}
+
 function createKeyMetrics(
   performance: AnalyzePerformanceReport | undefined,
   graph: GraphCorrectnessSnapshot | undefined,
@@ -161,6 +211,7 @@ function createKeyMetrics(
     scopeResolutionChunkSize: counters.scopeResolutionChunkSize,
     scopeResolutionChunks: counters.scopeResolutionChunks,
     scopeResolutionMaxChunkReferenceSites: counters.scopeResolutionMaxChunkReferenceSites,
+    scopeResolutionReadonlyIndexBytes: counters.scopeResolutionReadonlyIndexBytes,
     scopeResolutionReferenceIndexSourceScopes: counters.scopeResolutionReferenceIndexSourceScopes,
     scopeResolutionReferenceIndexTargetDefs: counters.scopeResolutionReferenceIndexTargetDefs,
     scopeResolutionResolvedReferences: counters.scopeResolutionResolvedReferences,
@@ -172,6 +223,10 @@ function createKeyMetrics(
     scopeResolutionResolvedImportUses: counters.scopeResolutionResolvedImportUses,
     scopeResolutionEdgesEmitted: counters.scopeResolutionEdgesEmitted,
     scopeResolutionDuplicateEdgesSkipped: counters.scopeResolutionDuplicateEdgesSkipped,
+    scopeResolutionFinalizedImportsEmitted: counters.scopeResolutionFinalizedImportsEmitted,
+    scopeResolutionDuplicateImportsSkipped: counters.scopeResolutionDuplicateImportsSkipped,
+    scopeResolutionFinalizedImportUsesEmitted: counters.scopeResolutionFinalizedImportUsesEmitted,
+    scopeResolutionDuplicateImportUsesSkipped: counters.scopeResolutionDuplicateImportUsesSkipped,
     scopeResolutionEdgesSkippedNoCaller: counters.scopeResolutionEdgesSkippedNoCaller,
     scopeResolutionEdgesSkippedMissingTarget: counters.scopeResolutionEdgesSkippedMissingTarget,
     crossFileReprocessedFiles: counters.crossFileReprocessedFiles,
@@ -180,4 +235,53 @@ function createKeyMetrics(
     csvRelationshipRows: counters.csvRelationshipRows,
     ladybugCopyCount: counters.ladybugCopyCount,
   };
+}
+
+function compareNumericKeyMetrics(
+  before: AnalyzeBenchmarkKeyMetrics,
+  after: AnalyzeBenchmarkKeyMetrics,
+): Record<string, NumericDelta> {
+  const out: Record<string, NumericDelta> = {};
+  const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
+  for (const key of keys) {
+    if (key === 'phaseMs' || key === 'nodeCountsByLabel' || key === 'relationshipCountsByType') {
+      continue;
+    }
+    const beforeValue = before[key as keyof AnalyzeBenchmarkKeyMetrics];
+    const afterValue = after[key as keyof AnalyzeBenchmarkKeyMetrics];
+    if (!isNumber(beforeValue) && !isNumber(afterValue)) continue;
+    out[key] = compareNumbers(
+      isNumber(beforeValue) ? beforeValue : undefined,
+      isNumber(afterValue) ? afterValue : undefined,
+    );
+  }
+  return out;
+}
+
+function compareNumberRecords(
+  before: Readonly<Record<string, number>> | undefined,
+  after: Readonly<Record<string, number>> | undefined,
+): Record<string, NumericDelta> {
+  const out: Record<string, NumericDelta> = {};
+  const keys = new Set([...Object.keys(before ?? {}), ...Object.keys(after ?? {})]);
+  for (const key of Array.from(keys).sort()) {
+    out[key] = compareNumbers(before?.[key], after?.[key]);
+  }
+  return out;
+}
+
+function compareNumbers(before: number | undefined, after: number | undefined): NumericDelta {
+  const delta = before !== undefined && after !== undefined ? after - before : undefined;
+  return {
+    ...(before !== undefined ? { before } : {}),
+    ...(after !== undefined ? { after } : {}),
+    ...(delta !== undefined ? { delta } : {}),
+    ...(delta !== undefined && before !== 0
+      ? { percentChange: Math.round((delta / before) * 1000) / 10 }
+      : {}),
+  };
+}
+
+function isNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
 }

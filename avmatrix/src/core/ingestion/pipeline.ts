@@ -164,6 +164,8 @@ export const runPipelineFromRepo = async (
     scopeResolutionChunks: resolutionOutput.metrics.counters.scopeResolutionChunks,
     scopeResolutionMaxChunkReferenceSites:
       resolutionOutput.metrics.counters.scopeResolutionMaxChunkReferenceSites,
+    scopeResolutionReadonlyIndexBytes:
+      resolutionOutput.metrics.counters.scopeResolutionReadonlyIndexBytes,
     scopeResolutionReferenceIndexSourceScopes:
       resolutionOutput.metrics.counters.scopeResolutionReferenceIndexSourceScopes,
     scopeResolutionReferenceIndexTargetDefs:
@@ -184,6 +186,14 @@ export const runPipelineFromRepo = async (
     scopeResolutionEdgesEmitted: resolutionOutput.metrics.counters.scopeResolutionEdgesEmitted,
     scopeResolutionDuplicateEdgesSkipped:
       resolutionOutput.metrics.counters.scopeResolutionDuplicateEdgesSkipped,
+    scopeResolutionFinalizedImportsEmitted:
+      resolutionOutput.metrics.counters.scopeResolutionFinalizedImportsEmitted,
+    scopeResolutionDuplicateImportsSkipped:
+      resolutionOutput.metrics.counters.scopeResolutionDuplicateImportsSkipped,
+    scopeResolutionFinalizedImportUsesEmitted:
+      resolutionOutput.metrics.counters.scopeResolutionFinalizedImportUsesEmitted,
+    scopeResolutionDuplicateImportUsesSkipped:
+      resolutionOutput.metrics.counters.scopeResolutionDuplicateImportUsesSkipped,
     scopeResolutionEdgesSkippedNoCaller:
       resolutionOutput.metrics.counters.scopeResolutionEdgesSkippedNoCaller,
     scopeResolutionEdgesSkippedMissingTarget:

@@ -265,6 +265,52 @@ describe('LocalBackend.callTool', () => {
     });
   });
 
+  it('context tool falls back for legacy relationship schemas without audit metadata', async () => {
+    (executeParameterized as any).mockImplementation(
+      async (_repoId: string, query: string, _params: Record<string, unknown>) => {
+        if (query.includes('MATCH (n {id: $uid})')) {
+          return [
+            {
+              id: 'func:main',
+              name: 'main',
+              type: 'Function',
+              filePath: 'src/index.ts',
+              startLine: 1,
+              endLine: 10,
+            },
+          ];
+        }
+        if (query.includes('MATCH (caller)-[r:CodeRelation]->(n {id: $symId})')) {
+          if (query.includes('r.resolutionSource AS resolutionSource')) {
+            throw new Error('Binder exception: Cannot find property resolutionSource for r.');
+          }
+          expect(query).not.toContain('r.resolutionSource AS resolutionSource');
+          return [
+            {
+              relType: 'CALLS',
+              uid: 'func:caller',
+              name: 'caller',
+              filePath: 'src/caller.ts',
+              kind: 'Function',
+              confidence: 0.9,
+              reason: 'legacy-call',
+            },
+          ];
+        }
+        return [];
+      },
+    );
+
+    const result = await backend.callTool('context', { uid: 'func:main' });
+
+    expect(result.incoming.calls[0]).toMatchObject({
+      uid: 'func:caller',
+      confidence: 0.9,
+      reason: 'legacy-call',
+    });
+    expect(result.incoming.calls[0]).not.toHaveProperty('resolutionSource');
+  });
+
   it('context tool returns error when name and uid are both missing', async () => {
     const result = await backend.callTool('context', {});
     expect(result.error).toContain('Either "name" or "uid"');

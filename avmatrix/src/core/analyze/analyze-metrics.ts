@@ -55,6 +55,7 @@ export interface AnalyzeCounters {
   scopeResolutionChunkSize?: number;
   scopeResolutionChunks?: number;
   scopeResolutionMaxChunkReferenceSites?: number;
+  scopeResolutionReadonlyIndexBytes?: number;
   scopeResolutionReferenceIndexSourceScopes?: number;
   scopeResolutionReferenceIndexTargetDefs?: number;
   scopeResolutionResolvedReferences?: number;
@@ -66,6 +67,10 @@ export interface AnalyzeCounters {
   scopeResolutionResolvedImportUses?: number;
   scopeResolutionEdgesEmitted?: number;
   scopeResolutionDuplicateEdgesSkipped?: number;
+  scopeResolutionFinalizedImportsEmitted?: number;
+  scopeResolutionDuplicateImportsSkipped?: number;
+  scopeResolutionFinalizedImportUsesEmitted?: number;
+  scopeResolutionDuplicateImportUsesSkipped?: number;
   scopeResolutionEdgesSkippedNoCaller?: number;
   scopeResolutionEdgesSkippedMissingTarget?: number;
 }
@@ -174,6 +179,9 @@ export interface CrossFileMetrics {
 
 export interface ResolutionTimingBreakdown {
   referenceResolveMs?: number;
+  readonlyIndexInitMs?: number;
+  referenceWorkerResolveMs?: number;
+  referenceMergeMs?: number;
   referenceIndexBuildMs?: number;
   graphEmitMs?: number;
 }
@@ -186,6 +194,7 @@ export interface ResolutionMetrics {
     | 'scopeResolutionChunkSize'
     | 'scopeResolutionChunks'
     | 'scopeResolutionMaxChunkReferenceSites'
+    | 'scopeResolutionReadonlyIndexBytes'
     | 'scopeResolutionReferenceIndexSourceScopes'
     | 'scopeResolutionReferenceIndexTargetDefs'
     | 'scopeResolutionResolvedReferences'
@@ -197,6 +206,10 @@ export interface ResolutionMetrics {
     | 'scopeResolutionResolvedImportUses'
     | 'scopeResolutionEdgesEmitted'
     | 'scopeResolutionDuplicateEdgesSkipped'
+    | 'scopeResolutionFinalizedImportsEmitted'
+    | 'scopeResolutionDuplicateImportsSkipped'
+    | 'scopeResolutionFinalizedImportUsesEmitted'
+    | 'scopeResolutionDuplicateImportUsesSkipped'
     | 'scopeResolutionEdgesSkippedNoCaller'
     | 'scopeResolutionEdgesSkippedMissingTarget'
   >;

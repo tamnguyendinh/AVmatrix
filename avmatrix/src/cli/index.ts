@@ -53,6 +53,12 @@ program
   .action(createLazyAction(() => import('./analyze.js'), 'analyzeCommand'));
 
 program
+  .command('benchmark-compare <before> <after>')
+  .description('Compare two analyze benchmark JSON artifacts')
+  .option('--json', 'Print the full machine-readable comparison')
+  .action(createLazyAction(() => import('./benchmark.js'), 'benchmarkCompareCommand'));
+
+program
   .command('index [path...]')
   .description(
     'Register an existing local index folder into the global registry (no re-analysis needed)',

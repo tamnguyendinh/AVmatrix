@@ -164,6 +164,93 @@ function run(user: User) {
         .sort(),
     ).toEqual([1, 2]);
   });
+
+  it('emits finalized import edges even when there are no reference sites', async () => {
+    const appSource = `import { User } from './models';\n`;
+    const modelSource = `export class User {}\n`;
+    const appTree = parser.parse(appSource);
+    const modelTree = parser.parse(modelSource);
+    const appParsed = extractParsedFileWithStats(
+      typescriptProvider,
+      appSource,
+      'src/app.ts',
+      SupportedLanguages.TypeScript,
+      appTree.rootNode,
+    ).parsedFile;
+    const modelParsed = extractParsedFileWithStats(
+      typescriptProvider,
+      modelSource,
+      'src/models.ts',
+      SupportedLanguages.TypeScript,
+      modelTree.rootNode,
+    ).parsedFile;
+    expect(appParsed).toBeDefined();
+    expect(modelParsed).toBeDefined();
+
+    const resolutionContext = createResolutionContext();
+    resolutionContext.model.attachScopeIndexes(
+      finalizeScopeModel([appParsed!, modelParsed!], {
+        hooks: {
+          resolveImportTarget: (targetRaw, fromFile) =>
+            targetRaw === './models' && fromFile === 'src/app.ts' ? 'src/models.ts' : null,
+        },
+      }),
+    );
+
+    const graph = createKnowledgeGraph();
+    const output = await resolutionPhase.execute(
+      {
+        repoPath: '/tmp/repo',
+        graph,
+        onProgress: vi.fn(),
+        pipelineStart: 0,
+      } satisfies PipelineContext,
+      new Map<string, PhaseResult<unknown>>([
+        [
+          'parse',
+          {
+            phaseName: 'parse',
+            durationMs: 0,
+            output: {
+              totalFiles: 2,
+              resolutionContext,
+            } as ParseOutput,
+          },
+        ],
+        [
+          'crossFile',
+          {
+            phaseName: 'crossFile',
+            durationMs: 0,
+            output: { filesReprocessed: 0, metrics: { timings: {}, counters: {} } },
+          },
+        ],
+      ]),
+    );
+
+    expect(output.metrics.counters.scopeResolutionReferenceSites).toBe(0);
+    expect(output.metrics.counters.scopeResolutionEdgesEmitted).toBe(0);
+    expect(output.metrics.counters.scopeResolutionFinalizedImportsEmitted).toBe(1);
+    expect(output.metrics.counters.scopeResolutionDuplicateImportsSkipped).toBe(0);
+    expect(output.metrics.counters.scopeResolutionFinalizedImportUsesEmitted).toBe(1);
+    expect(output.metrics.counters.scopeResolutionDuplicateImportUsesSkipped).toBe(0);
+    expect(graph.relationships).toHaveLength(2);
+    const importsEdge = graph.relationships.find((rel) => rel.type === 'IMPORTS');
+    const usesEdge = graph.relationships.find((rel) => rel.type === 'USES');
+    expect(importsEdge).toMatchObject({
+      sourceId: 'File:src/app.ts',
+      targetId: 'File:src/models.ts',
+      type: 'IMPORTS',
+      resolutionSource: 'scope-finalize',
+      fileHash: sourceHash(appSource),
+    });
+    expect(usesEdge).toMatchObject({
+      sourceId: 'File:src/app.ts',
+      type: 'USES',
+      resolutionSource: 'scope-finalize',
+      fileHash: sourceHash(appSource),
+    });
+  });
 });
 
 function sourceHash(source: string): string {

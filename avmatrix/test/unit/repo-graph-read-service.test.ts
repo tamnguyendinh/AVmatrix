@@ -219,4 +219,46 @@ describe('repo-graph-read-service', () => {
       },
     ]);
   });
+
+  it('falls back to legacy relationship reads when audit metadata properties are absent', async () => {
+    readExecutorMocks.executeRepoReadQuery.mockImplementation(
+      async (_target: any, query: string) => {
+        if (query.includes('MATCH (n:`File`)')) return [];
+        if (query.includes('r.resolutionSource AS resolutionSource')) {
+          throw new Error('Binder exception: Cannot find property resolutionSource for r.');
+        }
+        if (query.includes('CodeRelation')) {
+          expect(query).not.toContain('r.resolutionSource AS resolutionSource');
+          return [
+            {
+              sourceId: 'File:src/app.ts',
+              targetId: 'Function:src/app.ts:main',
+              type: 'CONTAINS',
+              confidence: 1,
+              reason: 'contains',
+              step: 0,
+            },
+          ];
+        }
+        return [];
+      },
+    );
+
+    const graph = await buildRepoGraph({
+      repoId: 'legacy',
+      lbugPath: 'F:/repos/legacy/.avmatrix/lbug',
+    });
+
+    expect(graph.relationships).toEqual([
+      {
+        id: 'File:src/app.ts_CONTAINS_Function:src/app.ts:main',
+        type: 'CONTAINS',
+        sourceId: 'File:src/app.ts',
+        targetId: 'Function:src/app.ts:main',
+        confidence: 1,
+        reason: 'contains',
+        step: 0,
+      },
+    ]);
+  });
 });
