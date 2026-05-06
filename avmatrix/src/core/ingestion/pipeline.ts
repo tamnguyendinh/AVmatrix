@@ -46,6 +46,12 @@ import {
 export interface PipelineOptions {
   /** Skip MRO, community detection, and process extraction for faster test runs. */
   skipGraphPhases?: boolean;
+  /**
+   * Diagnostic benchmark mode: keep the crossFile phase boundary and
+   * accumulator disposal, but skip legacy source reread/reprocess work so
+   * resolutionPhase parity can be measured directly.
+   */
+  skipLegacyCrossFile?: boolean;
 }
 
 // ── Phase registry ─────────────────────────────────────────────────────────

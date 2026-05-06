@@ -72,6 +72,20 @@ export const crossFilePhase: PipelinePhase<CrossFileOutput> = {
         }
       }
 
+      if (ctx.options?.skipLegacyCrossFile) {
+        return {
+          filesReprocessed: 0,
+          metrics: {
+            timings: { totalMs: 0 },
+            counters: {
+              filesReprocessed: 0,
+              skipped: true,
+              skipReason: 'disabled-by-pipeline-option',
+            },
+          },
+        };
+      }
+
       const propagationResult = await runCrossFileBindingPropagation(
         ctx.graph,
         resolutionContext,

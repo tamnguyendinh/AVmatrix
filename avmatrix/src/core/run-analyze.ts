@@ -61,6 +61,8 @@ export interface AnalyzeOptions {
   force?: boolean;
   embeddings?: boolean;
   skipGit?: boolean;
+  /** Diagnostic benchmark mode: skip legacy cross-file reread/reprocess work. */
+  skipLegacyCrossFile?: boolean;
   /** Skip AGENTS.md and CLAUDE.md AVmatrix block updates. */
   skipAgentsMd?: boolean;
   /** Omit volatile symbol/relationship counts from AGENTS.md and CLAUDE.md. */
@@ -212,11 +214,17 @@ export async function runFullAnalysis(
   }
 
   // ── Phase 1: Full Pipeline (0–60%) ────────────────────────────────
-  const pipelineResult = await runPipelineFromRepo(repoPath, (p) => {
-    const phaseLabel = PHASE_LABELS[p.phase] || p.phase;
-    const scaled = Math.round(p.percent * 0.6);
-    progress(p.phase, scaled, phaseLabel);
-  });
+  const pipelineResult = await runPipelineFromRepo(
+    repoPath,
+    (p) => {
+      const phaseLabel = PHASE_LABELS[p.phase] || p.phase;
+      const scaled = Math.round(p.percent * 0.6);
+      progress(p.phase, scaled, phaseLabel);
+    },
+    {
+      skipLegacyCrossFile: options.skipLegacyCrossFile,
+    },
+  );
 
   // ── Phase 2: LadybugDB (60–85%) ──────────────────────────────────
   progress('lbug', 60, 'Loading into LadybugDB...');

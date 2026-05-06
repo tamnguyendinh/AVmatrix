@@ -18,7 +18,7 @@ import type { ParseOutput } from '../../src/core/ingestion/pipeline-phases/parse
 
 const runCrossFileMock = vi.mocked(runCrossFileBindingPropagation);
 
-function makeCtx(): PipelineContext {
+function makeCtx(options?: PipelineContext['options']): PipelineContext {
   return {
     repoPath: '/tmp/repo',
     // Cast — the body never touches graph methods on the happy/error paths
@@ -26,6 +26,7 @@ function makeCtx(): PipelineContext {
     graph: {} as PipelineContext['graph'],
     onProgress: () => {},
     pipelineStart: 0,
+    ...(options !== undefined ? { options } : {}),
   };
 }
 
@@ -100,5 +101,20 @@ describe('crossFilePhase', () => {
     expect(acc.disposed).toBe(true);
     expect(acc.fileCount).toBe(0);
     expect(acc.totalBindings).toBe(0);
+  });
+
+  it('skips legacy propagation by option while still disposing the accumulator', async () => {
+    const acc = new BindingAccumulator();
+    acc.appendFile('src/a.ts', [{ scope: '', varName: 'x', typeName: 'X' }]);
+
+    const result = await crossFilePhase.execute(
+      makeCtx({ skipLegacyCrossFile: true }),
+      makeDeps(acc),
+    );
+
+    expect(runCrossFileMock).not.toHaveBeenCalled();
+    expect(result.filesReprocessed).toBe(0);
+    expect(result.metrics.counters.skipReason).toBe('disabled-by-pipeline-option');
+    expect(acc.disposed).toBe(true);
   });
 });

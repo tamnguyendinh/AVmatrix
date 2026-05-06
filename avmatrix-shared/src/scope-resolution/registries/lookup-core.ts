@@ -335,6 +335,9 @@ function lookupReceiverTypeInner(
   if (visitedReceivers.has(receiverVisitKey)) return undefined;
   visitedReceivers.add(receiverVisitKey);
 
+  const dottedOwner = resolveDottedReceiverOwner(startScope, receiverName, ctx, visitedReceivers);
+  if (dottedOwner !== undefined) return dottedOwner;
+
   let currentId: ScopeId | null = startScope;
   const visited = new Set<ScopeId>();
   while (currentId !== null) {
@@ -373,6 +376,47 @@ function lookupReceiverTypeInner(
     currentId = scope.parent;
   }
   return undefined;
+}
+
+function resolveDottedReceiverOwner(
+  startScope: ScopeId,
+  receiverName: string,
+  ctx: RegistryContext,
+  visitedReceivers: Set<string>,
+): DefId | undefined {
+  const member = splitMemberDerivedRawName(receiverName);
+  if (member === undefined) return undefined;
+
+  const receiverOwner = lookupReceiverTypeInner(
+    startScope,
+    member.receiverName,
+    ctx,
+    visitedReceivers,
+  );
+  if (receiverOwner === undefined) return undefined;
+
+  const valueType = uniqueMemberValueType(
+    receiverOwner,
+    member.memberName,
+    FIELD_DERIVED_KINDS,
+    ctx,
+  );
+  if (valueType === undefined) return undefined;
+
+  const memberScope = ctx.moduleScopes.get(valueType.filePath) ?? startScope;
+  const resolved = resolveTypeRef(
+    {
+      rawName: valueType.typeName,
+      declaredAtScope: memberScope,
+      source: 'annotation',
+    },
+    {
+      scopes: ctx.scopes,
+      defIndex: ctx.defs,
+      qualifiedNameIndex: ctx.qualifiedNames,
+    },
+  );
+  return resolved?.nodeId;
 }
 
 function resolveReceiverTypeRef(
