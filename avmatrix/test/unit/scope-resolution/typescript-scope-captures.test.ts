@@ -608,4 +608,68 @@ function run(user: User) {
       source: 'field-access',
     });
   });
+
+  it('emits object-pattern field-access bindings from call-result receivers', () => {
+    const source = `
+import { makeUser } from './models';
+
+class Profile {
+  save() {}
+}
+
+class User {
+  profile: Profile;
+}
+
+class Provider {
+  getUser(): User {
+    return new User();
+  }
+}
+
+async function run(provider: Provider) {
+  const { profile } = await makeUser();
+  const { profile: fromMethod } = provider.getUser();
+}
+`;
+    const tree = parser.parse(source);
+    const result = extractParsedFileWithStats(
+      typescriptProvider,
+      source,
+      'src/destructure-call.ts',
+      SupportedLanguages.TypeScript,
+      tree.rootNode,
+    );
+
+    expect(result.mode).toBe('ast-reused');
+    const parsed = result.parsedFile;
+    expect(parsed).toBeDefined();
+
+    const typeBindings = new Map<string, { rawName: string; source: string }>();
+    for (const scope of parsed!.scopes) {
+      for (const [name, typeRef] of scope.typeBindings) {
+        typeBindings.set(name, { rawName: typeRef.rawName, source: typeRef.source });
+      }
+    }
+
+    const profileBinding = typeBindings.get('profile');
+    expect(profileBinding).toBeDefined();
+    expect(profileBinding!.source).toBe('field-access');
+    expect(profileBinding!.rawName).toMatch(/^__destr_makeUser_\d+\.profile$/);
+    const callReceiver = profileBinding!.rawName.replace(/\.profile$/, '');
+    expect(typeBindings.get(callReceiver)).toEqual({
+      rawName: 'makeUser',
+      source: 'call-return',
+    });
+
+    const methodBinding = typeBindings.get('fromMethod');
+    expect(methodBinding).toBeDefined();
+    expect(methodBinding!.source).toBe('field-access');
+    expect(methodBinding!.rawName).toMatch(/^__destr_getUser_\d+\.profile$/);
+    const methodReceiver = methodBinding!.rawName.replace(/\.profile$/, '');
+    expect(typeBindings.get(methodReceiver)).toEqual({
+      rawName: 'provider.getUser',
+      source: 'method-return',
+    });
+  });
 });

@@ -327,7 +327,7 @@ function emitTypeBinding(
   if (node.type === 'variable_declarator') {
     const nameNode = node.childForFieldName('name');
     if (nameNode?.type === 'object_pattern') {
-      emitObjectPatternFieldBindings(node, nameNode, out);
+      emitObjectPatternFieldBindings(node, nameNode, out, context);
       return;
     }
     if (nameNode?.type !== 'identifier') return;
@@ -408,8 +408,9 @@ function emitObjectPatternFieldBindings(
   node: SyntaxNode,
   nameNode: SyntaxNode,
   out: CaptureMatch[],
+  context: ScopeCaptureContext,
 ): void {
-  const receiver = receiverNameFromCopyValue(node.childForFieldName('value'));
+  const receiver = objectPatternReceiverName(node, out, context);
   if (receiver === undefined) return;
 
   for (let index = 0; index < nameNode.namedChildCount; index++) {
@@ -429,6 +430,50 @@ function emitObjectPatternFieldBindings(
       inferredTypeBindingMatch(child, valueNode, `${receiver}.${keyNode.text}`, 'field-access'),
     );
   }
+}
+
+function objectPatternReceiverName(
+  node: SyntaxNode,
+  out: CaptureMatch[],
+  context: ScopeCaptureContext,
+): string | undefined {
+  const value = node.childForFieldName('value');
+  const receiver = receiverNameFromCopyValue(value);
+  if (receiver !== undefined) return receiver;
+  if (value === null) return undefined;
+
+  const callExpression = callExpressionFromValue(value);
+  if (callExpression === undefined) return undefined;
+  const syntheticReceiver = syntheticDestructureReceiverName(callExpression);
+
+  const returnTypeName = returnTypeNameFromCallValue(value, context.returnTypesByCallableName);
+  if (returnTypeName !== undefined) {
+    out.push(
+      syntheticTypeBindingMatch(
+        callExpression,
+        syntheticReceiver,
+        returnTypeName,
+        'return-annotation',
+      ),
+    );
+    return syntheticReceiver;
+  }
+
+  const callName = callNameFromCallValue(value);
+  if (callName !== undefined && context.importedLocalNames.has(callName)) {
+    out.push(syntheticTypeBindingMatch(callExpression, syntheticReceiver, callName, 'call-return'));
+    return syntheticReceiver;
+  }
+
+  const methodReturn = memberMethodNameFromCallValue(value);
+  if (methodReturn !== undefined) {
+    out.push(
+      syntheticTypeBindingMatch(callExpression, syntheticReceiver, methodReturn, 'method-return'),
+    );
+    return syntheticReceiver;
+  }
+
+  return undefined;
 }
 
 function buildScopeCaptureContext(rootNode: SyntaxNode): ScopeCaptureContext {
@@ -484,8 +529,8 @@ function returnTypeNameFromCallValue(
   returnTypesByCallableName: ReadonlyMap<string, string>,
 ): string | undefined {
   if (value === null) return undefined;
-  const expression = unwrapAwaitExpression(unwrapExpression(value));
-  if (expression.type !== 'call_expression') return undefined;
+  const expression = callExpressionFromValue(value);
+  if (expression === undefined) return undefined;
   const fn = unwrapAwaitExpression(expression.childForFieldName('function') ?? expression);
   if (fn.type === 'identifier') return returnTypesByCallableName.get(fn.text);
   return undefined;
@@ -493,16 +538,22 @@ function returnTypeNameFromCallValue(
 
 function callNameFromCallValue(value: SyntaxNode | null): string | undefined {
   if (value === null) return undefined;
-  const expression = unwrapAwaitExpression(unwrapExpression(value));
-  if (expression.type !== 'call_expression') return undefined;
+  const expression = callExpressionFromValue(value);
+  if (expression === undefined) return undefined;
   const fn = unwrapAwaitExpression(expression.childForFieldName('function') ?? expression);
   return fn.type === 'identifier' ? fn.text : undefined;
 }
 
-function memberMethodNameFromCallValue(value: SyntaxNode | null): string | undefined {
-  if (value === null) return undefined;
+function callExpressionFromValue(value: SyntaxNode): SyntaxNode | undefined {
   const expression = unwrapAwaitExpression(unwrapExpression(value));
   if (expression.type !== 'call_expression') return undefined;
+  return expression;
+}
+
+function memberMethodNameFromCallValue(value: SyntaxNode | null): string | undefined {
+  if (value === null) return undefined;
+  const expression = callExpressionFromValue(value);
+  if (expression === undefined) return undefined;
   const fn = unwrapAwaitExpression(expression.childForFieldName('function') ?? expression);
   if (fn.type !== 'member_expression') return undefined;
   const receiver = fn.childForFieldName('object');
@@ -531,6 +582,17 @@ function receiverNameFromCopyValue(value: SyntaxNode | null): string | undefined
   return expression.type === 'identifier' || expression.type === 'this'
     ? expression.text
     : undefined;
+}
+
+function syntheticDestructureReceiverName(callExpression: SyntaxNode): string {
+  const fn = unwrapAwaitExpression(callExpression.childForFieldName('function') ?? callExpression);
+  let base = 'call';
+  if (fn.type === 'identifier') {
+    base = fn.text;
+  } else if (fn.type === 'member_expression') {
+    base = fn.childForFieldName('property')?.text ?? base;
+  }
+  return `__destr_${base.replace(/[^\w]/g, '_')}_${callExpression.startIndex}`;
 }
 
 function emitTypeReferenceMatches(typeNode: SyntaxNode, out: CaptureMatch[]): void {
