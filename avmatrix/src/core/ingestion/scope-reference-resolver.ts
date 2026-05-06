@@ -155,8 +155,7 @@ export async function resolveScopeReferenceSitesInWorkers(
 
   const initStart = performance.now();
   const serialized = serializeScopeResolutionIndexes(scopes);
-  const readonlyIndexBytes =
-    options.readonlyIndexBytes ?? serializedScopeResolutionIndexBytes(serialized);
+  const readonlyIndexBytes = options.readonlyIndexBytes ?? estimateReadonlyIndexBytes(scopes);
   const workerUrl = resolveReferenceResolutionWorkerUrl();
   const pool = createWorkerPool(workerUrl, options.workerCount, {
     workerData: { scopeResolutionIndexes: serialized },

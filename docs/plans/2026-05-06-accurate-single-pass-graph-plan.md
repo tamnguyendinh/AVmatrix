@@ -257,6 +257,7 @@ Use this checklist to update implementation progress. Do not mark the target arc
 - [x] Refactor scope reference resolution into deterministic chunk functions with serializable readonly-index payloads.
 - [x] Add worker-pool `workerData` support so future resolution workers can receive readonly indexes once at startup.
 - [x] Add an opt-in reference-resolution worker prototype plus parity coverage for chunk output.
+- [x] Remove avoidable `JSON.stringify` byte-measurement overhead from workerized reference-resolution initialization while keeping worker mode opt-in.
 - [ ] Parallelize reference resolution by file/chunk against readonly indexes.
 - [x] Persist available audit metadata (`resolutionSource`, `confidence`, `evidence`, `fileHash` column) through LadybugDB CSV/load/read-back.
 - [x] Populate real `fileHash` values on scope-resolved edges from parse-time `ParsedFile.fileHash` without rereading source.
@@ -301,6 +302,8 @@ Current benchmark artifact:
 - `reports/benchmark/2026-05-07-avmatrix-object-pattern-field-access-gitnexus-main.json`
 - `reports/benchmark/2026-05-07-avmatrix-object-pattern-call-result-gitnexus-main.json`
 - `reports/benchmark/2026-05-07-avmatrix-for-of-variable-element-gitnexus-main.json`
+- `reports/benchmark/2026-05-07-avmatrix-resolution-workers-gitnexus-main.json`
+- `reports/benchmark/2026-05-07-avmatrix-resolution-workers-estimated-index-gitnexus-main.json`
 - Target: `E:\Lap_trinh\GitNexus-main` using `--skip-git` because that local copy has no `.git` directory.
 - Runtime command used built AVmatrix CLI with `--skip-agents-md --no-stats --benchmark-json` and `node --stack-size=4096`; the default stack failed in parse with `Maximum call stack size exceeded`, so the stack-size requirement is part of the recorded run context.
 - Result: `110714.1ms` total wall time, `847` files, `19538` nodes, `31037` persisted relationships.
@@ -323,6 +326,7 @@ Current benchmark artifact:
 - `reports/benchmark/2026-05-07-avmatrix-object-pattern-field-access-gitnexus-main.json` records the object-pattern destructuring propagation slice. TypeScript/JavaScript now emits AST-reused `field-access` type bindings for destructured receiver fields such as `const { profile } = user` and aliased pairs such as `const { displayName: name } = user`. The targeted fixture proves imported `User.profile: Profile` can resolve later `profile.save()` through finalized scope facts without source rereads. Compared to the member-derived slice on `E:\Lap_trinh\GitNexus-main`, persisted graph counts and digest stayed identical (`graphDiffs=0`, `ACCESSES=180`, `CALLS=5550`, `USES=816`), while scope resolution resolved `6` additional references (`14324` -> `14330`), resolved accesses increased `4768` -> `4774`, and unresolved references dropped by `6`. Wall time was `107316.4ms`, crossFile was `18711ms`, and resolution was `1100ms`. Treat this as correctness/crossFile-migration coverage; the lower wall time is a single-run observation, not a final speedup claim.
 - `reports/benchmark/2026-05-07-avmatrix-object-pattern-call-result-gitnexus-main.json` records the object-pattern call-result propagation slice. TypeScript/JavaScript now emits a synthetic receiver binding from the reused AST for destructuring call results, using `call-return` for imported/free calls and `method-return` for receiver method calls, then emits destructured fields as `field-access` bindings against that synthetic receiver. The targeted fixture proves `const { profile } = await makeUser()` and `const { profile } = provider.getUser()` can both resolve later `Profile.save()` calls without source rereads. Compared to the object-pattern field-access slice on `E:\Lap_trinh\GitNexus-main`, persisted graph counts and digest stayed identical (`graphDiffs=0`, `ACCESSES=180`, `CALLS=5550`, `USES=816`), while scope resolution resolved `36` additional references (`14330` -> `14366`), resolved accesses increased `4774` -> `4810`, and unresolved references dropped by `36`. Wall time was `120518.7ms`, crossFile was `20527ms`, and resolution was `1190ms`; treat this as correctness/crossFile-migration coverage, not a speedup claim.
 - `reports/benchmark/2026-05-07-avmatrix-for-of-variable-element-gitnexus-main.json` records the for-of variable element propagation slice. TypeScript/JavaScript now emits `call-return-element` facts for loop variables iterating over a previously typed collection variable, and registry lookup can resolve the element owner through that collection's `call-return`, `call-return-element`, propagated, or iterable annotation binding. The targeted fixture proves `const users = listUsers(); for (const user of users) user.save()` resolves through scope facts without source rereads. Compared to the object-pattern call-result slice on `E:\Lap_trinh\GitNexus-main`, persisted graph counts and digest stayed identical (`graphDiffs=0`, `ACCESSES=180`, `CALLS=5550`, `USES=816`), while scope resolution resolved `171` additional references (`14366` -> `14537`), resolved accesses increased `4810` -> `4980`, resolved calls increased `8299` -> `8300`, and unresolved references dropped by `171`. Wall time was `108150.9ms`, crossFile was `18852ms`, and resolution was `1234ms`; treat this as correctness/crossFile-migration coverage plus a useful single-run timing observation, not a final speedup claim.
+- `reports/benchmark/2026-05-07-avmatrix-resolution-workers-estimated-index-gitnexus-main.json` records the workerized reference-resolution overhead slice. Worker mode still has graph parity with serial default on `E:\Lap_trinh\GitNexus-main` (`graphDiffs=0`, identical edge counts, `resolvedReferences=14537`, `unresolvedReferences=113048`), but it remains slower than serial default: resolution `1234ms` serial vs `3435ms` worker. The change removes an avoidable `JSON.stringify` pass used only for byte metrics, dropping worker readonly index bytes from exact JSON `32975703` to the same estimator used by serial `16898514`, and reducing worker resolution from `3628ms` to `3435ms`. Keep worker mode opt-in; do not mark default parallel resolution complete until index transfer/build overhead is lower than serial.
 
 Full build for UI/manual validation through `Start-AVmatrix.html`:
 
@@ -332,11 +336,11 @@ powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1
 
 This script builds `avmatrix`, builds `avmatrix-web`, builds `avmatrix-launcher\AVmatrixLauncher.exe`, builds `avmatrix-launcher\server-bundle\avmatrix-server.exe`, copies `node.exe`, copies the web build to `avmatrix-launcher\web-dist\`, and registers the `avmatrix://` protocol. A CLI-only `cd avmatrix && npm run build` is not enough before asking the user to test through the root launcher HTML.
 
-Latest validation after the for-of variable element slice:
+Latest validation after the worker init byte-measurement slice:
 
 - Full launcher build passed with `powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1`.
-- Targeted unit scope-resolution tests passed cleanly: `30/30` across `typescript-scope-captures` and `scope-reference-resolver`.
-- Full `cd avmatrix && npm test` exited `0` after this slice, and the captured log contained no `Unhandled Errors`, `Unhandled Error`, `Worker vmForks emitted error`, `Worker exited unexpectedly`, or failed-test patterns.
+- Targeted worker/resolver test passed cleanly: `17/17` in `scope-reference-resolver`.
+- Full `cd avmatrix && npm test` was rerun after this slice and exited `0`; the accepted rerun log contained no `Unhandled Errors`, `Unhandled Error`, `Worker vmForks emitted error`, `Worker exited unexpectedly`, or failed-test patterns.
 
 ### Milestone 1: Baseline And Parity Targets
 
