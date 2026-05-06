@@ -195,6 +195,7 @@ export function createReferenceResolutionContext(
     moduleScopes: scopes.moduleScopes,
     methodDispatch: scopes.methodDispatch,
     ownedMembersByOwner: buildOwnedMemberIndex(scopes.defs.byId.values()),
+    typeBindingByDef: buildTypeBindingByDef(scopes.scopeTree.byId.values()),
     providers: {},
   };
 
@@ -609,6 +610,49 @@ function buildOwnedMemberIndex(
     frozenByOwner.set(owner, frozenMembers);
   }
   return frozenByOwner;
+}
+
+function buildTypeBindingByDef(scopes: Iterable<Scope>): ReadonlyMap<DefId, TypeRef> {
+  const byDef = new Map<DefId, TypeRef>();
+  const ambiguous = new Set<DefId>();
+
+  for (const scope of scopes) {
+    if (scope.typeBindings.size === 0 || scope.ownedDefs.length === 0) continue;
+
+    const defsBySimpleName = new Map<string, SymbolDefinition[]>();
+    for (const def of scope.ownedDefs) {
+      const name = simpleNameOf(def);
+      if (name === undefined) continue;
+      const bucket = defsBySimpleName.get(name) ?? [];
+      bucket.push(def);
+      defsBySimpleName.set(name, bucket);
+    }
+
+    for (const [name, typeRef] of scope.typeBindings) {
+      const defs = defsBySimpleName.get(name);
+      if (defs === undefined || defs.length !== 1) continue;
+      const defId = defs[0]!.nodeId;
+      if (ambiguous.has(defId)) continue;
+
+      const existing = byDef.get(defId);
+      if (existing !== undefined && !sameTypeRef(existing, typeRef)) {
+        byDef.delete(defId);
+        ambiguous.add(defId);
+        continue;
+      }
+      byDef.set(defId, typeRef);
+    }
+  }
+
+  return byDef;
+}
+
+function sameTypeRef(left: TypeRef, right: TypeRef): boolean {
+  return (
+    left.rawName === right.rawName &&
+    left.declaredAtScope === right.declaredAtScope &&
+    left.source === right.source
+  );
 }
 
 function simpleNameOf(def: SymbolDefinition): string | undefined {

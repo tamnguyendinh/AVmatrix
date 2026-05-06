@@ -642,6 +642,103 @@ async function run() {
     });
   });
 
+  it('resolves receiver calls through imported exported variable type bindings without source rereads', async () => {
+    const modelsSource = `
+export class User {
+  save() {}
+}
+
+export function getUser(): User {
+  return new User();
+}
+`;
+    const serviceSource = `
+import { getUser } from './models';
+
+export const user = getUser();
+`;
+    const appSource = `
+import { user } from './service';
+
+export function main() {
+  user.save();
+}
+`;
+    const modelsParsed = extractParsedFileWithStats(
+      typescriptProvider,
+      modelsSource,
+      'src/models.ts',
+      SupportedLanguages.TypeScript,
+      parser.parse(modelsSource).rootNode,
+    ).parsedFile;
+    const serviceParsed = extractParsedFileWithStats(
+      typescriptProvider,
+      serviceSource,
+      'src/service.ts',
+      SupportedLanguages.TypeScript,
+      parser.parse(serviceSource).rootNode,
+    ).parsedFile;
+    const appParsed = extractParsedFileWithStats(
+      typescriptProvider,
+      appSource,
+      'src/app.ts',
+      SupportedLanguages.TypeScript,
+      parser.parse(appSource).rootNode,
+    ).parsedFile;
+    expect(modelsParsed).toBeDefined();
+    expect(serviceParsed).toBeDefined();
+    expect(appParsed).toBeDefined();
+
+    const indexes = finalizeScopeModel([appParsed!, serviceParsed!, modelsParsed!], {
+      hooks: {
+        resolveImportTarget: (targetRaw) => {
+          if (targetRaw === './models') return 'src/models.ts';
+          if (targetRaw === './service') return 'src/service.ts';
+          return null;
+        },
+      },
+    });
+    const serial = resolveScopeReferenceSites(indexes);
+    const worker = await resolveScopeReferenceSitesInWorkers(indexes, {
+      chunkSize: 1,
+      useWorkers: true,
+      minWorkerReferenceSites: 0,
+      workerCount: 2,
+    });
+
+    const save = modelsParsed!.localDefs.find(
+      (def) => def.type === 'Method' && def.qualifiedName === 'User.save',
+    );
+    const getUser = modelsParsed!.localDefs.find(
+      (def) => def.type === 'Function' && def.qualifiedName === 'getUser',
+    );
+    expect(save).toBeDefined();
+    expect(getUser).toBeDefined();
+
+    const refsToSave = serial.referenceIndex.byTargetDef.get(save!.nodeId) ?? [];
+    const refsToGetUser = serial.referenceIndex.byTargetDef.get(getUser!.nodeId) ?? [];
+
+    expect(refsToSave.map((ref) => ref.kind)).toEqual(['call']);
+    expect(refsToGetUser.map((ref) => ref.kind)).toEqual(['call']);
+    expect(serial.stats).toMatchObject({
+      totalReferenceSites: 4,
+      resolvedReferences: 4,
+      unresolvedReferences: 0,
+      resolvedCalls: 3,
+      resolvedTypeReferences: 1,
+    });
+    expect(worker.stats).toMatchObject({
+      totalReferenceSites: serial.stats.totalReferenceSites,
+      resolvedReferences: serial.stats.resolvedReferences,
+      unresolvedReferences: serial.stats.unresolvedReferences,
+      resolvedCalls: serial.stats.resolvedCalls,
+      resolvedTypeReferences: serial.stats.resolvedTypeReferences,
+    });
+    expect([...worker.referenceIndex.byTargetDef.keys()].sort()).toEqual(
+      [...serial.referenceIndex.byTargetDef.keys()].sort(),
+    );
+  });
+
   it('resolves receiver-propagated aliases from imported function returns without source rereads', () => {
     const modelsSource = `
 export class User {

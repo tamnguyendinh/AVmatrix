@@ -346,38 +346,17 @@ function lookupReceiverTypeInner(
 
     const typeRef = scope.typeBindings.get(receiverName);
     if (typeRef !== undefined) {
-      if (typeRef.source === 'receiver-propagated') {
-        const key = `${typeRef.declaredAtScope}\0${receiverName}\0${typeRef.rawName}`;
-        if (visitedReceivers.has(key)) return undefined;
-        visitedReceivers.add(key);
-        return lookupReceiverTypeInner(
-          typeRef.declaredAtScope,
-          typeRef.rawName,
-          ctx,
-          visitedReceivers,
-        );
-      }
-
-      if (typeRef.source === 'field-access' || typeRef.source === 'method-return') {
-        const owner = resolveMemberDerivedOwner(typeRef, ctx, visitedReceivers);
-        if (owner !== undefined) return owner;
+      const owner = resolveReceiverTypeRef(typeRef, receiverName, ctx, visitedReceivers);
+      if (owner !== undefined) return owner;
+      if (
+        typeRef.source === 'field-access' ||
+        typeRef.source === 'method-return' ||
+        typeRef.source === 'call-return' ||
+        typeRef.source === 'call-return-element'
+      ) {
         currentId = scope.parent;
         continue;
       }
-
-      if (typeRef.source === 'call-return' || typeRef.source === 'call-return-element') {
-        const owner = resolveCallReturnOwner(typeRef, ctx, typeRef.source);
-        if (owner !== undefined) return owner;
-        currentId = scope.parent;
-        continue;
-      }
-
-      const resolved = resolveTypeRef(typeRef, {
-        scopes: ctx.scopes,
-        defIndex: ctx.defs,
-        qualifiedNameIndex: ctx.qualifiedNames,
-      });
-      if (resolved !== null) return resolved.nodeId;
 
       // Compatibility fallback for older/manual registry fixtures that
       // provide typeBindings without the corresponding lexical bindings.
@@ -386,9 +365,92 @@ function lookupReceiverTypeInner(
       // Ambiguous (≥ 2) or missing (0): cannot claim the receiver type.
       return undefined;
     }
+
+    const bindings = scope.bindings.get(receiverName);
+    if (bindings !== undefined && bindings.length > 0) {
+      return resolveReceiverOwnerFromBindings(bindings, ctx, visitedReceivers);
+    }
     currentId = scope.parent;
   }
   return undefined;
+}
+
+function resolveReceiverTypeRef(
+  typeRef: TypeRef,
+  receiverName: string,
+  ctx: RegistryContext,
+  visitedReceivers: Set<string>,
+): DefId | undefined {
+  if (typeRef.source === 'receiver-propagated') {
+    const key = `${typeRef.declaredAtScope}\0${receiverName}\0${typeRef.rawName}`;
+    if (visitedReceivers.has(key)) return undefined;
+    visitedReceivers.add(key);
+    return lookupReceiverTypeInner(typeRef.declaredAtScope, typeRef.rawName, ctx, visitedReceivers);
+  }
+
+  if (typeRef.source === 'field-access' || typeRef.source === 'method-return') {
+    return resolveMemberDerivedOwner(typeRef, ctx, visitedReceivers);
+  }
+
+  if (typeRef.source === 'call-return' || typeRef.source === 'call-return-element') {
+    return resolveCallReturnOwner(typeRef, ctx, typeRef.source);
+  }
+
+  const resolved = resolveTypeRef(typeRef, {
+    scopes: ctx.scopes,
+    defIndex: ctx.defs,
+    qualifiedNameIndex: ctx.qualifiedNames,
+  });
+  return resolved?.nodeId;
+}
+
+function resolveReceiverOwnerFromBindings(
+  bindings: readonly BindingRef[],
+  ctx: RegistryContext,
+  visitedReceivers: Set<string>,
+): DefId | undefined {
+  let selected: DefId | undefined;
+  for (const binding of bindings) {
+    if (!CALL_RETURN_STRICT_ORIGINS.has(binding.origin)) continue;
+
+    const owner = resolveReceiverOwnerFromBoundDef(binding.def, ctx, visitedReceivers);
+    if (owner === undefined) continue;
+    if (selected !== undefined && selected !== owner) return undefined;
+    selected = owner;
+  }
+  return selected;
+}
+
+function resolveReceiverOwnerFromBoundDef(
+  def: SymbolDefinition,
+  ctx: RegistryContext,
+  visitedReceivers: Set<string>,
+): DefId | undefined {
+  const inferredType = ctx.typeBindingByDef?.get(def.nodeId);
+  if (inferredType !== undefined) {
+    return resolveReceiverTypeRef(
+      inferredType,
+      simpleNameOf(def) ?? inferredType.rawName,
+      ctx,
+      visitedReceivers,
+    );
+  }
+
+  const rawName = def.declaredType ?? def.returnType;
+  if (rawName === undefined) return undefined;
+
+  const declaredAtScope = ctx.moduleScopes.get(def.filePath);
+  if (declaredAtScope === undefined) return undefined;
+  return resolveReceiverTypeRef(
+    {
+      rawName,
+      declaredAtScope,
+      source: def.declaredType !== undefined ? 'annotation' : 'return-annotation',
+    },
+    simpleNameOf(def) ?? rawName,
+    ctx,
+    visitedReceivers,
+  );
 }
 
 function resolveCallReturnOwner(

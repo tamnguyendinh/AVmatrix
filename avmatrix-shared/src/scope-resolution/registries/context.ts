@@ -14,7 +14,7 @@
 
 import type { NodeLabel } from '../../graph/types.js';
 import type { SymbolDefinition } from '../symbol-definition.js';
-import type { Callsite, DefId } from '../types.js';
+import type { Callsite, DefId, TypeRef } from '../types.js';
 import type { DefIndex } from '../def-index.js';
 import type { QualifiedNameIndex } from '../qualified-name-index.js';
 import type { ModuleScopeIndex } from '../module-scope-index.js';
@@ -61,6 +61,7 @@ export interface OwnerScopedContributor {
 }
 
 export type OwnerMemberIndex = ReadonlyMap<DefId, ReadonlyMap<string, readonly SymbolDefinition[]>>;
+export type DefTypeBindingIndex = ReadonlyMap<DefId, TypeRef>;
 
 // ─── Top-level context threaded through every lookup ───────────────────────
 
@@ -81,6 +82,13 @@ export interface RegistryContext {
    * scanning defs for compatibility with older callers.
    */
   readonly ownedMembersByOwner?: OwnerMemberIndex;
+  /**
+   * Optional finalized declaration-def -> type binding index. This lets
+   * receiver dispatch follow imported/exported variables whose type was
+   * inferred in their declaration file without re-reading that file in a
+   * second cross-file pass.
+   */
+  readonly typeBindingByDef?: DefTypeBindingIndex;
   readonly providers: RegistryProviders;
 }
 
