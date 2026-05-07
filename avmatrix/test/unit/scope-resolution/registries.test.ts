@@ -1,18 +1,18 @@
 /**
- * Unit tests for the scope-aware registries (RFC §4; Ring 2 SHARED #917).
+ * Unit tests for the scope-aware registries for the accurate single-pass graph pipeline.
  *
- * Tests are organized per RFC §4.2 step so a regression localizes to the
+ * Tests are organized per resolver step so a regression localizes to the
  * step it broke:
  *
- *   §4.2 Step 1 — lexical scope-chain walk + shadowing
- *   §4.2 Step 2 — type-binding / MRO walk (method/field registries)
- *   §4.2 Step 3 — owner-scoped contributor
- *   §4.2 Step 4 — kind filter + kind-match evidence
- *   §4.2 Step 5 — arity filter
- *   §4.2 Step 6 — global-qualified fallback
- *   §4.2 Step 7 — rank + tie-break cascade
- *   §4.5       — lookupQualified helper
- *   §4.7       — invariants
+ *   Step 1 — lexical scope-chain walk + shadowing
+ *   Step 2 — type-binding / MRO walk (method/field registries)
+ *   Step 3 — owner-scoped contributor
+ *   Step 4 — kind filter + kind-match evidence
+ *   Step 5 — arity filter
+ *   Step 6 — global-qualified fallback
+ *   Step 7 — rank + tie-break cascade
+ *   lookupQualified helper
+ *   invariants
  *
  * Corroborators (owner-match, unresolved-import cap, dynamic-unresolved)
  * get their own sections.
@@ -141,7 +141,7 @@ function makeCtx(
 
 const evidenceOfKind = (res: Resolution, kind: string) => res.evidence.find((e) => e.kind === kind);
 
-// ─── §4.2 Step 1 — lexical scope-chain walk + shadowing ────────────────────
+// ─── Step 1 — lexical scope-chain walk + shadowing ────────────────────
 
 describe('Step 1: lexical scope-chain walk', () => {
   it('finds a class declared at the start scope with origin=local', () => {
@@ -216,7 +216,7 @@ describe('Step 1: lexical scope-chain walk', () => {
   });
 });
 
-// ─── §4.2 Step 5 — arity filter ────────────────────────────────────────────
+// ─── Step 5 — arity filter ────────────────────────────────────────────
 
 describe('Step 5: arity filter', () => {
   it('drops incompatible candidates when at least one compatible candidate exists', () => {
@@ -295,7 +295,7 @@ describe('Step 5: arity filter', () => {
   });
 });
 
-// ─── §4.2 Step 6 — global-qualified fallback ───────────────────────────────
+// ─── Step 6 — global-qualified fallback ───────────────────────────────
 
 describe('Step 6: global-qualified fallback', () => {
   it('falls back to the qualified-name index when no lexical candidate is found', () => {
@@ -338,7 +338,7 @@ describe('Step 6: global-qualified fallback', () => {
   });
 });
 
-// ─── §4.2 Step 7 — tie-breaks ──────────────────────────────────────────────
+// ─── Step 7 — tie-breaks ──────────────────────────────────────────────
 
 describe('Step 7: tie-break cascade', () => {
   it('inner scope shadows outer, yielding single result (hard-shadow baseline)', () => {

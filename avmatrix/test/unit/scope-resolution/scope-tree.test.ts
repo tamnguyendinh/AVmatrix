@@ -1,5 +1,5 @@
 /**
- * Unit tests for `buildScopeTree` / `ScopeTree` (RFC #909 Ring 2 SHARED #912).
+ * Unit tests for `buildScopeTree` / `ScopeTree` for the accurate single-pass graph pipeline.
  *
  * Covers: empty tree, single-module tree, nested module→class→function,
  * siblings, ancestors walk, children lookup, readonly surface, and all six

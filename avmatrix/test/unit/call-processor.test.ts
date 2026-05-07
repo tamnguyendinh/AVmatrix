@@ -1470,7 +1470,7 @@ describe('processCalls — Phase P class lookup fallback', () => {
 
     // SM-20 wire-up: resolveMemberCall's constructor-override branch queries
     // the model directly (ctx.model.types.lookupClassByName), not the
-    // legacy SymbolTable wrapper. Spy on the model method to preserve the
+    // compatibility SymbolTable wrapper. Spy on the model method to preserve the
     // test's intent: verify which class names are looked up during override.
     const classLookupSpy = vi.spyOn(ctx.model.types, 'lookupClassByName');
 
@@ -1530,7 +1530,7 @@ class App {
 
     // SM-20 wire-up: resolveMemberCall's constructor-override branch queries
     // the model directly (ctx.model.types.lookupClassByName), not the
-    // legacy SymbolTable wrapper. Spy on the model method to preserve the
+    // compatibility SymbolTable wrapper. Spy on the model method to preserve the
     // test's intent: verify which class names are looked up during override.
     const classLookupSpy = vi.spyOn(ctx.model.types, 'lookupClassByName');
 
@@ -2590,7 +2590,7 @@ describe('processCalls — D0 MRO fast path (SM-10)', () => {
   });
 
   it('overloadHints guard: D0 skipped so literal-inferred overload disambiguation picks the right overload', async () => {
-    // Java sequential path: processCalls auto-generates `overloadHints` for
+    // Java direct processCalls path auto-generates `overloadHints` for
     // languages whose provider exposes `inferLiteralType` (Java/Kotlin/C#/C++).
     // When two overloads share the same return type, lookupMethodByOwner
     // returns defs[0] (the first-added overload) regardless of argument

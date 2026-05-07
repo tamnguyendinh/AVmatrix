@@ -33,7 +33,7 @@ describe('setupCommand codex execution', () => {
 
     originalHome = process.env.HOME;
     originalUserProfile = process.env.USERPROFILE;
-    tempHome = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-codex-setup-'));
+    tempHome = await fs.mkdtemp(path.join(os.tmpdir(), 'avmatrix-codex-setup-'));
     process.env.HOME = tempHome;
     process.env.USERPROFILE = tempHome;
 

@@ -17,7 +17,7 @@ describe('setupCommand skills integration', () => {
   const packageSkillsRoot = path.resolve(testDir, '..', '..', 'skills');
 
   beforeAll(async () => {
-    tempHome = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-setup-home-'));
+    tempHome = await fs.mkdtemp(path.join(os.tmpdir(), 'avmatrix-setup-home-'));
     process.env.HOME = tempHome;
     process.env.USERPROFILE = tempHome; // os.homedir() checks USERPROFILE on Windows
     await fs.mkdir(path.join(tempHome, '.cursor'), { recursive: true });

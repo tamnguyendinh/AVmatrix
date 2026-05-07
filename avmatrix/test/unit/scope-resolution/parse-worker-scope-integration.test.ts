@@ -1,18 +1,17 @@
 /**
- * Unit tests for `extractParsedFile` — the parse-worker → ScopeExtractor
- * bridge (RFC #909 Ring 2 PKG #920).
+ * Unit tests for `extractParsedFile` — the parse-worker to ScopeExtractor
+ * bridge used by the accurate single-pass graph pipeline.
  *
  * The goal is to pin three invariants:
  *
- *   1. When a provider does NOT implement `emitScopeCaptures`, the helper
- *      returns `undefined` silently. This is the state of every language
- *      today — `ParseWorkerResult.parsedFiles` stays empty and the legacy
- *      DAG continues unaffected.
+ *   1. When a provider does NOT implement scope capture hooks, the helper
+ *      returns `undefined` silently so unmigrated providers continue through
+ *      the normal parse path.
  *   2. When a provider DOES implement the hook, the helper threads its
  *      output through `ScopeExtractor.extract` and returns a `ParsedFile`.
  *   3. Exceptions from either the hook or the extractor are caught
  *      locally. The helper returns `undefined` — scope-extraction
- *      failures must NEVER break legacy parsing on the same file.
+ *      failures must NEVER break symbol extraction on the same file.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -60,7 +59,7 @@ function fakeProvider(
 
 describe('extractParsedFile', () => {
   describe('provider has NOT migrated (no emitScopeCaptures)', () => {
-    it('returns undefined — silent no-op for legacy languages', () => {
+    it('returns undefined as a silent no-op for providers without scope facts', () => {
       const provider = fakeProvider({}); // no hook
       const result = extractParsedFile(provider, 'source text', 'src/file.ts');
       expect(result).toBeUndefined();
@@ -167,7 +166,7 @@ describe('extractParsedFile', () => {
     });
   });
 
-  describe('error resilience — never breaks legacy parsing', () => {
+  describe('error resilience — never breaks normal parsing', () => {
     it('returns undefined when emitScopeCaptures throws', () => {
       const provider = fakeProvider({
         emitScopeCaptures: () => {
@@ -196,7 +195,7 @@ describe('extractParsedFile', () => {
 
     it('returns undefined when ScopeExtractor throws (missing Module scope)', () => {
       // Emits a Class scope but no Module — extractor throws; helper
-      // swallows and returns undefined. Legacy parsing on the same file
+      // swallows and returns undefined. Symbol extraction on the same file
       // continues unaffected by this failure.
       const provider = fakeProvider({
         emitScopeCaptures: () => [{ '@scope.class': cap('@scope.class', 5, 0, 10, 0) }],

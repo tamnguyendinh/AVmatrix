@@ -25,17 +25,17 @@ import numpy as np
 from .models import User, Repo as R
 from pkg import *
 
-class GitNexusAgent:
+class AvmatrixAgent:
     def __init__(self):
-        self.gitnexus_metrics = GitNexusMetrics()
+        self.avmatrix_metrics = AvmatrixMetrics()
 
     def serialize(self, *extra_dicts) -> dict:
-        gitnexus_data = {
-            "metrics": self.gitnexus_metrics.to_dict(),
+        avmatrix_data = {
+            "metrics": self.avmatrix_metrics.to_dict(),
         }
-        return gitnexus_data
+        return avmatrix_data
 
-class GitNexusMetrics:
+class AvmatrixMetrics:
     def to_dict(self) -> dict:
         return {}
 `;
@@ -43,7 +43,7 @@ class GitNexusMetrics:
     const result = extractParsedFileWithStats(
       pythonProvider,
       source,
-      'eval/agents/gitnexus_agent.py',
+      'eval/agents/avmatrix_agent.py',
       SupportedLanguages.Python,
       tree.rootNode,
     );
@@ -59,28 +59,28 @@ class GitNexusMetrics:
     const defs = parsed!.localDefs.map((def) => `${def.type}:${def.qualifiedName}`).sort();
     expect(defs).toEqual(
       expect.arrayContaining([
-        'Class:GitNexusAgent',
-        'Class:GitNexusMetrics',
-        'Method:GitNexusAgent.__init__',
-        'Method:GitNexusAgent.serialize',
-        'Method:GitNexusMetrics.to_dict',
-        'Property:GitNexusAgent.gitnexus_metrics',
+        'Class:AvmatrixAgent',
+        'Class:AvmatrixMetrics',
+        'Method:AvmatrixAgent.__init__',
+        'Method:AvmatrixAgent.serialize',
+        'Method:AvmatrixMetrics.to_dict',
+        'Property:AvmatrixAgent.avmatrix_metrics',
       ]),
     );
 
     const agent = parsed!.localDefs.find(
-      (def) => def.type === 'Class' && def.qualifiedName === 'GitNexusAgent',
+      (def) => def.type === 'Class' && def.qualifiedName === 'AvmatrixAgent',
     );
     const serialize = parsed!.localDefs.find(
-      (def) => def.type === 'Method' && def.qualifiedName === 'GitNexusAgent.serialize',
+      (def) => def.type === 'Method' && def.qualifiedName === 'AvmatrixAgent.serialize',
     );
     const metrics = parsed!.localDefs.find(
-      (def) => def.type === 'Property' && def.qualifiedName === 'GitNexusAgent.gitnexus_metrics',
+      (def) => def.type === 'Property' && def.qualifiedName === 'AvmatrixAgent.avmatrix_metrics',
     );
     expect(agent).toBeDefined();
     expect(serialize?.ownerId).toBe(agent!.nodeId);
     expect(metrics?.ownerId).toBe(agent!.nodeId);
-    expect(metrics?.declaredType).toBe('GitNexusMetrics');
+    expect(metrics?.declaredType).toBe('AvmatrixMetrics');
 
     expect(parsed!.parsedImports).toEqual(
       expect.arrayContaining([
@@ -102,8 +102,8 @@ class GitNexusMetrics:
       .filter((binding) => binding !== undefined);
     expect(selfBindings).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ rawName: 'GitNexusAgent', source: 'self' }),
-        expect.objectContaining({ rawName: 'GitNexusMetrics', source: 'self' }),
+        expect.objectContaining({ rawName: 'AvmatrixAgent', source: 'self' }),
+        expect.objectContaining({ rawName: 'AvmatrixMetrics', source: 'self' }),
       ]),
     );
 
@@ -120,7 +120,7 @@ class GitNexusMetrics:
           name: 'to_dict',
           kind: 'call',
           callForm: 'member',
-          receiver: 'self.gitnexus_metrics',
+          receiver: 'self.avmatrix_metrics',
           arity: 0,
         },
       ]),
@@ -129,21 +129,21 @@ class GitNexusMetrics:
 
   it('resolves Python dotted self member calls without rereading or reparsing source', () => {
     const source = `
-class GitNexusAgent:
+class AvmatrixAgent:
     def __init__(self):
-        self.gitnexus_metrics = GitNexusMetrics()
+        self.avmatrix_metrics = AvmatrixMetrics()
 
     def serialize(self, *extra_dicts) -> dict:
-        return self.gitnexus_metrics.to_dict()
+        return self.avmatrix_metrics.to_dict()
 
-class GitNexusMetrics:
+class AvmatrixMetrics:
     def to_dict(self) -> dict:
         return {}
 `;
     const parsed = extractParsedFileWithStats(
       pythonProvider,
       source,
-      'eval/agents/gitnexus_agent.py',
+      'eval/agents/avmatrix_agent.py',
       SupportedLanguages.Python,
       parser.parse(source).rootNode,
     ).parsedFile;
@@ -153,7 +153,7 @@ class GitNexusMetrics:
     const result = resolveScopeReferenceSites(indexes);
 
     const toDict = parsed!.localDefs.find(
-      (def) => def.type === 'Method' && def.qualifiedName === 'GitNexusMetrics.to_dict',
+      (def) => def.type === 'Method' && def.qualifiedName === 'AvmatrixMetrics.to_dict',
     );
     expect(toDict).toBeDefined();
 

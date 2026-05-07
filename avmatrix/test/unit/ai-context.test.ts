@@ -9,7 +9,7 @@ describe('generateAIContextFiles', () => {
   let storagePath: string;
 
   beforeAll(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-ai-ctx-test-'));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'avmatrix-ai-ctx-test-'));
     storagePath = path.join(tmpDir, '.avmatrix');
     await fs.mkdir(storagePath, { recursive: true });
   });
@@ -137,7 +137,7 @@ describe('generateAIContextFiles', () => {
     }
   });
 
-  it('uses MCP tool names without legacy avmatrix_ prefixes', async () => {
+  it('uses MCP tool names without retired avmatrix_ prefixes', async () => {
     const stats = { nodes: 10, edges: 20, processes: 2 };
     await generateAIContextFiles(tmpDir, storagePath, 'TestProject', stats);
 

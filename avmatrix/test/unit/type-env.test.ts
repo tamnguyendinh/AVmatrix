@@ -5727,7 +5727,7 @@ function process() {
     it('narrows mixed file-scope and function-scope env to file-scope only', () => {
       // Core narrowing assertion: a realistic file with BOTH file-scope and
       // function-scope bindings flushes only the file-scope subset. This is
-      // the primary narrowing-contract assertion for the sequential path.
+      // the primary narrowing-contract assertion for the direct parse path.
       const code = `const dbClient: Database = connectDb();\nfunction handleRequest() {\n  const localRequest: Request = parseRequest();\n  const localUser: User = loadUser();\n}`;
       const tree = parse(code, TypeScript.typescript);
       const typeEnv = buildTypeEnv(tree, 'typescript');

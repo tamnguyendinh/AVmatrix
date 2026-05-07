@@ -1,5 +1,5 @@
 /**
- * Unit tests for `shadow-harness` (RFC #909 Ring 2 PKG #923).
+ * Unit tests for `shadow-harness` for the accurate single-pass graph pipeline.
  *
  * Covers flag detection, record accumulation, aggregation, and JSON
  * persistence (real fs in a per-test tmpdir).
@@ -197,7 +197,7 @@ describe('record + snapshot', () => {
       newResult: [resolution('def:a')],
       primary: 'legacy',
     });
-    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'gn-sh-clear-'));
+    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'avmatrix-sh-clear-'));
     try {
       await h.persist(dir);
       const payload = JSON.parse(fs.readFileSync(path.join(dir, 'latest.json'), 'utf8'));
@@ -213,7 +213,7 @@ describe('record + snapshot', () => {
 describe('persist', () => {
   let tmpDir: string;
   beforeEach(async () => {
-    tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'gn-shadow-harness-'));
+    tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'avmatrix-shadow-harness-'));
   });
   afterEach(async () => {
     await fsp.rm(tmpDir, { recursive: true, force: true });

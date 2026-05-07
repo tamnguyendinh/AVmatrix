@@ -1,5 +1,5 @@
 /**
- * Unit tests for `finalize-orchestrator` (RFC #909 Ring 2 PKG #921).
+ * Unit tests for `finalize-orchestrator` for the accurate single-pass graph pipeline.
  *
  * Covers empty-input, single-file, multi-file-with-imports, and the
  * `MutableSemanticModel.attachScopeIndexes` one-shot contract.

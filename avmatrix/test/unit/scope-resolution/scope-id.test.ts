@@ -1,5 +1,5 @@
 /**
- * Unit tests for `makeScopeId` (RFC #909 Ring 2 SHARED #912).
+ * Unit tests for `makeScopeId` for the accurate single-pass graph pipeline.
  *
  * Covers canonical shape, determinism across calls, string interning,
  * and that different inputs produce different ids.
@@ -20,7 +20,7 @@ describe('makeScopeId', () => {
     clearScopeIdInternPool();
   });
 
-  it('produces the canonical RFC §2.2 shape', () => {
+  it('produces the canonical scope id shape', () => {
     const id = makeScopeId({ filePath: 'src/app.ts', range: r(1, 0, 100, 0), kind: 'Module' });
     expect(id).toBe('scope:src/app.ts#1:0-100:0:Module');
   });

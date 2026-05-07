@@ -143,7 +143,7 @@ describe('generateSkillFiles — return values', () => {
   let tmpDir: string;
 
   beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-skill-test-'));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'avmatrix-skill-test-'));
     vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
@@ -519,7 +519,7 @@ describe('generateSkillFiles — file output', () => {
   let tmpDir: string;
 
   beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-skill-out-'));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'avmatrix-skill-out-'));
     vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 

@@ -87,7 +87,7 @@ describe('impact: batching and grouping', () => {
 
       // NOTE: process-chunk enrichment previously used executeQuery; our
       // implementation now calls executeParameterized for those chunks. We
-      // still keep this branch to support any legacy calls, but primary
+      // still keep this branch to support older call sites, but primary
       // chunk tracking will be handled via executeParameterizedMock below.
 
       return [];

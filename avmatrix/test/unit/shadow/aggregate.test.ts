@@ -1,5 +1,5 @@
 /**
- * Unit tests for `aggregateDiffs` (RFC #909 Ring 2 SHARED #918).
+ * Unit tests for `aggregateDiffs` for the accurate single-pass graph pipeline.
  *
  * Covers bucketing by language, parity math (incl. zero-resolved edge),
  * evidence-kind breakdown, and stable sort order on the output rows.

@@ -78,7 +78,7 @@ repos: {}
   });
 
   it('loadGroupConfig reads group.yaml from disk', async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-group-load-'));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'avmatrix-group-load-'));
     const yaml = `version: 1
 name: disk-test
 repos:

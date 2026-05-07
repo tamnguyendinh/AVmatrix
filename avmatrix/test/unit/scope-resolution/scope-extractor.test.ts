@@ -1,8 +1,8 @@
 /**
- * Unit tests for `scope-extractor.extract` — the 5-pass driver
- * (RFC §5.3; Ring 2 PKG #919).
+ * Unit tests for `scope-extractor.extract` — the scope fact normalizer
+ * used by the accurate single-pass graph pipeline.
  *
- * Tests are organized by pass so a regression localizes to the pass it
+ * Tests are organized by fact group so a regression localizes to the group it
  * broke. A `MockProvider` emits synthetic `CaptureMatch[]` with no real
  * AST; the extractor is pure given those captures.
  */
@@ -476,22 +476,22 @@ describe('Pass 5: reference sites', () => {
 
 // ─── §End-to-end fixture ──────────────────────────────────────────────────
 
-describe('end-to-end fixture (all 5 passes together)', () => {
-  it('produces a well-formed ParsedFile from a representative multi-pass input', () => {
+describe('end-to-end fixture (all scope fact groups together)', () => {
+  it('produces a well-formed ParsedFile from representative single-pass scope facts', () => {
     const matches: CaptureMatch[] = [
-      // Pass 1: nested scopes
+      // Group 1: nested scopes
       scopeMatch('module', 1, 0, 100, 0),
       scopeMatch('class', 5, 0, 50, 0),
       scopeMatch('function', 10, 2, 40, 2),
-      // Pass 2: declarations
+      // Group 2: declarations
       declMatch('class', 'User', 5, 6, 5, 10),
       declMatch('method', 'save', 10, 2, 10, 6),
       declMatch('field', 'count', 7, 2, 7, 7),
-      // Pass 3: import
+      // Group 3: import
       importMatch(3, 0, 3, 30),
-      // Pass 4: type binding
+      // Group 4: type binding
       typeBindingMatch(10, 14, 10, 18),
-      // Pass 5: references
+      // Group 5: references
       refMatch('call.member', 'log', 20, 4, 20, 7, {
         '@reference.receiver': cap('@reference.receiver', 20, 0, 20, 4, 'self'),
       }),

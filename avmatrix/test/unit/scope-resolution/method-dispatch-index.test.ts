@@ -1,6 +1,6 @@
 /**
  * Unit tests for `buildMethodDispatchIndex` / `MethodDispatchIndex`
- * (RFC #909 Ring 2 SHARED #914).
+ * for the accurate single-pass graph pipeline.
  *
  * Covers: empty input, single-inheritance chain, diamond inheritance (caller-
  * determined MRO order), interface-only dispatch, multiple implementors,

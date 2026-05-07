@@ -158,8 +158,8 @@ describe('BindingAccumulator', () => {
       // Simulated worker output:
       // After narrowing the worker IPC payload to file-scope only, the
       // emitted tuple shape is [varName, typeName]. Function-scope entries
-      // are stripped at the parse-worker boundary; the sequential path's
-      // flush() still writes all scopes via its own code path.
+      // are stripped at the parse-worker boundary; the non-worker parse
+      // adapter still writes all scopes via its own code path.
       const workerBindings = [
         {
           filePath: 'src/service.ts',
@@ -239,7 +239,7 @@ describe('BindingAccumulator', () => {
       expect(allVarNames).not.toContain('localUser');
 
       // Sanity: simulatedFunctionScope exists so the test is not trivially
-      // vacuous — it documents what the old allScopes() path would have
+      // vacuous — it documents what the pre-split allScopes() path would have
       // emitted and what the new fileScope() path deliberately excludes.
       expect(simulatedFunctionScope.size).toBe(2);
 
@@ -347,7 +347,7 @@ describe('BindingAccumulator', () => {
   });
 
   // -------------------------------------------------------------------------
-  // Integration coverage for the sequential
+  // Integration coverage for the direct parse
   // path → accumulator → ExportedTypeMap enrichment loop at pipeline.ts
   // lines 1082-1110. This test mirrors that loop inline with a minimal
   // KnowledgeGraph-shaped mock, locking in the node-ID format contract

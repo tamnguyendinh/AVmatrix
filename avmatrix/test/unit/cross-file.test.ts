@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BindingAccumulator } from '../../src/core/ingestion/binding-accumulator.js';
 
-// Mock the cross-file-impl module so we can control whether the propagation
-// step throws or returns cleanly. The `crossFilePhase` only depends on this
-// one external symbol — nothing else in the body has to be stubbed.
+// Mock the compatibility propagation module so we can control whether the
+// narrowed fallback step throws or returns cleanly. The `crossFilePhase` only
+// depends on this one external symbol — nothing else has to be stubbed.
 vi.mock('../../src/core/ingestion/pipeline-phases/cross-file-impl.js', () => ({
   runCrossFileBindingPropagation: vi.fn(),
 }));
@@ -67,7 +67,7 @@ function makeDeps(
   ]);
 }
 
-describe('crossFilePhase', () => {
+describe('crossFilePhase compatibility fallback', () => {
   beforeEach(() => {
     runCrossFileMock.mockReset();
   });
@@ -110,7 +110,7 @@ describe('crossFilePhase', () => {
     expect(acc.totalBindings).toBe(0);
   });
 
-  it('skips legacy propagation by option while still disposing the accumulator', async () => {
+  it('skips compatibility propagation by option while still disposing the accumulator', async () => {
     const acc = new BindingAccumulator();
     acc.appendFile('src/a.ts', [{ scope: '', varName: 'x', typeName: 'X' }]);
 
@@ -125,7 +125,7 @@ describe('crossFilePhase', () => {
     expect(acc.disposed).toBe(true);
   });
 
-  it('auto-skips legacy propagation when every parseable file has AST-reused scope facts', async () => {
+  it('auto-skips compatibility propagation when every parseable file has AST-reused scope facts', async () => {
     const acc = new BindingAccumulator();
     acc.appendFile('src/a.ts', [{ scope: '', varName: 'x', typeName: 'X' }]);
 
@@ -150,7 +150,7 @@ describe('crossFilePhase', () => {
     expect(acc.disposed).toBe(true);
   });
 
-  it('keeps legacy propagation when any parseable file lacks AST-reused scope facts', async () => {
+  it('keeps compatibility propagation when any parseable file lacks AST-reused scope facts', async () => {
     runCrossFileMock.mockResolvedValueOnce({
       filesReprocessed: 2,
       metrics: { timings: { processCallsMs: 4.5 }, counters: { filesReprocessed: 2 } },

@@ -19,7 +19,7 @@ describe('--skip-git CLI flag', () => {
   });
 
   it('rejects non-git folder without --skip-git', () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gn-no-git-'));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'avmatrix-no-git-'));
     fs.writeFileSync(path.join(tmpDir, 'test.ts'), 'export const x = 1;');
 
     try {

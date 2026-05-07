@@ -18,7 +18,7 @@ describe('ignore + language-skip E2E', () => {
   let tmpDir: string;
 
   beforeAll(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-e2e-ignore-skip-'));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'avmatrix-e2e-ignore-skip-'));
 
     // Create directory structure
     await fs.mkdir(path.join(tmpDir, 'src'), { recursive: true });

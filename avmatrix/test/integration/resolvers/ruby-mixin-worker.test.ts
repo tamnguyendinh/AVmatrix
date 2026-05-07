@@ -2,9 +2,9 @@
  * Regression: Ruby mixin heritage resolution must work on the canonical worker
  * ingestion path.
  *
- * This file used to compare the removed legacy parser and worker output. Full analyze
- * now treats worker parsing as canonical, so the guard focuses on worker output
- * and verifies that the old sequential path is not required for correctness.
+ * Full analyze treats worker parsing as canonical, so this guard focuses on
+ * worker output and verifies that direct parse ordering is not required for
+ * correctness.
  */
 import { describe, it, expect, beforeAll } from 'vitest';
 import path from 'path';

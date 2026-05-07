@@ -1,6 +1,6 @@
 /**
  * Unit tests for `buildPositionIndex` / `PositionIndex`
- * (RFC #909 Ring 2 SHARED #912).
+ * for the accurate single-pass graph pipeline.
  *
  * Covers: empty input, single scope, nested scopes (innermost-wins),
  * positions before/after all scopes, boundary positions (inclusive ends),

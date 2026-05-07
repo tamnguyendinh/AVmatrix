@@ -2560,9 +2560,9 @@ describe('TypeScript overloaded method disambiguation', () => {
   });
 });
 
-// ── Phase P: Same-arity overloads — cross-file + chain resolution ─────────
+// ── Same-arity overloads — import-scoped receiver chain resolution ─────────
 
-describe('TypeScript same-arity overload cross-file resolution', () => {
+describe('TypeScript same-arity overload import-scoped resolution', () => {
   let result: PipelineResult;
 
   beforeAll(async () => {

@@ -561,18 +561,17 @@ describe('Phase 9 — Cross-File Call-Result Binding: Ruby', () => {
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
-// Regression: consumer file processed before provider in sequential path
+// Regression: consumer file sorted before provider in parse order.
 // a-consumer.ts (alphabetically first) imports getUser from b-provider.ts.
-// Without the two-pass flush fix, the accumulator wouldn't have b-provider's
-// bindings when a-consumer's verifyConstructorBindings runs.
+// The compatibility propagation path must still see provider bindings before
+// verifying constructor bindings for the consumer.
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
-// Consumer-before-provider regression tests (sequential ordering fix)
+// Consumer-before-provider regression tests (ordering-independent resolution)
 //
 // Each language fixture has a consumer file that sorts alphabetically before
-// the provider file. In the sequential path, the consumer is processed first.
-// The two-pass flush ensures the accumulator has provider bindings before
-// verifyConstructorBindings runs for the consumer.
+// the provider file. Resolution must not depend on provider files being seen
+// first.
 // ---------------------------------------------------------------------------
 
 describe('Consumer-Before-Provider: TypeScript', () => {

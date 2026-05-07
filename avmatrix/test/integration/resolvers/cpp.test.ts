@@ -1066,9 +1066,9 @@ describe('C++ overload disambiguation by parameter types', () => {
   });
 });
 
-// ── Phase P: Same-arity overloads — cross-file + chain resolution ─────────
+// ── Same-arity overloads — import-scoped receiver chain resolution ─────────
 
-describe('C++ same-arity overload cross-file and chain resolution', () => {
+describe('C++ same-arity overload import-scoped and chain resolution', () => {
   let result: PipelineResult;
 
   beforeAll(async () => {
@@ -1320,16 +1320,16 @@ describe('C++ const-qualified method overload disambiguation', () => {
   });
 });
 
-// ── Phase P: C++ const-qualified cross-file + chain resolution ────────────
+// ── C++ const-qualified import-scoped receiver chain resolution ────────────
 
-describe('C++ const-qualified cross-file and chain resolution', () => {
+describe('C++ const-qualified import-scoped and chain resolution', () => {
   let result: PipelineResult;
 
   beforeAll(async () => {
     result = await runPipelineFromRepo(path.join(FIXTURES, 'cpp-const-cross-file'), () => {});
   }, 60000);
 
-  // -- Cross-file: const vs non-const get() called from App --
+  // -- Import-scoped: const vs non-const get() called from App --
 
   it('Container.get has distinct const and non-const nodes', () => {
     const methods = getNodesByLabelFull(result, 'Method');
@@ -1351,9 +1351,9 @@ describe('C++ const-qualified cross-file and chain resolution', () => {
     expect(constFlags).toEqual([false, true]);
   });
 
-  // -- Chain: format() calls resolve cross-file via receiver-type propagation --
+  // -- Chain: format() calls resolve via receiver-type propagation --
 
-  it('chainMutableGet() calls format cross-file via string receiver type', () => {
+  it('chainMutableGet() calls format via string receiver type', () => {
     const calls = getRelationships(result, 'CALLS');
     const fmtEdges = calls.filter((c) => c.source === 'chainMutableGet' && c.target === 'format');
     expect(fmtEdges.length).toBe(1);
@@ -1361,7 +1361,7 @@ describe('C++ const-qualified cross-file and chain resolution', () => {
     expect(fmtTarget?.properties.parameterTypes).toEqual(['string']);
   });
 
-  it('chainConstSize() calls format cross-file via int receiver type', () => {
+  it('chainConstSize() calls format via int receiver type', () => {
     const calls = getRelationships(result, 'CALLS');
     const fmtEdges = calls.filter((c) => c.source === 'chainConstSize' && c.target === 'format');
     expect(fmtEdges.length).toBe(1);
@@ -1407,16 +1407,16 @@ describe('C++ template overload disambiguation (vector<int> vs vector<string>)',
   });
 });
 
-// ── Phase P: C++ template overload cross-file + chain resolution ──────────
+// ── C++ template overload import-scoped receiver chain resolution ──────────
 
-describe('C++ template overload cross-file and chain resolution', () => {
+describe('C++ template overload import-scoped and chain resolution', () => {
   let result: PipelineResult;
 
   beforeAll(async () => {
     result = await runPipelineFromRepo(path.join(FIXTURES, 'cpp-template-cross-file'), () => {});
   }, 60000);
 
-  // -- Cross-file: template-overloaded process() defined in processor.h, called from app.cpp --
+  // -- Import-scoped: template-overloaded process() defined in processor.h, called from app.cpp --
 
   it('Processor.process has distinct nodes for vector<int> and vector<string>', () => {
     const methods = getNodesByLabelFull(result, 'Method');

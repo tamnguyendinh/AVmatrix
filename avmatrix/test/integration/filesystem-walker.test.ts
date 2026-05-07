@@ -11,7 +11,7 @@ describe('filesystem-walker', () => {
   let tmpDir: string;
 
   beforeAll(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-walker-test-'));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'avmatrix-walker-test-'));
 
     // Create test directory structure
     await fs.mkdir(path.join(tmpDir, 'src'), { recursive: true });
@@ -98,7 +98,7 @@ describe('filesystem-walker', () => {
     });
 
     it('returns empty for directory with only ignored files', async () => {
-      const emptyDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-walker-empty-'));
+      const emptyDir = await fs.mkdtemp(path.join(os.tmpdir(), 'avmatrix-walker-empty-'));
       await fs.mkdir(path.join(emptyDir, '.git'), { recursive: true });
       await fs.writeFile(path.join(emptyDir, '.git', 'HEAD'), 'ref: refs/heads/main');
 
@@ -111,7 +111,7 @@ describe('filesystem-walker', () => {
     });
 
     it('returns empty for truly empty directory', async () => {
-      const emptyDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-walker-truly-empty-'));
+      const emptyDir = await fs.mkdtemp(path.join(os.tmpdir(), 'avmatrix-walker-truly-empty-'));
       try {
         const files = await walkRepositoryPaths(emptyDir);
         expect(files).toEqual([]);
@@ -125,7 +125,7 @@ describe('filesystem-walker', () => {
     let gitignoreDir: string;
 
     beforeAll(async () => {
-      gitignoreDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-walker-gitignore-'));
+      gitignoreDir = await fs.mkdtemp(path.join(os.tmpdir(), 'avmatrix-walker-gitignore-'));
 
       // Create directory structure
       await fs.mkdir(path.join(gitignoreDir, 'src'), { recursive: true });
@@ -186,30 +186,35 @@ describe('filesystem-walker', () => {
   });
 
   describe('.avmatrixignore support', () => {
-    let nexusignoreDir: string;
+    let avmatrixignoreDir: string;
 
     beforeAll(async () => {
-      nexusignoreDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-walker-nexusignore-'));
+      avmatrixignoreDir = await fs.mkdtemp(
+        path.join(os.tmpdir(), 'avmatrix-walker-avmatrixignore-'),
+      );
 
-      await fs.mkdir(path.join(nexusignoreDir, 'src'), { recursive: true });
-      await fs.mkdir(path.join(nexusignoreDir, 'local', 'grafana'), { recursive: true });
+      await fs.mkdir(path.join(avmatrixignoreDir, 'src'), { recursive: true });
+      await fs.mkdir(path.join(avmatrixignoreDir, 'local', 'grafana'), { recursive: true });
 
       await fs.writeFile(
-        path.join(nexusignoreDir, 'src', 'index.ts'),
+        path.join(avmatrixignoreDir, 'src', 'index.ts'),
         'export const main = () => {}',
       );
-      await fs.writeFile(path.join(nexusignoreDir, 'local', 'grafana', 'module.js'), 'var x = 1;');
+      await fs.writeFile(
+        path.join(avmatrixignoreDir, 'local', 'grafana', 'module.js'),
+        'var x = 1;',
+      );
 
       // Only .avmatrixignore, no .gitignore
-      await fs.writeFile(path.join(nexusignoreDir, '.avmatrixignore'), 'local/\n');
+      await fs.writeFile(path.join(avmatrixignoreDir, '.avmatrixignore'), 'local/\n');
     });
 
     afterAll(async () => {
-      await fs.rm(nexusignoreDir, { recursive: true, force: true });
+      await fs.rm(avmatrixignoreDir, { recursive: true, force: true });
     });
 
     it('excludes directories listed in .avmatrixignore', async () => {
-      const files = await walkRepositoryPaths(nexusignoreDir);
+      const files = await walkRepositoryPaths(avmatrixignoreDir);
       const paths = files.map((f) => f.path.replace(/\\/g, '/'));
 
       expect(paths.some((p) => p.includes('src/index.ts'))).toBe(true);
@@ -221,7 +226,7 @@ describe('filesystem-walker', () => {
     let combinedDir: string;
 
     beforeAll(async () => {
-      combinedDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-walker-combined-'));
+      combinedDir = await fs.mkdtemp(path.join(os.tmpdir(), 'avmatrix-walker-combined-'));
 
       await fs.mkdir(path.join(combinedDir, 'src'), { recursive: true });
       await fs.mkdir(path.join(combinedDir, 'data'), { recursive: true });
@@ -253,7 +258,7 @@ describe('filesystem-walker', () => {
     let envDir: string;
 
     beforeAll(async () => {
-      envDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-walker-noignore-'));
+      envDir = await fs.mkdtemp(path.join(os.tmpdir(), 'avmatrix-walker-noignore-'));
 
       await fs.mkdir(path.join(envDir, 'src'), { recursive: true });
       await fs.mkdir(path.join(envDir, 'data'), { recursive: true });

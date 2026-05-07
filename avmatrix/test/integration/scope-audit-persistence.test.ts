@@ -119,12 +119,12 @@ function buildOverlapGraph() {
     properties: { name: 'save', filePath: 'src/app.ts', startLine: 5, endLine: 5 },
   });
   graph.addRelationship({
-    id: 'legacy-call',
+    id: 'compatibility-call',
     sourceId: 'Function:src/app.ts:run',
     targetId: 'Method:src/app.ts:A.save#0',
     type: 'CALLS',
     confidence: 0.5,
-    reason: 'legacy call',
+    reason: 'compatibility call',
   });
 
   emitReferencesToGraph({

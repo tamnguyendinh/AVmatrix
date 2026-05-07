@@ -1557,7 +1557,7 @@ describe('computeMRO', () => {
       addClass(graph, 'CLenient', 'java');
       addImplements(graph, 'CLenient', 'ILenient');
 
-      // Manually create methods WITHOUT parameterCount to simulate legacy/missing arity
+      // Manually create methods WITHOUT parameterCount to simulate missing arity metadata
       const iBazId = generateId('Method', 'ILenient.baz');
       graph.addNode({
         id: iBazId,

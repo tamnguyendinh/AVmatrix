@@ -1,7 +1,5 @@
 // File starts with 'a-' to sort alphabetically before 'b-provider.js'.
-// In the sequential path, this file is processed first. Without the
-// two-pass fix, the accumulator wouldn't have b-provider's bindings
-// when this file's verifyConstructorBindings runs.
+// Resolution must not depend on provider files being parsed first.
 import { getUser } from './b-provider';
 
 export function main() {

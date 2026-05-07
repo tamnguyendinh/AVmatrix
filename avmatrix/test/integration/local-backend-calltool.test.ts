@@ -170,8 +170,8 @@ withTestLbugDB(
         expect(names).toContain('authenticate');
       });
 
-      it('expands legacy OVERRIDES to include METHOD_OVERRIDES (dual-read)', async () => {
-        // Pass the LEGACY alias 'OVERRIDES' — impactByUid should flatMap-expand
+      it('expands compatibility OVERRIDES alias to include METHOD_OVERRIDES (dual-read)', async () => {
+        // Pass the compatibility alias 'OVERRIDES' — impactByUid should flatMap-expand
         // it to ['OVERRIDES', 'METHOD_OVERRIDES'] so the METHOD_OVERRIDES edge
         // between BaseService.authenticate and AuthService.authenticate is found.
         // file_path hint disambiguates the two 'authenticate' methods per #470.

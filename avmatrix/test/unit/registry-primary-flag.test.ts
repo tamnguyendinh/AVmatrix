@@ -1,5 +1,5 @@
 /**
- * Unit tests for `registry-primary-flag` (RFC #909 Ring 2 PKG #924).
+ * Unit tests for `registry-primary-flag` for the accurate single-pass graph pipeline.
  *
  * Flag is `REGISTRY_PRIMARY_<UPPER(lang)>`. Each test manipulates
  * `process.env` directly and restores it in `afterEach` — there is no

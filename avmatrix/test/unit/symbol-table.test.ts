@@ -2104,28 +2104,28 @@ describe('resolveMemberCall', () => {
   // -------------------------------------------------------------------------
   it('disambiguates homonym classes: only one owns the method', () => {
     // Two classes both named `User` — one in auth.py (has `save`), one in
-    // legacy.py (has `archive` but no `save`). Both are imported from app.py.
+    // archive.py (has `archive` but no `save`). Both are imported from app.py.
     ctx.model.symbols.add('src/auth.py', 'User', 'class:auth:User', 'Class');
     ctx.model.symbols.add('src/auth.py', 'save', 'method:auth:User:save', 'Method', {
       returnType: 'None',
       ownerId: 'class:auth:User',
     });
-    ctx.model.symbols.add('src/legacy.py', 'User', 'class:legacy:User', 'Class');
-    ctx.model.symbols.add('src/legacy.py', 'archive', 'method:legacy:User:archive', 'Method', {
+    ctx.model.symbols.add('src/archive.py', 'User', 'class:archive:User', 'Class');
+    ctx.model.symbols.add('src/archive.py', 'archive', 'method:archive:User:archive', 'Method', {
       returnType: 'None',
-      ownerId: 'class:legacy:User',
+      ownerId: 'class:archive:User',
     });
-    ctx.importMap.set('src/app.py', new Set(['src/auth.py', 'src/legacy.py']));
+    ctx.importMap.set('src/app.py', new Set(['src/auth.py', 'src/archive.py']));
 
     // `user.save()` is unambiguous — only auth.User has `save`.
     const saveResult = resolveMemberCall('User', 'save', 'src/app.py', ctx);
     expect(saveResult).not.toBeNull();
     expect(saveResult!.nodeId).toBe('method:auth:User:save');
 
-    // `user.archive()` is also unambiguous — only legacy.User has `archive`.
+    // `user.archive()` is also unambiguous — only archive.User has `archive`.
     const archiveResult = resolveMemberCall('User', 'archive', 'src/app.py', ctx);
     expect(archiveResult).not.toBeNull();
-    expect(archiveResult!.nodeId).toBe('method:legacy:User:archive');
+    expect(archiveResult!.nodeId).toBe('method:archive:User:archive');
   });
 
   it('returns null when homonym classes BOTH own the method (genuine ambiguity)', () => {
@@ -2137,12 +2137,12 @@ describe('resolveMemberCall', () => {
       returnType: 'None',
       ownerId: 'class:auth:User',
     });
-    ctx.model.symbols.add('src/legacy.py', 'User', 'class:legacy:User', 'Class');
-    ctx.model.symbols.add('src/legacy.py', 'save', 'method:legacy:User:save', 'Method', {
+    ctx.model.symbols.add('src/archive.py', 'User', 'class:archive:User', 'Class');
+    ctx.model.symbols.add('src/archive.py', 'save', 'method:archive:User:save', 'Method', {
       returnType: 'None',
-      ownerId: 'class:legacy:User',
+      ownerId: 'class:archive:User',
     });
-    ctx.importMap.set('src/app.py', new Set(['src/auth.py', 'src/legacy.py']));
+    ctx.importMap.set('src/app.py', new Set(['src/auth.py', 'src/archive.py']));
 
     const result = resolveMemberCall('User', 'save', 'src/app.py', ctx);
     expect(result).toBeNull();
@@ -2767,7 +2767,7 @@ describe('resolveStaticCall', () => {
     // Before the alignment fix, `Record` was absent from the trigger `.some()`,
     // so S0 was bypassed and Record free-form calls fell through to the
     // constructor-form retry path. This test would have silently passed with
-    // the old (wasteful) code path — with the fix, S0 resolves it directly.
+    // the redundant fallback path — with the fix, S0 resolves it directly.
     ctx.model.symbols.add('src/User.cs', 'User', 'record:cs:User', 'Record');
     ctx.importMap.set('src/App.cs', new Set(['src/User.cs']));
 

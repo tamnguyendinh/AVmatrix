@@ -415,12 +415,12 @@ describe('analyze benchmark snapshot', () => {
       reason: 'scope-resolution',
     });
     graph.addRelationship({
-      id: 'legacy-run-save-5',
+      id: 'compat-run-save-5',
       sourceId: 'Function:src/app.ts:run:1',
       targetId: 'Method:src/model.ts:save:5',
       type: 'CALLS',
       confidence: 0.8,
-      reason: 'legacy-cross-file',
+      reason: 'compatibility-cross-file',
     });
     graph.addRelationship({
       id: 'const-run-save-5',
@@ -428,7 +428,7 @@ describe('analyze benchmark snapshot', () => {
       targetId: 'Method:src/model.ts:save:5',
       type: 'CALLS',
       confidence: 0.9,
-      reason: 'legacy-cross-file',
+      reason: 'compatibility-cross-file',
     });
     graph.addRelationship({
       id: 'scope-run-save-20',

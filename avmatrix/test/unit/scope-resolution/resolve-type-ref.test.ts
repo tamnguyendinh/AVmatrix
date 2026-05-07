@@ -1,5 +1,5 @@
 /**
- * Unit tests for `resolveTypeRef` (RFC #909 Ring 2 SHARED #916).
+ * Unit tests for `resolveTypeRef` for the accurate single-pass graph pipeline.
  *
  * Covers: local type, parameter/return annotation via scope walk, aliased
  * import, re-exported type, shadowing by local variable, wildcard-origin
@@ -186,7 +186,7 @@ describe('resolveTypeRef', () => {
   describe('shadowing (non-type binding fails fast)', () => {
     it('returns null when a local variable shadows an outer imported type', () => {
       // Outer module has `import { User }`; inner function declares `User = 5`.
-      // Per RFC §4.6, the local non-type shadows; strict resolver returns null.
+      // The local non-type shadows; strict resolver returns null.
       const importedUser = mkDef({ nodeId: 'def:imp', type: 'Class' });
       const localUser = mkDef({ nodeId: 'def:local', type: 'Variable' });
       const moduleScope = mkScope('scope:module', null, {

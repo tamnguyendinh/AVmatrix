@@ -61,7 +61,7 @@ describe('impact contract parser', () => {
     expect(result.error.field).toBe('relationTypes');
   });
 
-  it('preserves legacy OVERRIDES alias while expanding METHOD_OVERRIDES for traversal', () => {
+  it('preserves compatibility OVERRIDES alias while expanding METHOD_OVERRIDES for traversal', () => {
     const result = parseImpactInput({
       target: 'AuthService',
       direction: 'upstream',

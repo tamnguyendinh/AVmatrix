@@ -1,5 +1,5 @@
 /**
- * Unit tests for `finalize` (RFC #909 Ring 2 SHARED #915).
+ * Unit tests for `finalize` for the accurate single-pass graph pipeline.
  *
  * Covers: acyclic chain · single-SCC cycle · multi-SCC · wildcard
  * expansion · re-export flattening · dynamic-unresolved passthrough ·

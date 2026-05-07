@@ -1,5 +1,5 @@
 /**
- * Unit tests for `diffResolutions` (RFC #909 Ring 2 SHARED #918).
+ * Unit tests for `diffResolutions` for the accurate single-pass graph pipeline.
  *
  * Pins the 5 `ShadowAgreement` outcomes and the symmetric-by-kind evidence-
  * delta contract. Inputs are pure data fixtures — no real pipeline state.

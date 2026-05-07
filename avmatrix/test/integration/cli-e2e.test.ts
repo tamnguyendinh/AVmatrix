@@ -49,7 +49,7 @@ const tsxImportUrl = pathToFileURL(path.join(tsxPkgDir, 'dist', 'loader.mjs')).h
 beforeAll(() => {
   // Copy the fixture into an isolated tmpdir named `mini-repo` so that the
   // `--repo mini-repo` CLI arg (which matches by basename) still works.
-  tmpParent = fs.mkdtempSync(path.join(os.tmpdir(), 'gn-cli-e2e-'));
+  tmpParent = fs.mkdtempSync(path.join(os.tmpdir(), 'avmatrix-cli-e2e-'));
   MINI_REPO = path.join(tmpParent, 'mini-repo');
   fs.cpSync(FIXTURE_SRC, MINI_REPO, { recursive: true });
 
@@ -233,11 +233,11 @@ describe('CLI end-to-end', () => {
     it('--name alias stores; collision rejects; --allow-duplicate-name bypasses', () => {
       // Isolate the global registry so this test never touches the
       // developer's real ~/.avmatrix.
-      const gnHome = fs.mkdtempSync(path.join(os.tmpdir(), 'gn-home-'));
+      const avmatrixHome = fs.mkdtempSync(path.join(os.tmpdir(), 'avmatrix-home-'));
 
       // Two mini-repo copies whose basenames intentionally collide.
-      const repoA = makeMiniRepoCopy('collide-app', 'gn-collide-a-');
-      const repoB = makeMiniRepoCopy('collide-app', 'gn-collide-b-');
+      const repoA = makeMiniRepoCopy('collide-app', 'avmatrix-collide-a-');
+      const repoB = makeMiniRepoCopy('collide-app', 'avmatrix-collide-b-');
       const parentA = path.dirname(repoA);
       const parentB = path.dirname(repoB);
 
@@ -246,7 +246,7 @@ describe('CLI end-to-end', () => {
         const r1 = runCliWithEnv(
           ['analyze', '--name', 'shared'],
           repoA,
-          { AVMATRIX_HOME: gnHome },
+          { AVMATRIX_HOME: avmatrixHome },
           60000,
         );
         if (r1.status === null) return; // CI timeout tolerance
@@ -257,7 +257,7 @@ describe('CLI end-to-end', () => {
           ),
         ).toBe(0);
 
-        const registryPath = path.join(gnHome, 'registry.json');
+        const registryPath = path.join(avmatrixHome, 'registry.json');
         const afterStep1 = JSON.parse(fs.readFileSync(registryPath, 'utf-8'));
         expect(Array.isArray(afterStep1)).toBe(true);
         expect(afterStep1).toHaveLength(1);
@@ -268,7 +268,7 @@ describe('CLI end-to-end', () => {
         const r2 = runCliWithEnv(
           ['analyze', '--name', 'shared'],
           repoB,
-          { AVMATRIX_HOME: gnHome },
+          { AVMATRIX_HOME: avmatrixHome },
           60000,
         );
         if (r2.status === null) return;
@@ -291,7 +291,7 @@ describe('CLI end-to-end', () => {
         const r3 = runCliWithEnv(
           ['analyze', '--name', 'shared', '--allow-duplicate-name'],
           repoB,
-          { AVMATRIX_HOME: gnHome },
+          { AVMATRIX_HOME: avmatrixHome },
           60000,
         );
         if (r3.status === null) return;
@@ -322,13 +322,13 @@ describe('CLI end-to-end', () => {
         // re-run (skills generation needs a fresh pipelineResult) but
         // must leave the registry guard in force. Bypass requires the
         // explicit --allow-duplicate-name flag.
-        const repoC = makeMiniRepoCopy('collide-app', 'gn-collide-c-');
+        const repoC = makeMiniRepoCopy('collide-app', 'avmatrix-collide-c-');
         const parentC = path.dirname(repoC);
         try {
           const r4 = runCliWithEnv(
             ['analyze', '--name', 'shared', '--skills'],
             repoC,
-            { AVMATRIX_HOME: gnHome },
+            { AVMATRIX_HOME: avmatrixHome },
             60000,
           );
           if (r4.status === null) return;
@@ -345,7 +345,7 @@ describe('CLI end-to-end', () => {
           fs.rmSync(parentC, { recursive: true, force: true });
         }
       } finally {
-        fs.rmSync(gnHome, { recursive: true, force: true });
+        fs.rmSync(avmatrixHome, { recursive: true, force: true });
         fs.rmSync(parentA, { recursive: true, force: true });
         fs.rmSync(parentB, { recursive: true, force: true });
       }
@@ -490,9 +490,9 @@ describe('CLI end-to-end', () => {
     });
 
     it('wiki reports local-only off mode without prompting for API keys', () => {
-      const gnHome = fs.mkdtempSync(path.join(os.tmpdir(), 'wiki-local-only-home-'));
+      const avmatrixHome = fs.mkdtempSync(path.join(os.tmpdir(), 'wiki-local-only-home-'));
       try {
-        const result = runCliWithEnv(['wiki'], repoRoot, { AVMATRIX_HOME: gnHome }, 15000);
+        const result = runCliWithEnv(['wiki'], repoRoot, { AVMATRIX_HOME: avmatrixHome }, 15000);
         if (result.status === null) return;
 
         expect(result.status).toBe(1);
@@ -501,23 +501,23 @@ describe('CLI end-to-end', () => {
         expect(combined).toMatch(/disabled in local-only mode/);
         expect(combined).not.toMatch(/API key:/i);
       } finally {
-        fs.rmSync(gnHome, { recursive: true, force: true });
+        fs.rmSync(avmatrixHome, { recursive: true, force: true });
       }
     });
 
     it('wiki-mode local persists local mode and wiki reports it without remote fallback', () => {
-      const gnHome = fs.mkdtempSync(path.join(os.tmpdir(), 'wiki-local-mode-home-'));
+      const avmatrixHome = fs.mkdtempSync(path.join(os.tmpdir(), 'wiki-local-mode-home-'));
       try {
         const setMode = runCliWithEnv(
           ['wiki-mode', 'local'],
           repoRoot,
-          { AVMATRIX_HOME: gnHome },
+          { AVMATRIX_HOME: avmatrixHome },
           15000,
         );
         if (setMode.status === null) return;
         expect(setMode.status).toBe(0);
 
-        const result = runCliWithEnv(['wiki'], repoRoot, { AVMATRIX_HOME: gnHome }, 15000);
+        const result = runCliWithEnv(['wiki'], repoRoot, { AVMATRIX_HOME: avmatrixHome }, 15000);
         if (result.status === null) return;
 
         expect(result.status).toBe(1);
@@ -525,7 +525,7 @@ describe('CLI end-to-end', () => {
         expect(combined).toMatch(/Wiki capability mode: local/);
         expect(combined).toMatch(/will not fall back to any remote wiki service/);
       } finally {
-        fs.rmSync(gnHome, { recursive: true, force: true });
+        fs.rmSync(avmatrixHome, { recursive: true, force: true });
       }
     });
   });

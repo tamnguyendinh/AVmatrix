@@ -1,5 +1,5 @@
 /**
- * Unit tests for `buildDefIndex` / `DefIndex` (RFC #909 Ring 2 SHARED #913).
+ * Unit tests for `buildDefIndex` / `DefIndex` for the accurate single-pass graph pipeline.
  *
  * Covers: build-from-list, O(1) lookup contract, first-write-wins on
  * duplicate `nodeId`, readonly surface.

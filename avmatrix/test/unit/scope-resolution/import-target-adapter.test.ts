@@ -1,5 +1,5 @@
 /**
- * Unit tests for `import-target-adapter` (RFC #909 Ring 2 PKG #922).
+ * Unit tests for `import-target-adapter` for the accurate single-pass graph pipeline.
  *
  * Exercises the language-dispatching FinalizeHook. We don't need the
  * real per-language resolvers here — mock `ImportResolverFn`s let each

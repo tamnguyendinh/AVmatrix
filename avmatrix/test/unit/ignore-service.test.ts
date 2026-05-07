@@ -223,7 +223,7 @@ describe('loadIgnoreRules', () => {
   let tmpDir: string;
 
   beforeAll(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-ignore-test-'));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'avmatrix-ignore-test-'));
   });
 
   afterAll(async () => {
@@ -284,7 +284,7 @@ describe('createIgnoreFilter', () => {
   let tmpDir: string;
 
   beforeAll(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-filter-test-'));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'avmatrix-filter-test-'));
   });
 
   afterAll(async () => {
@@ -414,7 +414,7 @@ describe('loadIgnoreRules — error handling', () => {
   let tmpDir: string;
 
   beforeAll(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-err-test-'));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'avmatrix-err-test-'));
   });
 
   afterAll(async () => {
@@ -442,7 +442,7 @@ describe('loadIgnoreRules — AVMATRIX_NO_GITIGNORE env var', () => {
   let tmpDir: string;
 
   beforeAll(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-noignore-test-'));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'avmatrix-noignore-test-'));
   });
 
   afterAll(async () => {

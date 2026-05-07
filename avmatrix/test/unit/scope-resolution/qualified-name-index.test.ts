@@ -1,6 +1,6 @@
 /**
  * Unit tests for `buildQualifiedNameIndex` / `QualifiedNameIndex`
- * (RFC #909 Ring 2 SHARED #913).
+ * for the accurate single-pass graph pipeline.
  *
  * Covers: per-kind accumulation, multi-def-per-qname (partial classes /
  * overloads), skipping defs without a qualifiedName, duplicate-pair dedup,

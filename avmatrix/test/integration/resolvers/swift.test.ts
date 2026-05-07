@@ -123,10 +123,10 @@ describe.skipIf(!swiftAvailable)('Swift parent resolution', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Swift cross-file User.init() type inference
+// Swift import-scoped User.init() type inference
 // ---------------------------------------------------------------------------
 
-describe.skipIf(!swiftAvailable)('Swift cross-file User.init() inference', () => {
+describe.skipIf(!swiftAvailable)('Swift import-scoped User.init() inference', () => {
   let result: PipelineResult;
 
   beforeAll(async () => {
@@ -231,11 +231,11 @@ describe.skipIf(!swiftAvailable)('Swift return-type inference via function retur
 
 // ---------------------------------------------------------------------------
 // Implicit imports: Swift files in the same module see each other without
-// explicit import statements. This is the foundation of all cross-file
-// resolution — without addSwiftImplicitImports, Tier 2a lookups fail.
+// explicit import statements. This is the foundation of Swift module-wide
+// semantic resolution — without addSwiftImplicitImports, Tier 2a lookups fail.
 // ---------------------------------------------------------------------------
 
-describe.skipIf(!swiftAvailable)('Swift implicit imports (cross-file visibility)', () => {
+describe.skipIf(!swiftAvailable)('Swift implicit imports (module visibility)', () => {
   let result: PipelineResult;
 
   beforeAll(async () => {
@@ -264,12 +264,12 @@ describe.skipIf(!swiftAvailable)('Swift implicit imports (cross-file visibility)
 
   it('creates IMPORTS edges between files in the same module', () => {
     const imports = getRelationships(result, 'IMPORTS');
-    const crossFileImport = imports.find(
+    const moduleImport = imports.find(
       (c) =>
         (c.sourceFilePath === 'App.swift' && c.targetFilePath === 'Models.swift') ||
         (c.sourceFilePath === 'Models.swift' && c.targetFilePath === 'App.swift'),
     );
-    expect(crossFileImport).toBeDefined();
+    expect(moduleImport).toBeDefined();
   });
 });
 

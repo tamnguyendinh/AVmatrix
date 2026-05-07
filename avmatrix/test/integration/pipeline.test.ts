@@ -159,10 +159,11 @@ describe('pipeline end-to-end', () => {
     sorted.forEach((s, i) => expect(s).toBe(i + 1));
   });
 
-  it('reports progress through all 6 phases', () => {
+  it('reports progress through the current graph-building phases', () => {
     expect(phases).toContain('extracting');
     expect(phases).toContain('structure');
     expect(phases).toContain('parsing');
+    expect(phases).toContain('enriching');
     expect(phases).toContain('communities');
     expect(phases).toContain('processes');
     expect(phases).toContain('complete');
@@ -195,7 +196,7 @@ describe('pipeline error handling', () => {
   }, 30000);
 
   it('handles empty directory gracefully', async () => {
-    const tmpDir = path.join(os.tmpdir(), `gn-pipeline-empty-${Date.now()}`);
+    const tmpDir = path.join(os.tmpdir(), `avmatrix-pipeline-empty-${Date.now()}`);
     await fs.mkdir(tmpDir, { recursive: true });
     try {
       const result = await runPipelineFromRepo(tmpDir, () => {});

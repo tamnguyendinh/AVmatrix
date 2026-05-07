@@ -1505,9 +1505,9 @@ describe('Java overload disambiguation by parameter types', () => {
   });
 });
 
-// ── Phase P: Same-arity overloads — cross-file + chain resolution ─────────
+// ── Same-arity overloads — import-scoped receiver chain resolution ─────────
 
-describe('Java same-arity overload cross-file and chain resolution', () => {
+describe('Java same-arity overload import-scoped and chain resolution', () => {
   let result: PipelineResult;
 
   beforeAll(async () => {

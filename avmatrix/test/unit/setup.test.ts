@@ -31,7 +31,7 @@ describe('setupClaudeCode', () => {
 
     originalHome = process.env.HOME;
     originalUserProfile = process.env.USERPROFILE;
-    tempHome = await fs.mkdtemp(path.join(os.tmpdir(), 'gn-claude-setup-'));
+    tempHome = await fs.mkdtemp(path.join(os.tmpdir(), 'avmatrix-claude-setup-'));
     process.env.HOME = tempHome;
     process.env.USERPROFILE = tempHome;
 

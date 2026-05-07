@@ -1,5 +1,6 @@
 /**
- * Coverage tests for cross-file-impl.ts — `runCrossFileBindingPropagation`.
+ * Coverage tests for the compatibility cross-file propagation fallback —
+ * `runCrossFileBindingPropagation`.
  *
  * Scenarios aimed at branches the integration tests exercise only on the
  * happy path:
@@ -14,7 +15,7 @@
  * `buildImportedReturnTypes` and `buildImportedRawReturnTypes` are preserved
  * via `importOriginal`. The graph-fallback enrichment that used to live here
  * was moved into parse-impl's `runChunkedParseAndResolve` so the parse phase
- * hands crossFile a fully-populated, truly read-only map.
+ * hands the compatibility fallback a fully-populated, truly read-only map.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 

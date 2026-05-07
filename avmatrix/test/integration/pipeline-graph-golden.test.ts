@@ -138,7 +138,7 @@ describe('pipeline graph golden', () => {
     // (see test/integration/cli-e2e.test.ts `beforeAll`) — but this
     // cpSync stays as a belt-and-suspenders guarantee that any future
     // test adding files to the source won't pollute the golden snapshot.
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gn-golden-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'avmatrix-golden-'));
     fs.cpSync(FIXTURE_SRC, tmpDir, { recursive: true });
 
     result = await runPipelineFromRepo(tmpDir, () => {});

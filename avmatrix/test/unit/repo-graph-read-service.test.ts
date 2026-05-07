@@ -220,7 +220,7 @@ describe('repo-graph-read-service', () => {
     ]);
   });
 
-  it('falls back to legacy relationship reads when audit metadata properties are absent', async () => {
+  it('falls back to relationship reads without audit metadata properties', async () => {
     readExecutorMocks.executeRepoReadQuery.mockImplementation(
       async (_target: any, query: string) => {
         if (query.includes('MATCH (n:`File`)')) return [];
@@ -245,8 +245,8 @@ describe('repo-graph-read-service', () => {
     );
 
     const graph = await buildRepoGraph({
-      repoId: 'legacy',
-      lbugPath: 'F:/repos/legacy/.avmatrix/lbug',
+      repoId: 'schema-v1',
+      lbugPath: 'F:/repos/schema-v1/.avmatrix/lbug',
     });
 
     expect(graph.relationships).toEqual([

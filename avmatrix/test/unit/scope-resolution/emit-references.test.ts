@@ -1,5 +1,5 @@
 /**
- * Unit tests for `emit-references` (RFC #909 Ring 2 PKG #925).
+ * Unit tests for `emit-references` for the accurate single-pass graph pipeline.
  *
  * Covers kind → RelationshipType mapping, enclosing-def resolution
  * through the scope tree, evidence serialization onto emitted edges,
@@ -426,7 +426,7 @@ describe('missing target', () => {
 // ─── Duplicate graph-edge guard ───────────────────────────────────────────
 
 describe('duplicate graph-edge guard', () => {
-  it('merges scope audit metadata when an equivalent legacy graph edge already exists', () => {
+  it('merges scope audit metadata when an equivalent compatibility graph edge already exists', () => {
     const callerFn = def('def:caller', 'Function');
     const targetFn = def('def:target', 'Method');
     const mod = scope('scope:m', null, 'Module', [callerFn, targetFn]);
@@ -445,12 +445,12 @@ describe('duplicate graph-edge guard', () => {
     const graph = createKnowledgeGraph();
     addDefNodes(graph, [callerFn, targetFn]);
     graph.addRelationship({
-      id: 'legacy:def:caller->def:target',
+      id: 'compatibility:def:caller->def:target',
       sourceId: 'def:caller',
       targetId: 'def:target',
       type: 'CALLS',
       confidence: 0.5,
-      reason: 'legacy call',
+      reason: 'compatibility call',
     });
 
     const stats = emitReferencesToGraph({
@@ -463,7 +463,7 @@ describe('duplicate graph-edge guard', () => {
     expect(stats.skippedDuplicateEdge).toBe(1);
     expect(graph.relationships).toHaveLength(1);
     expect(graph.relationships[0]).toMatchObject({
-      id: 'legacy:def:caller->def:target',
+      id: 'compatibility:def:caller->def:target',
       sourceId: 'def:caller',
       targetId: 'def:target',
       type: 'CALLS',
@@ -510,7 +510,7 @@ describe('duplicate graph-edge guard', () => {
       properties: { name: 'save', filePath: 'src/model.ts' },
     });
     graph.addRelationship({
-      id: 'legacy:run->save',
+      id: 'compatibility:run->save',
       sourceId: 'Function:src/app.ts:run',
       targetId: 'Method:src/model.ts:save',
       type: 'CALLS',
@@ -623,18 +623,18 @@ describe('duplicate graph-edge guard', () => {
     );
   });
 
-  it('maps scope Method defs to legacy Function graph nodes when the semantic key is unique', () => {
+  it('maps scope Method defs to compatibility Function graph nodes when the semantic key is unique', () => {
     const serialize: SymbolDefinition = {
-      nodeId: 'def:GitNexusAgent.serialize',
-      filePath: 'eval/agents/gitnexus_agent.py',
+      nodeId: 'def:AvmatrixAgent.serialize',
+      filePath: 'eval/agents/avmatrix_agent.py',
       type: 'Method',
-      qualifiedName: 'GitNexusAgent.serialize',
+      qualifiedName: 'AvmatrixAgent.serialize',
     };
     const toDict: SymbolDefinition = {
-      nodeId: 'def:GitNexusMetrics.to_dict',
-      filePath: 'eval/agents/gitnexus_agent.py',
+      nodeId: 'def:AvmatrixMetrics.to_dict',
+      filePath: 'eval/agents/avmatrix_agent.py',
       type: 'Method',
-      qualifiedName: 'GitNexusMetrics.to_dict',
+      qualifiedName: 'AvmatrixMetrics.to_dict',
     };
     const mod = scope('scope:m', null, 'Module', [serialize, toDict], range(), serialize.filePath);
     const indexes = makeIndexes([mod], [serialize, toDict]);
@@ -649,12 +649,12 @@ describe('duplicate graph-edge guard', () => {
 
     const graph = createKnowledgeGraph();
     graph.addNode({
-      id: 'Function:eval/agents/gitnexus_agent.py:GitNexusAgent.serialize',
+      id: 'Function:eval/agents/avmatrix_agent.py:AvmatrixAgent.serialize',
       label: 'Function',
       properties: { name: 'serialize', filePath: serialize.filePath },
     });
     graph.addNode({
-      id: 'Function:eval/agents/gitnexus_agent.py:GitNexusMetrics.to_dict',
+      id: 'Function:eval/agents/avmatrix_agent.py:AvmatrixMetrics.to_dict',
       label: 'Function',
       properties: { name: 'to_dict', filePath: toDict.filePath },
     });
@@ -671,8 +671,8 @@ describe('duplicate graph-edge guard', () => {
     expect(graph.relationships).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          sourceId: 'Function:eval/agents/gitnexus_agent.py:GitNexusAgent.serialize',
-          targetId: 'Function:eval/agents/gitnexus_agent.py:GitNexusMetrics.to_dict',
+          sourceId: 'Function:eval/agents/avmatrix_agent.py:AvmatrixAgent.serialize',
+          targetId: 'Function:eval/agents/avmatrix_agent.py:AvmatrixMetrics.to_dict',
           type: 'CALLS',
         }),
       ]),

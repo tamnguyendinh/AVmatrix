@@ -1,6 +1,6 @@
 /**
  * Unit tests for `buildModuleScopeIndex` / `ModuleScopeIndex`
- * (RFC #909 Ring 2 SHARED #913).
+ * for the accurate single-pass graph pipeline.
  */
 
 import { describe, it, expect } from 'vitest';

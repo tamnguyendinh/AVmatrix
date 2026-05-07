@@ -265,7 +265,7 @@ describe('LocalBackend.callTool', () => {
     });
   });
 
-  it('context tool falls back for legacy relationship schemas without audit metadata', async () => {
+  it('context tool falls back for relationship schemas without audit metadata', async () => {
     (executeParameterized as any).mockImplementation(
       async (_repoId: string, query: string, _params: Record<string, unknown>) => {
         if (query.includes('MATCH (n {id: $uid})')) {
@@ -293,7 +293,7 @@ describe('LocalBackend.callTool', () => {
               filePath: 'src/caller.ts',
               kind: 'Function',
               confidence: 0.9,
-              reason: 'legacy-call',
+              reason: 'schema-v1-call',
             },
           ];
         }
@@ -306,7 +306,7 @@ describe('LocalBackend.callTool', () => {
     expect(result.incoming.calls[0]).toMatchObject({
       uid: 'func:caller',
       confidence: 0.9,
-      reason: 'legacy-call',
+      reason: 'schema-v1-call',
     });
     expect(result.incoming.calls[0]).not.toHaveProperty('resolutionSource');
   });
