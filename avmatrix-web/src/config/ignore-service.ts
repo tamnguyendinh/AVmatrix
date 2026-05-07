@@ -297,14 +297,6 @@ export const shouldIgnorePath = (filePath: string): boolean => {
     }
   }
 
-  // Ignore hidden files (starting with .)
-  if (fileName.startsWith('.') && fileName !== '.') {
-    // But allow some important config files
-    const allowedDotFiles = ['.env', '.gitignore']; // Already in IGNORED_FILES, so this is redundant
-    // Actually, let's NOT ignore all dot files - many are important configs
-    // Just rely on the explicit lists above
-  }
-
   // Ignore files that look like generated/bundled code
   if (
     fileNameLower.includes('.bundle.') ||

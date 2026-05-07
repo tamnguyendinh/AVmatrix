@@ -93,7 +93,7 @@ const makeDeclarationTree = (
   memberTexts: string[],
 ) => {
   let searchFrom = 0;
-  const memberNodes = memberTexts.map((text, index) => {
+  const memberNodes = memberTexts.map((text, _index) => {
     const startIndex = content.indexOf(text, searchFrom);
     if (startIndex < 0) {
       throw new Error(`Unable to locate member text: ${text}`);

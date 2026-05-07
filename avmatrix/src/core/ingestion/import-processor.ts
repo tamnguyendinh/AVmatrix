@@ -317,7 +317,7 @@ export const processImports = async (
         tree = parser.parse(file.content, undefined, {
           bufferSize: getTreeSitterBufferSize(file.content.length),
         });
-      } catch (parseError) {
+      } catch {
         continue;
       }
       wasReparsed = true;

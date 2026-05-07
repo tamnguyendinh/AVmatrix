@@ -5,7 +5,7 @@ import type {
   SessionStreamEvent,
 } from 'avmatrix-shared';
 import { getBackendUrl } from '../../services/backend-client';
-import type { AgentStreamChunk } from './types';
+import type { AgentStreamChunk } from './types.local-runtime';
 
 export class SessionClientError extends Error {
   constructor(

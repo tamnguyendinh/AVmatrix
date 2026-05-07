@@ -196,7 +196,7 @@ export const generateSkillFiles = async (
 const buildCommunitiesFromMemberships = (
   memberships: CommunityMembership[],
   graph: KnowledgeGraph,
-  repoPath: string,
+  _repoPath: string,
 ): CommunityNode[] => {
   // Group memberships by communityId
   const groups = new Map<string, string[]>();

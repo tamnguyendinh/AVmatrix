@@ -117,7 +117,7 @@ function makeScopeResolutionArg(text: string): MockNode {
 }
 
 /** Build an identifier arg that is neither constant nor scope_resolution */
-function makeIdentifierArg(text: string): MockNode {
+function _makeIdentifierArg(text: string): MockNode {
   return { type: 'identifier', text };
 }
 

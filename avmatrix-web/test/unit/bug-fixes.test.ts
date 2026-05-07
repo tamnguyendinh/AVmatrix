@@ -224,8 +224,8 @@ describe('highlight clearing — state management', () => {
   it('independent highlight sets can be cleared separately', () => {
     const processHighlights = new Set(['proc_1', 'proc_2']);
     const aiToolHighlights = new Set(['Function:a.ts:foo']);
-    const aiCitationHighlights = new Set(['File:b.ts']);
-    const blastRadius = new Set(['Function:c.ts:bar']);
+    const _aiCitationHighlights = new Set(['File:b.ts']);
+    const _blastRadius = new Set(['Function:c.ts:bar']);
 
     // Simulate turning off AI-driven highlights by clearing all highlight sets.
     const clearedProcess = new Set<string>();
@@ -246,7 +246,7 @@ describe('highlight clearing — state management', () => {
   // Negative: clearing highlights doesn't affect node selection
   // (selection is a separate state — verified by checking they're independent)
   it('highlight state is independent from node selection state', () => {
-    const highlights = new Set(['node1']);
+    const _highlights = new Set(['node1']);
     let selectedNode: { id: string } | null = { id: 'node1' };
 
     // Clear highlights but keep selection

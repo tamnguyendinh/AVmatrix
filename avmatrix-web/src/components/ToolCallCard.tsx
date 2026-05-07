@@ -7,7 +7,7 @@
 
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, Check, Loader2, AlertCircle } from '@/lib/lucide-icons';
-import type { ToolCallInfo } from '../core/llm/types';
+import type { ToolCallInfo } from '../core/llm/types.local-runtime';
 
 interface ToolCallCardProps {
   toolCall: ToolCallInfo;

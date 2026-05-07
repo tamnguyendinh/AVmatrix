@@ -106,7 +106,7 @@ describe('Ruby heritage extractFromCall (real tree-sitter AST)', () => {
   });
 
   it('3a-5: top-level include with no enclosing class returns []', () => {
-    const code = `include Foo\n`;
+    const _code = `include Foo\n`;
     // NOTE: `include Foo` at top level may not produce a `call` node in tree-sitter-ruby;
     // it often lowers to an `identifier` body_statement. Construct a realistic top-level
     // call (`Kernel.include Foo`) to exercise the no-enclosing-class branch.

@@ -222,7 +222,7 @@ export const processHeritage = async (
         tree = parser.parse(file.content, undefined, {
           bufferSize: getTreeSitterBufferSize(file.content.length),
         });
-      } catch (parseError) {
+      } catch {
         // Skip files that can't be parsed
         continue;
       }

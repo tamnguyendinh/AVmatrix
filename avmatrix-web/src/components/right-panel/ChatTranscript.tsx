@@ -14,7 +14,6 @@ const CHAT_SUGGESTIONS = [
 interface ChatTranscriptProps {
   chatMessages: ChatMessage[];
   isChatLoading: boolean;
-  isAgentReady: boolean;
   isAgentInitializing: boolean;
   agentError: string | null;
   requiresAnalyze: boolean;
@@ -30,7 +29,6 @@ interface ChatTranscriptProps {
 export const ChatTranscript = memo(function ChatTranscript({
   chatMessages,
   isChatLoading,
-  isAgentReady,
   isAgentInitializing,
   agentError,
   requiresAnalyze,

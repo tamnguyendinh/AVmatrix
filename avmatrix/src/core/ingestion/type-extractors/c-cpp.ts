@@ -511,7 +511,7 @@ const inferLiteralType: LiteralTypeInferrer = (node) => {
 
 /** C++: detect constructor type from smart pointer factory calls (make_shared<Dog>()).
  *  Extracts the template type argument as the constructor type for virtual dispatch. */
-const detectCppConstructorType: ConstructorTypeDetector = (node, classNames) => {
+const detectCppConstructorType: ConstructorTypeDetector = (node, _classNames) => {
   // Navigate to the initializer value in the declaration
   const declarator = node.childForFieldName('declarator');
   const initDecl = declarator?.type === 'init_declarator' ? declarator : undefined;

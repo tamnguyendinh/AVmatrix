@@ -65,7 +65,7 @@ describe('getNextStepHint (via tool call response)', () => {
     const backend = createMockBackend({
       callTool: vi.fn().mockResolvedValue({ processes: [], definitions: [] }),
     });
-    const server = createMCPServer(backend);
+    const _server = createMCPServer(backend);
 
     // We can't easily call handlers directly on the MCP Server,
     // so we verify the handler was registered by creating the server without error.

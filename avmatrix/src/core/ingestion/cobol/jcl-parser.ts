@@ -109,7 +109,7 @@ function extractDisp(params: string): string | undefined {
  * @param filePath - Path for diagnostics (not used in extraction)
  * @returns Parsed JCL results
  */
-export function parseJcl(content: string, filePath: string): JclParseResults {
+export function parseJcl(content: string, _filePath: string): JclParseResults {
   const results: JclParseResults = {
     jobs: [],
     steps: [],

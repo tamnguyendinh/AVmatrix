@@ -1165,7 +1165,7 @@ describe('Kotlin when/is complex pattern binding', () => {
 
   it('does NOT resolve processMultiCall when/is User arm validate() to Repo', () => {
     const calls = getRelationships(result, 'CALLS');
-    const wrong = calls.find(
+    const _wrong = calls.find(
       (c) =>
         c.target === 'validate' &&
         c.source === 'processMultiCall' &&

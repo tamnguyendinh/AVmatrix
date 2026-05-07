@@ -38,7 +38,6 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle>((_, ref) => {
     areGraphLinksVisible,
     depthFilter,
     highlightedNodeIds,
-    setHighlightedNodeIds,
     aiCitationHighlightedNodeIds,
     aiToolHighlightedNodeIds,
     blastRadiusNodeIds,

@@ -41,7 +41,7 @@ export function createHeritageExtractor(
   return {
     language: actualConfig.language,
 
-    extract(captureMap: CaptureMap, context: HeritageExtractorContext): HeritageInfo[] {
+    extract(captureMap: CaptureMap, _context: HeritageExtractorContext): HeritageInfo[] {
       const classNode = captureMap['heritage.class'];
       if (!classNode) return [];
 

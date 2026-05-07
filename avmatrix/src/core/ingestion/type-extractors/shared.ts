@@ -632,16 +632,13 @@ export function extractElementTypeFromString(
   const openSquare = typeStr.indexOf('[');
 
   let openIdx = -1;
-  let openChar = '';
   let closeChar = '';
 
   if (openAngle >= 0 && (openSquare < 0 || openAngle < openSquare)) {
     openIdx = openAngle;
-    openChar = '<';
     closeChar = '>';
   } else if (openSquare >= 0) {
     openIdx = openSquare;
-    openChar = '[';
     closeChar = ']';
   }
 

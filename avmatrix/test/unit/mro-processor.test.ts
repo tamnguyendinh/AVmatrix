@@ -124,9 +124,9 @@ describe('computeMRO', () => {
     it('leftmost base wins when both B and C override foo', () => {
       // Diamond: A <- B, A <- C, B <- D, C <- D
       const graph = createKnowledgeGraph();
-      const aId = addClass(graph, 'A', 'cpp');
-      const bId = addClass(graph, 'B', 'cpp');
-      const cId = addClass(graph, 'C', 'cpp');
+      const _aId = addClass(graph, 'A', 'cpp');
+      const _bId = addClass(graph, 'B', 'cpp');
+      const _cId = addClass(graph, 'C', 'cpp');
       const dId = addClass(graph, 'D', 'cpp');
 
       addExtends(graph, 'B', 'A');
@@ -137,7 +137,7 @@ describe('computeMRO', () => {
       // A has foo, B overrides foo, C overrides foo
       addMethod(graph, 'A', 'foo');
       const bFoo = addMethod(graph, 'B', 'foo');
-      const cFoo = addMethod(graph, 'C', 'foo');
+      const _cFoo = addMethod(graph, 'C', 'foo');
 
       const result = computeMRO(graph);
 
@@ -192,15 +192,15 @@ describe('computeMRO', () => {
   describe('C# class + interface', () => {
     it('class method beats interface default', () => {
       const graph = createKnowledgeGraph();
-      const classId = addClass(graph, 'MyClass', 'csharp');
-      const baseId = addClass(graph, 'BaseClass', 'csharp');
-      const ifaceId = addClass(graph, 'IDoSomething', 'csharp', 'Interface');
+      const _classId = addClass(graph, 'MyClass', 'csharp');
+      const _baseId = addClass(graph, 'BaseClass', 'csharp');
+      const _ifaceId = addClass(graph, 'IDoSomething', 'csharp', 'Interface');
 
       addExtends(graph, 'MyClass', 'BaseClass');
       addImplements(graph, 'MyClass', 'IDoSomething');
 
       const baseDoIt = addMethod(graph, 'BaseClass', 'doIt');
-      const ifaceDoIt = addMethod(graph, 'IDoSomething', 'doIt', 'Interface');
+      const _ifaceDoIt = addMethod(graph, 'IDoSomething', 'doIt', 'Interface');
 
       const result = computeMRO(graph);
 
@@ -248,7 +248,7 @@ describe('computeMRO', () => {
       addClass(graph, 'A', 'python');
       addClass(graph, 'B', 'python');
       addClass(graph, 'C', 'python');
-      const dId = addClass(graph, 'D', 'python');
+      const _dId = addClass(graph, 'D', 'python');
 
       addExtends(graph, 'B', 'A');
       addExtends(graph, 'C', 'A');
@@ -337,7 +337,7 @@ describe('computeMRO', () => {
       const graph = createKnowledgeGraph();
       const parentA = addClass(graph, 'ParentA', 'typescript');
       const parentB = addClass(graph, 'ParentB', 'typescript');
-      const child = addClass(graph, 'Child', 'typescript');
+      const _child = addClass(graph, 'Child', 'typescript');
 
       addExtends(graph, 'Child', 'ParentA');
       addExtends(graph, 'Child', 'ParentB');
@@ -858,7 +858,7 @@ describe('computeMRO', () => {
         const dFoo = addMethod(graph, 'D', 'foo', 'Interface');
         addMethod(graph, 'E', 'foo');
 
-        const result = computeMRO(graph);
+        const _result = computeMRO(graph);
 
         const eFoo = generateId('Method', 'E.foo#0');
         const edges: any[] = [];
@@ -953,11 +953,11 @@ describe('computeMRO', () => {
         addExtends(graph, 'C2', 'Base2');
         addImplements(graph, 'C2', 'I2');
 
-        const baseFoo = addMethod(graph, 'Base2', 'foo');
+        const _baseFoo = addMethod(graph, 'Base2', 'foo');
         const iFoo = addMethod(graph, 'I2', 'foo', 'Interface');
         const cFoo = addMethod(graph, 'C2', 'foo');
 
-        const result = computeMRO(graph);
+        const _result = computeMRO(graph);
 
         const edges: any[] = [];
         graph.forEachRelationship((rel) => {
@@ -1158,7 +1158,7 @@ describe('computeMRO', () => {
       addMethod(graph, 'M', 'foo');
       // C has NO own foo — must walk EXTENDS chain
 
-      const result = computeMRO(graph);
+      const _result = computeMRO(graph);
       // Ambiguous: B.foo and M.foo both match — no METHOD_IMPLEMENTS edge
       const mi = graph.relationships.filter((r) => r.type === 'METHOD_IMPLEMENTS');
       const fooEdges = mi.filter((e) => graph.getNode(e.targetId)?.properties.name === 'foo');
@@ -1183,7 +1183,7 @@ describe('computeMRO', () => {
       const gbFoo = addMethod(graph, 'GrandBase', 'foo');
       // B and M have NO own foo — both inherit from GrandBase
 
-      const result = computeMRO(graph);
+      const _result = computeMRO(graph);
       // Not ambiguous: same GrandBase.foo via both paths
       const mi = graph.relationships.filter((r) => r.type === 'METHOD_IMPLEMENTS');
       const fooEdge = mi.find((e) => e.sourceId === gbFoo);
@@ -1330,7 +1330,7 @@ describe('computeMRO', () => {
         isAbstract: false,
       });
 
-      const result = computeMRO(graph);
+      const _result = computeMRO(graph);
 
       const edges = graph.relationships.filter((r) => r.type === 'METHOD_IMPLEMENTS');
       expect(edges).toHaveLength(1);
@@ -1390,7 +1390,7 @@ describe('computeMRO', () => {
       // CImpl implements I2
       addImplements(graph, 'CImpl', 'I2');
 
-      const result = computeMRO(graph);
+      const _result = computeMRO(graph);
       const mi = graph.relationships.filter((r) => r.type === 'METHOD_IMPLEMENTS');
       // I2.bar (concrete default) satisfies I1.bar (abstract contract)
       const barEdge = mi.find((e) => e.targetId === i1Bar && e.sourceId === i2Bar);
@@ -1477,7 +1477,7 @@ describe('computeMRO', () => {
       const fooEdge = mi.find((e) => e.targetId === iFoo);
       expect(fooEdge).toBeDefined();
       // bar: no own method, IMPLEMENTS fallback finds IDefault.bar (Interface label OK)
-      const barEdge = mi.find((e) => e.sourceId === iBar && e.targetId === iBar);
+      const _barEdge = mi.find((e) => e.sourceId === iBar && e.targetId === iBar);
       // Actually bar is the same method — it's the default implementation satisfying itself.
       // The emitter processes IDefault.bar as an ancestor method, Impl has no bar,
       // findInheritedMethod runs, walks IMPLEMENTS → finds IDefault.bar (non-abstract).
@@ -1671,7 +1671,7 @@ describe('computeMRO', () => {
       addMethod(graph, 'IAlpha', 'process', 'Interface');
       addMethod(graph, 'IBeta', 'process', 'Interface');
 
-      const result = computeMRO(graph);
+      const _result = computeMRO(graph);
 
       // IAlpha.process -> IAncestor.process and IBeta.process -> IAncestor.process
       // are legitimate edges from sub-interface processing. The ambiguity check
@@ -1722,7 +1722,7 @@ describe('computeMRO', () => {
       const alphaProcess = addMethod(graph, 'IAlpha', 'process', 'Interface');
       // IBeta has no process() method
 
-      const result = computeMRO(graph);
+      const _result = computeMRO(graph);
 
       const edges = graph.relationships.filter((r) => r.type === 'METHOD_IMPLEMENTS');
       const processEdges = edges.filter((e) => {

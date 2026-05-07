@@ -231,7 +231,7 @@ describe('extractPattern coverage', () => {
 // ─── PostToolUse: git mutation regex coverage ───────────────────────
 
 describe('Git mutation regex', () => {
-  const GIT_REGEX = /\\bgit\\s\+\(commit\|merge\|rebase\|cherry-pick\|pull\)/;
+  const _GIT_REGEX = /\\bgit\\s\+\(commit\|merge\|rebase\|cherry-pick\|pull\)/;
 
   for (const [label, hookPath] of [
     ['CJS', CJS_HOOK],

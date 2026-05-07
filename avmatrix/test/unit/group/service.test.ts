@@ -76,7 +76,7 @@ function makeRegistry(contracts: StoredContract[], crossLinks: CrossLink[] = [])
 describe('GroupService', () => {
   describe('groupList', () => {
     it('test_groupList_without_name_returns_group_names', async () => {
-      const { groupDir, cleanup, tmpDir } = makeTmpGroup();
+      const { groupDir: _groupDir, cleanup, tmpDir } = makeTmpGroup();
       try {
         vi.stubEnv('AVMATRIX_HOME', tmpDir);
         const svc = new GroupService(makePort());

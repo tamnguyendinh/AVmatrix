@@ -97,7 +97,7 @@ describe('calculateCohesion — internal edge ratio', () => {
     const result = await processCommunities(graph);
 
     // Find the community containing the clique nodes
-    const cliqueMemberSet = new Set(clique);
+    const _cliqueMemberSet = new Set(clique);
     const membershipMap = new Map<string, string>();
     for (const m of result.memberships) {
       membershipMap.set(m.nodeId, m.communityId);
@@ -253,7 +253,7 @@ describe('calculateCohesion — internal edge ratio', () => {
     const graph = createKnowledgeGraph();
 
     // Triangle clique
-    const tri = ['fn:t0', 'fn:t1', 'fn:t2'];
+    const _tri = ['fn:t0', 'fn:t1', 'fn:t2'];
     graph.addNode(makeNode('fn:t0', 'triFn0', 'Function', '/src/tri/f0.ts'));
     graph.addNode(makeNode('fn:t1', 'triFn1', 'Function', '/src/tri/f1.ts'));
     graph.addNode(makeNode('fn:t2', 'triFn2', 'Function', '/src/tri/f2.ts'));

@@ -68,7 +68,7 @@ describe('HttpRouteExtractor — graph-assisted multi-verb disambiguation', () =
 
   // Helper to build a CONTAINS response covering all handler names in a file.
   const containsFor = (names: string[]) =>
-    names.map((name, i) => ({
+    names.map((name, _i) => ({
       uid: `uid-${name}`,
       name,
       filePath: 'routes.ts',

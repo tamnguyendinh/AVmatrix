@@ -2,25 +2,23 @@
  * LLM Module Exports
  *
  * The active product path is the local session runtime bridge.
- * Compatibility shims stay only for settings/app-state import paths that the
- * active product still needs while legacy web-only modules are retired.
  */
 
 // Types
-export * from './types';
+export * from './types.local-runtime';
 
 // Active local-runtime settings + session bridge
 export {
-  loadSettings,
-  saveSettings,
-  updateProviderSettings,
-  setActiveProvider,
-  getActiveProviderConfig,
-  isProviderConfigured,
-  clearSettings,
-  getProviderDisplayName,
-  getAvailableModels,
-} from './settings-service';
+  loadLocalRuntimeSettings,
+  saveLocalRuntimeSettings,
+  updateLocalRuntimeProviderSettings,
+  setLocalRuntimeProvider,
+  getLocalRuntimeProviderConfig,
+  isLocalRuntimeConfigured,
+  clearLocalRuntimeSettings,
+  getLocalRuntimeProviderDisplayName,
+  getLocalRuntimeAvailableModels,
+} from './settings-service-local-runtime';
 export {
   SessionClientError,
   fetchSessionStatus,
@@ -28,7 +26,3 @@ export {
   streamSessionChat,
   toAgentStreamChunk,
 } from './session-client';
-
-// Legacy agent/context/tool modules are retired from the active build
-// path in Phase 6. The local session runtime bridge is the only supported web
-// flow.

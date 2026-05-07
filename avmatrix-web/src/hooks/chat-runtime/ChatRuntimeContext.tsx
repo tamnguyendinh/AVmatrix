@@ -13,7 +13,7 @@ import type {
   MessageStep,
   ToolCallInfo,
   AgentStreamChunk,
-} from '../../core/llm/types';
+} from '../../core/llm/types.local-runtime';
 import {
   loadLocalRuntimeSettings,
   saveLocalRuntimeSettings,

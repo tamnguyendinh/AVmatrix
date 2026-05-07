@@ -12,7 +12,6 @@ export const ChatPanel = memo(function ChatPanel({ onRequestAnalyze }: ChatPanel
   const {
     chatMessages,
     isChatLoading,
-    isAgentReady,
     isAgentInitializing,
     agentError,
     sendChatMessage,
@@ -36,7 +35,6 @@ export const ChatPanel = memo(function ChatPanel({ onRequestAnalyze }: ChatPanel
       <ChatTranscript
         chatMessages={chatMessages}
         isChatLoading={isChatLoading}
-        isAgentReady={isAgentReady}
         isAgentInitializing={isAgentInitializing}
         agentError={agentError}
         requiresAnalyze={requiresAnalyze}

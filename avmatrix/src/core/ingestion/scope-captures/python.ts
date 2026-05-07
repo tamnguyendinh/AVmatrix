@@ -51,7 +51,6 @@ export function interpretPythonImport(match: CaptureMatch): ParsedImport | null 
 
   const importedName = match['@import.imported']?.text;
   const localName = match['@import.name']?.text ?? importedName;
-  const alias = match['@import.alias']?.text;
 
   if (kind === 'namespace') {
     const imported = importedName ?? moduleTail(targetRaw);

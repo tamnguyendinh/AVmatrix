@@ -17,7 +17,7 @@ import { withTestLbugDB } from '../helpers/test-indexed-db.js';
 
 withTestLbugDB(
   'core-adapter',
-  (handle) => {
+  (_handle) => {
     describe('core adapter', () => {
       it('loadGraphToLbug: loads a minimal graph and node counts match', async () => {
         const { executeQuery: coreExecuteQuery } =

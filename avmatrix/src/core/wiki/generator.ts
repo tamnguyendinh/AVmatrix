@@ -330,7 +330,7 @@ export class WikiGenerator {
         await this.generateLeafPage(node);
         reportProgress(node.name);
         return 1;
-      } catch (err: any) {
+      } catch {
         this.failedModules.push(node.name);
         reportProgress(`Failed: ${node.name}`);
         return 0;
@@ -348,7 +348,7 @@ export class WikiGenerator {
         await this.generateParentPage(node);
         pagesGenerated++;
         reportProgress(node.name);
-      } catch (err: any) {
+      } catch {
         this.failedModules.push(node.name);
         reportProgress(`Failed: ${node.name}`);
       }
@@ -793,7 +793,7 @@ export class WikiGenerator {
           `${incProcessed}/${affectedNodes.length} — ${node.name}`,
         );
         return 1;
-      } catch (err: any) {
+      } catch {
         this.failedModules.push(node.name);
         incProcessed++;
         return 0;
@@ -1004,7 +1004,7 @@ export class WikiGenerator {
     let running = 0;
     let idx = 0;
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const next = () => {
         while (running < activeConcurrency && idx < items.length) {
           const item = items[idx++];

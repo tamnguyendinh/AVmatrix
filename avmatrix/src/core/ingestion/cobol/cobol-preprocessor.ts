@@ -1787,7 +1787,6 @@ export function extractCobolSymbolsWithRegex(
     if (anonRedefMatch) {
       // Check it's truly anonymous: the second capture is not a valid data name
       // followed by more clauses — it's the REDEFINES target directly after level
-      const level = parseInt(anonRedefMatch[1], 10);
       // Only skip if this is genuinely "NN REDEFINES target" with no name between
       // We detect this by checking the full data item regex does NOT match
       // (because RE_DATA_ITEM expects a name before any clauses)

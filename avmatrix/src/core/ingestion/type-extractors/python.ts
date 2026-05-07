@@ -165,9 +165,6 @@ const scanConstructorBinding: ConstructorBindingScanner = (node) => {
 
 const FOR_LOOP_NODE_TYPES: ReadonlySet<string> = new Set(['for_statement']);
 
-/** Python function/method node types that carry a parameters list. */
-const PY_FUNCTION_NODE_TYPES = new Set(['function_definition', 'decorated_definition']);
-
 /**
  * Extract element type from a Python type annotation AST node.
  * Handles:

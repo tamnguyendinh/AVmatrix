@@ -1358,7 +1358,7 @@ describe('TypeScript overloaded-receiver resolution (receiverKey collision fix)'
     expect(userSave).toBeDefined();
     expect(userSave!.source).toBe('run');
     // Negative: must not resolve to Repo#save
-    const wrongSave = calls.find(
+    const _wrongSave = calls.find(
       (c) => c.target === 'save' && c.source === 'run' && c.targetFilePath.includes('Repo'),
     );
     // If only one save target resolves to User (not Repo), we correctly exclude Repo

@@ -125,7 +125,7 @@ describe('generateAIContextFiles', () => {
 
   it('installs skills files', async () => {
     const stats = { nodes: 10 };
-    const result = await generateAIContextFiles(tmpDir, storagePath, 'TestProject', stats);
+    const _result = await generateAIContextFiles(tmpDir, storagePath, 'TestProject', stats);
 
     // Should have installed skill files
     const skillsDir = path.join(tmpDir, '.claude', 'skills', 'avmatrix');

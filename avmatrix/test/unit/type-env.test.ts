@@ -408,7 +408,7 @@ describe('buildTypeEnv', () => {
       `,
         Go,
       );
-      const typeEnv = buildTypeEnv(tree, 'go');
+      const _typeEnv = buildTypeEnv(tree, 'go');
       // Go parameter extraction depends on tree-sitter grammar structure
       // Parameters may or may not have 'name'/'type' fields
     });
@@ -469,7 +469,7 @@ describe('buildTypeEnv', () => {
 
     it('extracts type from function parameters', () => {
       const tree = parse('def process(user: User, repo: Repository): pass', Python);
-      const typeEnv = buildTypeEnv(tree, 'python');
+      const _typeEnv = buildTypeEnv(tree, 'python');
       // Python uses typed_parameter nodes, check if they match
     });
 

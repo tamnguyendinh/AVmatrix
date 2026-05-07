@@ -72,7 +72,6 @@ const AppContentBody = () => {
     async (result: ConnectResult): Promise<void> => {
       // Use the canonical repo name from the server response so all subsequent
       // backend calls (queries, search, grep, readFile) scope to this repo.
-      const repoName = result.repoInfo.name;
       const repoPath = result.repoInfo.repoPath ?? result.repoInfo.path;
       // Normalize both Windows (\) and Unix (/) path separators before splitting
       const projectName =

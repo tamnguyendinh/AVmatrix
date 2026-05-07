@@ -92,7 +92,7 @@ describe('extractElementTypeFromString', () => {
 
   it('returns undefined at exactly the 2048-char limit', () => {
     // Length > 2048 is rejected; length === 2048 may or may not parse — test boundary
-    const exactly2048 = 'A'.repeat(2048);
+    const _exactly2048 = 'A'.repeat(2048);
     // This won't contain valid container syntax, so it won't resolve, but it won't be
     // rejected by the length guard alone. We only assert > 2048 is rejected.
     expect(extractElementTypeFromString('A'.repeat(2049))).toBeUndefined();

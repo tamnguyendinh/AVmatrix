@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const createServerMock = vi.fn();
-const exitMock = vi.spyOn(process, 'exit').mockImplementation((code?: string | number | null) => {
+const _exitMock = vi.spyOn(process, 'exit').mockImplementation((code?: string | number | null) => {
   throw new Error(`process.exit:${code ?? 0}`);
 });
 const errorMock = vi.spyOn(console, 'error').mockImplementation(() => {});

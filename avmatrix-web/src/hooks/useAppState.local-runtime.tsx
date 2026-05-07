@@ -340,27 +340,6 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
     return map;
   }, [graph]);
 
-  const resolveFilePath = useCallback(
-    (requestedPath: string): string | null => {
-      const normalized = normalizePath(requestedPath);
-      // Exact match
-      if (filePathIndex.has(normalized)) return filePathIndex.get(normalized)!;
-      // Suffix match (partial paths like "src/utils.ts")
-      for (const [key, value] of filePathIndex) {
-        if (key.endsWith(normalized)) return value;
-      }
-      return null;
-    },
-    [filePathIndex],
-  );
-
-  const findFileNodeId = useCallback(
-    (filePath: string): string | undefined => {
-      return fileNodeByPath.get(normalizePath(filePath));
-    },
-    [fileNodeByPath],
-  );
-
   // Code References methods
   const addCodeReference = useCallback((ref: Omit<CodeReference, 'id'>) => {
     const id = `ref-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -771,7 +750,6 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
       setCodePanelOpen(false);
       setCodeReferenceFocus(null);
 
-      let connectedRepo: BackendRepo | undefined;
       let pNameStr = repoName || 'server-project';
 
       try {
@@ -824,7 +802,6 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
         setProjectName(pName);
         repoRef.current = pName;
 
-        connectedRepo = result.repoInfo;
         pNameStr = pName;
 
         const newGraph = createKnowledgeGraph();

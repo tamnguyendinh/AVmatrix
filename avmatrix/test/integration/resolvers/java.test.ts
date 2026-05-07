@@ -1908,7 +1908,7 @@ describe('Java overloaded method disambiguation (METHOD_IMPLEMENTS)', () => {
         e.sourceFilePath.includes('SqlRepository') &&
         e.targetFilePath.includes('Repository'),
     );
-    const sourceNodes = findEdges.map((e) => {
+    const sourceNodes = findEdges.map((_e) => {
       const methods = getNodesByLabelFull(result, 'Method');
       return methods.find(
         (m) =>

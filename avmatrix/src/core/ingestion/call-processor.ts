@@ -31,10 +31,16 @@ const defaultDispatchDecision = (
   return { primary: 'owner-scoped' };
 };
 import Parser from 'tree-sitter';
+import type { SyntaxNode as TreeSitterSyntaxNode } from 'tree-sitter';
 import type { ResolutionContext } from './model/resolution-context.js';
 import { TIER_CONFIDENCE, type ResolutionTier } from './model/resolution-context.js';
 import type { TieredCandidates } from './model/resolution-context.js';
-import { isLanguageAvailable, loadParser, loadLanguage } from '../tree-sitter/parser-loader.js';
+import {
+  createParserForLanguage,
+  isLanguageAvailable,
+  resolveLanguageKey,
+  getLanguageGrammar,
+} from '../tree-sitter/parser-loader.js';
 import { getProvider } from './languages/index.js';
 import { generateId } from '../../lib/utils.js';
 import { getLanguageFromFilename, SupportedLanguages } from 'avmatrix-shared';
@@ -94,6 +100,13 @@ export interface ProcessCallsTimingSink {
 }
 
 export type ProcessCallsQueryCache = Map<string, Parser.Query>;
+
+const isTreeRootUnavailableError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) return false;
+  return (
+    error.message.includes("reading 'tree'") || error.message.includes('Tree rootNode unavailable')
+  );
+};
 
 /**
  * Type labels treated as class-like **method-dispatch receivers** by the call
@@ -727,7 +740,25 @@ export const processCalls = async (
   timingSink?: ProcessCallsTimingSink,
   compiledQueryCache?: ProcessCallsQueryCache,
 ): Promise<ExtractedHeritage[]> => {
-  const parser = await loadParser();
+  const parserCache = new Map<string, Parser>();
+  const getParserForFile = async (
+    language: SupportedLanguages,
+    filePath: string,
+  ): Promise<Parser> => {
+    const languageKey = resolveLanguageKey(language, filePath);
+    let fileParser = parserCache.get(languageKey);
+    if (!fileParser) {
+      fileParser = await createParserForLanguage(language, filePath);
+      parserCache.set(languageKey, fileParser);
+    }
+    return fileParser;
+  };
+  const parseFile = (fileParser: Parser, file: { path: string; content: string }): Parser.Tree =>
+    timeSync('processCallsParserParseMs', () =>
+      fileParser.parse(file.content, undefined, {
+        bufferSize: getTreeSitterBufferSize(file.content.length),
+      }),
+    );
   const markTiming = (key: ProcessCallsTimingKey, startMs: number): void => {
     timingSink?.mark(key, performance.now() - startMs);
   };
@@ -782,21 +813,36 @@ export const processCalls = async (
     file: { path: string; content: string };
     language: SupportedLanguages;
     provider: ReturnType<typeof getProvider>;
-    tree: ReturnType<typeof parser.parse>;
+    tree: Parser.Tree;
     matches: ReturnType<Parser.Query['matches']>;
     parentMap: ReadonlyMap<string, readonly string[]>;
     typeEnv: ReturnType<typeof buildTypeEnv>;
   }
   const prepared: PreparedFile[] = [];
   const queryCache = compiledQueryCache ?? new Map<string, Parser.Query>();
-  const getCompiledQuery = (language: SupportedLanguages, queryStr: string): Parser.Query => {
-    const cacheKey = `${language}\0${queryStr}`;
+  const getCompiledQuery = (
+    language: SupportedLanguages,
+    filePath: string,
+    queryStr: string,
+  ): Parser.Query => {
+    const languageKey = resolveLanguageKey(language, filePath);
+    const cacheKey = `${languageKey}\0${queryStr}`;
     const cached = queryCache.get(cacheKey);
     if (cached) return cached;
-    const lang = parser.getLanguage();
+    const lang = getLanguageGrammar(language, filePath);
     const query = timeSync('processCallsQueryCompileMs', () => new Parser.Query(lang, queryStr));
     queryCache.set(cacheKey, query);
     return query;
+  };
+  const matchQuery = (
+    query: Parser.Query,
+    tree: Parser.Tree,
+  ): ReturnType<Parser.Query['matches']> => {
+    const rootNode = tree.rootNode as TreeSitterSyntaxNode | undefined;
+    if (!rootNode) {
+      throw new TypeError('Tree rootNode unavailable');
+    }
+    return timeSync('processCallsQueryExecuteMs', () => query.matches(rootNode));
   };
 
   for (let i = 0; i < files.length; i++) {
@@ -816,17 +862,13 @@ export const processCalls = async (
     const queryStr = provider.treeSitterQueries;
     if (!queryStr) continue;
 
-    await loadLanguage(language, file.path);
+    const fileParser = await getParserForFile(language, file.path);
 
     let tree = astCache.get(file.path);
     if (!tree) {
       try {
-        tree = timeSync('processCallsParserParseMs', () =>
-          parser.parse(file.content, undefined, {
-            bufferSize: getTreeSitterBufferSize(file.content.length),
-          }),
-        );
-      } catch (parseError) {
+        tree = parseFile(fileParser, file);
+      } catch {
         continue;
       }
       astCache.set(file.path, tree);
@@ -835,12 +877,29 @@ export const processCalls = async (
     let matches;
     try {
       matches = timeSync('processCallsQueryMatchesMs', () => {
-        const query = getCompiledQuery(language, queryStr);
-        return timeSync('processCallsQueryExecuteMs', () => query.matches(tree.rootNode));
+        const query = getCompiledQuery(language, file.path, queryStr);
+        return matchQuery(query, tree);
       });
     } catch (queryError) {
-      console.warn(`Query error for ${file.path}:`, queryError);
-      continue;
+      if (isTreeRootUnavailableError(queryError)) {
+        try {
+          const retryParser = await createParserForLanguage(language, file.path);
+          tree = parseFile(retryParser, file);
+          astCache.set(file.path, tree);
+          matches = timeSync('processCallsQueryMatchesMs', () => {
+            const query = getCompiledQuery(language, file.path, queryStr);
+            return matchQuery(query, tree);
+          });
+        } catch (retryError) {
+          if (!isTreeRootUnavailableError(retryError)) {
+            console.warn(`Query error for ${file.path}:`, retryError);
+          }
+          continue;
+        }
+      } else {
+        console.warn(`Query error for ${file.path}:`, queryError);
+        continue;
+      }
     }
 
     // Extract heritage from query matches to build parentMap for buildTypeEnv.
@@ -920,7 +979,7 @@ export const processCalls = async (
   // loop above, so verifyConstructorBindings sees all provider bindings
   // regardless of file processing order.
   for (let i = 0; i < prepared.length; i++) {
-    const { file, language, provider, tree, matches, parentMap, typeEnv } = prepared[i];
+    const { file, language, provider, matches, parentMap, typeEnv } = prepared[i];
     const resolutionStartMs = timingSink ? performance.now() : 0;
 
     enclosingFnExtractCache.clear();

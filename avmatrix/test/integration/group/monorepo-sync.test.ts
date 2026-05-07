@@ -96,7 +96,7 @@ describe('Monorepo sync integration', () => {
       service: assignService(c.symbolRef.filePath, boundaries),
     }));
 
-    const { matched, unmatched } = runExactMatch(allContracts);
+    const { matched, unmatched: _unmatched } = runExactMatch(allContracts);
 
     // All links should be intra-repo (same repo, different services)
     for (const link of matched) {
