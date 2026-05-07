@@ -1,16 +1,16 @@
 /**
- * Shadow-mode parity harness — dual-run observability for the RFC #909
- * registry rollout (RFC §6.3; Ring 2 PKG #923).
+ * Shadow-mode parity harness — dual-run observability for scope-aware
+ * resolution rollout.
  *
  * ## What it does
  *
- *   - Exposes `record({ language, callsite, legacy, newResult })` for
- *     every call site where the caller has BOTH a legacy-DAG resolution
+ *   - Exposes `record({ language, callsite, baseline, newResult })` for
+ *     every call site where the caller has BOTH a baseline resolution
  *     and a new `Registry.lookup` resolution.
  *   - Computes a `ShadowDiff` per record via shared `diffResolutions`
- *     (#918) and accumulates them in a per-language bucket.
+ *     and accumulates them in a per-language bucket.
  *   - At the end of a run, aggregates into a `ShadowParityReport` via
- *     shared `aggregateDiffs` (#918) — per-language parity %,
+ *     shared `aggregateDiffs` — per-language parity %,
  *     evidence-kind breakdown of divergences, grand-total overall row.
  *   - Optionally persists the report as JSON under
  *     `.avmatrix/shadow-parity/` so the static dashboard at
@@ -19,12 +19,12 @@
  * ## What it does NOT do
  *
  *   - **Invoke either resolution path itself.** The caller must run
- *     legacy + `Registry.lookup` and pass results in. The harness is a
+ *     baseline + `Registry.lookup` and pass results in. The harness is a
  *     side-car, not a dispatcher — this keeps call-processor integration
  *     surgical when it lands (tracked as a follow-up; the shared model
  *     doesn't dual-invoke on its own).
  *   - **Flip anything.** `REGISTRY_PRIMARY_<LANG>` lives in
- *     `registry-primary-flag.ts` (#924); the harness records the
+ *     `registry-primary-flag.ts`; the harness records the
  *     caller-supplied "which side is primary" bit for each record so the
  *     dashboard can label rows, but it does not consult the flag itself.
  *
@@ -49,7 +49,7 @@
  *     schemaVersion: 1,
  *     runId: "<iso-8601>-<rand>",
  *     generatedAt: "<iso-8601>",
- *     primaryByLanguage: { [lang]: "legacy" | "registry" },
+ *     primaryByLanguage: { [lang]: "baseline" | "registry" },
  *     report: <ShadowParityReport>
  *   }
  *
@@ -73,18 +73,18 @@ import {
 // ─── Public API ────────────────────────────────────────────────────────────
 
 /** Which side of the dual-run is considered authoritative for this language. */
-export type PrimarySide = 'legacy' | 'registry';
+export type PrimarySide = 'baseline' | 'registry';
 
 /** One record per call site the caller dual-runs. */
 export interface ShadowRecordInput {
   readonly language: SupportedLanguages;
   readonly callsite: ShadowCallsite;
-  readonly legacy: readonly Resolution[];
+  readonly baseline: readonly Resolution[];
   readonly newResult: readonly Resolution[];
   /**
    * Which side drove the actual runtime answer for this record. Lets the
-   * dashboard distinguish "registry-primary, legacy is shadow" from the
-   * default "legacy-primary, registry is shadow" without re-reading
+   * dashboard distinguish "registry-primary, baseline is shadow" from the
+   * default "baseline-primary, registry is shadow" without re-reading
    * `REGISTRY_PRIMARY_<LANG>` env vars at render time.
    */
   readonly primary: PrimarySide;
@@ -140,7 +140,7 @@ export function createShadowHarness(): ShadowHarness {
 
   const recordImpl = (input: ShadowRecordInput): void => {
     if (!enabled) return;
-    const diff = diffResolutions(input.callsite, input.legacy, input.newResult);
+    const diff = diffResolutions(input.callsite, input.baseline, input.newResult);
     records.push({ language: input.language, diff });
     // Primary per-language is resolved by last-write. In practice a run
     // is single-threaded with respect to flag readings, so this is

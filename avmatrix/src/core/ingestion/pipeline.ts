@@ -48,10 +48,10 @@ export interface PipelineOptions {
   skipGraphPhases?: boolean;
   /**
    * Diagnostic benchmark mode: keep the crossFile phase boundary and
-   * accumulator disposal, but skip legacy source reread/reprocess work so
+   * accumulator disposal, but skip compatibility source reread/reprocess work so
    * resolutionPhase parity can be measured directly.
    */
-  skipLegacyCrossFile?: boolean;
+  skipCompatibilityCrossFile?: boolean;
 }
 
 // ── Phase registry ─────────────────────────────────────────────────────────

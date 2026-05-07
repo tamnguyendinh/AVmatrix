@@ -1,5 +1,5 @@
 /**
- * Compatibility wrapper for the legacy wiki command module.
+ * Compatibility wrapper for the previous wiki command module path.
  *
  * Remote wiki generation is disabled in local-only mode. The old import path
  * now resolves to the same local capability gate used by the public CLI.

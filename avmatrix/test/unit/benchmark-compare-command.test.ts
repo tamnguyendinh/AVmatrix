@@ -106,7 +106,7 @@ function makeSnapshot(
             scopeResolutionResolvedReferences: resolvedReferences,
             scopeResolutionUnresolvedReferences: unresolvedReferences,
             astReusedScopeCoveragePercent: 100,
-            legacyOrUnavailableScopePercent: 0,
+            compatibilityOrUnavailableScopePercent: 0,
           },
         },
       },

@@ -50,44 +50,44 @@ describe('diffResolutions — agreement outcomes', () => {
     const result = diffResolutions(callsite, [], []);
     expect(result.agreement).toBe('both-empty');
     expect(result.evidenceDelta).toEqual([]);
-    expect(result.legacy).toBeNull();
+    expect(result.baseline).toBeNull();
     expect(result.newResult).toBeNull();
   });
 
   it("identical top DefIds → 'both-agree' with empty evidence delta", () => {
-    const legacy = [makeResolution('def:User.save', ['local', 'owner-match'])];
+    const baseline = [makeResolution('def:User.save', ['local', 'owner-match'])];
     const next = [makeResolution('def:User.save', ['local', 'kind-match'])];
-    const result = diffResolutions(callsite, legacy, next);
+    const result = diffResolutions(callsite, baseline, next);
     expect(result.agreement).toBe('both-agree');
     expect(result.evidenceDelta).toEqual([]);
-    expect(result.legacy).toBe(legacy[0]);
+    expect(result.baseline).toBe(baseline[0]);
     expect(result.newResult).toBe(next[0]);
   });
 
-  it("legacy empty, new non-empty → 'only-new' with new's evidence as delta", () => {
+  it("baseline empty, new non-empty → 'only-new' with new's evidence as delta", () => {
     const next = [makeResolution('def:User.save', ['local', 'owner-match'])];
     const result = diffResolutions(callsite, [], next);
     expect(result.agreement).toBe('only-new');
     expect(result.evidenceDelta).toEqual(next[0].evidence);
-    expect(result.legacy).toBeNull();
+    expect(result.baseline).toBeNull();
     expect(result.newResult).toBe(next[0]);
   });
 
-  it("legacy non-empty, new empty → 'only-legacy' with legacy's evidence as delta", () => {
-    const legacy = [makeResolution('def:User.save', ['global-name'])];
-    const result = diffResolutions(callsite, legacy, []);
-    expect(result.agreement).toBe('only-legacy');
-    expect(result.evidenceDelta).toEqual(legacy[0].evidence);
-    expect(result.legacy).toBe(legacy[0]);
+  it("baseline non-empty, new empty → 'only-baseline' with baseline's evidence as delta", () => {
+    const baseline = [makeResolution('def:User.save', ['global-name'])];
+    const result = diffResolutions(callsite, baseline, []);
+    expect(result.agreement).toBe('only-baseline');
+    expect(result.evidenceDelta).toEqual(baseline[0].evidence);
+    expect(result.baseline).toBe(baseline[0]);
     expect(result.newResult).toBeNull();
   });
 
   it("different top DefIds → 'both-disagree'", () => {
-    const legacy = [makeResolution('def:ModelA.save', ['global-name'])];
+    const baseline = [makeResolution('def:ModelA.save', ['global-name'])];
     const next = [makeResolution('def:ModelB.save', ['local'])];
-    const result = diffResolutions(callsite, legacy, next);
+    const result = diffResolutions(callsite, baseline, next);
     expect(result.agreement).toBe('both-disagree');
-    expect(result.legacy).toBe(legacy[0]);
+    expect(result.baseline).toBe(baseline[0]);
     expect(result.newResult).toBe(next[0]);
   });
 });
@@ -96,9 +96,9 @@ describe('diffResolutions — agreement outcomes', () => {
 
 describe('diffResolutions — evidence delta (symmetric-by-kind)', () => {
   it("'both-disagree' with disjoint evidence → delta contains both sides' kinds", () => {
-    const legacy = [makeResolution('def:A', ['global-name'])];
+    const baseline = [makeResolution('def:A', ['global-name'])];
     const next = [makeResolution('def:B', ['local', 'owner-match'])];
-    const result = diffResolutions(callsite, legacy, next);
+    const result = diffResolutions(callsite, baseline, next);
     expect(result.evidenceDelta.map((e) => e.kind)).toEqual([
       'global-name',
       'local',
@@ -107,11 +107,11 @@ describe('diffResolutions — evidence delta (symmetric-by-kind)', () => {
   });
 
   it("'both-disagree' with overlapping kinds → overlapping kinds removed from delta", () => {
-    const legacy = [makeResolution('def:A', ['local', 'scope-chain', 'global-name'])];
+    const baseline = [makeResolution('def:A', ['local', 'scope-chain', 'global-name'])];
     const next = [makeResolution('def:B', ['local', 'import', 'owner-match'])];
-    const result = diffResolutions(callsite, legacy, next);
+    const result = diffResolutions(callsite, baseline, next);
     // 'local' is on both sides → dropped
-    // Remaining: legacy-only ['scope-chain', 'global-name'], then new-only ['import', 'owner-match']
+    // Remaining: baseline-only ['scope-chain', 'global-name'], then new-only ['import', 'owner-match']
     expect(result.evidenceDelta.map((e) => e.kind)).toEqual([
       'scope-chain',
       'global-name',
@@ -121,16 +121,16 @@ describe('diffResolutions — evidence delta (symmetric-by-kind)', () => {
   });
 
   it("'both-disagree' with fully overlapping kinds → empty evidence delta", () => {
-    const legacy = [makeResolution('def:A', ['local', 'owner-match'])];
+    const baseline = [makeResolution('def:A', ['local', 'owner-match'])];
     const next = [makeResolution('def:B', ['owner-match', 'local'])];
-    const result = diffResolutions(callsite, legacy, next);
+    const result = diffResolutions(callsite, baseline, next);
     // Same kind set, different order → symmetric difference is empty
     expect(result.evidenceDelta).toEqual([]);
     expect(result.agreement).toBe('both-disagree'); // agreement still disagrees because nodeIds differ
   });
 
   it('differing weights on the same kind → NOT a delta (keyed on kind only)', () => {
-    const legacy = [
+    const baseline = [
       {
         def: makeDef('def:A'),
         confidence: 0.9,
@@ -144,7 +144,7 @@ describe('diffResolutions — evidence delta (symmetric-by-kind)', () => {
         evidence: [{ kind: 'local' as const, weight: 0.25 }],
       },
     ];
-    const result = diffResolutions(callsite, legacy, next);
+    const result = diffResolutions(callsite, baseline, next);
     expect(result.agreement).toBe('both-disagree');
     expect(result.evidenceDelta).toEqual([]);
   });
@@ -154,7 +154,7 @@ describe('diffResolutions — evidence delta (symmetric-by-kind)', () => {
 
 describe('diffResolutions — metadata + ordering', () => {
   it('ignores resolutions beyond index 0 (top match only)', () => {
-    const legacy = [
+    const baseline = [
       makeResolution('def:User.save', ['local']),
       makeResolution('def:other', ['global-name']),
     ];
@@ -166,7 +166,7 @@ describe('diffResolutions — metadata + ordering', () => {
       // `diffResolutions` never treats specially.
       makeResolution('def:yet-another', ['global-name']),
     ];
-    const result = diffResolutions(callsite, legacy, next);
+    const result = diffResolutions(callsite, baseline, next);
     expect(result.agreement).toBe('both-agree');
   });
 
@@ -175,12 +175,12 @@ describe('diffResolutions — metadata + ordering', () => {
     expect(result.callsite).toBe(callsite);
   });
 
-  it("'both-disagree' delta order: legacy-only first (input order), then new-only", () => {
-    const legacy = [makeResolution('def:A', ['owner-match', 'scope-chain', 'kind-match'])];
+  it("'both-disagree' delta order: baseline-only first (input order), then new-only", () => {
+    const baseline = [makeResolution('def:A', ['owner-match', 'scope-chain', 'kind-match'])];
     const next = [makeResolution('def:B', ['import', 'owner-match', 'arity-match'])];
-    const result = diffResolutions(callsite, legacy, next);
+    const result = diffResolutions(callsite, baseline, next);
     // 'owner-match' overlaps → dropped
-    // legacy-only in original order: ['scope-chain', 'kind-match']
+    // baseline-only in original order: ['scope-chain', 'kind-match']
     // then new-only in original order: ['import', 'arity-match']
     expect(result.evidenceDelta.map((e) => e.kind)).toEqual([
       'scope-chain',

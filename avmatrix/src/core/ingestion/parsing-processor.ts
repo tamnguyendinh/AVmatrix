@@ -33,9 +33,8 @@ export interface WorkerExtractedData {
   constructorBindings: FileConstructorBindings[];
   fileScopeBindings: FileScopeBindings[];
   /**
-   * Per-file `ParsedFile` artifacts from the new scope-based resolution
-   * pipeline (RFC #909 Ring 2). Empty until a provider implements
-   * `emitScopeCaptures` — additive to the legacy DAG path.
+   * Per-file `ParsedFile` artifacts from the scope-based resolution
+   * pipeline. Empty until a provider implements scope capture hooks.
    */
   parsedFiles: ParsedFile[];
   scopeExtraction: ScopeExtractionWorkerStats;

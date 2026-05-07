@@ -88,9 +88,9 @@ describe('createShadowHarness: enabled flag', () => {
     h.record({
       language: SupportedLanguages.Python,
       callsite: callsite(),
-      legacy: [resolution('def:a')],
+      baseline: [resolution('def:a')],
       newResult: [resolution('def:a')],
-      primary: 'legacy',
+      primary: 'baseline',
     });
     expect(h.size()).toBe(0);
   });
@@ -101,9 +101,9 @@ describe('createShadowHarness: enabled flag', () => {
     h.record({
       language: SupportedLanguages.Python,
       callsite: callsite(),
-      legacy: [resolution('def:a')],
+      baseline: [resolution('def:a')],
       newResult: [resolution('def:a')],
-      primary: 'legacy',
+      primary: 'baseline',
     });
     // Still disabled — the harness captured its `enabled` at construction.
     expect(h.size()).toBe(0);
@@ -119,14 +119,14 @@ describe('record + snapshot', () => {
     h.record({
       language: SupportedLanguages.Python,
       callsite: callsite(),
-      legacy: [resolution('def:a')],
+      baseline: [resolution('def:a')],
       newResult: [resolution('def:a')],
-      primary: 'legacy',
+      primary: 'baseline',
     });
     h.record({
       language: SupportedLanguages.TypeScript,
       callsite: callsite('b.ts'),
-      legacy: [resolution('def:b')],
+      baseline: [resolution('def:b')],
       newResult: [],
       primary: 'registry',
     });
@@ -139,16 +139,16 @@ describe('record + snapshot', () => {
     h.record({
       language: SupportedLanguages.Python,
       callsite: callsite(),
-      legacy: [resolution('def:a')],
+      baseline: [resolution('def:a')],
       newResult: [resolution('def:a')],
-      primary: 'legacy',
+      primary: 'baseline',
     });
     h.record({
       language: SupportedLanguages.Python,
       callsite: callsite('a.py', 2),
-      legacy: [resolution('def:b')],
+      baseline: [resolution('def:b')],
       newResult: [],
-      primary: 'legacy',
+      primary: 'baseline',
     });
     const report = h.snapshot(new Date('2026-04-18T00:00:00Z'));
     expect(report.perLanguage).toHaveLength(1);
@@ -156,7 +156,7 @@ describe('record + snapshot', () => {
     expect(py.language).toBe(SupportedLanguages.Python);
     expect(py.totalCalls).toBe(2);
     expect(py.bothAgree).toBe(1);
-    expect(py.onlyLegacy).toBe(1);
+    expect(py.onlyBaseline).toBe(1);
   });
 
   it('snapshot is deterministic across repeated calls', () => {
@@ -165,9 +165,9 @@ describe('record + snapshot', () => {
     h.record({
       language: SupportedLanguages.Python,
       callsite: callsite(),
-      legacy: [resolution('def:a')],
+      baseline: [resolution('def:a')],
       newResult: [resolution('def:a')],
-      primary: 'legacy',
+      primary: 'baseline',
     });
     const now = new Date('2026-04-18T12:00:00Z');
     const a = h.snapshot(now);
@@ -181,7 +181,7 @@ describe('record + snapshot', () => {
     h.record({
       language: SupportedLanguages.Python,
       callsite: callsite(),
-      legacy: [resolution('def:a')],
+      baseline: [resolution('def:a')],
       newResult: [resolution('def:a')],
       primary: 'registry',
     });
@@ -193,15 +193,15 @@ describe('record + snapshot', () => {
     h.record({
       language: SupportedLanguages.Python,
       callsite: callsite('a.py'),
-      legacy: [resolution('def:a')],
+      baseline: [resolution('def:a')],
       newResult: [resolution('def:a')],
-      primary: 'legacy',
+      primary: 'baseline',
     });
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'avmatrix-sh-clear-'));
     try {
       await h.persist(dir);
       const payload = JSON.parse(fs.readFileSync(path.join(dir, 'latest.json'), 'utf8'));
-      expect(payload.primaryByLanguage.python).toBe('legacy');
+      expect(payload.primaryByLanguage.python).toBe('baseline');
     } finally {
       await fsp.rm(dir, { recursive: true, force: true });
     }
@@ -234,9 +234,9 @@ describe('persist', () => {
     h.record({
       language: SupportedLanguages.Python,
       callsite: callsite(),
-      legacy: [resolution('def:a')],
+      baseline: [resolution('def:a')],
       newResult: [resolution('def:a')],
-      primary: 'legacy',
+      primary: 'baseline',
     });
     const perRunPath = await h.persist(tmpDir, new Date('2026-04-18T12:34:56Z'));
     const latestPath = path.join(tmpDir, 'latest.json');
@@ -252,7 +252,7 @@ describe('persist', () => {
     h.record({
       language: SupportedLanguages.TypeScript,
       callsite: callsite('a.ts'),
-      legacy: [resolution('def:a')],
+      baseline: [resolution('def:a')],
       newResult: [resolution('def:a')],
       primary: 'registry',
     });

@@ -1,6 +1,6 @@
 /**
  * Shadow-mode aggregation — per-language parity %, per-evidence-kind
- * breakdown of divergences. Consumed by the parity dashboard (RING2-PKG-5).
+ * breakdown of divergences. Consumed by the parity dashboard.
  *
  * Pure functions; no I/O. The harness persists per-run JSON; the dashboard
  * reads `.avmatrix/shadow-parity/latest.json` and renders.
@@ -10,7 +10,6 @@
  * through the top-level `avmatrix-shared` barrel. Consumers import all
  * three from `avmatrix-shared`, not from this module.
  *
- * Part of RFC #909 Ring 2 SHARED — #918.
  */
 
 import type { SupportedLanguages } from '../../languages.js';
@@ -23,7 +22,7 @@ export interface LanguageParityRow {
   readonly language: SupportedLanguages;
   readonly totalCalls: number;
   readonly bothAgree: number;
-  readonly onlyLegacy: number;
+  readonly onlyBaseline: number;
   readonly onlyNew: number;
   readonly bothDisagree: number;
   readonly bothEmpty: number;
@@ -97,7 +96,7 @@ export function aggregateDiffs(
 interface MutableCounts {
   totalCalls: number;
   bothAgree: number;
-  onlyLegacy: number;
+  onlyBaseline: number;
   onlyNew: number;
   bothDisagree: number;
   bothEmpty: number;
@@ -108,7 +107,7 @@ function makeEmptyCounts(): MutableCounts {
   return {
     totalCalls: 0,
     bothAgree: 0,
-    onlyLegacy: 0,
+    onlyBaseline: 0,
     onlyNew: 0,
     bothDisagree: 0,
     bothEmpty: 0,
@@ -130,8 +129,8 @@ function incrementAgreement(counts: MutableCounts, agreement: ShadowAgreement): 
     case 'both-agree':
       counts.bothAgree += 1;
       return;
-    case 'only-legacy':
-      counts.onlyLegacy += 1;
+    case 'only-baseline':
+      counts.onlyBaseline += 1;
       return;
     case 'only-new':
       counts.onlyNew += 1;
@@ -152,7 +151,7 @@ function buildRow(language: SupportedLanguages, counts: MutableCounts): Language
     language,
     totalCalls: counts.totalCalls,
     bothAgree: counts.bothAgree,
-    onlyLegacy: counts.onlyLegacy,
+    onlyBaseline: counts.onlyBaseline,
     onlyNew: counts.onlyNew,
     bothDisagree: counts.bothDisagree,
     bothEmpty: counts.bothEmpty,
@@ -170,19 +169,19 @@ function buildOverallRow(
 ): Omit<LanguageParityRow, 'language' | 'evidenceBreakdown'> {
   let totalCalls = 0;
   let bothAgree = 0;
-  let onlyLegacy = 0;
+  let onlyBaseline = 0;
   let onlyNew = 0;
   let bothDisagree = 0;
   let bothEmpty = 0;
   for (const row of perLanguage) {
     totalCalls += row.totalCalls;
     bothAgree += row.bothAgree;
-    onlyLegacy += row.onlyLegacy;
+    onlyBaseline += row.onlyBaseline;
     onlyNew += row.onlyNew;
     bothDisagree += row.bothDisagree;
     bothEmpty += row.bothEmpty;
   }
   const resolved = totalCalls - bothEmpty;
   const parity = resolved > 0 ? bothAgree / resolved : 0;
-  return { totalCalls, bothAgree, onlyLegacy, onlyNew, bothDisagree, bothEmpty, parity };
+  return { totalCalls, bothAgree, onlyBaseline, onlyNew, bothDisagree, bothEmpty, parity };
 }

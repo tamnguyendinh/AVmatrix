@@ -288,11 +288,9 @@ export interface ParseWorkerResult {
   /** All-scope type bindings from TypeEnv for BindingAccumulator (includes function-local). */
   fileScopeBindings: FileScopeBindings[];
   /**
-   * Per-file `ParsedFile` artifacts from the new scope-based resolution
-   * pipeline (RFC #909 Ring 2). Empty unless the file's provider implements
-   * `emitScopeCaptures` — default for every language today, so this is
-   * additive and leaves the legacy DAG untouched. Consumed by #921's
-   * finalize-orchestrator.
+   * Per-file `ParsedFile` artifacts from the scope-based resolution
+   * pipeline. Empty unless the file's provider implements scope capture
+   * hooks.
    */
   parsedFiles: ParsedFile[];
   scopeExtraction: ScopeExtractionWorkerStats;
@@ -1482,12 +1480,10 @@ const processFileGroup = (
 
     const provider = getProvider(language);
 
-    // RFC #909 Ring 2: produce a `ParsedFile` for the new scope-based
-    // resolution pipeline. No-op (returns undefined) for every language
-    // today — only fires once a provider implements a scope-capture hook.
-    // Runs BEFORE legacy extraction and its result is independent: a
-    // failure here is caught inside `extractParsedFileWithStats` and does NOT
-    // affect the legacy DAG path that follows.
+    // Produce a `ParsedFile` for the scope-based resolution pipeline.
+    // No-op for providers without a scope-capture hook. A failure here is
+    // caught inside `extractParsedFileWithStats` and does not affect the
+    // normal symbol extraction path that follows.
     const scopeResult = extractParsedFileWithStats(
       provider,
       parseContent,

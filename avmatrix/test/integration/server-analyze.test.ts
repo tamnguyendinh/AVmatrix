@@ -1,6 +1,6 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import { JobManager } from '../../src/server/analyze-job.js';
-import { getLegacyRepoCacheDir } from '../../src/server/legacy-repo-cache.js';
+import { getCompatibilityRepoCacheDir } from '../../src/server/compatibility-repo-cache.js';
 
 describe('server-side analyze integration', () => {
   const manager = new JobManager();
@@ -83,8 +83,8 @@ describe('server-side analyze integration', () => {
     expect(events[0].message).toBe('Local analysis failed: repository not found');
   });
 
-  it('legacy cache directory helper points at ~/.avmatrix/repos', () => {
-    const dir = getLegacyRepoCacheDir('react');
+  it('compatibility cache directory helper points at ~/.avmatrix/repos', () => {
+    const dir = getCompatibilityRepoCacheDir('react');
     expect(dir).toMatch(/\.avmatrix/);
     expect(dir).toMatch(/repos/);
     expect(dir).toContain('react');

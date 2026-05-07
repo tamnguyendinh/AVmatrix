@@ -26,7 +26,7 @@ describe('wiki compatibility wrapper', () => {
     await fs.rm(tempHome, { recursive: true, force: true });
   });
 
-  it('routes the legacy wiki import path to the local-only capability gate', async () => {
+  it('routes the compatibility wiki import path to the local-only capability gate', async () => {
     await wikiCommand();
 
     expect(process.exitCode).toBe(1);

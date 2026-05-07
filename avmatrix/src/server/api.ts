@@ -31,7 +31,7 @@ import { mountMCPEndpoints } from './mcp-http.js';
 import { fork } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { JobManager, type AnalyzeJob, type AnalyzeJobProgress } from './analyze-job.js';
-import { getLegacyRepoCacheDir } from './legacy-repo-cache.js';
+import { getCompatibilityRepoCacheDir } from './compatibility-repo-cache.js';
 import { resolveAnalyzeRepoPath } from './local-path-policy.js';
 import { RuntimeController } from '../runtime/runtime-controller.js';
 import { CodexSessionAdapter } from '../runtime/session-adapters/codex.js';
@@ -427,7 +427,7 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
     }
   });
 
-  // Delete a repo — removes index, any legacy cache dir, and unregisters it
+  // Delete a repo — removes index, any compatibility cache dir, and unregisters it
   app.delete('/api/repo', async (req, res) => {
     try {
       const repoName = requestedRepo(req);
@@ -459,15 +459,15 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
         const storagePath = getStoragePath(entry.path);
         await fs.rm(storagePath, { recursive: true, force: true }).catch(() => {});
 
-        // 2. Delete any legacy repo cache dir from pre-local-only builds
-        const legacyCacheDir = getLegacyRepoCacheDir(entry.name);
+        // 2. Delete any compatibility repo cache dir from pre-local-only builds
+        const compatibilityCacheDir = getCompatibilityRepoCacheDir(entry.name);
         try {
-          const stat = await fs.stat(legacyCacheDir);
+          const stat = await fs.stat(compatibilityCacheDir);
           if (stat.isDirectory()) {
-            await fs.rm(legacyCacheDir, { recursive: true, force: true });
+            await fs.rm(compatibilityCacheDir, { recursive: true, force: true });
           }
         } catch {
-          /* legacy cache dir may not exist */
+          /* compatibility cache dir may not exist */
         }
 
         // 3. Unregister from the global registry

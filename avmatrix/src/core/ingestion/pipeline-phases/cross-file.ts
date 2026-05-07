@@ -73,7 +73,7 @@ export const crossFilePhase: PipelinePhase<CrossFileOutput> = {
         }
       }
 
-      if (ctx.options?.skipLegacyCrossFile) {
+      if (ctx.options?.skipCompatibilityCrossFile) {
         return skippedCrossFileOutput('disabled-by-pipeline-option');
       }
 

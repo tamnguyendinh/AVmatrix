@@ -115,7 +115,7 @@ describe('crossFilePhase compatibility fallback', () => {
     acc.appendFile('src/a.ts', [{ scope: '', varName: 'x', typeName: 'X' }]);
 
     const result = await crossFilePhase.execute(
-      makeCtx({ skipLegacyCrossFile: true }),
+      makeCtx({ skipCompatibilityCrossFile: true }),
       makeDeps(acc),
     );
 

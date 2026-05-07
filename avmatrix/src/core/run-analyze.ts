@@ -61,8 +61,8 @@ export interface AnalyzeOptions {
   force?: boolean;
   embeddings?: boolean;
   skipGit?: boolean;
-  /** Diagnostic benchmark mode: skip legacy cross-file reread/reprocess work. */
-  skipLegacyCrossFile?: boolean;
+  /** Diagnostic benchmark mode: skip compatibility cross-file reread/reprocess work. */
+  skipCompatibilityCrossFile?: boolean;
   /** Skip AGENTS.md and CLAUDE.md AVmatrix block updates. */
   skipAgentsMd?: boolean;
   /** Omit volatile symbol/relationship counts from AGENTS.md and CLAUDE.md. */
@@ -222,7 +222,7 @@ export async function runFullAnalysis(
       progress(p.phase, scaled, phaseLabel);
     },
     {
-      skipLegacyCrossFile: options.skipLegacyCrossFile,
+      skipCompatibilityCrossFile: options.skipCompatibilityCrossFile,
     },
   );
 

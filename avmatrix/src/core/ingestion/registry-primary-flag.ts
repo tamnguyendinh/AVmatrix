@@ -1,12 +1,11 @@
 /**
- * `REGISTRY_PRIMARY_<LANG>` per-language feature flags for the scope-based
- * resolution rollout (RFC §6.1 Ring 3; Ring 2 PKG #924).
+ * `REGISTRY_PRIMARY_<LANG>` per-language feature flags for scope-aware
+ * resolution rollout.
  *
  * This module is the single source of truth for whether a given language
  * has been flipped to registry-primary call resolution. When a language's
- * flag is true, its files route through `Registry.lookup` (RFC §4) instead
- * of the legacy call-resolution DAG; when false (the default), the legacy
- * DAG runs unchanged.
+ * flag is true, its files route through `Registry.lookup`; when false
+ * (the default), the baseline resolver remains primary.
  *
  * ## Contract
  *
@@ -23,15 +22,13 @@
  *
  * ## Integration site
  *
- * `call-processor.ts` integration lands in **#921** (`finalize-orchestrator`)
- * where the `SemanticModel` becomes accessible and `Registry.lookup` can
- * actually be called with a populated context. This module ships the flag
- * primitive in isolation so #921 has a clean, tested utility to consult.
+ * `call-processor.ts` consults this utility where registry lookup can be
+ * called with a populated `SemanticModel` context.
  *
  * ## Shadow mode is orthogonal
  *
- * Shadow mode (`AVMATRIX_SHADOW_MODE=1`, introduced in #923) runs BOTH
- * legacy and registry paths regardless of the per-language flag, so the
+ * Shadow mode (`AVMATRIX_SHADOW_MODE=1`) runs both baseline and registry
+ * paths regardless of the per-language flag, so the
  * parity dashboard has signal even for un-flipped languages. That logic
  * lives in `shadow-harness.ts` (#923), not here.
  */
@@ -62,7 +59,7 @@ export function isRegistryPrimary(lang: SupportedLanguages): boolean {
 /**
  * All languages whose registry-primary flag is currently on. Useful for
  * startup-time logging + the shadow-harness dashboard, which wants to
- * distinguish "primary: legacy" from "primary: registry" rows.
+ * distinguish "primary: baseline" from "primary: registry" rows.
  */
 export function primaryLanguages(): ReadonlySet<SupportedLanguages> {
   const out = new Set<SupportedLanguages>();

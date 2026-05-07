@@ -615,15 +615,15 @@ function finalizeLanguageCoverage(
     const bucket = { ...coverage[language] };
     const parseable = bucket.parseableFiles ?? 0;
     const astReused = bucket.scopeExtractionAstReusedFiles ?? 0;
-    const legacyOrUnavailable =
+    const compatibilityOrUnavailable =
       (bucket.scopeExtractionCompatibilityFiles ?? 0) +
       (bucket.scopeExtractionNoHookFiles ?? 0) +
       (bucket.scopeExtractionFailedFiles ?? 0) +
       (bucket.parserUnavailableFiles ?? 0);
     bucket.astReusedScopeCoveragePercent =
       parseable > 0 ? roundMs((astReused / parseable) * 100) : 0;
-    bucket.legacyOrUnavailableScopePercent =
-      parseable > 0 ? roundMs((legacyOrUnavailable / parseable) * 100) : 0;
+    bucket.compatibilityOrUnavailableScopePercent =
+      parseable > 0 ? roundMs((compatibilityOrUnavailable / parseable) * 100) : 0;
     out[language] = bucket;
   }
   return out;

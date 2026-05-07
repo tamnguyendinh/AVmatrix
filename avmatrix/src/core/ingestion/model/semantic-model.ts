@@ -85,12 +85,10 @@ export interface SemanticModel {
   readonly fields: FieldRegistry;
   readonly symbols: SymbolTableReader;
   /**
-   * Materialized scope-resolution indexes from RFC #909 Ring 2 PKG #921.
+   * Materialized scope-resolution indexes.
    *
-   * `undefined` until the finalize-orchestrator attaches them. While
-   * `undefined`, the legacy DAG is the sole resolution surface; once set,
-   * resolvers whose language has `REGISTRY_PRIMARY_<LANG>=true` consult
-   * these indexes instead.
+   * `undefined` until the finalize-orchestrator attaches them. Once set,
+   * scope-aware resolvers consult these indexes.
    *
    * The attach is a one-shot write (see `MutableSemanticModel`). Callers
    * holding a read-only `SemanticModel` handle see either `undefined` or

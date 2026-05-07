@@ -32,8 +32,8 @@ program
   .option('--no-stats', 'Omit volatile file/symbol counts from AGENTS.md and CLAUDE.md')
   .option('--skip-git', 'Index a folder without requiring a .git directory')
   .option(
-    '--skip-legacy-cross-file',
-    'Diagnostic benchmark mode: skip legacy cross-file source reread/reprocess work',
+    '--skip-compatibility-cross-file',
+    'Diagnostic benchmark mode: skip compatibility cross-file source reread/reprocess work',
   )
   .option('--benchmark-json <file>', 'Write analyze benchmark metrics and graph snapshot to JSON')
   .option('--benchmark-label <label>', 'Attach a label to the benchmark JSON artifact')

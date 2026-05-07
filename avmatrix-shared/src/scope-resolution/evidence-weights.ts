@@ -1,8 +1,8 @@
 /**
- * `EvidenceWeights` — RFC Appendix A (authoritative values).
+ * `EvidenceWeights` — authoritative confidence values.
  *
- * Starting calibration for scope-based resolution. Shadow-first rollout
- * tunes these against legacy DAG parity. Every `ResolutionEvidence.weight`
+ * Starting calibration for scope-based resolution. Shadow-mode parity reports
+ * tune these against the baseline graph. Every `ResolutionEvidence.weight`
  * value in the codebase MUST reference this map; inline magic numbers are a
  * lint violation. Extends issue #429 (centralize hardcoded confidence values).
  *

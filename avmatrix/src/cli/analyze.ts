@@ -73,8 +73,8 @@ export interface AnalyzeOptions {
   noStats?: boolean;
   /** Index the folder even when no .git directory is present. */
   skipGit?: boolean;
-  /** Diagnostic benchmark mode: skip legacy cross-file reread/reprocess work. */
-  skipLegacyCrossFile?: boolean;
+  /** Diagnostic benchmark mode: skip compatibility cross-file reread/reprocess work. */
+  skipCompatibilityCrossFile?: boolean;
   /** Write a benchmark artifact after a fresh analyze run. */
   benchmarkJson?: string;
   /** Optional human label stored in the benchmark artifact. */
@@ -227,7 +227,7 @@ export const analyzeCommand = async (inputPath?: string, options?: AnalyzeOption
         force: options?.force || options?.skills,
         embeddings: options?.embeddings,
         skipGit: options?.skipGit,
-        skipLegacyCrossFile: options?.skipLegacyCrossFile,
+        skipCompatibilityCrossFile: options?.skipCompatibilityCrossFile,
         skipAgentsMd: options?.skipAgentsMd,
         noStats: options?.noStats,
         registryName: options?.name,

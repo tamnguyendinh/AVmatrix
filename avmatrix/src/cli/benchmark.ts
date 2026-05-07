@@ -135,7 +135,7 @@ const LANGUAGE_COVERAGE_METRICS = Object.freeze([
   'scopeResolutionResolvedReferences',
   'scopeResolutionUnresolvedReferences',
   'astReusedScopeCoveragePercent',
-  'legacyOrUnavailableScopePercent',
+  'compatibilityOrUnavailableScopePercent',
 ] as const);
 
 async function readBenchmarkSnapshot(filePath: string): Promise<AnalyzeBenchmarkSnapshot> {

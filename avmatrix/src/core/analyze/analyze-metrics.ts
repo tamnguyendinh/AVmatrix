@@ -35,7 +35,7 @@ export interface AnalyzeLanguageCoverage {
   scopeResolutionResolvedReferences?: number;
   scopeResolutionUnresolvedReferences?: number;
   astReusedScopeCoveragePercent?: number;
-  legacyOrUnavailableScopePercent?: number;
+  compatibilityOrUnavailableScopePercent?: number;
 }
 
 export type AnalyzeLanguageCoverageByLanguage = Record<string, AnalyzeLanguageCoverage>;

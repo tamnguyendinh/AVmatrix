@@ -297,14 +297,11 @@ interface LanguageProviderConfig {
   readonly builtInNames?: ReadonlySet<string>;
 
   // ══════════════════════════════════════════════════════════════════════════
-  //  Scope-based resolution hooks (RFC #909 — Ring 1 #911)
+  //  Scope-based resolution hooks
   //
-  //  All hooks below are OPTIONAL with safe defaults so existing providers
-  //  continue to compile unchanged. Ring 2 (#919–#925) wires these into the
-  //  central `ScopeExtractor` + finalize pipeline; Ring 3 per-language
-  //  tickets implement the ones each language needs.
-  //
-  //  See: https://www.notion.so/346dc50b6ed281cfaacbe480bf231d50 §5.2
+  //  All hooks below are optional with safe defaults so existing providers
+  //  continue to compile unchanged while migrated providers feed the
+  //  central `ScopeExtractor` + finalize pipeline.
   // ══════════════════════════════════════════════════════════════════════════
 
   // ── Parse phase (per-capture interpretation) ───────────────────────
@@ -327,7 +324,7 @@ interface LanguageProviderConfig {
    *
    * Required for any provider participating in scope-based resolution.
    * Providers that have not yet migrated continue to run through the
-   * legacy DAG path (feature-flagged per `REGISTRY_PRIMARY_<LANG>`).
+   * compatibility path.
    *
    * **Sync return.** Tree-sitter query execution and COBOL's regex
    * tagger are both synchronous; no current or foreseeable provider
@@ -335,7 +332,7 @@ interface LanguageProviderConfig {
    * `parse-worker.ts` (#920) invoke it inline in its already-sync
    * per-file loop without cascading `async` through the batch pipeline.
    *
-   * Default: undefined (language continues to use legacy DAG).
+   * Default: undefined (provider has not migrated to scope captures).
    */
   readonly emitScopeCaptures?: (sourceText: string, filePath: string) => readonly CaptureMatch[];
 
@@ -343,7 +340,7 @@ interface LanguageProviderConfig {
    * AST-aware scope capture path for the optimized single-pass graph.
    *
    * Providers should prefer this over `emitScopeCaptures` so the parse worker
-   * can reuse the tree-sitter tree it already built for legacy extraction.
+   * can reuse the tree-sitter tree it already built for symbol extraction.
    * The source-text-only hook remains a compatibility path and must not be
    * used by the optimized default for migrated providers.
    */
@@ -436,7 +433,7 @@ interface LanguageProviderConfig {
    * JS package.json + node_modules, Go module paths, Java classpath,
    * COBOL COPY paths. Ports today's per-language import resolver.
    *
-   * Required when `emitScopeCaptures` is implemented. Ring 2 PKG #922
+   * Required when `emitScopeCaptures` is implemented.
    * provides the adapter that bridges today's resolver shape to this hook.
    */
   readonly resolveImportTarget?: (

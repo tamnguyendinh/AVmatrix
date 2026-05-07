@@ -1,7 +1,6 @@
 /**
  * Bridge between CLI-package per-language `ImportResolverFn`s and the
- * shared `FinalizeHooks.resolveImportTarget` contract
- * (RFC §5.2; Ring 2 PKG #922).
+ * shared `FinalizeHooks.resolveImportTarget` contract.
  *
  * The shared finalize algorithm (#915) asks one question:
  *
@@ -21,8 +20,7 @@
  * ## What's deliberately NOT here
  *
  *   - **Re-implementation of any per-language resolver.** We wrap the
- *     existing `importResolver` field on each `LanguageProvider` — the
- *     same code path the legacy DAG uses today.
+ *     existing `importResolver` field on each `LanguageProvider`.
  *   - **Dynamic-import handling.** The shared finalize algorithm short-
  *     circuits `ParsedImport { kind: 'dynamic-unresolved' }` before
  *     calling `resolveImportTarget`, so the adapter never sees those.
@@ -62,8 +60,8 @@ export interface ImportTargetWorkspace {
  * ever hit that branch at dispatch time).
  *
  * The `resolveCtx` is shared across all languages. Callers assemble it
- * once per run (the existing pipeline already does this for the legacy
- * DAG) and hand it to both the legacy resolution path and this factory.
+ * once per run and hand it to both the existing import resolution path
+ * and this factory.
  */
 export function buildImportTargetWorkspace(
   providers: ReadonlyMap<SupportedLanguages, LanguageProvider>,
@@ -84,7 +82,7 @@ export function buildImportTargetWorkspace(
  * language.
  *
  * Picks the first entry of `files[]` for both `'files'` and `'package'`
- * result kinds — the legacy pipeline uses the whole array, but the
+ * result kinds — the existing pipeline uses the whole array, but the
  * shared `finalize()` hook contract is single-file. If the workspace
  * later needs richer semantics (split-target packages), this is the
  * single site to extend.

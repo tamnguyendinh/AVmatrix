@@ -1,6 +1,6 @@
 /**
  * Bridge between a language provider's `emitScopeCaptures` hook and the
- * `ScopeExtractor` (RFC #909 Ring 2 PKG #920).
+ * `ScopeExtractor`.
  *
  * Extracted into its own module so it can be imported by test code
  * without pulling in `parse-worker.ts` — which has a top-level
@@ -10,17 +10,14 @@
  * The bridge:
  *
  *   1. Short-circuits when the provider has NOT implemented a scope-capture
- *      hook. Returns `undefined`; zero work done. This is the state of every
- *      language today — `ParsedFile` production stays dormant until a
- *      language migrates.
+ *      hook. Returns `undefined`; zero work done until that provider migrates.
  *   2. Invokes the AST-aware hook when a worker root node is available,
  *      falling back to the source-text hook only for compatibility, then
  *      feeds the captures to `ScopeExtractor.extract`.
  *   3. **Swallows exceptions from either side.** A failure here returns
- *      `undefined` and emits a warning via `onWarn`; legacy parsing on
- *      the same file continues unaffected by the scope-extraction miss.
- *      Scope-based resolution is the new path under construction — it
- *      must not destabilize the legacy DAG.
+ *      `undefined` and emits a warning via `onWarn`; normal symbol
+ *      extraction on the same file continues unaffected by the
+ *      scope-extraction miss.
  */
 
 import type { ParsedFile, SupportedLanguages } from 'avmatrix-shared';

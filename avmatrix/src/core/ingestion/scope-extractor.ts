@@ -1,7 +1,6 @@
 /**
  * `ScopeExtractor` — the central, source-agnostic driver that turns a
- * language provider's `CaptureMatch[]` into a `ParsedFile`
- * (RFC §5.3 + §3.2 Phase 1; Ring 2 PKG #919).
+ * language provider's `CaptureMatch[]` into a `ParsedFile`.
  *
  * Exactly one entry point: `extract(matches, filePath, provider) → ParsedFile`.
  * Runs a five-pass pipeline over the matches. Each pass is internal; the
@@ -19,8 +18,8 @@
  *     same ParsedFile) when providers are pure. No side effects, no I/O.
  *   - **Centralized invariant enforcement.** Structural invariants on the
  *     scope tree (non-module has parent; parent contains child; siblings
- *     don't overlap) are enforced by `buildScopeTree` from Ring 2 SHARED
- *     (#912). Malformed inputs throw `ScopeTreeInvariantError`.
+ *     don't overlap) are enforced by `buildScopeTree`. Malformed inputs
+ *     throw `ScopeTreeInvariantError`.
  *
  * ## The five passes
  *
@@ -85,8 +84,7 @@ import type { LanguageProvider } from './language-provider.js';
  * as its own type so:
  *
  *   - Tests can implement just these six hooks without faking the whole
- *     `LanguageProvider` interface (which is ~40 fields including the
- *     legacy-DAG surface).
+ *     `LanguageProvider` interface.
  *   - The extractor's dependency contract stays explicit — adding a new
  *     hook read requires updating this type.
  *

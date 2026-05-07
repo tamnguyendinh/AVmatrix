@@ -24,7 +24,7 @@ const makeDiff = (
   evidenceKinds: readonly ResolutionEvidence['kind'][] = [],
 ): ShadowDiff => ({
   callsite: { filePath: 'src/x.ts', line: 1, col: 0, calledName: 'foo' },
-  legacy: null,
+  baseline: null,
   newResult: null,
   agreement,
   evidenceDelta: evidenceKinds.map((kind) => ({ kind, weight: 0.3 })),
@@ -50,7 +50,7 @@ describe('aggregateDiffs — empty input', () => {
     expect(report.overall).toEqual({
       totalCalls: 0,
       bothAgree: 0,
-      onlyLegacy: 0,
+      onlyBaseline: 0,
       onlyNew: 0,
       bothDisagree: 0,
       bothEmpty: 0,
@@ -76,7 +76,7 @@ describe('aggregateDiffs — single language', () => {
       language: SupportedLanguages.Python,
       totalCalls: 3,
       bothAgree: 3,
-      onlyLegacy: 0,
+      onlyBaseline: 0,
       onlyNew: 0,
       bothDisagree: 0,
       bothEmpty: 0,
@@ -88,7 +88,7 @@ describe('aggregateDiffs — single language', () => {
     const diffs = [
       entry(SupportedLanguages.TypeScript, makeDiff('both-agree')),
       entry(SupportedLanguages.TypeScript, makeDiff('both-agree')),
-      entry(SupportedLanguages.TypeScript, makeDiff('only-legacy', ['global-name'])),
+      entry(SupportedLanguages.TypeScript, makeDiff('only-baseline', ['global-name'])),
       entry(SupportedLanguages.TypeScript, makeDiff('only-new', ['local'])),
       entry(SupportedLanguages.TypeScript, makeDiff('both-disagree', ['import'])),
       entry(SupportedLanguages.TypeScript, makeDiff('both-empty')),
@@ -98,7 +98,7 @@ describe('aggregateDiffs — single language', () => {
     const row = findRow(report.perLanguage, SupportedLanguages.TypeScript);
     expect(row.totalCalls).toBe(7);
     expect(row.bothAgree).toBe(2);
-    expect(row.onlyLegacy).toBe(1);
+    expect(row.onlyBaseline).toBe(1);
     expect(row.onlyNew).toBe(1);
     expect(row.bothDisagree).toBe(1);
     expect(row.bothEmpty).toBe(2);
@@ -149,7 +149,7 @@ describe('aggregateDiffs — multiple languages', () => {
     expect(report.overall).toEqual({
       totalCalls: 5,
       bothAgree: 3,
-      onlyLegacy: 0,
+      onlyBaseline: 0,
       onlyNew: 1,
       bothDisagree: 1,
       bothEmpty: 0,
@@ -182,7 +182,7 @@ describe('aggregateDiffs — evidence breakdown', () => {
   it('counts divergence evidence kinds across non-agreeing rows only', () => {
     const diffs = [
       entry(SupportedLanguages.Go, makeDiff('both-disagree', ['import', 'owner-match'])),
-      entry(SupportedLanguages.Go, makeDiff('only-legacy', ['import', 'global-name'])),
+      entry(SupportedLanguages.Go, makeDiff('only-baseline', ['import', 'global-name'])),
       entry(SupportedLanguages.Go, makeDiff('only-new', ['local'])),
       // both-agree contributes 0 to evidence breakdown regardless of any attached evidence
       entry(SupportedLanguages.Go, makeDiff('both-agree', ['import'])),
