@@ -89,7 +89,7 @@ SCHEMA:
 - Nodes: File, Folder, Function, Class, Interface, Method, CodeElement, Community, Process, Route, Tool
 - Multi-language nodes (use backticks): \`Struct\`, \`Enum\`, \`Trait\`, \`Impl\`, etc.
 - All edges via single CodeRelation table with 'type' property
-- Edge types: CONTAINS, DEFINES, CALLS, IMPORTS, EXTENDS, IMPLEMENTS, HAS_METHOD, HAS_PROPERTY, ACCESSES, METHOD_OVERRIDES, METHOD_IMPLEMENTS, MEMBER_OF, STEP_IN_PROCESS, HANDLES_ROUTE, FETCHES, HANDLES_TOOL, ENTRY_POINT_OF
+- Edge types: CONTAINS, DEFINES, CALLS, IMPORTS, USES, INHERITS, EXTENDS, IMPLEMENTS, HAS_METHOD, HAS_PROPERTY, ACCESSES, METHOD_OVERRIDES, METHOD_IMPLEMENTS, MEMBER_OF, STEP_IN_PROCESS, HANDLES_ROUTE, FETCHES, HANDLES_TOOL, ENTRY_POINT_OF
 - Edge properties: type (STRING), confidence (DOUBLE), reason (STRING), step (INT32), resolutionSource (STRING), evidence (STRING JSON), fileHash (STRING)
 
 EXAMPLES:
@@ -139,7 +139,7 @@ TIPS:
   {
     name: 'context',
     description: `360-degree view of a single code symbol.
-Shows categorized incoming/outgoing references (calls, imports, extends, implements, methods, properties, overrides), process participation, and file location.
+Shows categorized incoming/outgoing references (calls, imports, uses, inherits, extends, implements, methods, properties, overrides), process participation, and file location.
 
 WHEN TO USE: After query() to understand a specific symbol in depth. When you need to know all callers, callees, and what execution flows a symbol participates in.
 AFTER THIS: Use impact() if planning changes, or READ avmatrix://repo/{name}/process/{processName} for full execution trace.
@@ -258,11 +258,11 @@ Depth groups:
 - d=2: LIKELY AFFECTED (indirect)
 - d=3: MAY NEED TESTING (transitive)
 
-TIP: Default traversal uses CALLS/IMPORTS/EXTENDS/IMPLEMENTS. For class members, include HAS_METHOD and HAS_PROPERTY in relationTypes. For field access analysis, include ACCESSES in relationTypes.
+TIP: Default traversal uses CALLS/IMPORTS/USES/INHERITS/EXTENDS/IMPLEMENTS. For class members, include HAS_METHOD and HAS_PROPERTY in relationTypes. For field access analysis, include ACCESSES in relationTypes.
 
 Handles disambiguation: when multiple symbols share the target name, returns ranked candidates (each with a relevance score) instead of silently picking one. Use target_uid for zero-ambiguity lookup, or narrow with file_path and/or kind hints.
 
-EdgeType: CALLS, IMPORTS, EXTENDS, IMPLEMENTS, HAS_METHOD, HAS_PROPERTY, METHOD_OVERRIDES, METHOD_IMPLEMENTS, ACCESSES
+EdgeType: CALLS, IMPORTS, USES, INHERITS, EXTENDS, IMPLEMENTS, HAS_METHOD, HAS_PROPERTY, METHOD_OVERRIDES, METHOD_IMPLEMENTS, ACCESSES
 Confidence: 1.0 = certain, <0.8 = fuzzy match`,
     inputSchema: buildImpactInputSchema(),
   },

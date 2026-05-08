@@ -106,10 +106,12 @@ describe('isWriteQuery', () => {
 
 describe('VALID_RELATION_TYPES', () => {
   it('contains all expected relation types', () => {
-    expect(VALID_RELATION_TYPES.size).toBe(15);
+    expect(VALID_RELATION_TYPES.size).toBe(17);
     for (const t of [
       'CALLS',
       'IMPORTS',
+      'USES',
+      'INHERITS',
       'EXTENDS',
       'IMPLEMENTS',
       'HAS_METHOD',
@@ -130,7 +132,6 @@ describe('VALID_RELATION_TYPES', () => {
 
   it('rejects invalid relation types', () => {
     expect(VALID_RELATION_TYPES.has('CONTAINS')).toBe(false);
-    expect(VALID_RELATION_TYPES.has('USES')).toBe(false);
     expect(VALID_RELATION_TYPES.has('calls')).toBe(false); // case-sensitive
     expect(VALID_RELATION_TYPES.has('DROP_TABLE')).toBe(false);
   });

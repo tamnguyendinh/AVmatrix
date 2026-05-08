@@ -6,6 +6,8 @@ export type ImpactDirection = (typeof IMPACT_ALLOWED_DIRECTIONS)[number];
 export const IMPACT_ALLOWED_RELATION_TYPES = [
   'CALLS',
   'IMPORTS',
+  'USES',
+  'INHERITS',
   'EXTENDS',
   'IMPLEMENTS',
   'HAS_METHOD',
@@ -25,6 +27,8 @@ export type ImpactRelationType = (typeof IMPACT_ALLOWED_RELATION_TYPES)[number];
 export const IMPACT_DEFAULT_RELATION_TYPES = [
   'CALLS',
   'IMPORTS',
+  'USES',
+  'INHERITS',
   'EXTENDS',
   'IMPLEMENTS',
   'METHOD_OVERRIDES',

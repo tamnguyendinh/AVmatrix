@@ -360,6 +360,8 @@ relationships:
   - DEFINES: File defines a symbol
   - CALLS: Function/method invocation
   - IMPORTS: Module imports
+  - USES: Symbol uses a type/imported symbol dependency
+  - INHERITS: Normalized scope-resolved inheritance or heritage dependency
   - EXTENDS: Class inheritance
   - IMPLEMENTS: Interface implementation
   - HAS_METHOD: Class/Struct/Interface owns a Method

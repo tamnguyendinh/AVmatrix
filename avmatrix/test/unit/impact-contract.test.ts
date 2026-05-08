@@ -73,4 +73,17 @@ describe('impact contract parser', () => {
 
     expect(result.value.relationTypes).toEqual(['OVERRIDES', 'METHOD_OVERRIDES']);
   });
+
+  it('accepts scope-resolved USES and INHERITS relation filters', () => {
+    const result = parseImpactInput({
+      target: 'User',
+      direction: 'upstream',
+      relationTypes: ['USES', 'INHERITS'],
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.relationTypes).toEqual(['USES', 'INHERITS']);
+  });
 });

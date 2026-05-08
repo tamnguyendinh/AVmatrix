@@ -118,6 +118,8 @@ export const VALID_RELATION_TYPES = new Set([...IMPACT_ALLOWED_RELATION_TYPES]);
  *
  * Rationale:
  *   CALLS / IMPORTS  – direct, strongly-typed references → 0.9
+ *   USES             – type/import-use dependency, scope-resolved → 0.85
+ *   INHERITS         – normalized scope-resolved heritage edge → 0.85
  *   EXTENDS          – class hierarchy, statically verifiable → 0.85
  *   IMPLEMENTS       – interface contract, statically verifiable → 0.85
  *   METHOD_OVERRIDES  – method override, statically verifiable → 0.85
@@ -131,6 +133,8 @@ export const VALID_RELATION_TYPES = new Set([...IMPACT_ALLOWED_RELATION_TYPES]);
 export const IMPACT_RELATION_CONFIDENCE: Readonly<Record<string, number>> = {
   CALLS: 0.9,
   IMPORTS: 0.9,
+  USES: 0.85,
+  INHERITS: 0.85,
   EXTENDS: 0.85,
   IMPLEMENTS: 0.85,
   METHOD_OVERRIDES: 0.85,
@@ -1543,7 +1547,7 @@ export class LocalBackend {
       repo.id,
       (includeOptionalAuditFields) => `
       MATCH (caller)-[r:CodeRelation]->(n {id: $symId})
-      WHERE r.type IN ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS', 'HAS_METHOD', 'HAS_PROPERTY', 'METHOD_OVERRIDES', 'OVERRIDES', 'METHOD_IMPLEMENTS', 'ACCESSES']
+      WHERE r.type IN ['CALLS', 'IMPORTS', 'USES', 'INHERITS', 'EXTENDS', 'IMPLEMENTS', 'HAS_METHOD', 'HAS_PROPERTY', 'METHOD_OVERRIDES', 'OVERRIDES', 'METHOD_IMPLEMENTS', 'ACCESSES']
       RETURN r.type AS relType, caller.id AS uid, caller.name AS name, caller.filePath AS filePath, labels(caller)[0] AS kind,
              ${relationshipAuditReturnFields('r', includeOptionalAuditFields)}
       LIMIT 30
@@ -1636,7 +1640,7 @@ export class LocalBackend {
       repo.id,
       (includeOptionalAuditFields) => `
       MATCH (n {id: $symId})-[r:CodeRelation]->(target)
-      WHERE r.type IN ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS', 'HAS_METHOD', 'HAS_PROPERTY', 'METHOD_OVERRIDES', 'OVERRIDES', 'METHOD_IMPLEMENTS', 'ACCESSES']
+      WHERE r.type IN ['CALLS', 'IMPORTS', 'USES', 'INHERITS', 'EXTENDS', 'IMPLEMENTS', 'HAS_METHOD', 'HAS_PROPERTY', 'METHOD_OVERRIDES', 'OVERRIDES', 'METHOD_IMPLEMENTS', 'ACCESSES']
       RETURN r.type AS relType, target.id AS uid, target.name AS name, target.filePath AS filePath, labels(target)[0] AS kind,
              ${relationshipAuditReturnFields('r', includeOptionalAuditFields)}
       LIMIT 30

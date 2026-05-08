@@ -26,6 +26,14 @@ describe('IMPACT_RELATION_CONFIDENCE', () => {
     expect(IMPACT_RELATION_CONFIDENCE['IMPORTS']).toBe(0.9);
   });
 
+  it('USES has confidence 0.85 (scope-resolved type/import-use dependency)', () => {
+    expect(IMPACT_RELATION_CONFIDENCE['USES']).toBe(0.85);
+  });
+
+  it('INHERITS has confidence 0.85 (scope-resolved heritage dependency)', () => {
+    expect(IMPACT_RELATION_CONFIDENCE['INHERITS']).toBe(0.85);
+  });
+
   it('EXTENDS has confidence 0.85 (statically verifiable inheritance)', () => {
     expect(IMPACT_RELATION_CONFIDENCE['EXTENDS']).toBe(0.85);
   });
@@ -78,6 +86,8 @@ describe('confidenceForRelType', () => {
   it('returns the correct floor for known types', () => {
     expect(confidenceForRelType('CALLS')).toBe(0.9);
     expect(confidenceForRelType('IMPORTS')).toBe(0.9);
+    expect(confidenceForRelType('USES')).toBe(0.85);
+    expect(confidenceForRelType('INHERITS')).toBe(0.85);
     expect(confidenceForRelType('EXTENDS')).toBe(0.85);
     expect(confidenceForRelType('IMPLEMENTS')).toBe(0.85);
     expect(confidenceForRelType('METHOD_OVERRIDES')).toBe(0.85);
