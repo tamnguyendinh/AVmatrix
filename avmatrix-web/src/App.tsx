@@ -20,12 +20,8 @@ import {
   type ConnectResult,
   type BackendRepo,
 } from './services/backend-client';
+import { includeRepoInList } from './services/repo-list';
 import { DEFAULT_BACKEND_URL, ERROR_RESET_DELAY_MS } from './config/ui-constants';
-
-const includeRepoInList = (repos: BackendRepo[], repo: BackendRepo): BackendRepo[] => {
-  if (repos.some((item) => item.name === repo.name)) return repos;
-  return [repo, ...repos];
-};
 
 const AppContent = () => {
   const { chatRuntimeBridge } = useAppState();
@@ -266,17 +262,20 @@ const AppContentBody = () => {
         onSwitchRepo={switchRepo}
         onReposChanged={(repos) => setAvailableRepos(repos)}
         onAnalyzeComplete={async (repoName) => {
-          // A new repo was just indexed via the header dropdown.
-          // Refresh the repo list, connect to the new repo, and switch to it.
-          // Retry once after 1s if the repo isn't found yet (server may still
-          // be reinitializing after the worker completed).
+          // A repo was just fully indexed via the header dropdown. Connect to
+          // the fresh graph, then make the dropdown list reflect that repo even
+          // if the backend repo registry refresh lands a little late.
           const url = serverBaseUrl ?? 'http://localhost:4747';
           for (let attempt = 0; attempt < 2; attempt++) {
             try {
-              const repos = await fetchRepos();
-              const result = await connectToServer(url, undefined, undefined, repoName);
+              const repos = await fetchRepos().catch(() => [] as BackendRepo[]);
+              const result = await connectToServer(url, undefined, undefined, repoName, {
+                awaitAnalysis: true,
+              });
+              const reposWithAnalyzedRepo = includeRepoInList(repos, result.repoInfo);
+              setAvailableRepos(reposWithAnalyzedRepo);
               await handleServerConnect(result);
-              const refreshedRepos = await fetchRepos().catch(() => repos);
+              const refreshedRepos = await fetchRepos().catch(() => reposWithAnalyzedRepo);
               setAvailableRepos(includeRepoInList(refreshedRepos, result.repoInfo));
               setServerBaseUrl(normalizeServerUrl(url));
               setProgress(null);
