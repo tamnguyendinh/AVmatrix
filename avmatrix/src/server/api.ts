@@ -63,6 +63,13 @@ export const LOCAL_ANALYZE_PREPARING_PROGRESS: AnalyzeJobProgress = {
   message: 'Preparing local analysis...',
 };
 
+export const buildAnalyzeWorkerOptions = (
+  body: { embeddings?: unknown; force?: unknown } = {},
+) => ({
+  force: true,
+  embeddings: !!body.embeddings,
+});
+
 /**
  * Maximum time the /api/repo hold-queue will wait for an active analysis job to finish.
  * Must stay in sync with the frontend repo-info timeout.
@@ -978,7 +985,7 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
   // POST /api/analyze — start a new analysis job
   app.post('/api/analyze', async (req, res) => {
     try {
-      const { url: repoUrl, path: repoLocalPath, force, embeddings } = req.body;
+      const { url: repoUrl, path: repoLocalPath, embeddings } = req.body;
 
       // Input type validation
       if (repoUrl !== undefined && typeof repoUrl !== 'string') {
@@ -1154,7 +1161,7 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
             child.send({
               type: 'start',
               repoPath: targetPath,
-              options: { force: !!force, embeddings: !!embeddings },
+              options: buildAnalyzeWorkerOptions({ embeddings }),
             });
           };
 

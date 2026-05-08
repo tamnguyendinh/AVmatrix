@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { Loader2, Check } from '@/lib/lucide-icons';
 import {
+  startAnalyze,
   connectToServer,
   deleteRepo,
   fetchRepos,
+  streamAnalyzeProgress,
   type ConnectResult,
   type BackendRepo,
 } from '../services/backend-client';
@@ -142,6 +144,7 @@ export const DropZone = ({ onServerConnect }: DropZoneProps) => {
   );
   const [loadingMessage, setLoadingMessage] = useState('');
   const abortControllerRef = useRef<AbortController | null>(null);
+  const analyzeSseRef = useRef<AbortController | null>(null);
   const [detectedRepos, setDetectedRepos] = useState<BackendRepo[]>([]);
 
   // Auto-connect to the detected server — fetch repo list and show the
@@ -173,9 +176,8 @@ export const DropZone = ({ onServerConnect }: DropZoneProps) => {
   const handleAutoConnectRef = useRef(handleAutoConnect);
   handleAutoConnectRef.current = handleAutoConnect;
 
-  // Shared handler: connect to a specific repo by name (used by both repo
-  // card selection on the landing screen and post-analysis completion).
-  const connectToRepo = (repoName: string) => {
+  // Load the graph after an analyze job has completed.
+  const loadRepoGraph = (repoName: string) => {
     autoConnectRan.current = true;
     setPhase('loading');
     setLoadingMessage('Loading graph...');
@@ -210,6 +212,48 @@ export const DropZone = ({ onServerConnect }: DropZoneProps) => {
         setPhase(detectedRepos.length > 0 ? 'landing' : 'analyze');
       } finally {
         abortControllerRef.current = null;
+      }
+    })();
+  };
+
+  // Repo-card selection is analyze-first: rebuild the repo, then load the new graph.
+  const analyzeRepoAndLoad = (repoName: string) => {
+    const repo = detectedRepos.find((candidate) => candidate.name === repoName);
+    const repoPath = repo?.path || repo?.repoPath;
+    if (!repoPath) {
+      setError(`Repository path not found for ${repoName}`);
+      setPhase(detectedRepos.length > 0 ? 'landing' : 'analyze');
+      return;
+    }
+
+    autoConnectRan.current = true;
+    setPhase('loading');
+    setLoadingMessage('Starting full analysis...');
+    setError(null);
+
+    (async () => {
+      try {
+        const { jobId } = await startAnalyze({ path: repoPath });
+        const controller = streamAnalyzeProgress(
+          jobId,
+          (progress) => {
+            const pct = Math.max(0, Math.min(100, Math.round(progress.percent)));
+            setLoadingMessage(`Analyzing ${repo.name}... ${pct}% - ${progress.message}`);
+          },
+          (data) => {
+            analyzeSseRef.current = null;
+            loadRepoGraph(data.repoName ?? repo.name);
+          },
+          (errMsg) => {
+            analyzeSseRef.current = null;
+            setError(errMsg || `Failed to analyze ${repo.name}`);
+            setPhase(detectedRepos.length > 0 ? 'landing' : 'analyze');
+          },
+        );
+        analyzeSseRef.current = controller;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : `Failed to analyze ${repo.name}`);
+        setPhase(detectedRepos.length > 0 ? 'landing' : 'analyze');
       }
     })();
   };
@@ -270,6 +314,7 @@ export const DropZone = ({ onServerConnect }: DropZoneProps) => {
   useEffect(() => {
     return () => {
       if (autoConnectTimerRef.current !== null) clearTimeout(autoConnectTimerRef.current);
+      analyzeSseRef.current?.abort();
       abortControllerRef.current?.abort();
     };
   }, []);
@@ -290,12 +335,12 @@ export const DropZone = ({ onServerConnect }: DropZoneProps) => {
         {displayPhase && (
           <Crossfade activeKey={displayPhase}>
             {displayPhase === 'onboarding' && <OnboardingGuide isPolling={isPolling} />}
-            {displayPhase === 'analyze' && <AnalyzeOnboarding onComplete={connectToRepo} />}
+            {displayPhase === 'analyze' && <AnalyzeOnboarding onComplete={loadRepoGraph} />}
             {displayPhase === 'landing' && (
               <RepoLanding
                 repos={detectedRepos}
-                onSelectRepo={connectToRepo}
-                onAnalyzeComplete={connectToRepo}
+                onSelectRepo={analyzeRepoAndLoad}
+                onAnalyzeComplete={loadRepoGraph}
                 onRemoveRepo={removeRepoFromLanding}
               />
             )}

@@ -11,8 +11,7 @@
  *          └─ RepoAnalyzer (variant="onboarding")
  *
  * When the analysis job completes, onComplete fires with the repoName, and
- * DropZone's handleAutoConnect re-runs (now that repos > 0), transitioning
- * the app to the graph explorer.
+ * DropZone loads the graph produced by that analyze run.
  */
 
 import { FolderOpen } from '@/lib/lucide-icons';

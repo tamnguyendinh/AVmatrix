@@ -10,11 +10,13 @@ import {
 
 type AnalyzeRequestHasUrl = 'url' extends keyof AnalyzeRequest ? true : false;
 type AnalyzeRequestPathOptional = undefined extends AnalyzeRequest['path'] ? true : false;
+type AnalyzeRequestHasForce = 'force' extends keyof AnalyzeRequest ? true : false;
 type JobStatusHasRepoUrl = 'repoUrl' extends keyof JobStatus ? true : false;
 type JobStatusAllowsCloning = 'cloning' extends JobStatus['status'] ? true : false;
 
 const analyzeRequestHasUrl: AnalyzeRequestHasUrl = false;
 const analyzeRequestPathOptional: AnalyzeRequestPathOptional = false;
+const analyzeRequestHasForce: AnalyzeRequestHasForce = false;
 const jobStatusHasRepoUrl: JobStatusHasRepoUrl = false;
 const jobStatusAllowsCloning: JobStatusAllowsCloning = false;
 
@@ -26,6 +28,7 @@ describe('analyze contract local-only', () => {
   it('keeps the active analyze contract path-only', () => {
     expect(analyzeRequestHasUrl).toBe(false);
     expect(analyzeRequestPathOptional).toBe(false);
+    expect(analyzeRequestHasForce).toBe(false);
     expect(jobStatusHasRepoUrl).toBe(false);
     expect(jobStatusAllowsCloning).toBe(false);
   });
@@ -41,7 +44,7 @@ describe('analyze contract local-only', () => {
     );
     vi.stubGlobal('fetch', fetchMock);
 
-    await startAnalyze({ path: 'repos/avmatrix', force: true });
+    await startAnalyze({ path: 'repos/avmatrix' });
 
     expect(fetchMock).toHaveBeenCalledWith(
       'http://localhost:4747/api/analyze',
@@ -54,7 +57,6 @@ describe('analyze contract local-only', () => {
     const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
     expect(JSON.parse(String(init.body))).toEqual({
       path: 'repos/avmatrix',
-      force: true,
     });
   });
 

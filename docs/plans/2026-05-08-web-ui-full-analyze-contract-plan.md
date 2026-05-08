@@ -52,24 +52,24 @@ It should not do this for any default repo/open/analyze action:
 
 ## Implementation Plan
 
-- [ ] Keep CLI behavior unchanged.
-- [ ] Keep `runFullAnalysis` and the pipeline behavior unchanged unless a direct Web API wrapper bug requires a minimal fix.
-- [ ] Make backend `/api/analyze` always start a full analyze for Web/API analyze requests by passing `force: true` to the analyze worker.
-- [ ] Remove Web UI reliance on client-provided `force` for analyze semantics.
-- [ ] Keep any `force` request field only as legacy-tolerated input if needed, but do not let it make Web analyze non-full.
-- [ ] Update local-path analyze flow to call `/api/analyze`, wait for completion, then load the newly generated graph.
-- [ ] Update header re-analyze flow to call the same analyze path without adding special semantics beyond full analyze.
-- [ ] Update repo-card click flow so it starts full analyze for `repo.path`, streams progress, and only connects/loads graph after completion.
-- [ ] Ensure repo-card click no longer calls graph load directly as the primary action.
-- [ ] Keep graph loading as a post-analyze rendering step, not the semantic action.
-- [ ] Adjust user-visible progress wording so analyze and graph loading are distinct steps.
-- [ ] Add or update backend tests proving `/api/analyze` sends worker options with `force: true` even when the request omits `force` or sends `force: false`.
-- [ ] Add or update Web tests proving repo-card click starts analyze before graph loading.
-- [ ] Add or update Web tests proving path analyze starts analyze and then loads the completed repo graph.
-- [ ] Add or update Web tests proving re-analyze uses the same full-analyze flow.
-- [ ] Run full launcher build before tests.
-- [ ] Run targeted backend and Web tests for the analyze flows.
-- [ ] Run broader relevant test suites if targeted tests pass.
+- [x] Keep CLI behavior unchanged.
+- [x] Keep `runFullAnalysis` and the pipeline behavior unchanged unless a direct Web API wrapper bug requires a minimal fix.
+- [x] Make backend `/api/analyze` always start a full analyze for Web/API analyze requests by passing `force: true` to the analyze worker.
+- [x] Remove Web UI reliance on client-provided `force` for analyze semantics.
+- [x] Keep any `force` request field only as legacy-tolerated input if needed, but do not let it make Web analyze non-full.
+- [x] Update local-path analyze flow to call `/api/analyze`, wait for completion, then load the newly generated graph.
+- [x] Update header re-analyze flow to call the same analyze path without adding special semantics beyond full analyze.
+- [x] Update repo-card click flow so it starts full analyze for `repo.path`, streams progress, and only connects/loads graph after completion.
+- [x] Ensure repo-card click no longer calls graph load directly as the primary action.
+- [x] Keep graph loading as a post-analyze rendering step, not the semantic action.
+- [x] Adjust user-visible progress wording so analyze and graph loading are distinct steps.
+- [x] Add or update backend tests proving `/api/analyze` sends worker options with `force: true` even when the request omits `force` or sends `force: false`.
+- [x] Add or update Web tests proving repo-card click starts analyze before graph loading.
+- [x] Add or update Web tests proving path analyze starts analyze and then loads the completed repo graph.
+- [x] Add or update Web tests proving re-analyze uses the same full-analyze flow.
+- [x] Run full launcher build before tests.
+- [x] Run targeted backend and Web tests for the analyze flows.
+- [x] Run broader relevant test suites if targeted tests pass.
 
 ## Acceptance Criteria
 
@@ -80,3 +80,15 @@ It should not do this for any default repo/open/analyze action:
 - Graph loading is visibly and structurally a post-analyze step.
 - Tests lock the Web/API contract so future edits cannot reintroduce cached-load-as-analyze behavior.
 
+## Validation Log
+
+- `avmatrix-launcher\build.ps1` passed before test validation.
+- `avmatrix/test/unit/analyze-api.test.ts` passed.
+- Web targeted analyze-flow tests passed:
+  - `analyze-contract.local-only.test.tsx`
+  - `RepoAnalyzer.local-only.test.tsx`
+  - `DropZone.full-analyze-flow.test.tsx`
+  - `Header.reanalyze-flow.test.tsx`
+  - `Branding.local-only.test.tsx`
+- `avmatrix npm test` passed.
+- `avmatrix-web npm test` passed.

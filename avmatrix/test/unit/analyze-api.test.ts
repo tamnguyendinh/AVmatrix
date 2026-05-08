@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { resolveAnalyzeRepoPath } from '../../src/server/local-path-policy.js';
 import {
   LOCAL_ANALYZE_PREPARING_PROGRESS,
+  buildAnalyzeWorkerOptions,
   isActiveAnalyzeJobStatus,
 } from '../../src/server/api.js';
 import type { AnalyzeJob } from '../../src/server/analyze-job.js';
@@ -35,6 +36,18 @@ describe('analyze API local path policy', () => {
       phase: 'analyzing',
       percent: 0,
       message: 'Preparing local analysis...',
+    });
+  });
+
+  it('builds full-analyze worker options for Web/API analyze requests', () => {
+    expect(buildAnalyzeWorkerOptions()).toEqual({ force: true, embeddings: false });
+    expect(buildAnalyzeWorkerOptions({ embeddings: true })).toEqual({
+      force: true,
+      embeddings: true,
+    });
+    expect(buildAnalyzeWorkerOptions({ force: false })).toEqual({
+      force: true,
+      embeddings: false,
     });
   });
 

@@ -657,7 +657,6 @@ export const fetchClusterDetail = async (repo: string, name: string): Promise<un
 
 export interface AnalyzeRequest {
   path: string;
-  force?: boolean;
   embeddings?: boolean;
 }
 

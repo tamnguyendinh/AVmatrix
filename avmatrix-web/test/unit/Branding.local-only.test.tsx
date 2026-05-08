@@ -48,7 +48,7 @@ describe('AVmatrix branding on active local surfaces', () => {
     render(<RepoLanding repos={[]} onSelectRepo={() => {}} onAnalyzeComplete={() => {}} />);
 
     expect(screen.getByText('AVmatrix')).toBeInTheDocument();
-    expect(screen.getByText('Open Repository')).toBeInTheDocument();
+    expect(screen.getByText('Analyze Repository')).toBeInTheDocument();
     expect(
       screen.getByText(/Local only\. No repository data leaves this machine\./i),
     ).toBeInTheDocument();

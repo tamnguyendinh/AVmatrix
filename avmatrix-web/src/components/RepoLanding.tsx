@@ -2,7 +2,7 @@
  * RepoLanding
  *
  * Unified landing screen shown when the backend is connected and at least one
- * repository is indexed. Displays pre-indexed repos as selectable cards, plus
+ * repository is indexed. Displays known repos as full-analyze entry cards, plus
  * an "Analyze a New Repository" section powered by RepoAnalyzer.
  *
  * Rendering context:
@@ -154,9 +154,9 @@ export const RepoLanding = ({
       <div className="relative mb-6">
         <div className="text-center">
           <h1 className="press-title text-4xl leading-snug">AVmatrix</h1>
-          <h2 className="press-title mt-6 text-2xl leading-snug">Open Repository</h2>
+          <h2 className="press-title mt-6 text-2xl leading-snug">Analyze Repository</h2>
           <p className="press-reading mx-auto mt-2 text-center text-text-secondary">
-            Choose an indexed local repository.
+            Choose a local repository to rebuild its graph before opening it.
           </p>
         </div>
       </div>

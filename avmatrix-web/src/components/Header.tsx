@@ -303,7 +303,6 @@ export const Header = ({
                                 try {
                                   const { jobId } = await startAnalyze({
                                     path: repo.path,
-                                    force: true,
                                   });
                                   reanalyzeSseRef.current = streamAnalyzeProgress(
                                     jobId,
