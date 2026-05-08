@@ -39,9 +39,9 @@ interface HeaderProps {
   onFocusNode?: (nodeId: string) => void;
   availableRepos?: BackendRepo[];
   openRepoAnalyzerRequestId?: number;
-  onSwitchRepo?: (repoName: string) => void;
+  onSwitchRepo?: (repo: string) => void;
   /** Called when a newly-analyzed repo is ready; triggers connectToServer. */
-  onAnalyzeComplete?: (repoName: string) => void;
+  onAnalyzeComplete?: (repo: string) => void;
   /** Called after a repo is deleted or list needs refresh. */
   onReposChanged?: (repos: BackendRepo[]) => void;
 }
@@ -249,10 +249,11 @@ export const Header = ({
                   <div className="p-4">
                     <RepoAnalyzer
                       variant="sheet"
-                      onComplete={(repoName) => {
+                      onComplete={(repo) => {
                         setShowAnalyzer(false);
                         setIsRepoDropdownOpen(false);
-                        onAnalyzeComplete?.(repoName);
+                        const repoTarget = repo.repoPath ?? repo.repoName;
+                        if (repoTarget) onAnalyzeComplete?.(repoTarget);
                       }}
                       onCancel={() => setShowAnalyzer(false)}
                     />
@@ -265,7 +266,7 @@ export const Header = ({
                         <div className="press-eyebrow px-3 pt-3 pb-2">Repositories</div>
                         {availableRepos.map((repo) => (
                           <div
-                            key={repo.name}
+                            key={repo.repoPath ?? repo.path ?? repo.name}
                             className={`group flex items-center gap-2 px-4 py-3 transition-colors ${
                               repo.name === projectName
                                 ? 'border-l-[3px] border-border-strong bg-base'
@@ -274,7 +275,7 @@ export const Header = ({
                           >
                             <button
                               onClick={() => {
-                                if (repo.name !== projectName) onSwitchRepo?.(repo.name);
+                                onSwitchRepo?.(repo.repoPath ?? repo.path);
                                 setIsRepoDropdownOpen(false);
                               }}
                               className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left"
@@ -301,17 +302,18 @@ export const Header = ({
                                   message: 'Starting...',
                                 });
                                 try {
+                                  const repoPath = repo.repoPath ?? repo.path;
                                   const { jobId } = await startAnalyze({
-                                    path: repo.path,
+                                    path: repoPath,
                                   });
                                   reanalyzeSseRef.current = streamAnalyzeProgress(
                                     jobId,
                                     (p) => setReanalyzeProgress(p),
-                                    () => {
+                                    (data) => {
                                       setReanalyzing(null);
                                       setReanalyzeProgress(null);
                                       reanalyzeSseRef.current = null;
-                                      onAnalyzeComplete?.(repo.name);
+                                      onAnalyzeComplete?.(data.repoPath ?? repoPath);
                                     },
                                     (errMsg) => {
                                       console.error('Re-analyze failed:', errMsg);

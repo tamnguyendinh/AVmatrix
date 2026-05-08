@@ -793,16 +793,15 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
 
         // Build graph for visualization
         const repoPath = result.repoInfo.repoPath ?? result.repoInfo.path;
-        // Prefer the registry name, then normalize Windows \ and Unix / paths
+        // Display the registry name, but keep repo-scoped calls bound to the loaded path.
         const pName =
-          repoName ||
           result.repoInfo.name ||
           (repoPath || '').replace(/\\/g, '/').split('/').filter(Boolean).pop() ||
           'server-project';
         setProjectName(pName);
-        repoRef.current = pName;
+        repoRef.current = repoPath || repoName || pName;
 
-        pNameStr = pName;
+        pNameStr = repoPath || pName;
 
         const newGraph = createKnowledgeGraph();
         for (const node of result.nodes) newGraph.addNode(node);

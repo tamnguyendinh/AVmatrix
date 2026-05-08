@@ -12,6 +12,7 @@ import {
   startAnalyze,
   cancelAnalyze,
   streamAnalyzeProgress,
+  type AnalyzeCompleteData,
   type JobProgress,
 } from '../services/backend-client';
 import { AnalyzeProgress } from './AnalyzeProgress';
@@ -89,7 +90,7 @@ type InternalPhase = 'input' | 'starting' | 'analyzing' | 'done' | 'error';
 
 export interface RepoAnalyzerProps {
   variant: 'onboarding' | 'sheet';
-  onComplete: (repoName: string) => void;
+  onComplete: (repo: AnalyzeCompleteData) => void;
   onCancel?: () => void;
 }
 
@@ -171,7 +172,7 @@ export const RepoAnalyzer = ({ variant, onComplete, onCancel }: RepoAnalyzerProp
           sseControllerRef.current = null;
           completeTimerRef.current = setTimeout(() => {
             completeTimerRef.current = null;
-            onComplete(name);
+            onComplete({ repoName: name, repoPath: data.repoPath ?? localPath.trim() });
           }, 1200);
         },
         (errMsg) => {

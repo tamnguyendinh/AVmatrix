@@ -5,7 +5,18 @@ const startAnalyzeMock = vi.fn();
 const streamAnalyzeProgressMock = vi.fn();
 
 vi.mock('../../src/components/RepoAnalyzer', () => ({
-  RepoAnalyzer: () => <div data-testid="repo-analyzer">repo-analyzer</div>,
+  RepoAnalyzer: ({
+    onComplete,
+  }: {
+    onComplete: (repo: { repoName?: string; repoPath?: string }) => void;
+  }) => (
+    <button
+      data-testid="repo-analyzer"
+      onClick={() => onComplete({ repoName: 'WrongRepo', repoPath: 'F:\\NewRepo' })}
+    >
+      repo-analyzer
+    </button>
+  ),
 }));
 vi.mock('../../src/components/EmbeddingStatus', () => ({
   EmbeddingStatus: () => <div data-testid="embedding-status">embedding-status</div>,
@@ -39,7 +50,7 @@ describe('Header re-analyze flow', () => {
 
   it('starts analyze by repo path and reloads the completed graph', async () => {
     const onAnalyzeComplete = vi.fn();
-    let completeAnalyze: (() => void) | undefined;
+    let completeAnalyze: ((data?: { repoName?: string; repoPath?: string }) => void) | undefined;
     streamAnalyzeProgressMock.mockImplementation((_jobId, _onProgress, onComplete) => {
       completeAnalyze = onComplete;
       return new AbortController();
@@ -66,9 +77,32 @@ describe('Header re-analyze flow', () => {
     });
 
     act(() => {
-      completeAnalyze?.();
+      completeAnalyze?.({ repoName: 'WrongRepo' });
     });
 
-    expect(onAnalyzeComplete).toHaveBeenCalledWith('Website');
+    expect(onAnalyzeComplete).toHaveBeenCalledWith('F:\\Website');
+  });
+
+  it('loads a newly analyzed header repo by completed repo path', () => {
+    const onAnalyzeComplete = vi.fn();
+
+    render(
+      <Header
+        availableRepos={[
+          {
+            name: 'Website',
+            path: 'F:\\Website',
+            indexedAt: new Date().toISOString(),
+          },
+        ]}
+        onAnalyzeComplete={onAnalyzeComplete}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Website/i }));
+    fireEvent.click(screen.getByText('Analyze a new repository...'));
+    fireEvent.click(screen.getByTestId('repo-analyzer'));
+
+    expect(onAnalyzeComplete).toHaveBeenCalledWith('F:\\NewRepo');
   });
 });

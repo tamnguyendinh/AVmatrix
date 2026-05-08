@@ -75,7 +75,7 @@ const AppContentBody = () => {
         (repoPath || '').replace(/\\/g, '/').split('/').filter(Boolean).pop() ||
         'server-project';
       setProjectName(projectName);
-      setCurrentRepo(projectName);
+      setCurrentRepo(repoPath || projectName);
 
       // Build KnowledgeGraph from server data for visualization
       const graph = createKnowledgeGraph();
@@ -89,7 +89,7 @@ const AppContentBody = () => {
 
       // Persist the active project in the URL for bookmarkability and F5 refresh resilience
       const urlObj = new URL(window.location.href);
-      urlObj.searchParams.set('project', projectName);
+      urlObj.searchParams.set('project', repoPath || projectName);
       window.history.replaceState(null, '', urlObj.toString());
 
       // Transition directly to exploring view

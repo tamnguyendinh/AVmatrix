@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RepoAnalyzer } from '../../src/components/RepoAnalyzer';
 
 const startAnalyzeMock = vi.fn();
@@ -28,6 +28,10 @@ describe('RepoAnalyzer local-only', () => {
     streamAnalyzeProgressMock.mockReturnValue(new AbortController());
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('shows only local-folder input', () => {
     render(<RepoAnalyzer variant="sheet" onComplete={vi.fn()} />);
 
@@ -50,6 +54,41 @@ describe('RepoAnalyzer local-only', () => {
 
     await waitFor(() => {
       expect(startAnalyzeMock).toHaveBeenCalledWith({ path: validPath });
+    });
+  });
+
+  it('reports the analyzed repo path on completion', async () => {
+    const onComplete = vi.fn();
+    let completeAnalyze: ((data: { repoName?: string; repoPath?: string }) => void) | undefined;
+    streamAnalyzeProgressMock.mockImplementation((_jobId, _onProgress, onCompleteCallback) => {
+      completeAnalyze = onCompleteCallback;
+      return new AbortController();
+    });
+
+    render(<RepoAnalyzer variant="sheet" onComplete={onComplete} />);
+
+    const validPath = navigator.userAgent.toLowerCase().includes('win')
+      ? 'C:\\repos\\avmatrix'
+      : '/tmp/avmatrix';
+
+    fireEvent.change(screen.getByLabelText('Repository Folder'), {
+      target: { value: validPath },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Analyze Repository/i }));
+
+    await waitFor(() => {
+      expect(startAnalyzeMock).toHaveBeenCalledWith({ path: validPath });
+    });
+
+    vi.useFakeTimers();
+    act(() => {
+      completeAnalyze?.({ repoName: 'DisplayedName' });
+      vi.advanceTimersByTime(1200);
+    });
+
+    expect(onComplete).toHaveBeenCalledWith({
+      repoName: 'DisplayedName',
+      repoPath: validPath,
     });
   });
 });

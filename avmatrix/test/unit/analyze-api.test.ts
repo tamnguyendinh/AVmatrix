@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { resolveAnalyzeRepoPath } from '../../src/server/local-path-policy.js';
 import {
   LOCAL_ANALYZE_PREPARING_PROGRESS,
+  buildAnalyzeCompleteEventPayload,
   buildAnalyzeWorkerOptions,
   isActiveAnalyzeJobStatus,
 } from '../../src/server/api.js';
@@ -48,6 +49,19 @@ describe('analyze API local path policy', () => {
     expect(buildAnalyzeWorkerOptions({ force: false })).toEqual({
       force: true,
       embeddings: false,
+    });
+  });
+
+  it('includes repoPath in analyze completion payloads', () => {
+    expect(
+      buildAnalyzeCompleteEventPayload({
+        repoName: 'DisplayedName',
+        repoPath: 'F:\\repos\\selected',
+      }),
+    ).toEqual({
+      repoName: 'DisplayedName',
+      repoPath: 'F:\\repos\\selected',
+      error: undefined,
     });
   });
 

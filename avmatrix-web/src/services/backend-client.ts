@@ -67,6 +67,12 @@ export interface JobStatus {
   completedAt?: number;
 }
 
+export interface AnalyzeCompleteData {
+  repoName?: string;
+  repoPath?: string;
+  error?: string;
+}
+
 export class BackendError extends Error {
   constructor(
     message: string,
@@ -418,7 +424,10 @@ export const fetchRepoInfo = async (
   repo?: string,
   opts?: { awaitAnalysis?: boolean },
 ): Promise<BackendRepo> => {
-  const url = `${_backendUrl}/api/repo${repo ? `?${repoParam(repo)}` : ''}`;
+  const params = [repoParam(repo), opts?.awaitAnalysis ? 'awaitAnalysis=true' : '']
+    .filter(Boolean)
+    .join('&');
+  const url = `${_backendUrl}/api/repo${params ? `?${params}` : ''}`;
   const timeout = opts?.awaitAnalysis ? HOLD_QUEUE_TIMEOUT_MS : REPO_INFO_TIMEOUT_MS;
   const response = await fetchWithTimeout(url, {}, timeout);
   await assertOk(response);
@@ -715,7 +724,7 @@ export const cancelAnalyze = async (jobId: string): Promise<void> => {
 export const streamAnalyzeProgress = (
   jobId: string,
   onProgress: (progress: JobProgress) => void,
-  onComplete: (data: { repoName?: string }) => void,
+  onComplete: (data: AnalyzeCompleteData) => void,
   onError: (error: string) => void,
 ): AbortController => {
   return streamSSE<JobProgress>(

@@ -106,6 +106,11 @@ export const findRepoCandidate = <T extends RepoLookupCandidate>(
     return allowSingleDefault && all.length === 1 ? all[0] : null;
   }
 
+  if (path.isAbsolute(repoParam)) {
+    const resolvedPath = path.resolve(repoParam);
+    return all.find((repo) => samePath(path.resolve(repo.repoPath), resolvedPath)) ?? null;
+  }
+
   const normalizedParam = normalizeRepoParam(repoParam) ?? repoParam;
   const paramLower = normalizedParam.toLowerCase();
 
@@ -116,10 +121,6 @@ export const findRepoCandidate = <T extends RepoLookupCandidate>(
 
   const byName = all.find((repo) => repo.name.toLowerCase() === paramLower);
   if (byName) return byName;
-
-  const resolvedPath = path.resolve(repoParam);
-  const byPath = all.find((repo) => samePath(path.resolve(repo.repoPath), resolvedPath));
-  if (byPath) return byPath;
 
   if (allowPartialName) {
     const byPartialName = all.find((repo) => repo.name.toLowerCase().includes(paramLower));

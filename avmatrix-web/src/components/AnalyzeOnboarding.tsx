@@ -10,16 +10,17 @@
  *     └─ AnalyzeOnboarding
  *          └─ RepoAnalyzer (variant="onboarding")
  *
- * When the analysis job completes, onComplete fires with the repoName, and
+ * When the analysis job completes, onComplete fires with the repo path, and
  * DropZone loads the graph produced by that analyze run.
  */
 
 import { FolderOpen } from '@/lib/lucide-icons';
 import { RepoAnalyzer } from './RepoAnalyzer';
+import type { AnalyzeCompleteData } from '../services/backend-client';
 
 interface AnalyzeOnboardingProps {
   /** Called when analysis finishes and the repo is ready to load. */
-  onComplete: (repoName: string) => void;
+  onComplete: (repo: AnalyzeCompleteData) => void;
 }
 
 export const AnalyzeOnboarding = ({ onComplete }: AnalyzeOnboardingProps) => {

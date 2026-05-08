@@ -63,6 +63,17 @@ describe('repo-resolver', () => {
     expect(findRepoCandidate(repos, 'beta', { allowPartialName: true })?.name).toBe('BetaTool');
   });
 
+  it('resolves absolute paths before basename/name matches', () => {
+    const firstPath = path.join(os.tmpdir(), 'one', 'demo');
+    const secondPath = path.join(os.tmpdir(), 'two', 'demo');
+    const repos: RepoLookupCandidate[] = [
+      { id: 'demo', name: 'demo', repoPath: firstPath },
+      { id: 'demo-2', name: 'demo', repoPath: secondPath },
+    ];
+
+    expect(findRepoCandidate(repos, secondPath)?.repoPath).toBe(secondPath);
+  });
+
   it('assigns stable runtime ids and hashes colliding names', () => {
     const repos = assignRepoRuntimeIds([
       { name: 'Demo', repoPath: 'F:/one/demo' },

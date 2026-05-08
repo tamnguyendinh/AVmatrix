@@ -79,11 +79,40 @@ describe('DropZone full analyze flow', () => {
 
     screen.getByTestId('landing-repo-card').click();
 
-    expect(onSelectRepo).toHaveBeenCalledWith('AVmatrix');
+    expect(onSelectRepo).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'AVmatrix',
+        path: 'F:\\AVmatrix-main',
+      }),
+    );
   });
 
-  it('runs full analyze before loading graph when a repo card is clicked', async () => {
-    let completeAnalyze: ((data: { repoName?: string }) => void) | undefined;
+  it('passes the clicked repo object when repos share a display name', async () => {
+    const onSelectRepo = vi.fn();
+    const repos = [
+      {
+        name: 'demo',
+        path: 'F:\\one\\demo',
+        indexedAt: new Date().toISOString(),
+        stats: { files: 10, nodes: 20 },
+      },
+      {
+        name: 'demo',
+        path: 'F:\\two\\demo',
+        indexedAt: new Date().toISOString(),
+        stats: { files: 11, nodes: 21 },
+      },
+    ];
+
+    render(<RepoLanding repos={repos} onSelectRepo={onSelectRepo} onAnalyzeComplete={vi.fn()} />);
+
+    screen.getAllByTestId('landing-repo-card')[1].click();
+
+    expect(onSelectRepo).toHaveBeenCalledWith(repos[1]);
+  });
+
+  it('runs full analyze before loading the graph by the selected repo path', async () => {
+    let completeAnalyze: ((data: { repoName?: string; repoPath?: string }) => void) | undefined;
     streamAnalyzeProgressMock.mockImplementation((_jobId, onProgress, onComplete) => {
       completeAnalyze = onComplete;
       onProgress({ phase: 'parsing', percent: 30, message: 'Parsing code' });
@@ -107,7 +136,7 @@ describe('DropZone full analyze flow', () => {
     expect(connectToServerMock).not.toHaveBeenCalled();
 
     act(() => {
-      completeAnalyze?.({ repoName: 'AVmatrix' });
+      completeAnalyze?.({ repoName: 'WrongRepo' });
     });
 
     await waitFor(() => {
@@ -115,8 +144,39 @@ describe('DropZone full analyze flow', () => {
         'http://localhost:4747',
         expect.any(Function),
         expect.any(AbortSignal),
-        'AVmatrix',
+        'F:\\AVmatrix-main',
+        { awaitAnalysis: true },
       );
     });
+  });
+
+  it('does not load a stale graph when repo-card analysis fails', async () => {
+    let failAnalyze: ((error: string) => void) | undefined;
+    streamAnalyzeProgressMock.mockImplementation((_jobId, _onProgress, _onComplete, onError) => {
+      failAnalyze = onError;
+      return new AbortController();
+    });
+
+    render(<DropZone onServerConnect={vi.fn()} />);
+
+    await waitFor(() => expect(fetchReposMock).toHaveBeenCalled(), { timeout: 3000 });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    });
+
+    act(() => {
+      screen.getByTestId('landing-repo-card').click();
+    });
+
+    await waitFor(() => {
+      expect(startAnalyzeMock).toHaveBeenCalledWith({ path: 'F:\\AVmatrix-main' });
+    });
+
+    act(() => {
+      failAnalyze?.('boom');
+    });
+
+    expect(connectToServerMock).not.toHaveBeenCalled();
+    expect(await screen.findByText('boom (F:\\AVmatrix-main)')).toBeInTheDocument();
   });
 });

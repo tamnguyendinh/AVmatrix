@@ -212,6 +212,32 @@ describe('fetchGraph', () => {
 });
 
 describe('fetchRepoInfo', () => {
+  it('sends awaitAnalysis when repo-info should hold for an active analyze job', async () => {
+    setBackendUrl('http://localhost:4747');
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          name: 'AVmatrix',
+          repoPath: 'F:\\AVmatrix-main',
+          indexedAt: new Date().toISOString(),
+          stats: {},
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await fetchRepoInfo('F:\\AVmatrix-main', { awaitAnalysis: true });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:4747/api/repo?repo=F%3A%5CAVmatrix-main&awaitAnalysis=true',
+      expect.any(Object),
+    );
+  });
+
   it('waits up to 10 minutes before timing out normal repo-info requests', async () => {
     vi.useFakeTimers();
     setBackendUrl('http://localhost:4747');

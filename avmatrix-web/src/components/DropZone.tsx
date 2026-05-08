@@ -6,6 +6,7 @@ import {
   deleteRepo,
   fetchRepos,
   streamAnalyzeProgress,
+  type AnalyzeCompleteData,
   type ConnectResult,
   type BackendRepo,
 } from '../services/backend-client';
@@ -177,7 +178,14 @@ export const DropZone = ({ onServerConnect }: DropZoneProps) => {
   handleAutoConnectRef.current = handleAutoConnect;
 
   // Load the graph after an analyze job has completed.
-  const loadRepoGraph = (repoName: string) => {
+  const loadRepoGraph = (repo: string | AnalyzeCompleteData) => {
+    const repoName = typeof repo === 'string' ? repo : (repo.repoPath ?? repo.repoName);
+    if (!repoName) {
+      setError('Repository path not found after analyze');
+      setPhase(detectedRepos.length > 0 ? 'landing' : 'analyze');
+      return;
+    }
+
     autoConnectRan.current = true;
     setPhase('loading');
     setLoadingMessage('Loading graph...');
@@ -202,13 +210,15 @@ export const DropZone = ({ onServerConnect }: DropZoneProps) => {
           },
           abortController.signal,
           repoName,
+          { awaitAnalysis: true },
         );
         if (onServerConnect) {
           await onServerConnect(result, detectedBackendUrl);
         }
       } catch (err) {
         if ((err as Error).name === 'AbortError') return;
-        setError(err instanceof Error ? err.message : 'Failed to load graph');
+        const message = err instanceof Error ? err.message : 'Failed to load graph';
+        setError(`${message} (${repoName})`);
         setPhase(detectedRepos.length > 0 ? 'landing' : 'analyze');
       } finally {
         abortControllerRef.current = null;
@@ -217,11 +227,10 @@ export const DropZone = ({ onServerConnect }: DropZoneProps) => {
   };
 
   // Repo-card selection is analyze-first: rebuild the repo, then load the new graph.
-  const analyzeRepoAndLoad = (repoName: string) => {
-    const repo = detectedRepos.find((candidate) => candidate.name === repoName);
+  const analyzeRepoAndLoad = (repo: BackendRepo) => {
     const repoPath = repo?.path || repo?.repoPath;
     if (!repoPath) {
-      setError(`Repository path not found for ${repoName}`);
+      setError(`Repository path not found for ${repo?.name ?? 'selected repository'}`);
       setPhase(detectedRepos.length > 0 ? 'landing' : 'analyze');
       return;
     }
@@ -242,17 +251,18 @@ export const DropZone = ({ onServerConnect }: DropZoneProps) => {
           },
           (data) => {
             analyzeSseRef.current = null;
-            loadRepoGraph(data.repoName ?? repo.name);
+            loadRepoGraph(repoPath);
           },
           (errMsg) => {
             analyzeSseRef.current = null;
-            setError(errMsg || `Failed to analyze ${repo.name}`);
+            setError(`${errMsg || `Failed to analyze ${repo.name}`} (${repoPath})`);
             setPhase(detectedRepos.length > 0 ? 'landing' : 'analyze');
           },
         );
         analyzeSseRef.current = controller;
       } catch (err) {
-        setError(err instanceof Error ? err.message : `Failed to analyze ${repo.name}`);
+        const message = err instanceof Error ? err.message : `Failed to analyze ${repo.name}`;
+        setError(`${message} (${repoPath})`);
         setPhase(detectedRepos.length > 0 ? 'landing' : 'analyze');
       }
     })();

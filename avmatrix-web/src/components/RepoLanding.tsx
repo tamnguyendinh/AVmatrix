@@ -15,7 +15,7 @@
 import { useState } from 'react';
 import { ArrowRight, GitBranch, FileCode, Layers, Loader2, X } from '@/lib/lucide-icons';
 import { RepoAnalyzer } from './RepoAnalyzer';
-import type { BackendRepo } from '../services/backend-client';
+import type { AnalyzeCompleteData, BackendRepo } from '../services/backend-client';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -121,8 +121,8 @@ function RepoCard({
 
 interface RepoLandingProps {
   repos: BackendRepo[];
-  onSelectRepo: (repoName: string) => void;
-  onAnalyzeComplete: (repoName: string) => void;
+  onSelectRepo: (repo: BackendRepo) => void;
+  onAnalyzeComplete: (repo: AnalyzeCompleteData) => void;
   onRemoveRepo?: (repoName: string) => Promise<void> | void;
 }
 
@@ -164,9 +164,9 @@ export const RepoLanding = ({
       <div className="relative mb-5 space-y-2">
         {repos.map((repo) => (
           <RepoCard
-            key={repo.name}
+            key={repo.path ?? repo.repoPath ?? repo.name}
             repo={repo}
-            onClick={() => onSelectRepo(repo.name)}
+            onClick={() => onSelectRepo(repo)}
             onRemove={onRemoveRepo ? () => void handleRemoveRepo(repo.name) : undefined}
             isRemoving={removingRepo === repo.name}
           />

@@ -37,4 +37,19 @@ describe('repo list merge', () => {
 
     expect(includeRepoInList([stale], fresh)).toEqual([fresh]);
   });
+
+  it('does not replace a different path that shares the same repo name', () => {
+    const first = repo({
+      name: 'demo',
+      path: 'F:\\one\\demo',
+      stats: { nodes: 10 },
+    });
+    const second = repo({
+      name: 'demo',
+      path: 'F:\\two\\demo',
+      stats: { nodes: 20 },
+    });
+
+    expect(includeRepoInList([first], second)).toEqual([second, first]);
+  });
 });

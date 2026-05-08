@@ -20,7 +20,7 @@ import {
   closeLbug,
   withLbugDb,
 } from '../core/lbug/lbug-adapter.js';
-import { isWriteQuery } from '../core/lbug/pool-adapter.js';
+import { closeLbug as closeRepoReadPools, isWriteQuery } from '../core/lbug/pool-adapter.js';
 import { NODE_TABLES } from 'avmatrix-shared';
 import { searchFTSFromLbug } from '../core/search/bm25-index.js';
 import { mergeWithRRF } from '../core/search/hybrid-search.js';
@@ -40,6 +40,7 @@ import {
   assignRepoRuntimeIds,
   findRepoCandidate,
   normalizeRepoParam,
+  samePath,
 } from '../runtime/repo-resolver.js';
 import { buildRepoGraph, streamRepoGraph } from '../runtime/repo-runtime/graph-read-service.js';
 import {
@@ -78,6 +79,14 @@ export const HOLD_QUEUE_TIMEOUT_SECS = 600; // 10 minutes
 
 export const isActiveAnalyzeJobStatus = (status: AnalyzeJob['status']): boolean =>
   status === 'queued' || status === 'analyzing';
+
+export const buildAnalyzeCompleteEventPayload = (
+  job: Pick<AnalyzeJob, 'repoName' | 'repoPath' | 'error'> | undefined,
+) => ({
+  repoName: job?.repoName,
+  repoPath: job?.repoPath,
+  error: job?.error,
+});
 
 /**
  * Determine whether an HTTP Origin header value is allowed by CORS policy.
@@ -144,10 +153,9 @@ const mountSSEProgress = (app: express.Express, routePath: string, jm: JobManage
     if (job.status === 'complete' || job.status === 'failed') {
       eventId++;
       res.write(
-        `id: ${eventId}\nevent: ${job.status}\ndata: ${JSON.stringify({
-          repoName: job.repoName,
-          error: job.error,
-        })}\n\n`,
+        `id: ${eventId}\nevent: ${job.status}\ndata: ${JSON.stringify(
+          buildAnalyzeCompleteEventPayload(job),
+        )}\n\n`,
       );
       res.end();
       return;
@@ -170,10 +178,9 @@ const mountSSEProgress = (app: express.Express, routePath: string, jm: JobManage
         if (progress.phase === 'complete' || progress.phase === 'failed') {
           const eventJob = jm.getJob(req.params.jobId);
           res.write(
-            `id: ${eventId}\nevent: ${progress.phase}\ndata: ${JSON.stringify({
-              repoName: eventJob?.repoName,
-              error: eventJob?.error,
-            })}\n\n`,
+            `id: ${eventId}\nevent: ${progress.phase}\ndata: ${JSON.stringify(
+              buildAnalyzeCompleteEventPayload(eventJob),
+            )}\n\n`,
           );
           clearInterval(heartbeat);
           res.end();
@@ -273,7 +280,12 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
 
   // Helper: resolve a repo by name from the global registry, or default to first.
   // Pass `req` to enable early exit if the client disconnects during the hold-queue wait.
-  const resolveRepo = async (repoName?: string, isRetry = false, req?: any): Promise<any> => {
+  const resolveRepo = async (
+    repoName?: string,
+    isRetry = false,
+    req?: any,
+    opts?: { awaitAnalysis?: boolean },
+  ): Promise<any> => {
     const repos = assignRepoRuntimeIds(
       (await listRegisteredRepos()).map((repo) => ({
         ...repo,
@@ -281,6 +293,7 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
       })),
     );
     const normalizedName = normalizeRepoParam(repoName);
+    const requestedPath = repoName && path.isAbsolute(repoName) ? path.resolve(repoName) : null;
     const foundCandidate = findRepoCandidate(repos, repoName, {
       allowSingleDefault: true,
       matchId: true,
@@ -291,11 +304,10 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
         ) || null
       : null;
 
-    // If not yet in the registry, check whether a background job is actively preparing or
-    // analyzing this repo. Hold the connection open (up to 5 minutes) until it completes.
-    // We only wait for in-progress jobs ('queued'|'analyzing') — a 'complete' job
-    // whose repo is still missing means the registry sync failed; the fallback below handles it.
-    if (!found && normalizedName) {
+    // When explicitly requested by the UI, wait for an active analyze job even if the
+    // repo already exists in the registry. Otherwise graph loading can race ahead and
+    // render the previous index while a full analyze is still rebuilding the same repo.
+    if ((opts?.awaitAnalysis || !found) && normalizedName) {
       const lower = normalizedName.toLowerCase();
 
       // Track client disconnect to cancel the wait early
@@ -306,8 +318,10 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
 
       for (const job of jobManager.listJobs()) {
         const isMatch =
-          job.repoName?.toLowerCase() === lower ||
-          (job.repoPath && path.basename(job.repoPath).toLowerCase() === lower);
+          requestedPath && job.repoPath
+            ? samePath(path.resolve(job.repoPath), requestedPath)
+            : job.repoName?.toLowerCase() === lower ||
+              (job.repoPath && path.basename(job.repoPath).toLowerCase() === lower);
 
         if (isMatch && isActiveAnalyzeJobStatus(job.status)) {
           if (process.env.DEBUG) {
@@ -327,6 +341,11 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
                   repoPath: path.resolve(repo.path),
                 })),
               );
+              if (requestedPath) {
+                return (
+                  freshRepos.find((r) => samePath(path.resolve(r.repoPath), requestedPath)) || null
+                );
+              }
               return freshRepos.find((r) => r.name === normalizedName) || null;
             }
             await new Promise((r) => setTimeout(r, 1000));
@@ -344,7 +363,7 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
         console.log(`[debug] resolveRepo 404 for "${normalizedName}". Triggering deep init...`);
       }
       await backend.init();
-      return await resolveRepo(normalizedName, true, req);
+      return await resolveRepo(normalizedName, true, req, opts);
     }
 
     return found;
@@ -410,7 +429,9 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
   // Get repo info
   app.get('/api/repo', async (req, res) => {
     try {
-      const entry = await resolveRepo(requestedRepo(req), false, req);
+      const entry = await resolveRepo(requestedRepo(req), false, req, {
+        awaitAnalysis: req.query.awaitAnalysis === 'true',
+      });
       if (!entry) {
         res.status(404).json({ error: 'Repository not found. Run: avmatrix analyze' });
         return;
@@ -1089,8 +1110,8 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
                 releaseRepoLock(analyzeLockKey);
                 // Reinitialize backend BEFORE marking complete — ensures the new
                 // repo is queryable when the client receives the SSE complete event.
-                backend
-                  .init()
+                closeRepoReadPools()
+                  .then(() => backend.init())
                   .then(() => {
                     jobManager.updateJob(job.id, {
                       status: 'complete',
