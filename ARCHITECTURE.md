@@ -45,6 +45,34 @@ Monorepo: **CLI/MCP/HTTP backend** (`avmatrix/`) + **browser UI** (`avmatrix-web
 
 The HTTP runtime still contains some legacy endpoint paths that call `src/core/lbug/lbug-adapter.ts` directly. The graph loading path has been moved to the repo-scoped runtime described below, so changing repos in the Web UI does not require retargeting one process-wide active database handle.
 
+## Web UI analyze contract
+
+The Web UI is a visual control surface over the same local analyze runtime used by the CLI. User-facing analyze entry points run a full analyze before graph loading:
+
+```text
+selected repoPath
+  -> POST /api/analyze { path: repoPath }
+  -> analyze worker runs with force: true
+  -> SSE complete { repoName, repoPath }
+  -> /api/repo?repo=<repoPath>&awaitAnalysis=true
+  -> /api/graph?repo=<canonical repoPath>&stream=true
+  -> render graph and bind follow-up calls to the same repoPath
+```
+
+The active Web analyze entry points are:
+
+| Entry point | Behavior |
+|-------------|----------|
+| Landing repo card | Full analyze of the clicked repo path, then graph load for that same path. |
+| Analyze by local path | Full analyze of the submitted absolute path, then graph load for the completed path. |
+| Header re-analyze | Full analyze of the selected repo path, then graph reload for that path. |
+| Header "Analyze a new repository..." | Full analyze of the submitted path, refresh repo list, then select/load by path. |
+| Header repo dropdown switch | Load/open an existing graph only. It is intentionally not an analyze action, but still routes by canonical repo path. |
+
+`repoName` is display metadata in the Web UI. Post-analyze routing must use the selected physical path or the canonical `repoInfo.repoPath` returned by `/api/repo`; it must not choose the graph target by display name or basename. The backend resolver also preserves absolute paths across registry refreshes so same-name or same-basename repos cannot redirect graph loading.
+
+Analyze failures and post-analyze graph-load failures remain on the prior screen/graph and surface the selected path in diagnostics instead of silently falling back to a cached/default graph.
+
 ## Repo-scoped graph reads
 
 Web graph loading is explicit by repo. The browser sends the target repo name/path, and the server resolves that request into a repo runtime target before reading LadybugDB.
@@ -57,6 +85,8 @@ Web graph loading is explicit by repo. The browser sends the target repo name/pa
 | `src/server/graph-stream-http.ts` | Stream NDJSON batches to the browser and handle disconnects/backpressure. |
 
 This model is intentionally closer to MCP/local-backend semantics: repo context is explicit per operation. It avoids relying on a mutable "currently active repo" as the only source of truth for graph reads.
+
+Absolute repo paths are resolved before runtime IDs, names, basenames, or partial matches. If the registry is refreshed while an analyze job is completing, the refreshed repo list is still matched against the original absolute path first. This keeps Web graph loading and follow-up calls pinned to the same physical repo selected by the user.
 
 ## Session runtime bridge
 

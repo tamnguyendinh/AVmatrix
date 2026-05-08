@@ -4,6 +4,25 @@ All notable changes to avmatrix will be documented in this file.
 
 ## [Unreleased]
 
+### 2026-05-08
+
+#### Changed
+
+- Made Web UI analyze entry points behave as full analyze actions: landing repo cards, local-path analyze, header re-analyze, and header analyze-new now run `/api/analyze` before graph loading.
+- Made Web/API analyze force a rebuild at the backend worker boundary so clients cannot accidentally trigger the up-to-date shortcut for user-facing analyze actions.
+- Changed post-analyze graph loading to route by selected physical `repoPath` and then by canonical `repoInfo.repoPath` from `/api/repo`, rather than by display name or basename.
+- Kept header repository dropdown switching as a load/open-existing-graph action, separate from analyze, while still routing selected repos by path.
+
+#### Fixed
+
+- Fixed Web UI analyze/load drift where a completed analyze could reload a graph by `repoName` and show a different same-name repository.
+- Fixed backend repo resolution so absolute paths are matched before name/basename lookup and remain path-first after registry refresh while analyze jobs complete.
+- Fixed header re-analyze failure handling so start/SSE failures surface the selected repo path instead of failing silently on the prior graph.
+
+#### Documented
+
+- Documented the Web UI full-analyze path contract and repoPath-first graph loading behavior in `ARCHITECTURE.md`.
+
 ### 2026-05-07
 
 #### Added
