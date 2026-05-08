@@ -7,6 +7,7 @@ import {
   LOCAL_ANALYZE_PREPARING_PROGRESS,
   buildAnalyzeCompleteEventPayload,
   buildAnalyzeWorkerOptions,
+  findRepoAfterRegistryRefresh,
   isActiveAnalyzeJobStatus,
 } from '../../src/server/api.js';
 import type { AnalyzeJob } from '../../src/server/analyze-job.js';
@@ -63,6 +64,28 @@ describe('analyze API local path policy', () => {
       repoPath: 'F:\\repos\\selected',
       error: undefined,
     });
+  });
+
+  it('keeps absolute repo path identity after registry refresh when repo names collide', () => {
+    const selectedRepoPath = path.join(os.tmpdir(), 'two', 'demo');
+    const otherRepoPath = path.join(os.tmpdir(), 'one', 'demo');
+    const repos = [
+      {
+        id: 'demo',
+        name: 'demo',
+        repoPath: otherRepoPath,
+      },
+      {
+        id: 'demo-2',
+        name: 'demo',
+        repoPath: selectedRepoPath,
+      },
+    ];
+
+    expect(findRepoAfterRegistryRefresh(repos, selectedRepoPath)?.repoPath).toBe(selectedRepoPath);
+    expect(findRepoAfterRegistryRefresh(repos, path.join(os.tmpdir(), 'missing', 'demo'))).toBe(
+      null,
+    );
   });
 
   it('resolves an existing absolute local repo path to its canonical path', async () => {

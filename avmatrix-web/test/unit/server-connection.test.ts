@@ -74,6 +74,53 @@ describe('connectToServer', () => {
     );
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it('downloads the graph through the canonical repoPath returned by repo info', async () => {
+    const canonicalRepoPath = 'F:\\two\\demo';
+    const fetchMock = vi.fn((url: string) => {
+      if (url.includes('/api/repo')) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              name: 'demo',
+              path: canonicalRepoPath,
+              repoPath: canonicalRepoPath,
+              indexedAt: new Date().toISOString(),
+              stats: {},
+            }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            },
+          ),
+        );
+      }
+      return Promise.resolve(
+        new Response('{"nodes":[],"relationships":[]}', {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await connectToServer('http://localhost:4747', undefined, undefined, 'demo');
+
+    expect(result.repoInfo.repoPath).toBe(canonicalRepoPath);
+    expect(fetchMock).toHaveBeenCalledWith(
+      `http://localhost:4747/api/repo?repo=demo`,
+      expect.any(Object),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      `http://localhost:4747/api/graph?repo=${encodeURIComponent(canonicalRepoPath)}&stream=true`,
+      expect.any(Object),
+    );
+    expect(
+      fetchMock.mock.calls.some(
+        ([url]) => typeof url === 'string' && url.includes('/api/graph?repo=demo&'),
+      ),
+    ).toBe(false);
+  });
 });
 
 afterEach(() => {

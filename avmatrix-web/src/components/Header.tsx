@@ -68,6 +68,11 @@ export const Header = ({
   const [showAnalyzer, setShowAnalyzer] = useState(false);
   const [reanalyzing, setReanalyzing] = useState<string | null>(null); // repo name being re-analyzed
   const [reanalyzeProgress, setReanalyzeProgress] = useState<JobProgress | null>(null);
+  const [reanalyzeError, setReanalyzeError] = useState<{
+    repoName: string;
+    repoPath: string;
+    message: string;
+  } | null>(null);
   const reanalyzeSseRef = useRef<AbortController | null>(null);
   const repoDropdownRef = useRef<HTMLDivElement>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -275,6 +280,7 @@ export const Header = ({
                           >
                             <button
                               onClick={() => {
+                                setReanalyzeError(null);
                                 onSwitchRepo?.(repo.repoPath ?? repo.path);
                                 setIsRepoDropdownOpen(false);
                               }}
@@ -295,14 +301,15 @@ export const Header = ({
                               onClick={async (e) => {
                                 e.stopPropagation();
                                 if (reanalyzing) return; // already running
+                                setReanalyzeError(null);
                                 setReanalyzing(repo.name);
                                 setReanalyzeProgress({
                                   phase: 'queued',
                                   percent: 0,
                                   message: 'Starting...',
                                 });
+                                const repoPath = repo.repoPath ?? repo.path;
                                 try {
-                                  const repoPath = repo.repoPath ?? repo.path;
                                   const { jobId } = await startAnalyze({
                                     path: repoPath,
                                   });
@@ -316,14 +323,35 @@ export const Header = ({
                                       onAnalyzeComplete?.(data.repoPath ?? repoPath);
                                     },
                                     (errMsg) => {
-                                      console.error('Re-analyze failed:', errMsg);
+                                      const message = errMsg || 'Re-analysis failed';
+                                      console.error('Re-analyze failed:', {
+                                        repoPath,
+                                        error: message,
+                                      });
+                                      setReanalyzeError({
+                                        repoName: repo.name,
+                                        repoPath,
+                                        message,
+                                      });
                                       setReanalyzing(null);
                                       setReanalyzeProgress(null);
                                       reanalyzeSseRef.current = null;
                                     },
                                   );
                                 } catch (err) {
-                                  console.error('Failed to start re-analysis:', err);
+                                  const message =
+                                    err instanceof Error
+                                      ? err.message
+                                      : 'Failed to start re-analysis';
+                                  console.error('Failed to start re-analysis:', {
+                                    repoPath,
+                                    error: err,
+                                  });
+                                  setReanalyzeError({
+                                    repoName: repo.name,
+                                    repoPath,
+                                    message,
+                                  });
                                   setReanalyzing(null);
                                   setReanalyzeProgress(null);
                                 }
@@ -398,6 +426,21 @@ export const Header = ({
                       </div>
                     )}
 
+                    {reanalyzeError && (
+                      <div
+                        role="alert"
+                        className="border-t border-border-subtle bg-base px-4 py-2.5"
+                      >
+                        <div className="text-xs font-semibold text-red-400">
+                          Re-analyze failed for {reanalyzeError.repoName}
+                        </div>
+                        <div className="mt-1 font-mono text-[11px] break-all text-text-secondary">
+                          {reanalyzeError.repoPath}
+                        </div>
+                        <div className="mt-1 text-xs text-text-muted">{reanalyzeError.message}</div>
+                      </div>
+                    )}
+
                     {/* Analyze new */}
                     <div
                       className={
@@ -407,7 +450,10 @@ export const Header = ({
                       }
                     >
                       <button
-                        onClick={() => setShowAnalyzer(true)}
+                        onClick={() => {
+                          setReanalyzeError(null);
+                          setShowAnalyzer(true);
+                        }}
                         disabled={!!reanalyzing}
                         className="flex w-full cursor-pointer items-center px-4 py-3 text-left transition-colors hover:bg-base disabled:cursor-not-allowed disabled:opacity-50"
                       >

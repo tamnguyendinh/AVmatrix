@@ -809,9 +809,10 @@ export async function connectToServer(
 
   onProgress?.('validating', 0, null);
   const repoInfo = await fetchRepoInfo(repoName, { awaitAnalysis: opts?.awaitAnalysis });
+  const graphRepo = repoInfo.repoPath ?? repoInfo.path ?? repoName;
 
   onProgress?.('downloading', 0, null);
-  const { nodes, relationships } = await fetchGraph(repoName, {
+  const { nodes, relationships } = await fetchGraph(graphRepo, {
     signal,
     onProgress: (downloaded, total) => onProgress?.('downloading', downloaded, total),
   });

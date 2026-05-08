@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const startAnalyzeMock = vi.fn();
 const streamAnalyzeProgressMock = vi.fn();
@@ -46,6 +46,10 @@ describe('Header re-analyze flow', () => {
     startAnalyzeMock.mockReset();
     streamAnalyzeProgressMock.mockReset();
     startAnalyzeMock.mockResolvedValue({ jobId: 'job-1', status: 'queued' });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('starts analyze by repo path and reloads the completed graph', async () => {
@@ -104,5 +108,82 @@ describe('Header re-analyze flow', () => {
     fireEvent.click(screen.getByTestId('repo-analyzer'));
 
     expect(onAnalyzeComplete).toHaveBeenCalledWith('F:\\NewRepo');
+  });
+
+  it('shows and logs the selected repo path when re-analyze streaming fails', async () => {
+    const onAnalyzeComplete = vi.fn();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    let failAnalyze: ((message: string) => void) | undefined;
+    streamAnalyzeProgressMock.mockImplementation((_jobId, _onProgress, _onComplete, onError) => {
+      failAnalyze = onError;
+      return new AbortController();
+    });
+
+    render(
+      <Header
+        availableRepos={[
+          {
+            name: 'Website',
+            path: 'F:\\Website',
+            indexedAt: new Date().toISOString(),
+          },
+        ]}
+        onAnalyzeComplete={onAnalyzeComplete}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Website/i }));
+    fireEvent.click(screen.getByTitle('Re-analyze Website'));
+
+    await waitFor(() => {
+      expect(startAnalyzeMock).toHaveBeenCalledWith({ path: 'F:\\Website' });
+    });
+
+    act(() => {
+      failAnalyze?.('stream failed');
+    });
+
+    expect(onAnalyzeComplete).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent('Re-analyze failed for Website');
+    expect(screen.getByRole('alert')).toHaveTextContent('F:\\Website');
+    expect(screen.getByRole('alert')).toHaveTextContent('stream failed');
+    expect(consoleSpy).toHaveBeenCalledWith('Re-analyze failed:', {
+      repoPath: 'F:\\Website',
+      error: 'stream failed',
+    });
+  });
+
+  it('shows and logs the selected repo path when re-analyze cannot start', async () => {
+    const onAnalyzeComplete = vi.fn();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const startError = new Error('start failed');
+    startAnalyzeMock.mockRejectedValue(startError);
+
+    render(
+      <Header
+        availableRepos={[
+          {
+            name: 'Website',
+            path: 'F:\\Website',
+            indexedAt: new Date().toISOString(),
+          },
+        ]}
+        onAnalyzeComplete={onAnalyzeComplete}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Website/i }));
+    fireEvent.click(screen.getByTitle('Re-analyze Website'));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent('F:\\Website');
+    });
+
+    expect(onAnalyzeComplete).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent('start failed');
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to start re-analysis:', {
+      repoPath: 'F:\\Website',
+      error: startError,
+    });
   });
 });

@@ -88,6 +88,26 @@ export const buildAnalyzeCompleteEventPayload = (
   error: job?.error,
 });
 
+export const findRepoAfterRegistryRefresh = <
+  T extends { name: string; repoPath: string; id?: string },
+>(
+  repos: Iterable<T>,
+  repoName?: string,
+): T | null => {
+  const allRepos = [...repos];
+  if (!repoName) {
+    return allRepos.length === 1 ? allRepos[0] : null;
+  }
+  if (path.isAbsolute(repoName)) {
+    const requestedPath = path.resolve(repoName);
+    return allRepos.find((repo) => samePath(path.resolve(repo.repoPath), requestedPath)) ?? null;
+  }
+  return findRepoCandidate(allRepos, repoName, {
+    allowSingleDefault: true,
+    matchId: true,
+  });
+};
+
 /**
  * Determine whether an HTTP Origin header value is allowed by CORS policy.
  *
@@ -341,12 +361,7 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
                   repoPath: path.resolve(repo.path),
                 })),
               );
-              if (requestedPath) {
-                return (
-                  freshRepos.find((r) => samePath(path.resolve(r.repoPath), requestedPath)) || null
-                );
-              }
-              return freshRepos.find((r) => r.name === normalizedName) || null;
+              return findRepoAfterRegistryRefresh(freshRepos, repoName);
             }
             await new Promise((r) => setTimeout(r, 1000));
           }
@@ -363,7 +378,13 @@ export const createServer = async (port: number, host: string = '127.0.0.1') => 
         console.log(`[debug] resolveRepo 404 for "${normalizedName}". Triggering deep init...`);
       }
       await backend.init();
-      return await resolveRepo(normalizedName, true, req, opts);
+      const freshRepos = assignRepoRuntimeIds(
+        (await listRegisteredRepos()).map((repo) => ({
+          ...repo,
+          repoPath: path.resolve(repo.path),
+        })),
+      );
+      return findRepoAfterRegistryRefresh(freshRepos, repoName);
     }
 
     return found;

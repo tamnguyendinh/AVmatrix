@@ -2,7 +2,7 @@
 
 Date: 2026-05-08
 
-Status: Complete after path-contract fixes, tests, full build, and browser validation.
+Status: Complete after second supervisor re-review fixes, tests, full build, and browser validation.
 
 ## Goal
 
@@ -276,3 +276,29 @@ Additional reopened acceptance criteria:
 ## Re-review Validation Gap
 
 Resolved. The final validation included real browser execution, network/request inspection, full-path analyze/load assertions, graph stream error checks, and a follow-up repo-scoped query.
+
+## Second Re-review Fixes
+
+- [x] Preserve the original absolute selected repo path through backend registry refresh/retry so same-name or same-basename repos cannot redirect resolution by name.
+- [x] Make `connectToServer` load graph data through the canonical `repoInfo.repoPath` returned by `/api/repo`, not through the original possibly ambiguous input.
+- [x] Surface header re-analyze start/SSE failures in the dropdown with the selected `repoPath`, and include that path in console diagnostics.
+- [x] Add backend regression coverage for duplicate-name absolute path refresh selection.
+- [x] Add Web regression coverage proving graph download uses canonical `repoPath` after repo hydration.
+- [x] Add Web regression coverage proving header re-analyze failures do not reload graph and expose/log the selected path.
+
+## Second Re-review Validation Log
+
+- Full launcher build passed after the second re-review fixes:
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1`
+- Backend targeted tests passed:
+  - `cd avmatrix && npx vitest run test/unit/analyze-api.test.ts test/unit/repo-resolver.test.ts`
+  - Result: 2 files, 15 tests passed.
+- Web targeted tests passed:
+  - `cd avmatrix-web && npm test -- test/unit/DropZone.full-analyze-flow.test.tsx test/unit/Header.reanalyze-flow.test.tsx test/unit/RepoAnalyzer.local-only.test.tsx test/unit/repo-list.test.ts test/unit/server-connection.test.ts`
+  - Result: 5 files, 33 tests passed.
+- Playwright browser smoke passed against the freshly built launcher UI:
+  - Clicked the landing repo card for `AVmatrix`.
+  - POST `/api/analyze` body used `{"path":"F:\\AVmatrix-main"}`.
+  - `/api/repo` loaded `repo=F%3A%5CAVmatrix-main&awaitAnalysis=true`.
+  - `/api/graph` loaded `repo=F%3A%5CAVmatrix-main&stream=true`.
+  - UI reached ready state with no console, page, or network errors.
