@@ -89,7 +89,7 @@ const AppContentBody = () => {
 
       // Persist the active project in the URL for bookmarkability and F5 refresh resilience
       const urlObj = new URL(window.location.href);
-      urlObj.searchParams.set('project', repoPath || projectName);
+      urlObj.searchParams.set('project', projectName);
       window.history.replaceState(null, '', urlObj.toString());
 
       // Transition directly to exploring view
@@ -265,7 +265,7 @@ const AppContentBody = () => {
           // A repo was just fully indexed via the header dropdown. Connect to
           // the fresh graph, then make the dropdown list reflect that repo even
           // if the backend repo registry refresh lands a little late.
-          const url = serverBaseUrl ?? 'http://localhost:4747';
+          const url = serverBaseUrl ?? 'http://127.0.0.1:4848';
           for (let attempt = 0; attempt < 2; attempt++) {
             try {
               const repos = await fetchRepos().catch(() => [] as BackendRepo[]);

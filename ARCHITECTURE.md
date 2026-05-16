@@ -1,584 +1,210 @@
-# Architecture — AVmatrix
+# Architecture - AVmatrix
 
-Monorepo: **CLI/MCP/HTTP backend** (`avmatrix/`) + **browser UI** (`avmatrix-web/`) + **shared contracts** (`avmatrix-shared/`) + **local launcher** (`avmatrix-launcher/`).
+AVmatrix is a local-first code intelligence system. The backend, CLI, MCP server,
+analyzer, storage, contracts, and session bridge are implemented in Go under
+`cmd/` and `internal/`. The Web UI remains a thin React/Vite client under
+`avmatrix-web/`. The npm package under `avmatrix/` ships the Go runtime binary,
+package metadata, skills, and generated Go source fallback for install-time
+rebuilds.
 
-## Repository layout
+## Repository Layout
 
 | Path | Role |
 |------|------|
-| `avmatrix/` | npm package `avmatrix`: CLI, MCP server (stdio), HTTP API, ingestion pipeline, LadybugDB graph, embeddings. |
-| `avmatrix-web/` | Vite + React thin client: graph explorer, repo picker/analyze UI, and Codex/Claude Code session chat. Runtime calls go through the local HTTP API from `avmatrix serve`. |
-| `avmatrix-shared/` | Shared TypeScript types and constants (consumed by CLI and Web). |
-| `avmatrix-launcher/` | Windows local launcher: protocol handler, packaged web static server, backend wrapper, runtime reset, and release build script. |
-| `.claude/`, `avmatrix-claude-plugin/`, `avmatrix-cursor-integration/` | Agent skills and plugin metadata. |
-| `eval/` | Evaluation harness and offline quality checks. |
-| `.github/` | CI workflows + composite actions (`setup-avmatrix/`, `setup-avmatrix-web/`). |
+| `cmd/avmatrix/` | CLI entry point. |
+| `cmd/generate-web-contracts/` | Regenerates browser-side Web contract glue from Go contract definitions. |
+| `internal/analyze/` | End-to-end analyze orchestration, benchmark output, graph loading flow. |
+| `internal/scanner/`, `internal/parser/`, `internal/providers/` | File scanning, parser readiness/pool, language-specific ScopeIR extraction. |
+| `internal/scopeir/`, `internal/resolution/` | Serialized scope facts, indexes, import/call/reference resolution, audited graph edge emission. |
+| `internal/graph/`, `internal/lbugschema/`, `internal/lbugload/`, `internal/lbugruntime/` | Graph model, LadybugDB schema, CSV/load path, query/runtime helpers. |
+| `internal/httpapi/` | Local HTTP API used by the Web UI and launcher. |
+| `internal/mcp/` | MCP stdio server, tools, resources, prompts, impact, context, detect-changes, rename support. |
+| `internal/cli/` | Cobra CLI commands and hidden package lifecycle helpers. |
+| `internal/contracts/` | Go-owned contracts and generated Web UI TypeScript contract source. |
+| `internal/session/` | Local session bridge and Codex CLI adapter. |
+| `internal/group/`, `internal/tools/`, `internal/routes/`, `internal/communities/`, `internal/processes/` | Higher-level graph enrichments and runtime views. |
+| `avmatrix/` | npm package metadata, packaged skills, built `bin/` runtime artifacts, and generated `go-src` only during package fallback workflows. |
+| `avmatrix-web/` | React/Vite Web UI. Runtime calls go through `avmatrix serve`. |
+| `contracts/web-ui/` | Go-generated contract manifest for browser glue. |
+| `avmatrix-launcher/` | Windows launcher, server wrapper, packaged Web assets, and backend bundle. |
 
-## End-to-end flow: index → graph → tools
+## End-to-End Flow
 
-1. **Ingestion** — `analyze.ts` → `runFullAnalysis` (`run-analyze.ts`) → `runPipelineFromRepo` (`pipeline.ts`). DAG of 13 phases builds a `KnowledgeGraph` in memory, then loads into LadybugDB under `.avmatrix/`. The default accurate path parses once, extracts serialized scope facts from the same worker AST, finalizes scope/import indexes, resolves references in `resolutionPhase`, and emits audited graph edges before graph analytics. Repo registered in `~/.avmatrix/registry.json` for MCP discovery.
+1. **CLI or HTTP starts analyze**
+   - CLI path: `cmd/avmatrix` -> `internal/cli` -> `internal/analyze`.
+   - HTTP path: `avmatrix serve` -> `internal/httpapi` -> `internal/analyze`.
 
-2. **Persistence** — `repo-manager.ts` (paths, registry, KuzuDB cleanup). `lbug-adapter.ts` (graph load, queries, embedding batches).
+2. **Scan and parse**
+   - `internal/scanner` selects files and language IDs.
+   - `internal/parser` manages parser readiness, parser pool, and parse metrics.
+   - `internal/providers/*` emit ScopeIR facts from language-specific tree-sitter nodes or fallback parsing.
 
-3. **Runtime interfaces** — four local interfaces over the same indexed repos:
-   - **MCP (stdio):** `mcp.ts` → `LocalBackend` → tools (`tools.ts`) + resources (`resources.ts`).
-   - **HTTP local API:** `serve.ts` → Express (`server/api.ts`, `server/mcp-http.ts`, `server/session-bridge.ts`) for web UI and local adapters.
-   - **CLI direct:** `avmatrix query|context|impact|cypher` in `tool.ts`.
-   - **Launcher:** `avmatrix-launcher` starts the packaged web UI and backend wrapper on localhost.
+3. **Build graph facts**
+   - `internal/scopeir` provides the serialized fact boundary.
+   - `internal/resolution` builds definition/import/reference indexes, resolves calls/accesses/uses/inheritance, and emits audited relationships.
+   - `internal/routes`, `internal/tools`, `internal/orm`, `internal/mro`, `internal/communities`, and `internal/processes` enrich the graph.
 
-4. **Staleness** — `staleness.ts` compares indexed `lastCommit` to `HEAD`, surfaces hints.
+4. **Persist**
+   - `internal/lbugschema` defines table and relationship constants.
+   - `internal/lbugload` writes graph data to CSV/load paths.
+   - `internal/lbugruntime` opens/query LadybugDB and handles compatibility/runtime helpers.
+   - Repo metadata and registry state are managed by `internal/repo`.
 
-## Local HTTP runtime
+5. **Serve local interfaces**
+   - CLI: `avmatrix query|context|impact|cypher|detect-changes|rename|...`.
+   - MCP stdio: `avmatrix mcp`.
+   - HTTP/Web: `avmatrix serve`, then `avmatrix-web` talks to loopback HTTP.
+   - Launcher: `avmatrix-launcher` wraps the same backend and Web UI.
 
-`avmatrix serve` is a local-only backend. It binds localhost by default, allows localhost/private-network browser access, and does not introduce an AVmatrix-hosted cloud path.
+## Local HTTP Runtime
+
+`avmatrix serve` binds to loopback by default and exposes the local backend. It
+does not introduce an AVmatrix-hosted cloud service.
 
 | Endpoint family | Purpose | Main implementation |
 |-----------------|---------|---------------------|
-| `/api/info`, `/api/heartbeat` | Backend liveness and runtime metadata | `src/server/api.ts` |
-| `/api/repos`, `/api/repo` | List, select, and remove indexed local repos | `src/server/api.ts`, `src/core/repo-manager.ts` |
-| `/api/graph` | Load or stream graph data for an explicit repo | `src/runtime/repo-runtime/`, `src/server/graph-stream-http.ts` |
-| `/api/query`, `/api/search`, `/api/file`, `/api/grep`, `/api/process*`, `/api/cluster*` | Code search, file access, and graph-derived views | `src/server/api.ts` |
-| `/api/local/folder-picker` | Open an OS folder picker from the local backend and return an absolute path | `src/server/local-folder-picker.ts` |
-| `/api/analyze`, `/api/embed` | Local background jobs for indexing and embeddings | `src/server/jobs/`, `src/core/run-analyze.ts`, `src/core/embeddings/` |
-| `/api/mcp` | MCP-over-HTTP bridge for local clients | `src/server/mcp-http.ts`, `src/mcp/local/local-backend.ts` |
-| `/api/session/*` | Local session bridge for Codex/Claude Code style chat | `src/server/session-bridge.ts`, `src/runtime/runtime-controller.ts` |
+| `/api/info`, `/api/heartbeat` | Backend liveness and metadata. | `internal/httpapi/info.go`, `heartbeat.go` |
+| `/api/repos`, `/api/repo` | List, resolve, select, and remove indexed repos. | `internal/httpapi/repos.go`, `internal/repo` |
+| `/api/graph` | Load or stream graph data for an explicit repo. | `internal/httpapi/graph.go`, `internal/graph`, `internal/lbugruntime` |
+| `/api/query`, `/api/search`, `/api/file`, `/api/grep`, `/api/process*`, `/api/cluster*` | Code search, file access, graph views. | `internal/httpapi/query.go`, `search.go`, `file.go`, `grep.go`, `panels.go` |
+| `/api/local/folder-picker` | Open an OS folder picker from the local backend. | `internal/httpapi/local_folder_picker.go` |
+| `/api/analyze`, `/api/embed` | Background indexing and embedding jobs. | `internal/httpapi/analyze.go`, `embed.go`, `jobs.go` |
+| `/api/mcp` | MCP-over-HTTP bridge for local clients. | `internal/httpapi/mcp.go`, `internal/mcp` |
+| `/api/session/*` | Local Codex-style session bridge. | `internal/httpapi/session.go`, `internal/session` |
 
-The HTTP runtime still contains some legacy endpoint paths that call `src/core/lbug/lbug-adapter.ts` directly. The graph loading path has been moved to the repo-scoped runtime described below, so changing repos in the Web UI does not require retargeting one process-wide active database handle.
+Repo context is explicit by repo name/path/session. Backend and Web code must
+not reintroduce a mutable process-global active repo as the source of truth.
 
-## Web UI analyze contract
+## Web UI Contract
 
-The Web UI is a visual control surface over the same local analyze runtime used by the CLI. User-facing analyze entry points run a full analyze before graph loading:
+The browser-side contract source is generated from Go:
 
 ```text
-selected repoPath
-  -> POST /api/analyze { path: repoPath }
-  -> analyze worker runs with force: true
-  -> SSE complete { repoName, repoPath }
-  -> /api/repo?repo=<repoPath>&awaitAnalysis=true
-  -> /api/graph?repo=<canonical repoPath>&stream=true
-  -> render graph and bind follow-up calls to the same repoPath
+internal/contracts -> cmd/generate-web-contracts
+  -> contracts/web-ui/web-ui-contract.json
+  -> avmatrix-web/src/generated/avmatrix-contracts.ts
 ```
 
-The active Web analyze entry points are:
+`avmatrix-web/` may contain TypeScript/React UI code and generated browser glue.
+Backend, CLI, MCP, analyzer, persistence, and session authority live in Go.
 
-| Entry point | Behavior |
-|-------------|----------|
-| Landing repo card | Full analyze of the clicked repo path, then graph load for that same path. |
-| Analyze by local path | Full analyze of the submitted absolute path, then graph load for the completed path. |
-| Header re-analyze | Full analyze of the selected repo path, then graph reload for that path. |
-| Header "Analyze a new repository..." | Full analyze of the submitted path, refresh repo list, then select/load by path. |
-| Header repo dropdown switch | Load/open an existing graph only. It is intentionally not an analyze action, but still routes by canonical repo path. |
+## Package Lifecycle
 
-`repoName` is display metadata in the Web UI. Post-analyze routing must use the selected physical path or the canonical `repoInfo.repoPath` returned by `/api/repo`; it must not choose the graph target by display name or basename. The backend resolver also preserves absolute paths across registry refreshes so same-name or same-basename repos cannot redirect graph loading.
+The npm package is a Go runtime distribution wrapper:
 
-Analyze failures and post-analyze graph-load failures remain on the prior screen/graph and surface the selected path in diagnostics instead of silently falling back to a cached/default graph.
-
-## Repo-scoped graph reads
-
-Web graph loading is explicit by repo. The browser sends the target repo name/path, and the server resolves that request into a repo runtime target before reading LadybugDB.
-
-| Layer | Responsibility |
-|-------|----------------|
-| `src/runtime/repo-resolver.ts` | Resolve repo name/path, assign stable runtime IDs, reject unsupported local-session bindings. |
-| `src/runtime/repo-runtime/repo-read-executor.ts` | Represent `RepoReadTarget { repoId, lbugPath }` and execute reads through the LadybugDB pool keyed by `repoId`. |
-| `src/runtime/repo-runtime/graph-read-service.ts` | Build or stream graph nodes and `CodeRelation` relationships from repo-scoped queries. |
-| `src/server/graph-stream-http.ts` | Stream NDJSON batches to the browser and handle disconnects/backpressure. |
-
-This model is intentionally closer to MCP/local-backend semantics: repo context is explicit per operation. It avoids relying on a mutable "currently active repo" as the only source of truth for graph reads.
-
-Absolute repo paths are resolved before runtime IDs, names, basenames, or partial matches. If the registry is refreshed while an analyze job is completing, the refreshed repo list is still matched against the original absolute path first. This keeps Web graph loading and follow-up calls pinned to the same physical repo selected by the user.
-
-## Session runtime bridge
-
-The Web chat does not run an AI model inside AVmatrix. The shared contract supports local session providers (`codex` and `claude-code`), while the current backend mounts the Codex CLI adapter. AVmatrix keeps repo binding, streaming, cancellation, and UI state local.
-
-| Component | Role |
-|-----------|------|
-| `src/runtime/session-adapter.ts` | Provider-neutral session job and stream event contract. |
-| `src/runtime/session-adapters/codex.ts` | Native Codex CLI adapter. No AVmatrix API key is stored in the browser, and AVmatrix does not host a chat proxy. |
-| `src/runtime/runtime-controller.ts` | Resolves the repo binding, requires an indexed repo, starts/cancels one active chat job per repo. |
-| `src/server/session-bridge.ts` | Exposes `/api/session/status`, `/api/session/chat` SSE, and session cancellation. |
-| `avmatrix-web/src/hooks/chat-runtime/` | Browser-side status, message streaming, and transcript state. |
-
-Session requests include `repoName` or `repoPath`. The runtime resolves that binding before execution, so chat/tool execution is attached to a concrete local indexed repo instead of ambient UI state.
-
-## Packaged local launcher
-
-`avmatrix-launcher/` packages the local runtime for Windows:
-
-| File | Role |
-|------|------|
-| `avmatrix-launcher/build.ps1` | Builds CLI, Web UI, launcher executable, server wrapper executable, copies bundled assets, and registers the protocol. |
-| `avmatrix-launcher/src/main.go` | Handles `avmatrix://start`, `avmatrix://reset`, and `avmatrix://stop`; serves packaged `web-dist` on `127.0.0.1:5173`; starts the backend wrapper; opens the browser. |
-| `avmatrix-launcher/server-wrapper/main.go` | Starts bundled `node.exe avmatrix/dist/cli/index.js serve`. |
-| `avmatrix-launcher/web-dist/` | Built Web UI used by the launcher. |
-| `avmatrix-launcher/server-bundle/` | Bundled backend runtime used by the launcher. |
-
-The launcher is a convenience layer around the same local backend. It must not become a required cloud/control-plane service, and `avmatrix serve` remains the direct backend entrypoint.
-
-## MCP tools
-
-| Tool | Purpose |
-|------|---------|
-| `list_repos` | Discover indexed repos |
-| `query` | Hybrid BM25 + vector search over the graph |
-| `cypher` | Ad hoc Cypher against the schema |
-| `context` | Callers, callees, processes for one symbol |
-| `impact` | Blast radius (upstream/downstream) with risk summary |
-| `detect_changes` | Map git diffs to affected symbols and processes |
-| `rename` | Graph-assisted multi-file rename with `dry_run` preview |
-| `api_impact` | Pre-change impact report for an API route handler |
-| `route_map` | API route → handler → consumer mappings |
-| `tool_map` | MCP/RPC tool definitions and handlers |
-| `shape_check` | Response shape vs consumer property access mismatches |
-| `group_list` | List repo groups or details for one group |
-| `group_query` | Cross-repo search in a group (reciprocal rank fusion) |
-| `group_sync` | Rebuild group Contract Registry (`contracts.json`) |
-| `group_contracts` | Inspect group contracts and cross-links |
-| `group_status` | Index and Contract Registry staleness per repo in a group |
-
-## Where to change what
-
-| Concern | Start in |
+| Command | Behavior |
 |---------|----------|
-| CLI commands/flags | `src/cli/` (`index.ts`, per-command modules) |
-| HTTP server/endpoints | `src/server/api.ts`, `src/server/mcp-http.ts`, `src/server/session-bridge.ts` |
-| Repo-scoped graph reads | `src/runtime/repo-runtime/`, `src/runtime/repo-resolver.ts` |
-| Session runtime bridge | `src/runtime/runtime-controller.ts`, `src/runtime/session-adapter.ts`, `src/runtime/session-adapters/codex.ts` |
-| Parsing/graph construction | `src/core/ingestion/pipeline-phases/` + `pipeline.ts` |
-| Graph schema/DB | `src/core/lbug/` (`schema.ts`, `lbug-adapter.ts`) |
-| MCP tools/resources | `src/mcp/server.ts`, `tools.ts`, `resources.ts` |
-| Search ranking | `src/core/search/` (BM25, hybrid fusion) |
-| Embeddings | `src/core/embeddings/` + `src/core/run-analyze.ts` |
-| Wiki generation | `src/core/wiki/` |
-| Language support | `src/core/ingestion/languages/` + `tree-sitter-queries.ts` + `avmatrix-shared/src/languages.ts` |
-| Import resolution | Legacy graph path: `src/core/ingestion/import-processor.ts` + `import-resolvers/configs/` + `model/resolution-context.ts`; scope path: `finalize-orchestrator.ts`, `import-target-adapter.ts`, `avmatrix-shared/src/scope-resolution/` |
-| Scope-aware reference resolution | `src/core/ingestion/pipeline-phases/resolution.ts`, `scope-reference-resolver.ts`, `emit-references.ts`, `finalize-orchestrator.ts` |
-| Call resolution/MRO | Legacy parse path: `src/core/ingestion/call-processor.ts` + `model/resolve.ts`; scope path: `scope-reference-resolver.ts`, `finalize-orchestrator.ts`, `avmatrix-shared/src/mro-strategy.ts` |
-| Type extraction | `src/core/ingestion/type-extractors/` |
-| Worker pool | Parse workers: `src/core/ingestion/workers/`; reference-resolution workers: `scope-reference-resolver.ts` |
-| Web UI local runtime | `avmatrix-web/src/hooks/useAppState.local-runtime.tsx`, `avmatrix-web/src/services/backend-client.ts` |
-| Web UI chat runtime | `avmatrix-web/src/hooks/chat-runtime/`, `avmatrix-web/src/components/right-panel/` |
-| Local launcher | `avmatrix-launcher/src/main.go`, `avmatrix-launcher/server-wrapper/main.go`, `avmatrix-launcher/build.ps1` |
-| CI | `.github/workflows/*.yml`, `.github/actions/` |
+| `npm run build` in `avmatrix/` | Runs `go run ../cmd/avmatrix package build-runtime` and writes `avmatrix/bin/avmatrix.exe`. |
+| `prepack` | Builds the runtime and runs `avmatrix package prepare-go-source` to create generated `go-src` fallback source. |
+| `postpack` | Runs `avmatrix package clean-go-source` to remove generated package source from the working tree. |
+| `postinstall` | Rebuilds from repo or packaged `go-src` when Go is available, otherwise verifies the packaged binary for the current platform. |
 
-> Paths above are relative to `avmatrix/` unless they start with `avmatrix-web/`, `avmatrix-launcher/`, `.github/`, or another repository-root path.
+Package lifecycle helpers live in `internal/cli/package_command.go` and
+`internal/cli/package_runtime.go`; there are no package JS/CJS helper files.
+`go-src/` is a generated package artifact for prepack/postinstall fallback
+paths, not a normal source directory that must exist in a working checkout.
 
----
+## Analyze Pipeline
 
-## Pipeline Phase DAG
-
-13 phases defined in `avmatrix/src/core/ingestion/pipeline-phases/`, each with explicit `deps` and typed output.
-
-```
-scan → structure → [markdown, cobol] → parse → [routes, tools, orm]
-  → crossFile → resolution → mro → communities → processes
-```
-
-| Phase | File | Deps | Output |
-|-------|------|------|--------|
-| `scan` | `scan.ts` | (root) | File paths + sizes |
-| `structure` | `structure.ts` | `scan` | File/Folder nodes, CONTAINS edges, `allPathSet` |
-| `markdown` | `markdown.ts` | `structure` | Section nodes, cross-link edges from .md/.mdx |
-| `cobol` | `cobol.ts` | `structure` | COBOL program/paragraph/section nodes (regex, no tree-sitter) |
-| `parse` | `parse.ts` + `parse-impl.ts` | `structure`, `markdown`, `cobol` | Symbol nodes, legacy extracted imports/calls/heritage, extracted routes/tools/ORM queries, worker-produced `ParsedFile[]`, finalized scope/import indexes |
-| `routes` | `routes.ts` | `parse` | Route nodes + HANDLES_ROUTE edges (Next.js, Expo, PHP, decorators) |
-| `tools` | `tools.ts` | `parse` | Tool nodes + HANDLES_TOOL edges |
-| `orm` | `orm.ts` | `parse` | QUERIES edges (Prisma, Supabase) |
-| `crossFile` | `cross-file.ts` + `cross-file-impl.ts` | `parse`, `routes`, `tools`, `orm` | Legacy cross-file type propagation in topological import order, skipped when parse metrics prove complete AST-reused scope coverage |
-| `resolution` | `resolution.ts` | `parse`, `crossFile` | Scope-aware `ReferenceIndex`, audited CALLS/ACCESSES/USES/INHERITS/import edges, resolution metrics |
-| `mro` | `mro.ts` | `resolution`, `structure` | Graph-level METHOD_OVERRIDES + METHOD_IMPLEMENTS edges |
-| `communities` | `communities.ts` | `mro`, `structure` | Community nodes + MEMBER_OF edges (Leiden algorithm) |
-| `processes` | `processes.ts` | `communities`, `routes`, `tools`, `structure` | Process nodes + STEP_IN_PROCESS edges |
-
-**Non-phase files in the same directory:** `parse-impl.ts`, `cross-file-impl.ts` (implementation), `wildcard-synthesis.ts` (whole-module import expansion), `orm-extraction.ts` (sequential ORM fallback), `types.ts`, `runner.ts`, `index.ts`.
-
-### DAG runner
-
-`runner.ts` — static phase graph, no plugins, compile-time type safety.
-
-1. **Validation** — Kahn's topological sort. Rejects on: duplicate names, missing deps, cycles (DFS traces the concrete cycle path, e.g., `A -> B -> C -> A`, plus count of transitively blocked dependents).
-
-2. **Execution** — sequential in topological order. Each phase receives:
-   - `ctx: PipelineContext` — shared mutable `KnowledgeGraph`, `repoPath`, progress callback, options
-   - `deps: ReadonlyMap<string, PhaseResult>` — **declared deps only** (runner filters the results map to prevent hidden coupling)
-
-3. **Error handling** — wraps phase errors with the phase name, emits terminal `error` progress event, swallows progress handler errors to preserve the original cause.
-
-4. **Timing** — per-phase `durationMs` in `PhaseResult`, dev-mode console logging.
-
-**Design patterns:**
-- **Single graph accumulator** — all phases mutate the same `KnowledgeGraph` in `ctx`; the graph is the primary output.
-- **Typed phase access** — `getPhaseOutput<T>(deps, 'name')` for type-safe upstream results.
-- **Binding accumulator lifecycle** — created in `parse`, disposed by `crossFile` (in `finally`). No other phase should take ownership.
-- **Accurate single-pass path** — migrated providers emit `ParsedFile` scope facts from the worker's already-built AST. Main-thread resolution consumes serialized facts; it does not read source again or pass native AST trees between workers and the main thread.
-- **Skippable phases** — `skipGraphPhases` omits MRO/communities/processes (faster tests). `skipLegacyCrossFile` is diagnostic benchmark mode; default `crossFile` is skipped automatically only when complete AST-reused scope coverage is proven by parse metrics.
-
-### How to add a new phase
-
-1. Create `pipeline-phases/my-phase.ts` with a `PipelinePhase<MyOutput>` (name, deps, execute)
-2. Export from `pipeline-phases/index.ts`
-3. Add to `buildPhaseList()` in `pipeline.ts`
-
-```typescript
-import type { PipelinePhase, PhaseResult } from './types.js';
-import { getPhaseOutput } from './types.js';
-import type { ParseOutput } from './parse.js';
-
-export interface MyPhaseOutput { /* ... */ }
-
-export const myPhase: PipelinePhase<MyPhaseOutput> = {
-  name: 'myPhase',
-  deps: ['parse'],
-  async execute(ctx, deps) {
-    const { allPaths } = getPhaseOutput<ParseOutput>(deps, 'parse');
-    // ... write to ctx.graph ...
-    return { /* typed output */ };
-  },
-};
-```
-
----
-
-## Accurate Single-Pass Graph
-
-The default accurate graph path is designed to do scope resolution in the same analyze run without a GitNexus-style second source/AST pass.
+The Go analyze pipeline is implemented across focused packages instead of a
+TypeScript phase directory.
 
 ```text
-parse worker reads source
-  → tree-sitter AST
-  → legacy extracted facts
-  → AST-reused ParsedFile scope facts
-  → finalizeScopeModel(parsedFiles)
-  → SemanticModel.attachScopeIndexes(...)
-  → resolutionPhase builds ReferenceIndex
-  → emitReferencesToGraph(...)
-  → graph analytics + LadybugDB load
+scan -> structure/documents/cobol -> parse/providers
+  -> routes/tools/orm -> resolution -> mro
+  -> communities -> processes -> LadybugDB load
 ```
 
-### Scope Fact Boundary
-
-Parse workers return serialized facts, not native AST objects. The shared contract is `ParsedFile` in `avmatrix-shared/src/scope-resolution/`, carrying:
-
-| Field | Purpose |
-|-------|---------|
-| `filePath`, `fileHash`, `moduleScope` | Stable file identity, source hash for audit metadata, and root scope id |
-| `scopes` | Lexical scope tree facts with bindings and type bindings |
-| `parsedImports` | Provider-interpreted import facts before cross-file finalization |
-| `localDefs` | Class/function/method/property/type definitions declared in the file |
-| `referenceSites` | Pre-resolution call/read/write/type-reference/inheritance/import-use facts |
-
-Providers should implement `emitScopeCapturesFromTree` so `parse-worker.ts` can reuse the already parsed tree-sitter root node. `emitScopeCaptures` from source text remains a compatibility path; it is not the optimized default for migrated providers.
-
-### Finalize And Resolution
-
-`finalizeScopeModel(parsedFiles)` builds immutable workspace indexes:
-
-| Index | Use |
-|-------|-----|
-| `scopeTree` | Scope lookup, parent/ancestor walking, file lookup by scope id |
-| `defs`, `qualifiedNames`, `moduleScopes` | Symbol target lookup without graph scans |
-| `imports`, `bindings` | Finalized import graph and merged scope-visible bindings |
-| `methodDispatch` | Pre-resolution owner → ancestor/interface view for receiver dispatch |
-| `fileHashes` | Audit metadata on emitted relationships |
-| `referenceSites` | Work queue for `resolutionPhase` |
-
-`resolutionPhase` resolves `ReferenceSite[]` into `ReferenceIndex`, then `emitReferencesToGraph` emits non-duplicate graph edges. Scope-emitted edges carry `resolutionSource`, `confidence`, `evidence`, and `fileHash` when available. If a matching legacy edge already exists, scope audit metadata is merged into that edge instead of emitting a duplicate.
-
-The emitted scope edge mapping is:
-
-| Reference kind | Graph relationship |
-|----------------|--------------------|
-| `call` | `CALLS` |
-| `read`, `write` | `ACCESSES` |
-| `type-reference`, `import-use` | `USES` |
-| `inherits` | `INHERITS` |
-| finalized file imports | `IMPORTS` |
-
-Graph node mapping is fail-closed: if either endpoint cannot be mapped to an existing graph node, no relationship is emitted. This avoids persisting dangling `def:*` relationships.
-
-### CrossFile Narrowing
-
-`crossFilePhase` still owns the `BindingAccumulator` lifetime and remains the compatibility path for providers that do not have complete AST-reused scope coverage.
-
-Default behavior:
-
-- If every parseable file has AST-reused scope facts and there are zero compatibility/no-hook/failed extractions, `crossFilePhase` skips legacy source reread/reprocess work with `skipReason=covered-by-ast-reused-scope-resolution`.
-- If coverage is incomplete, legacy cross-file propagation still runs.
-- `--skip-legacy-cross-file` is a diagnostic benchmark mode, not a user-facing fast/deep mode.
-
-### Reference-Resolution Workers
-
-`scope-reference-resolver.ts` can resolve deterministic file/reference chunks against readonly indexes. Worker behavior is controlled by `AVMATRIX_SCOPE_RESOLUTION_WORKERS`:
-
-| Value | Behavior |
-|-------|----------|
-| unset / `auto` | Use workers only above the default reference-site threshold |
-| `force`, `1`, `true`, `yes`, `on` | Force worker mode |
-| `off`, `0`, `false`, `no` | Disable worker mode |
-
-`AVMATRIX_SCOPE_RESOLUTION_WORKER_COUNT` overrides the worker count. Benchmark metrics expose chunk counts, readonly index size, worker use/count, init/worker/merge timings, and resolved/unresolved counts.
-
-### Benchmark Artifacts
-
-`avmatrix analyze --benchmark-json <file> --benchmark-label <label>` writes a reproducible artifact with:
-
-- graph correctness snapshot and digests;
-- phase timings and key parse/crossFile/resolution/LadybugDB counters;
-- semantic unique/duplicate relationship counts;
-- per-language coverage (`languageCoverageByLanguage`) for parseable files, AST-reused scope files, compatibility/no-hook/failed counts, reference sites, resolved/unresolved references, and coverage percentages;
-- environment metadata, including target repo git commit/dirty state or explicit `repoGitUnavailable` plus reason when the target is not a git checkout.
-
-Use `avmatrix benchmark-compare <before.json> <after.json>` to compare timing, edge-count, semantic duplicate, graph-diff, resolution, and per-language coverage deltas.
-
----
-
-## Call-Resolution DAG
-
-Typed 6-stage legacy pipeline in `call-processor.ts` (inside the `parse` phase) that resolves method/function calls and emits CALLS edges. Language behavior plugs in at two `LanguageProvider` hook points (stages 3–4); shared code names no languages. Scope: call resolution only — import resolution, type extraction, heritage, and symbol-table population live in other phases.
-
-For migrated providers, the accurate default path also emits `ReferenceSite` call facts from the reused AST and resolves them in `resolutionPhase`. The parse-phase DAG remains important for legacy coverage and compatibility, but it is no longer the only source of precise CALLS edges.
-
-### Stages
-
-```
-extract-call ──▶ classify-form ──▶ infer-receiver ──▶ select-dispatch ──▶ resolve-target ──▶ emit-edge
-     (1)              (2)            (3)  [hook]       (4)  [hook]         (5)                 (6)
-```
-
-| Stage | Produces | Location |
-|-------|----------|----------|
-| **extract-call** | `ExtractedCallSite` (name, form, receiver, argCount) | `call-extractors/` (per-language); runs in worker |
-| **classify-form** | callForm (`free`/`member`/`constructor`) + arity | `call-analysis.ts` → `inferCallForm`; shared, runs in worker |
-| **infer-receiver** | `ReceiverEnriched` (receiver type finalized) | `call-processor.ts`; shared default chain, then `inferImplicitReceiver` hook |
-| **select-dispatch** | `DispatchDecision` (primary, fallback, ancestryView) | `selectDispatch` hook, falls back to shared default |
-| **resolve-target** | `TieredCandidates` | `model/resolve.ts` → `lookupMethodByOwnerWithMRO` (MRO walk) |
-| **emit-edge** | CALLS edge in graph | `call-processor.ts`; writes edge with confidence tier |
-
-### Provider hooks
-
-Both hooks are optional on `LanguageProvider`. Ruby is the only current implementer.
-
-**`inferImplicitReceiver`** — called after shared infer-receiver defaults. Returns `ImplicitReceiverOverride | null`.
-
-| | |
-|---|---|
-| Inputs | `calledName`, `callForm`, `receiverName`, `receiverTypeName`, `callNode` (AST), `filePath` |
-| Non-null fields | `callForm`, `receiverName`, `receiverTypeName` (required); `receiverSource: 'implicit-self'` (fixed); `hint?` (opaque, passed to `selectDispatch`) |
-| Null | Keep existing `ReceiverEnriched` state |
-
-**`selectDispatch`** — called after infer-receiver (including hook). Returns `DispatchDecision | null`; null uses shared default (constructor → `primary:'constructor'`; typed receiver → `primary:'owner-scoped'`; else → `primary:'free'`).
-
-| | |
-|---|---|
-| Inputs | `calledName`, `callForm`, `receiverName`, `receiverTypeName`, `receiverSource`, `hint` |
-| Non-null fields | `primary: 'owner-scoped' \| 'free' \| 'constructor'`; `fallback?: 'free-arity-narrowed'`; `ancestryView?: 'instance' \| 'singleton'`; `hint?` |
-
-**`DispatchDecision` field semantics:**
-- `primary: 'owner-scoped'` — MRO walk from receiver's type; used when receiver type is known.
-- `fallback: 'free-arity-narrowed'` — after owner-scoped miss, search free-call candidates by arity only (Ruby uses this for implicit-self calls that miss their owner's MRO).
-- `ancestryView: 'singleton'` — walk singleton/class ancestry instead of instance ancestry (Ruby `def self.foo` bodies, so `extend`-ed methods are found).
-
-### Adding language behavior
-
-1. **Implicit receivers** — implement `inferImplicitReceiver`: return null if call already has a receiver; otherwise use `findEnclosingClassInfo` (`ast-helpers.ts`) to find the enclosing context, return `ImplicitReceiverOverride` with `receiverSource: 'implicit-self'`, and optionally set `hint` for `selectDispatch`.
-2. **Custom dispatch** — implement `selectDispatch`: inspect `receiverSource` and `hint`, return `DispatchDecision` with `primary`, optional `fallback`, optional `ancestryView`; return null to keep shared defaults.
-3. **MRO strategy** — confirm `mroStrategy` is one of the shared `MroStrategy` tags (`first-wins`, `leftmost-base`, `c3`, `implements-split`, `qualified-syntax`, `ruby-mixin`); consumed by `lookupMethodByOwnerWithMRO` and by scope `methodDispatch` finalization.
-
-**Ruby example** (`languages/ruby.ts` + `utils/ruby-self-call.ts`): `inferImplicitReceiver` rewrites bare-identifier calls to `self.method` and sets `hint` to `'instance'`/`'singleton'`; `selectDispatch` uses hint for `ancestryView` and adds `fallback: 'free-arity-narrowed'` for implicit-self calls.
-
-### Code references
-
-| Module | Purpose |
-|--------|---------|
-| `core/ingestion/call-types.ts` | DAG types: `ReceiverEnriched`, `DispatchDecision`, `ImplicitReceiverOverride` |
-| `core/ingestion/language-provider.ts` | Hook signatures: `inferImplicitReceiver`, `selectDispatch` |
-| `core/ingestion/call-processor.ts` | `processCalls`: stages 3–6 |
-| `core/ingestion/model/resolve.ts` | `lookupMethodByOwnerWithMRO`: stage 5 MRO walk |
-| `core/ingestion/scope-reference-resolver.ts` | Scope-aware reference-site resolution into `ReferenceIndex` |
-| `core/ingestion/emit-references.ts` | Drains `ReferenceIndex` into audited graph edges |
-| `core/ingestion/finalize-orchestrator.ts` | Builds scope indexes and pre-resolution `methodDispatch` |
-| `core/ingestion/languages/ruby.ts` | Both hooks + `mroStrategy: 'ruby-mixin'` |
-| `core/ingestion/utils/ruby-self-call.ts` | Bare-call rewrite for `inferImplicitReceiver` |
-
----
-
-## Language-agnostic graph feeding
-
-16 languages → single unified graph. Four abstraction layers:
-
-```
- Unified Graph Schema (shared graph contracts + LadybugDB CodeRelation)
-           ↑
- Graph Edge Emission (legacy emitters + scope ReferenceIndex drain)
-           ↑
- Accurate Scope Resolution (ParsedFile → finalizeScopeModel → ReferenceIndex)
-           ↑
- Unified Legacy Resolution (3-tier name lookup + MRO walk)
-           ↑
- Language Providers (import semantics, type config, export checker, MRO strategy)
-           ↑
- Tree-Sitter Queries (per-language S-expressions, unified capture tags)
-```
-
-### Language providers
-
-Each language implements `LanguageProvider` (`language-provider.ts`). Key fields:
-
-| Field | Purpose |
-|-------|---------|
-| `id`, `extensions` | Language identity and file matching |
-| `treeSitterQueries` | S-expression queries for AST extraction |
-| `importSemantics` | `named` / `wildcard-leaf` / `wildcard-transitive` / `namespace` |
-| `importResolver` | Language-specific path → file resolution |
-| `exportChecker` | Public/exported symbol detection |
-| `typeConfig` | Type annotation extraction rules |
-| `mroStrategy` | `first-wins` / `leftmost-base` / `c3` / `implements-split` / `qualified-syntax` / `ruby-mixin` |
-| `emitScopeCapturesFromTree` | AST-reused scope facts for the accurate single-pass path |
-| `interpretImport`, `interpretTypeBinding`, `bindingScopeFor`, `receiverBinding` | Provider hooks used by scope extraction/finalize/resolution |
-
-16 providers in `languages/index.ts` via `satisfies Record<SupportedLanguages, LanguageProvider>` — missing a language is a compile error.
-
-### Unified capture tags and scope captures
-
-Per-language tree-sitter queries use different AST node names but produce the **same semantic capture tags**: `@definition.class`, `@definition.function`, `@call.name`, `@import.source`, `@heritage.extends`. Downstream extraction needs no language branching. Defined in `tree-sitter-queries.ts`.
-
-The accurate scope path uses provider-produced scope captures with the same parser-agnostic philosophy: language-specific AST walkers emit capture matches for scopes, declarations, imports, type bindings, and references; the central `ScopeExtractor` turns them into `ParsedFile` facts.
-
-### Import resolution
-
-Per-language import resolution uses the **configs + factory** pattern (like call/method/class extractors). Each language declares an `ImportResolutionConfig` in `import-resolvers/configs/`, listing an ordered chain of `ImportResolverStrategy` functions. `createImportResolver()` (in `resolver-factory.ts`) composes them: first non-null result wins. Low-level helpers shared across strategies live alongside the configs in `import-resolvers/` (e.g. `go.ts`, `rust.ts`, `python.ts`).
-
-Unified 3-tier algorithm (`model/resolution-context.ts`), per-language `importSemantics` controls which tier activates:
-
-| Tier | Confidence | Mechanism |
-|------|-----------|-----------|
-| 1 — same-file | 0.95 | Symbol table for caller's file |
-| 2 — import-scoped | 0.9 | `NamedImportMap` chains (named) or all files in `importMap` (wildcard) |
-| 3 — global | 0.5 | O(1) index lookups: class, impl, callable. Fallback only |
-
-| Import strategy | Languages | Behavior |
-|----------------|-----------|----------|
-| `named` | TS, JS, Java, C#, Rust, PHP, Kotlin | Only explicitly imported names visible |
-| `wildcard-leaf` | Go, Ruby, Swift, Dart | Whole-package import, no transitive re-exports |
-| `wildcard-transitive` | C, C++ | `#include` closure chains through re-exports |
-| `namespace` | Python | Module aliases resolved at call site |
-
-### Chunked parse-and-resolve
-
-`parse` processes files in ~20 MB byte-budget chunks to bound memory. Per chunk:
-1. Worker pool dispatches files.
-2. Each worker: detect language → load grammar → parse source once → run legacy extraction queries → emit AST-reused `ParsedFile` scope facts where provider support exists → return unified `ParseWorkerResult`.
-3. Main parse loop resolves legacy imports/heritage, synthesizes wildcard bindings (`wildcard-synthesis.ts`), and collects `BindingAccumulator` entries for compatibility cross-file propagation.
-4. Main parse loop calls `finalizeScopeModel(allParsedFiles)` once, attaches the resulting scope indexes to the semantic model, and exposes parse/scope coverage counters.
-
-Workers: `workers/worker-pool.ts`, `workers/parse-worker.ts`.
-
-### Heritage and MRO
-
-All languages emit unified legacy `ExtractedHeritage` (child, parent, `EXTENDS`/`IMPLEMENTS`) for graph-level heritage and MRO processing. Migrated scope providers also emit `ReferenceSite { kind: 'inherits', heritageKind }` facts from the reused AST. `finalizeScopeModel` uses those pre-resolution inheritance facts to build `methodDispatch` before `resolutionPhase` resolves receiver calls.
-
-Current MRO strategy tags:
-
-- **`first-wins`** — BFS ancestor walk in declaration order.
-- **`leftmost-base`** — C++-style leftmost-base behavior through BFS insertion order.
-- **`c3`** — Python C3 linearization, with BFS fallback on inconsistent/cyclic input.
-- **`implements-split`** — BFS lookup with separate implementor/interface buckets.
-- **`qualified-syntax`** — no implicit ancestor dispatch; explicit syntax required.
-- **`ruby-mixin`** — kind-aware prepend/include/extend ordering for Ruby.
-
-Unified walk: `lookupMethodByOwnerWithMRO()` in `model/resolve.ts`.
-
----
-
-## Full analysis flow
-
-`runFullAnalysis` in `run-analyze.ts` orchestrates everything around the pipeline:
-
-```
-CLI (analyze.ts) → runFullAnalysis(repoPath, options, callbacks)
-  1. Early exit if lastCommit == HEAD (unless --force)     [0%]
-  2. Cache existing embeddings from prior index             [0%]
-  3. runPipelineFromRepo() → accurate KnowledgeGraph       [0-60%]
-  4. Clean up legacy KuzuDB files                          [60%]
-  5. initLbug() → loadGraphToLbug() via CSV streaming      [60-85%]
-  6. Create FTS indexes (File, Function, Class, Method...) [85-90%]
-  7. Restore cached embeddings (batch insert)              [88%]
-  8. Generate new embeddings if --embeddings               [90-98%]
-  9. Save metadata + register repo + update .gitignore     [98-100%]
- 10. Generate AI context files (AGENTS.md, CLAUDE.md)      [100%]
-```
-
-**Options:** `--force` (rebuild regardless), `--embeddings` (opt-in, skipped if >50k nodes), `--skipGit`, `--noStats`.
+| Stage | Main Go packages | Output |
+|-------|------------------|--------|
+| Scan | `internal/scanner` | Selected files, language classification, skip metadata. |
+| Structure/documents | `internal/structure`, `internal/documents` | File/folder/section nodes and containment. |
+| COBOL/JCL | `internal/cobol` | COBOL program, paragraph, section, copybook, and JCL facts. |
+| Parse/providers | `internal/parser`, `internal/providers/*` | ScopeIR definitions, imports, references, routes/tools/ORM facts. |
+| Resolution | `internal/scopeir`, `internal/resolution` | Audited CALLS, ACCESSES, USES, INHERITS, IMPORTS, and compatibility edges. |
+| MRO | `internal/mro`, `internal/resolution` | METHOD_OVERRIDES and METHOD_IMPLEMENTS style graph edges. |
+| Communities/processes | `internal/communities`, `internal/processes` | Community nodes and execution-flow process nodes. |
+| Persist | `internal/lbugschema`, `internal/lbugload`, `internal/lbugruntime` | LadybugDB tables, graph load, search/query support. |
+
+### Call-Resolution DAG
+
+Call resolution is still organized as a typed multi-stage flow inside the parse
+and resolution path:
+
+1. Provider extraction emits call/reference facts in ScopeIR.
+2. Definition/import indexes are built from all parsed files.
+3. Language-specific implicit receiver and dispatch behavior remains behind
+   provider hooks and resolution helpers.
+4. References are resolved to graph node identities with confidence/evidence.
+5. Duplicate/legacy-compatible edges are merged with audit metadata.
+6. Graph relationships are emitted with stable type labels and file hashes.
+
+Shared code in `internal/analyze`, `internal/scopeir`, and
+`internal/resolution` must stay language-neutral; language behavior belongs in
+`internal/providers/<language>/`.
 
 ## Storage
 
-```
+```text
 <repo>/.avmatrix/
-  ├── lbug           # LadybugDB database
-  ├── lbug.wal       # Write-ahead log
-  ├── lbug.lock      # Single-writer lock
-  └── meta.json      # lastCommit, indexedAt, stats
+  graph.json        JSON graph snapshot for fallback/runtime readers
+  lbug              LadybugDB database
+  meta.json         repoPath, lastCommit, indexedAt, stats
+  settings.json     optional repo-local settings such as maxExecutionFlows
 
 ~/.avmatrix/
-  └── registry.json  # Global repo registry (MCP discovery)
-
-avmatrix-launcher/
-  ├── web-dist/      # Packaged Web UI built from avmatrix-web/
-  ├── server-bundle/ # Packaged CLI/backend runtime plus bundled node.exe
-  └── logs/          # launcher.log, backend.log, server-wrapper.log
-
-%TEMP%/
-  └── avmatrix-launcher-<hash>.json # Launcher/backend PID state for start/reset/stop
+  registry.json     indexed repo registry for CLI/MCP/Web discovery
 ```
 
-Repo index storage is managed by `repo-manager.ts`. Launcher state and logs are managed by `avmatrix-launcher/src/main.go` and `avmatrix-launcher/server-wrapper/main.go`.
+LadybugDB runtime side files such as WAL or lock files may appear while the
+database is open or recovering, but they are transient implementation details
+rather than required index outputs.
 
-## LadybugDB schema
+Launcher runtime state and logs are managed under `avmatrix-launcher/` and the
+user temp directory. The launcher is optional; `avmatrix serve` remains the
+direct backend entry point.
 
-Defined in `lbug/schema.ts`; the table-name constants come from `avmatrix-shared/src/lbug/schema-constants.ts`. Separate node tables per type, one `CodeRelation` table for edges, and one `CodeEmbedding` table for vector chunks.
+## MCP Tools
 
-**Node tables:** File, Folder, Function, Class, Interface, Method, CodeElement, Community, Process, Section, Struct, Enum, Macro, Typedef, Union, Namespace, Trait, Impl, TypeAlias, Const, Static, Variable, Property, Record, Delegate, Annotation, Constructor, Template, Module, Route, Tool.
+| Tool | Purpose |
+|------|---------|
+| `list_repos` | Discover indexed repos. |
+| `query` | Hybrid text/vector search over indexed graph content. |
+| `context` | Callers, callees, files, and processes for one symbol. |
+| `impact` | Upstream/downstream blast radius with risk summary. |
+| `detect_changes` | Map git diffs to affected symbols and processes. |
+| `rename` | Graph-assisted multi-file rename with dry-run preview. |
+| `cypher` | Ad hoc graph query support. |
+| `api_impact`, `route_map`, `tool_map`, `shape_check` | HTTP/API/MCP contract analysis. |
+| `group_*` | Cross-repo group search, contracts, sync, and status. |
 
-**Common relation types** (`CodeRelation.type`): CONTAINS, DEFINES, IMPORTS, CALLS, INHERITS, USES, EXTENDS, IMPLEMENTS, HAS_METHOD, HAS_PROPERTY, ACCESSES, METHOD_OVERRIDES, OVERRIDES (legacy compat), METHOD_IMPLEMENTS, MEMBER_OF, STEP_IN_PROCESS, HANDLES_ROUTE, FETCHES, HANDLES_TOOL, ENTRY_POINT_OF, WRAPS, QUERIES.
+## Where To Change What
 
-Scope-aware relationships may carry audit metadata in `CodeRelation`: `resolutionSource`, `evidence`, and `fileHash`. Existing indexes created before those columns are handled through legacy schema fallback on read.
+| Concern | Start in |
+|---------|----------|
+| CLI commands/flags | `internal/cli/` |
+| Package lifecycle | `internal/cli/package_command.go`, `internal/cli/package_runtime.go`, `avmatrix/package.json` |
+| Analyze orchestration | `internal/analyze/` |
+| File scanning/language selection | `internal/scanner/` |
+| Parser readiness/pool | `internal/parser/` |
+| Language extraction | `internal/providers/<language>/` |
+| Scope facts and indexes | `internal/scopeir/` |
+| Import/call/reference resolution | `internal/resolution/` |
+| Graph schema/load/runtime | `internal/lbugschema/`, `internal/lbugload/`, `internal/lbugruntime/` |
+| HTTP backend | `internal/httpapi/` |
+| MCP server/tools/resources | `internal/mcp/` |
+| Search and embeddings | `internal/embeddings/`, `internal/httpapi/search.go` |
+| Session bridge | `internal/session/`, `internal/httpapi/session.go` |
+| Web UI | `avmatrix-web/src/` |
+| Generated Web contracts | `internal/contracts/`, `cmd/generate-web-contracts/`, `avmatrix-web/src/generated/` |
+| Launcher | `avmatrix-launcher/src/main.go`, `avmatrix-launcher/server-wrapper/main.go`, `avmatrix-launcher/build.ps1` |
 
-## Embeddings and search
+## Known Constraints
 
-**Embeddings** (`src/core/embeddings/`): Snowflake arctic-embed-xs (384D). Embeddable: File, Function, Class, Method, Interface. Incremental via SHA1 content hash. Stored in the separate `CodeEmbedding` table.
-
-**Search** (`src/core/search/`): Hybrid BM25 + semantic vector, merged via Reciprocal Rank Fusion (K=60).
-
-## Known limitations
-
-### Overloaded method resolution
-
-Node IDs use arity suffix (`#<paramCount>`): `Method:file:Class.method#1` vs `#2`.
-
-**Same-arity disambiguation:** type-hash suffix `~type1,type2` when collision detected and type annotations present. Languages without types (Python, Ruby, JS) use arity-only. TS/JS overload signatures excluded (collapse to implementation body). See #651.
-
-**C++ const-qualified:** `$const` suffix after type-hash when non-const collision exists: `Method:file:Container.begin#0$const`.
-
-**Generic/template types:** type-hash uses `rawType` (full AST text including generics): `~vector<int>` vs `~vector<std::string>`.
-
-**ID stability:** collision-only tags mean IDs change when overloads are added. `save#1` becomes `save#1~int` when `save(String)` is added.
-
-**Variadic matching:** confidence 0.7 when one side is variadic and the other has fixed count.
-
-**METHOD_IMPLEMENTS confidence tiering:**
-
-| Match quality | Confidence |
-|---|---|
-| Exact parameter types match | 1.0 |
-| Arity match, types unavailable | 1.0 |
-| Variadic vs fixed | 0.7 |
-| Insufficient info | 0.7 |
-
-## Related docs
-
-- [MIGRATION.md](MIGRATION.md) — breaking changes and migration guidance
-- [RUNBOOK.md](RUNBOOK.md) — operational commands and recovery
-- [GUARDRAILS.md](GUARDRAILS.md) — safety boundaries for humans and agents
-- [TESTING.md](TESTING.md) — how to run tests
-- `AGENTS.md` / `CLAUDE.md` — agent workflows and tool usage
+- Only one analyze writer should touch a repo-local `.avmatrix/lbug` database at
+  a time.
+- Embeddings are opt-in. Use `avmatrix analyze --embeddings` when preserving or
+  refreshing vector data matters.
+- Web graph loading must stay repo-scoped by explicit repo path/name.
+- `avmatrix-web/` must remain a thin client over the local backend.
+- The launcher must remain a convenience layer over the same backend semantics.

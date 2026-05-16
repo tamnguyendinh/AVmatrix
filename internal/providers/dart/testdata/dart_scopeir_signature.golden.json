@@ -1,0 +1,79 @@
+{
+  "scopes": [
+    "Class:scope:lib/service.dart#13:0-16:1:Class",
+    "Class:scope:lib/service.dart#18:0-20:1:Class",
+    "Class:scope:lib/service.dart#22:0-37:1:Class",
+    "Class:scope:lib/service.dart#4:0-6:1:Class",
+    "Class:scope:lib/service.dart#8:0-11:1:Class",
+    "Function:scope:lib/service.dart#10:2-10:15:Function",
+    "Function:scope:lib/service.dart#15:2-15:15:Function",
+    "Function:scope:lib/service.dart#19:2-19:26:Function",
+    "Function:scope:lib/service.dart#25:2-25:36:Function",
+    "Function:scope:lib/service.dart#28:2-32:3:Function",
+    "Function:scope:lib/service.dart#34:2-36:3:Function",
+    "Function:scope:lib/service.dart#5:2-5:22:Function",
+    "Module:scope:lib/service.dart#1:0-38:0:Module"
+  ],
+  "definitions": [
+    "Class:Base:::",
+    "Class:Repository:::",
+    "Class:Service:::",
+    "Class:User:::",
+    "Constructor:Base.Base:::def:lib/service.dart#8:0:Class:Base",
+    "Constructor:Service.Service:::def:lib/service.dart#22:0:Class:Service",
+    "Constructor:User.User:::def:lib/service.dart#13:0:Class:User",
+    "Interface:Named:::",
+    "Method:Named.save:bool::def:lib/service.dart#4:0:Interface:Named",
+    "Method:Repository.write:void::def:lib/service.dart#18:0:Class:Repository",
+    "Method:Service.normalize:String::def:lib/service.dart#22:0:Class:Service",
+    "Method:Service.save:bool::def:lib/service.dart#22:0:Class:Service",
+    "Property:Base.id::String:def:lib/service.dart#8:0:Class:Base",
+    "Property:Service.repo::Repository:def:lib/service.dart#22:0:Class:Service",
+    "Property:User.id::String:def:lib/service.dart#13:0:Class:User",
+    "Variable:id::String:"
+  ],
+  "imports": [
+    "alias:base:base:base:base.dart",
+    "named:repo:repo::repo.dart"
+  ],
+  "calls": [
+    "normalize:member::1",
+    "trim:member:user.id:0",
+    "write:member:repo:1"
+  ],
+  "accesses": [
+    "read:id:user",
+    "read:repo:"
+  ],
+  "heritage": [
+    "extends:Base",
+    "implements:Named"
+  ],
+  "typeReferences": [
+    "id:String:annotation",
+    "id:String:annotation",
+    "id:String:assignment-inferred",
+    "id:String:parameter-annotation",
+    "repo:Repository:annotation",
+    "user:User:parameter-annotation",
+    "user:User:parameter-annotation",
+    "user:User:parameter-annotation"
+  ],
+  "typeBindings": [
+    "id:String:annotation",
+    "id:String:annotation",
+    "id:String:assignment-inferred",
+    "id:String:parameter-annotation",
+    "repo:Repository:annotation",
+    "this:Base:self",
+    "this:Named:self",
+    "this:Repository:self",
+    "this:Service:self",
+    "this:Service:self",
+    "this:Service:self",
+    "this:User:self",
+    "user:User:parameter-annotation",
+    "user:User:parameter-annotation",
+    "user:User:parameter-annotation"
+  ]
+}

@@ -1,0 +1,241 @@
+{
+  "observedAtLocal": "2026-05-08T21:38:00+07:00",
+  "status": "ladybugdb_graph_contract_reconciled",
+  "verification": {
+    "fullLauncherBuild": "powershell -ExecutionPolicy Bypass -File avmatrix-launcher\\build.ps1 PASS",
+    "avmatrixTargeted": "cd avmatrix && npx vitest run test/unit/schema.test.ts test/unit/security.test.ts test/unit/impact-confidence.test.ts test/unit/impact-contract.test.ts test/unit/contract-freeze/phase1-contract-snapshot.test.ts test/integration/pipeline-graph-golden.test.ts PASS",
+    "webTargeted": "cd avmatrix-web && npx vitest run test/unit/security-guards.test.ts PASS"
+  },
+  "authorities": {
+    "graphTypes": "avmatrix-shared/src/graph/types.ts",
+    "schemaConstants": "avmatrix-shared/src/lbug/schema-constants.ts",
+    "ladybugDdl": "avmatrix/src/core/lbug/schema.ts",
+    "runtimeEmitters": [
+      "avmatrix/src/core/ingestion/emit-references.ts",
+      "avmatrix/src/core/ingestion/call-processor.ts",
+      "avmatrix/src/core/ingestion/import-processor.ts",
+      "avmatrix/src/core/ingestion/mro-processor.ts",
+      "avmatrix/src/core/ingestion/pipeline-phases/processes.ts"
+    ],
+    "fixtureGolden": "avmatrix/test/fixtures/pipeline-golden/mini-repo/expected-graph.json"
+  },
+  "ladybugdb": {
+    "nodeTables": [
+      "File",
+      "Folder",
+      "Function",
+      "Class",
+      "Interface",
+      "Method",
+      "CodeElement",
+      "Community",
+      "Process",
+      "Package",
+      "Section",
+      "Struct",
+      "Enum",
+      "Macro",
+      "Typedef",
+      "Union",
+      "Namespace",
+      "Trait",
+      "Impl",
+      "TypeAlias",
+      "Const",
+      "Static",
+      "Variable",
+      "Property",
+      "Record",
+      "Delegate",
+      "Annotation",
+      "Constructor",
+      "Template",
+      "Module",
+      "Route",
+      "Tool"
+    ],
+    "relationshipTable": {
+      "name": "CodeRelation",
+      "columns": {
+        "type": "STRING",
+        "confidence": "DOUBLE",
+        "reason": "STRING",
+        "step": "INT32",
+        "resolutionSource": "STRING",
+        "evidence": "STRING",
+        "fileHash": "STRING"
+      },
+      "note": "Relationship type is stored as a STRING property, not a database enum; schema constants are an application contract."
+    },
+    "embeddingTable": {
+      "name": "CodeEmbedding",
+      "columns": {
+        "id": "STRING primary key",
+        "nodeId": "STRING",
+        "chunkIndex": "INT32",
+        "startLine": "INT64",
+        "endLine": "INT64",
+        "embedding": "FLOAT[AVMATRIX_EMBEDDING_DIMS default 384]",
+        "contentHash": "STRING"
+      },
+      "vectorIndex": "CALL CREATE_VECTOR_INDEX('CodeEmbedding', 'code_embedding_idx', 'embedding', metric := 'cosine')"
+    },
+    "ftsIndexesCreatedAfterAnalyze": [
+      { "table": "File", "indexName": "file_fts", "columns": ["name", "content"] },
+      { "table": "Function", "indexName": "function_fts", "columns": ["name", "content"] },
+      { "table": "Class", "indexName": "class_fts", "columns": ["name", "content"] },
+      { "table": "Method", "indexName": "method_fts", "columns": ["name", "content"] },
+      { "table": "Interface", "indexName": "interface_fts", "columns": ["name", "content"] }
+    ],
+    "extensionUsage": [
+      "INSTALL FTS and LOAD EXTENSION FTS before FTS index/query",
+      "INSTALL VECTOR and LOAD EXTENSION VECTOR before vector index/query"
+    ],
+    "legacyFallbacks": [
+      "stale legacy KuzuDB indexes are rejected with re-analyze guidance",
+      "relationship COPY is split by FROM/TO pair; failed pair files fall back to one-by-one CREATE relationships",
+      "legacy CodeEmbedding rows with missing/empty contentHash are treated as stale",
+      "missing CodeEmbedding table returns undefined and triggers a full embedding run",
+      "FTS/VECTOR extension load failures degrade or are reported without changing graph schema"
+    ]
+  },
+  "schemaConstants": {
+    "nodeTables": [
+      "File",
+      "Folder",
+      "Function",
+      "Class",
+      "Interface",
+      "Method",
+      "CodeElement",
+      "Community",
+      "Process",
+      "Package",
+      "Section",
+      "Struct",
+      "Enum",
+      "Macro",
+      "Typedef",
+      "Union",
+      "Namespace",
+      "Trait",
+      "Impl",
+      "TypeAlias",
+      "Const",
+      "Static",
+      "Variable",
+      "Property",
+      "Record",
+      "Delegate",
+      "Annotation",
+      "Constructor",
+      "Template",
+      "Module",
+      "Route",
+      "Tool"
+    ],
+    "relationshipTypes": [
+      "CONTAINS",
+      "DEFINES",
+      "IMPORTS",
+      "CALLS",
+      "USES",
+      "INHERITS",
+      "EXTENDS",
+      "IMPLEMENTS",
+      "HAS_METHOD",
+      "HAS_PROPERTY",
+      "ACCESSES",
+      "METHOD_OVERRIDES",
+      "OVERRIDES",
+      "METHOD_IMPLEMENTS",
+      "MEMBER_OF",
+      "STEP_IN_PROCESS",
+      "HANDLES_ROUTE",
+      "FETCHES",
+      "HANDLES_TOOL",
+      "ENTRY_POINT_OF",
+      "WRAPS",
+      "QUERIES"
+    ]
+  },
+  "graphTypes": {
+    "nodeLabelsOnlyInGraphTypes": ["Project", "Decorator", "Import", "Type"],
+    "relationshipTypesOnlyInGraphTypes": ["DECORATES"]
+  },
+  "fixtureGeneratedOutput": {
+    "fixture": "mini-repo",
+    "totalFileCount": 7,
+    "symbols": 37,
+    "relationships": 100,
+    "processes": 4,
+    "nodeLabels": {
+      "Class": 1,
+      "Community": 4,
+      "Const": 4,
+      "File": 7,
+      "Folder": 1,
+      "Function": 12,
+      "Interface": 3,
+      "Method": 1,
+      "Process": 4
+    },
+    "relationshipTypes": {
+      "CALLS": 9,
+      "CONTAINS": 7,
+      "DEFINES": 21,
+      "HAS_METHOD": 1,
+      "IMPORTS": 12,
+      "MEMBER_OF": 12,
+      "STEP_IN_PROCESS": 12,
+      "USES": 26
+    },
+    "edgeDigest": "6663dfe5ed2c511be4f653fc3a585f626cfdf354df82ec5cc0252092b99790b9"
+  },
+  "reconciliation": {
+    "USES": {
+      "classification": "required runtime relationship type",
+      "evidence": [
+        "GraphRelationship union includes USES",
+        "emit-references maps type-reference/import-use to USES",
+        "mini-repo fixture emits 26 USES relationships"
+      ],
+      "decisionForGo": "Include USES in the Go relationship enum/contract and persistence acceptance set.",
+      "typescriptDrift": "Closed before Go implementation: REL_TYPES constants, MCP impact/context traversal, exposed MCP schema/help text, and contract tests now list USES."
+    },
+    "INHERITS": {
+      "classification": "required runtime relationship type capability",
+      "evidence": [
+        "GraphRelationship union includes INHERITS",
+        "emit-references maps Reference.kind inherits to INHERITS"
+      ],
+      "decisionForGo": "Include INHERITS in the Go relationship enum/contract even though mini-repo fixture does not emit it.",
+      "typescriptDrift": "Closed before Go implementation: REL_TYPES constants, MCP impact/context traversal, exposed MCP schema/help text, and contract tests now list INHERITS."
+    },
+    "DECORATES": {
+      "classification": "reserved/type-only in current baseline",
+      "evidence": ["GraphRelationship union includes DECORATES", "no current runtime emitter or mini-repo fixture evidence found"],
+      "decisionForGo": "Do not create a new runtime emitter assumption; preserve only if generated/shared Web UI type contract still exposes it."
+    },
+    "Project": {
+      "classification": "graph-type-only label in current baseline",
+      "decisionForGo": "Do not create a LadybugDB table until a runtime emitter or fixture requires it."
+    },
+    "Package": {
+      "classification": "graph-type-only label in current baseline",
+      "decisionForGo": "Do not create a LadybugDB table until a runtime emitter or fixture requires it."
+    },
+    "Decorator": {
+      "classification": "graph-type-only label in current baseline",
+      "decisionForGo": "Do not create a LadybugDB table until a runtime emitter or fixture requires it."
+    },
+    "Import": {
+      "classification": "graph-type-only label in current baseline",
+      "decisionForGo": "Do not create a LadybugDB table until a runtime emitter or fixture requires it."
+    },
+    "Type": {
+      "classification": "graph-type-only label in current baseline",
+      "decisionForGo": "Do not create a LadybugDB table until a runtime emitter or fixture requires it."
+    }
+  }
+}

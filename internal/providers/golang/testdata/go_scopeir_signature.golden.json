@@ -1,0 +1,69 @@
+{
+  "scopes": [
+    "Class:scope:service/service.go#13:5-15:1:Class",
+    "Class:scope:service/service.go#17:5-19:1:Class",
+    "Class:scope:service/service.go#21:5-21:18:Class",
+    "Class:scope:service/service.go#27:5-31:1:Class",
+    "Class:scope:service/service.go#8:5-11:1:Class",
+    "Function:scope:service/service.go#23:0-25:1:Function",
+    "Function:scope:service/service.go#33:0-35:1:Function",
+    "Function:scope:service/service.go#37:0-40:1:Function",
+    "Module:scope:service/service.go#1:0-41:0:Module"
+  ],
+  "definitions": [
+    "Function:NewService:Service::",
+    "Interface:Named:::",
+    "Method:Named.Save:error::def:service/service.go#8:5:Interface:Named",
+    "Method:Repo.Write:error::def:service/service.go#21:5:Struct:Repo",
+    "Method:Service.Save:error::def:service/service.go#27:5:Struct:Service",
+    "Package:service:::",
+    "Property:Base.ID::string:def:service/service.go#13:5:Struct:Base",
+    "Property:Service.external::repoPkg.Repo:def:service/service.go#27:5:Struct:Service",
+    "Property:Service.repo::Repo:def:service/service.go#27:5:Struct:Service",
+    "Property:User.ID::string:def:service/service.go#17:5:Struct:User",
+    "Struct:Base:::",
+    "Struct:Repo:::",
+    "Struct:Service:::",
+    "Struct:User:::"
+  ],
+  "imports": [
+    "alias:repoPkg:repo:repoPkg:example.com/app/repo",
+    "named:context:context::context"
+  ],
+  "calls": [
+    "Service:constructor::1",
+    "Write:member:s.repo:1"
+  ],
+  "accesses": [
+    "read:ID:user",
+    "read:repo:s"
+  ],
+  "heritage": [
+    "extends:Base",
+    "extends:Base"
+  ],
+  "typeReferences": [
+    "Base:Base:annotation",
+    "Base:Base:annotation",
+    "Context:context.Context:parameter-annotation",
+    "Context:context.Context:parameter-annotation",
+    "Repo:Repo:annotation",
+    "Repo:Repo:parameter-annotation",
+    "Repo:repoPkg.Repo:annotation",
+    "Service:Service:return-annotation",
+    "User:User:parameter-annotation"
+  ],
+  "typeBindings": [
+    "ID:string:annotation",
+    "ID:string:annotation",
+    "ctx:context.Context:parameter-annotation",
+    "ctx:context.Context:parameter-annotation",
+    "external:repoPkg.Repo:annotation",
+    "id:string:parameter-annotation",
+    "r:Repo:receiver-propagated",
+    "repo:Repo:annotation",
+    "repo:Repo:parameter-annotation",
+    "s:Service:receiver-propagated",
+    "user:User:parameter-annotation"
+  ]
+}

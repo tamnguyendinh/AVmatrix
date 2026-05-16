@@ -1,0 +1,46 @@
+{
+  "scopes": [
+    "Class:scope:lib/service.rb#10:2-14:5:Class",
+    "Class:scope:lib/service.rb#16:2-36:5:Class",
+    "Function:scope:lib/service.rb#11:4-13:7:Function",
+    "Function:scope:lib/service.rb#21:4-24:7:Function",
+    "Function:scope:lib/service.rb#26:4-31:7:Function",
+    "Function:scope:lib/service.rb#33:4-35:7:Function",
+    "Function:scope:lib/service.rb#5:4-7:7:Function",
+    "Module:scope:lib/service.rb#1:0-38:0:Module",
+    "Namespace:scope:lib/service.rb#3:0-37:3:Namespace",
+    "Namespace:scope:lib/service.rb#4:2-8:5:Namespace"
+  ],
+  "definitions": [
+    "Class:App.Repository:",
+    "Class:App.Service:",
+    "Method:Named.id:def:lib/service.rb#4:2:Trait:Named",
+    "Method:Repository.write:def:lib/service.rb#10:2:Class:Repository",
+    "Method:Service.helper:def:lib/service.rb#16:2:Class:Service",
+    "Method:Service.initialize:def:lib/service.rb#16:2:Class:Service",
+    "Method:Service.save:def:lib/service.rb#16:2:Class:Service",
+    "Property:Service.id:def:lib/service.rb#16:2:Class:Service",
+    "Property:Service.repo:def:lib/service.rb#16:2:Class:Service",
+    "Trait:App.Named:",
+    "Trait:App:",
+    "Variable:formatted:"
+  ],
+  "imports": [
+    "named:json:json:json"
+  ],
+  "calls": [
+    "helper:member::1",
+    "id:member:user:",
+    "raise:member::1",
+    "to_s:member:value:",
+    "write:member:repo:1"
+  ],
+  "accesses": [
+    "write:id:self",
+    "write:repo:self"
+  ],
+  "heritage": [
+    "extends:Repository",
+    "include:Named"
+  ]
+}

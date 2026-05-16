@@ -1,3 +1,3 @@
 module avmatrix-server-wrapper
 
-go 1.23
+go 1.26.3

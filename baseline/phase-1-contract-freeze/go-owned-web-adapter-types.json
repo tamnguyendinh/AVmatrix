@@ -1,0 +1,48 @@
+{
+  "observedAtLocal": "2026-05-08T21:41:27+07:00",
+  "status": "go_owned_web_adapter_type_authority_decided",
+  "decision": "The Go codebase owns browser-facing contract types after conversion. TypeScript contract files used by avmatrix-web are generated browser-side adapter artifacts only.",
+  "goAuthority": {
+    "futurePackage": "internal/contracts",
+    "owns": [
+      "graph node and relationship payload structs",
+      "graph schema constants",
+      "HTTP request and response payload structs",
+      "analyze/embed job status and progress structs",
+      "session status and stream event structs",
+      "repo list/info payload structs",
+      "error envelope structs"
+    ],
+    "forbidden": [
+      "using avmatrix-shared TypeScript as runtime contract authority after Go cutover",
+      "hand-editing generated Web UI TypeScript contract files",
+      "letting Web UI generated types import Node-only packages",
+      "adding browser-only fields to Go runtime contracts without an explicit adapter mapping"
+    ]
+  },
+  "generatedArtifacts": {
+    "schemaManifest": "contracts/web-ui/avmatrix-web-contract.schema.json",
+    "typescriptAdapter": "avmatrix-web/src/generated/avmatrix-contracts.ts",
+    "adapterPurpose": "Type-only browser compilation surface for avmatrix-web. It must not own runtime behavior."
+  },
+  "generationRules": [
+    "Go structs and constants are the source of truth.",
+    "The schema manifest is generated from Go contracts.",
+    "The TypeScript adapter is generated from the schema manifest.",
+    "Generated files must include a generated-file header and must not be manually edited.",
+    "CI must verify that generated files are current before cutover."
+  ],
+  "compatibilityRules": [
+    "Generated schema must remain compatible with baseline/phase-1-contract-freeze/web-ui-shared-contract.json.",
+    "Field names and JSON casing must stay identical to the current Web UI contract unless a recorded compatibility migration exists.",
+    "SSE event names must remain stable.",
+    "General HTTP errors must remain {error:string}; session errors must remain {code,error,details?}.",
+    "Graph JSON and NDJSON modes must both stay supported."
+  ],
+  "migrationSequence": [
+    "Port contract structs/constants into internal/contracts.",
+    "Add contract generation command for schema manifest and TypeScript adapter.",
+    "Switch avmatrix-web imports from avmatrix-shared runtime contracts to generated adapter types.",
+    "Run existing Web UI against Go backend and compare payload compatibility to the Phase 1 baseline."
+  ]
+}

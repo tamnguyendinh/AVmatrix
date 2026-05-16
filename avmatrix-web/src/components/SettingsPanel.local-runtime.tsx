@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { X, Server, RefreshCw, Loader2 } from '@/lib/lucide-icons';
-import type { SessionStatusResponse } from 'avmatrix-shared';
+import type { SessionStatusResponse } from '@/generated/avmatrix-contracts';
 import { fetchSessionStatus, SessionClientError } from '../core/llm/session-client';
 
 interface SettingsPanelProps {
@@ -264,7 +264,7 @@ export const SettingsPanel = ({
               <DetailRow label="Mode" value={formatRuntimeEnvironment(sessionStatus)} />
               <DetailRow label="Version" value={sessionStatus?.version ?? 'Unknown'} />
               <DetailRow label="Executable" value={sessionStatus?.executablePath ?? 'Unknown'} />
-              <DetailRow label="Backend URL" value={backendUrl ?? 'http://localhost:4747'} />
+              <DetailRow label="Backend URL" value={backendUrl ?? 'http://127.0.0.1:4848'} />
             </div>
           </div>
 

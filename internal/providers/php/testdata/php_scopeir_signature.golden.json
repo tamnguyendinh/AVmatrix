@@ -1,0 +1,80 @@
+{
+  "scopes": [
+    "Class:scope:src/Service.php#10:0-12:1:Class",
+    "Class:scope:src/Service.php#14:0-16:1:Class",
+    "Class:scope:src/Service.php#18:0-20:1:Class",
+    "Class:scope:src/Service.php#22:0-24:1:Class",
+    "Class:scope:src/Service.php#26:0-42:1:Class",
+    "Function:scope:src/Service.php#11:4-11:43:Function",
+    "Function:scope:src/Service.php#23:4-23:46:Function",
+    "Function:scope:src/Service.php#29:4-31:5:Function",
+    "Function:scope:src/Service.php#33:4-37:5:Function",
+    "Function:scope:src/Service.php#39:4-41:5:Function",
+    "Module:scope:src/Service.php#1:0-43:0:Module",
+    "Namespace:scope:src/Service.php#4:0-4:22:Namespace"
+  ],
+  "definitions": [
+    "Class:Base:::",
+    "Class:Repository:::",
+    "Class:Service:::",
+    "Class:User:::",
+    "Constructor:Service.__construct:::def:src/Service.php#26:0:Class:Service",
+    "Interface:Named:::",
+    "Method:Named.save:bool::def:src/Service.php#10:0:Interface:Named",
+    "Method:Repository.write:void::def:src/Service.php#22:0:Class:Repository",
+    "Method:Service.normalize:string::def:src/Service.php#26:0:Class:Service",
+    "Method:Service.save:bool::def:src/Service.php#26:0:Class:Service",
+    "Package:App\\Service:::",
+    "Property:Base.id::string:def:src/Service.php#14:0:Class:Base",
+    "Property:Service.repo::Repository:def:src/Service.php#26:0:Class:Service",
+    "Property:User.id::string:def:src/Service.php#18:0:Class:User",
+    "Variable:id::string:"
+  ],
+  "imports": [
+    "dynamic-unresolved:vendor/autoload.php:vendor/autoload.php::vendor/autoload.php",
+    "named:Base:Base::App\\Base",
+    "named:Named:Named::App\\Named",
+    "named:Repository:Repository::App\\Repository"
+  ],
+  "calls": [
+    "normalize:member:this:1",
+    "trim:free::1",
+    "write:member:this.repo:1"
+  ],
+  "accesses": [
+    "read:id:user",
+    "read:repo:this",
+    "write:repo:this"
+  ],
+  "heritage": [
+    "extends:Base",
+    "implements:Named"
+  ],
+  "typeReferences": [
+    "id:string:annotation",
+    "id:string:annotation",
+    "id:string:assignment-inferred",
+    "id:string:parameter-annotation",
+    "repo:Repository:annotation",
+    "repo:Repository:parameter-annotation",
+    "user:User:parameter-annotation",
+    "user:User:parameter-annotation",
+    "user:User:parameter-annotation"
+  ],
+  "typeBindings": [
+    "id:string:annotation",
+    "id:string:annotation",
+    "id:string:assignment-inferred",
+    "id:string:parameter-annotation",
+    "repo:Repository:annotation",
+    "repo:Repository:parameter-annotation",
+    "this:Named:self",
+    "this:Repository:self",
+    "this:Service:self",
+    "this:Service:self",
+    "this:Service:self",
+    "user:User:parameter-annotation",
+    "user:User:parameter-annotation",
+    "user:User:parameter-annotation"
+  ]
+}

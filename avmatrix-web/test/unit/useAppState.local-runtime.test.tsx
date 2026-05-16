@@ -2,7 +2,7 @@ import { act, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 import { createKnowledgeGraph } from '../../src/core/graph/graph';
-import type { GraphNode } from 'avmatrix-shared';
+import type { GraphNode } from '@/generated/avmatrix-contracts';
 import { setBackendUrl } from '../../src/services/backend-client';
 import { AppStateProvider, useAppState } from '../../src/hooks/useAppState.local-runtime';
 
@@ -51,7 +51,7 @@ const createFunctionNode = (
 describe('useAppState.local-runtime', () => {
   beforeEach(() => {
     appState = null;
-    setBackendUrl('http://localhost:4747');
+    setBackendUrl('http://127.0.0.1:4848');
     vi.stubGlobal('requestAnimationFrame', ((callback: FrameRequestCallback) => {
       callback(0);
       return 1;

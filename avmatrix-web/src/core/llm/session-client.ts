@@ -3,7 +3,7 @@ import type {
   SessionRepoBinding,
   SessionStatusResponse,
   SessionStreamEvent,
-} from 'avmatrix-shared';
+} from '@/generated/avmatrix-contracts';
 import { getBackendUrl } from '../../services/backend-client';
 import type { AgentStreamChunk } from './types.local-runtime';
 

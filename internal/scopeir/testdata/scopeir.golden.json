@@ -1,0 +1,220 @@
+{
+  "version": "scopeir.v1",
+  "filePath": "src/app.ts",
+  "fileHash": "hash-app",
+  "language": "typescript",
+  "moduleScope": "scope:src/app.ts#1:0-6:0:Module",
+  "scopes": [
+    {
+      "id": "scope:src/app.ts#1:0-6:0:Module",
+      "parent": null,
+      "kind": "Module",
+      "range": {
+        "startLine": 1,
+        "startCol": 0,
+        "endLine": 6,
+        "endCol": 0
+      },
+      "filePath": "src/app.ts",
+      "bindings": [
+        {
+          "name": "User",
+          "defId": "def:src/app.ts#2:0:Class:User",
+          "origin": "local"
+        },
+        {
+          "name": "run",
+          "defId": "def:src/app.ts#3:0:Function:run",
+          "origin": "local"
+        }
+      ],
+      "ownedDefIds": [
+        "def:src/app.ts#2:0:Class:User",
+        "def:src/app.ts#3:0:Function:run"
+      ]
+    },
+    {
+      "id": "scope:src/app.ts#3:0-5:1:Function",
+      "parent": "scope:src/app.ts#1:0-6:0:Module",
+      "kind": "Function",
+      "range": {
+        "startLine": 3,
+        "startCol": 0,
+        "endLine": 5,
+        "endCol": 1
+      },
+      "filePath": "src/app.ts",
+      "bindings": [
+        {
+          "name": "run",
+          "defId": "def:src/app.ts#3:0:Function:run",
+          "origin": "local"
+        }
+      ],
+      "typeBindings": [
+        {
+          "name": "user",
+          "type": {
+            "rawName": "User",
+            "declaredAtScope": "scope:src/app.ts#3:0-5:1:Function",
+            "source": "parameter-annotation"
+          }
+        }
+      ]
+    }
+  ],
+  "definitions": [
+    {
+      "id": "def:src/app.ts#2:0:Class:User",
+      "filePath": "src/app.ts",
+      "name": "User",
+      "label": "Class",
+      "range": {
+        "startLine": 2,
+        "startCol": 0,
+        "endLine": 2,
+        "endCol": 18
+      },
+      "qualifiedName": "User"
+    },
+    {
+      "id": "def:src/app.ts#3:0:Function:run",
+      "filePath": "src/app.ts",
+      "name": "run",
+      "label": "Function",
+      "range": {
+        "startLine": 3,
+        "startCol": 0,
+        "endLine": 5,
+        "endCol": 1
+      },
+      "qualifiedName": "run",
+      "parameterCount": 1,
+      "requiredParameterCount": 1,
+      "parameterTypes": [
+        "User"
+      ],
+      "returnType": "Promise<void>",
+      "isAsync": true
+    }
+  ],
+  "imports": [
+    {
+      "filePath": "src/app.ts",
+      "kind": "named",
+      "localName": "User",
+      "importedName": "User",
+      "targetRaw": "./user"
+    }
+  ],
+  "calls": [
+    {
+      "filePath": "src/app.ts",
+      "name": "save",
+      "range": {
+        "startLine": 4,
+        "startCol": 7,
+        "endLine": 4,
+        "endCol": 11
+      },
+      "inScope": "scope:src/app.ts#3:0-5:1:Function",
+      "callForm": "member",
+      "explicitReceiver": "user",
+      "arity": 1
+    }
+  ],
+  "accesses": [
+    {
+      "filePath": "src/app.ts",
+      "name": "id",
+      "kind": "read",
+      "range": {
+        "startLine": 4,
+        "startCol": 12,
+        "endLine": 4,
+        "endCol": 14
+      },
+      "inScope": "scope:src/app.ts#3:0-5:1:Function",
+      "explicitReceiver": "user"
+    }
+  ],
+  "heritage": [
+    {
+      "filePath": "src/app.ts",
+      "name": "BaseUser",
+      "kind": "extends",
+      "range": {
+        "startLine": 2,
+        "startCol": 19,
+        "endLine": 2,
+        "endCol": 27
+      },
+      "inScope": "scope:src/app.ts#1:0-6:0:Module"
+    }
+  ],
+  "typeAnnotations": [
+    {
+      "filePath": "src/app.ts",
+      "name": "user",
+      "range": {
+        "startLine": 3,
+        "startCol": 19,
+        "endLine": 3,
+        "endCol": 23
+      },
+      "inScope": "scope:src/app.ts#3:0-5:1:Function",
+      "type": {
+        "rawName": "User",
+        "declaredAtScope": "scope:src/app.ts#3:0-5:1:Function",
+        "source": "parameter-annotation"
+      }
+    }
+  ],
+  "returnTypes": [
+    {
+      "defId": "def:src/app.ts#3:0:Function:run",
+      "filePath": "src/app.ts",
+      "range": {
+        "startLine": 3,
+        "startCol": 26,
+        "endLine": 3,
+        "endCol": 39
+      },
+      "type": {
+        "rawName": "Promise<void>",
+        "declaredAtScope": "scope:src/app.ts#3:0-5:1:Function",
+        "source": "return-annotation"
+      }
+    }
+  ],
+  "frameworks": [
+    {
+      "defId": "def:src/app.ts#3:0:Function:run",
+      "filePath": "src/app.ts",
+      "framework": "express",
+      "reason": "decorator",
+      "entryPointMultiplier": 2.5,
+      "range": {
+        "startLine": 3,
+        "startCol": 0,
+        "endLine": 5,
+        "endCol": 1
+      }
+    }
+  ],
+  "domains": [
+    {
+      "defId": "def:src/app.ts#2:0:Class:User",
+      "filePath": "src/app.ts",
+      "domain": "identity",
+      "role": "model",
+      "reason": "path",
+      "range": {
+        "startLine": 2,
+        "startCol": 0,
+        "endLine": 2,
+        "endCol": 18
+      }
+    }
+  ]
+}

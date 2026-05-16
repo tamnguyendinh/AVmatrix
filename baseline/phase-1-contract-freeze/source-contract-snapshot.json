@@ -1,0 +1,661 @@
+{
+  "date": "2026-05-08",
+  "activeRepository": "F:/AVmatrix-GO",
+  "referenceRepository": "F:/avmatrix-main",
+  "activeBaselineCommit": "f2b7e6a5a966c100387566fa8d73208f233ac6bd",
+  "referenceCommitRead": "79103232acb738d1536bc58e0c7ca7bb261d783d",
+  "status": "source_contract_snapshot_generated",
+  "cli": {
+    "topLevelCommands": [
+      "setup",
+      "analyze [path]",
+      "benchmark-compare <before> <after>",
+      "index [path...]",
+      "serve",
+      "mcp",
+      "list",
+      "status",
+      "clean",
+      "wiki [path]",
+      "wiki-mode [mode]",
+      "augment <pattern>",
+      "query <search_query>",
+      "context [name]",
+      "impact [target]",
+      "cypher <query>",
+      "detect-changes",
+      "group"
+    ],
+    "groupCommands": [
+      "create <name>",
+      "add <group> <groupPath> <registryName>",
+      "remove <group> <path>",
+      "list [name]",
+      "status <name>",
+      "sync <name>",
+      "query <name> <query>",
+      "contracts <name>"
+    ],
+    "flagsByCommand": {
+      "analyze [path]": [
+        "--force",
+        "--embeddings",
+        "--skills",
+        "--skip-agents-md",
+        "--no-stats",
+        "--skip-git",
+        "--skip-compatibility-cross-file",
+        "--benchmark-json <file>",
+        "--benchmark-label <label>",
+        "--name <alias>",
+        "--allow-duplicate-name",
+        "--verbose"
+      ],
+      "benchmark-compare <before> <after>": [
+        "--json"
+      ],
+      "index [path...]": [
+        "--force",
+        "--allow-non-git"
+      ],
+      "serve": [
+        "--port <port>",
+        "--host <host>"
+      ],
+      "clean": [
+        "--force",
+        "--all"
+      ],
+      "query <search_query>": [
+        "--repo <name>",
+        "--context <text>",
+        "--goal <text>",
+        "--limit <n>",
+        "--content"
+      ],
+      "context [name]": [
+        "--repo <name>",
+        "--uid <uid>",
+        "--file <path>",
+        "--content"
+      ],
+      "impact [target]": [
+        "--direction <dir>",
+        "--repo <name>",
+        "--uid <uid>",
+        "--depth <n>",
+        "--include-tests"
+      ],
+      "cypher <query>": [
+        "--repo <name>"
+      ],
+      "detect-changes": [
+        "--scope <scope>",
+        "--base-ref <ref>",
+        "--repo <name>"
+      ],
+      "group create <name>": [
+        "--force"
+      ],
+      "group sync <name>": [
+        "--skip-embeddings",
+        "--exact-only",
+        "--allow-stale",
+        "--verbose",
+        "--json"
+      ],
+      "group query <name> <query>": [
+        "--subgroup <path>",
+        "--limit <n>",
+        "--json"
+      ],
+      "group contracts <name>": [
+        "--type <type>",
+        "--repo <repo>",
+        "--unmatched",
+        "--json"
+      ]
+    }
+  },
+  "http": {
+    "routes": [
+      {
+        "method": "GET",
+        "path": "/api/heartbeat"
+      },
+      {
+        "method": "GET",
+        "path": "/api/info"
+      },
+      {
+        "method": "GET",
+        "path": "/api/repos"
+      },
+      {
+        "method": "GET",
+        "path": "/api/repo"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/repo"
+      },
+      {
+        "method": "GET",
+        "path": "/api/graph"
+      },
+      {
+        "method": "POST",
+        "path": "/api/query"
+      },
+      {
+        "method": "POST",
+        "path": "/api/search"
+      },
+      {
+        "method": "GET",
+        "path": "/api/file"
+      },
+      {
+        "method": "GET",
+        "path": "/api/grep"
+      },
+      {
+        "method": "GET",
+        "path": "/api/processes"
+      },
+      {
+        "method": "GET",
+        "path": "/api/process"
+      },
+      {
+        "method": "GET",
+        "path": "/api/clusters"
+      },
+      {
+        "method": "GET",
+        "path": "/api/cluster"
+      },
+      {
+        "method": "POST",
+        "path": "/api/local/folder-picker"
+      },
+      {
+        "method": "POST",
+        "path": "/api/analyze"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analyze/:jobId"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/analyze/:jobId"
+      },
+      {
+        "method": "POST",
+        "path": "/api/embed"
+      },
+      {
+        "method": "GET",
+        "path": "/api/embed/:jobId"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/embed/:jobId"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analyze/:jobId/progress"
+      },
+      {
+        "method": "GET",
+        "path": "/api/embed/:jobId/progress"
+      },
+      {
+        "method": "GET",
+        "path": "/api/session/status"
+      },
+      {
+        "method": "POST",
+        "path": "/api/session/chat"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/session/:sessionId"
+      },
+      {
+        "method": "ALL",
+        "path": "/api/mcp"
+      }
+    ],
+    "importantInvariants": [
+      "loopback-only local server policy",
+      "repo path first routing",
+      "graph NDJSON streaming support",
+      "SSE progress for analyze/embed/session",
+      "analyze/embed same-repo writer locks",
+      "analyze worker retry/cancel/timeout cleanup"
+    ]
+  },
+  "mcp": {
+    "tools": [
+      "list_repos",
+      "query",
+      "cypher",
+      "validateUser",
+      "UserService",
+      "User",
+      "context",
+      "detect_changes",
+      "rename",
+      "impact",
+      "route_map",
+      "tool_map",
+      "shape_check",
+      "api_impact",
+      "group_list",
+      "group_sync",
+      "group_contracts",
+      "group_query",
+      "group_status"
+    ],
+    "staticResources": [
+      "avmatrix://repos",
+      "avmatrix://setup"
+    ],
+    "resourceTemplates": [
+      "avmatrix://repo/{name}/context",
+      "avmatrix://repo/{name}/clusters",
+      "avmatrix://repo/{name}/processes",
+      "avmatrix://repo/{name}/schema",
+      "avmatrix://repo/{name}/cluster/{clusterName}",
+      "avmatrix://repo/{name}/process/{processName}"
+    ],
+    "prompts": [
+      "detect_impact",
+      "generate_map"
+    ]
+  },
+  "environmentVariables": [
+    "AVMATRIX_API_KEY",
+    "AVMATRIX_AZURE_API_VERSION",
+    "AVMATRIX_CODEX_EXECUTABLE",
+    "AVMATRIX_DEBUG",
+    "AVMATRIX_EMBEDDING_API_KEY",
+    "AVMATRIX_EMBEDDING_DIMS",
+    "AVMATRIX_EMBEDDING_MODEL",
+    "AVMATRIX_EMBEDDING_URL",
+    "AVMATRIX_HOME",
+    "AVMATRIX_LLM_BASE_URL",
+    "AVMATRIX_MAX_PROCESSES",
+    "AVMATRIX_MODEL",
+    "AVMATRIX_NO_GITIGNORE",
+    "AVMATRIX_SCOPE_RESOLUTION_WORKER_COUNT",
+    "AVMATRIX_SCOPE_RESOLUTION_WORKERS",
+    "AVMATRIX_SESSION_EXECUTION_MODE",
+    "AVMATRIX_SHADOW_MODE",
+    "AVMATRIX_VERBOSE",
+    "ComSpec",
+    "DEBUG",
+    "HF_HOME",
+    "HOME",
+    "IMPACT_MAX_CHUNKS",
+    "INGESTION_EMIT_SCOPES",
+    "NODE_ENV",
+    "NODE_OPTIONS",
+    "npm_config_prefix",
+    "npm_execpath",
+    "OPENAI_API_KEY",
+    "ORT_LOG_LEVEL",
+    "SystemRoot",
+    "windir"
+  ],
+  "analyzerPipeline": {
+    "phaseOrder": [
+      "scan",
+      "structure",
+      "markdown",
+      "COBOL",
+      "parse",
+      "routes",
+      "tools",
+      "ORM",
+      "cross-file binding",
+      "resolution",
+      "MRO",
+      "communities",
+      "processes"
+    ],
+    "importantInvariants": [
+      "resolution runs before MRO/communities/processes",
+      "skipGraphPhases omits only MRO/communities/processes",
+      "skipCompatibilityCrossFile is diagnostic behavior and does not remove the phase boundary"
+    ]
+  },
+  "graphSchemaAuthoritiesToReconcile": {
+    "nodeLabelsFromSchemaConstants": [
+      "File",
+      "Folder",
+      "Function",
+      "Class",
+      "Interface",
+      "Method",
+      "CodeElement",
+      "Community",
+      "Process",
+      "Section",
+      "Struct",
+      "Enum",
+      "Macro",
+      "Typedef",
+      "Union",
+      "Namespace",
+      "Trait",
+      "Impl",
+      "TypeAlias",
+      "Const",
+      "Static",
+      "Variable",
+      "Property",
+      "Record",
+      "Delegate",
+      "Annotation",
+      "Constructor",
+      "Template",
+      "Module",
+      "Route",
+      "Tool"
+    ],
+    "nodeLabelsFromGraphTypes": [
+      "Project",
+      "Package",
+      "Module",
+      "Folder",
+      "File",
+      "Class",
+      "Function",
+      "Method",
+      "Variable",
+      "Interface",
+      "Enum",
+      "Decorator",
+      "Import",
+      "Type",
+      "CodeElement",
+      "Community",
+      "Process",
+      "Struct",
+      "Macro",
+      "Typedef",
+      "Union",
+      "Namespace",
+      "Trait",
+      "Impl",
+      "TypeAlias",
+      "Const",
+      "Static",
+      "Property",
+      "Record",
+      "Delegate",
+      "Annotation",
+      "Constructor",
+      "Template",
+      "Section",
+      "Route",
+      "Tool"
+    ],
+    "nodeLabelCandidatesFromGraphTypes": [
+      "Project",
+      "Package",
+      "Decorator",
+      "Import",
+      "Type"
+    ],
+    "relationshipTypesFromSchemaConstants": [
+      "CONTAINS",
+      "DEFINES",
+      "IMPORTS",
+      "CALLS",
+      "USES",
+      "INHERITS",
+      "EXTENDS",
+      "IMPLEMENTS",
+      "HAS_METHOD",
+      "HAS_PROPERTY",
+      "ACCESSES",
+      "METHOD_OVERRIDES",
+      "OVERRIDES",
+      "METHOD_IMPLEMENTS",
+      "MEMBER_OF",
+      "STEP_IN_PROCESS",
+      "HANDLES_ROUTE",
+      "FETCHES",
+      "HANDLES_TOOL",
+      "ENTRY_POINT_OF",
+      "WRAPS",
+      "QUERIES"
+    ],
+    "relationshipTypesFromGraphTypes": [
+      "CONTAINS",
+      "CALLS",
+      "INHERITS",
+      "METHOD_OVERRIDES",
+      "METHOD_IMPLEMENTS",
+      "IMPORTS",
+      "USES",
+      "DEFINES",
+      "DECORATES",
+      "IMPLEMENTS",
+      "EXTENDS",
+      "HAS_METHOD",
+      "HAS_PROPERTY",
+      "ACCESSES",
+      "MEMBER_OF",
+      "STEP_IN_PROCESS",
+      "HANDLES_ROUTE",
+      "FETCHES",
+      "HANDLES_TOOL",
+      "ENTRY_POINT_OF",
+      "WRAPS",
+      "QUERIES"
+    ],
+    "relationshipTypeCandidatesFromGraphTypes": [
+      "DECORATES"
+    ]
+  },
+  "languageMatrix": {
+    "supportedLanguages": [
+      "javascript",
+      "typescript",
+      "python",
+      "java",
+      "c",
+      "cpp",
+      "csharp",
+      "go",
+      "ruby",
+      "rust",
+      "php",
+      "kotlin",
+      "swift",
+      "dart",
+      "vue",
+      "cobol"
+    ],
+    "fixtureCountsByLanguage": {
+      "api": 1,
+      "cobol": 1,
+      "cpp": 40,
+      "csharp": 45,
+      "dart": 10,
+      "express": 1,
+      "field": 1,
+      "go": 32,
+      "java": 44,
+      "javascript": 7,
+      "js": 9,
+      "kotlin": 42,
+      "nextjs": 1,
+      "php": 40,
+      "python": 49,
+      "ruby": 30,
+      "rust": 40,
+      "shape": 1,
+      "swift": 19,
+      "ts": 23,
+      "typescript": 31,
+      "vue": 1
+    }
+  },
+  "metricsJsonShape": {
+    "analyzeCounters": [
+      "totalFiles",
+      "parseableFiles",
+      "totalParseableMB",
+      "nodeCount",
+      "edgeCount",
+      "workerCount",
+      "parseChunkCount",
+      "csvNodeRows",
+      "csvRelationshipRows",
+      "ladybugCopyCount",
+      "ftsIndexCount",
+      "skippedLargeFiles",
+      "parserUnavailableFiles",
+      "usedWorkerPool",
+      "crossFileReprocessedFiles",
+      "scopeParsedFiles",
+      "scopeCount",
+      "scopeLocalDefs",
+      "scopeParsedImports",
+      "scopeReferenceSites",
+      "scopeExtractionAstReusedFiles",
+      "scopeExtractionCompatibilityFiles",
+      "scopeExtractionNoHookFiles",
+      "scopeExtractionFailedFiles",
+      "scopeFinalizedFiles",
+      "scopeFinalizeTotalImports",
+      "scopeFinalizeLinkedImports",
+      "scopeFinalizeUnresolvedImports",
+      "scopeResolutionReferenceSites",
+      "scopeResolutionChunkSize",
+      "scopeResolutionChunks",
+      "scopeResolutionMaxChunkReferenceSites",
+      "scopeResolutionReadonlyIndexBytes",
+      "scopeResolutionUsedWorkers",
+      "scopeResolutionWorkerCount",
+      "scopeResolutionReferenceIndexSourceScopes",
+      "scopeResolutionReferenceIndexTargetDefs",
+      "scopeResolutionResolvedReferences",
+      "scopeResolutionUnresolvedReferences",
+      "scopeResolutionResolvedCalls",
+      "scopeResolutionResolvedAccesses",
+      "scopeResolutionResolvedTypeReferences",
+      "scopeResolutionResolvedInheritance",
+      "scopeResolutionResolvedImportUses",
+      "scopeResolutionEdgesEmitted",
+      "scopeResolutionDuplicateEdgesSkipped",
+      "scopeResolutionFinalizedImportsEmitted",
+      "scopeResolutionDuplicateImportsSkipped",
+      "scopeResolutionFinalizedImportUsesEmitted",
+      "scopeResolutionDuplicateImportUsesSkipped",
+      "scopeResolutionEdgesSkippedNoCaller",
+      "scopeResolutionEdgesSkippedMissingTarget",
+      "languageCoverageByLanguage"
+    ],
+    "analyzePerformanceReport": [
+      "totalWallMs",
+      "buckets",
+      "pipelinePhaseMs",
+      "ftsIndexMs",
+      "counters",
+      "bottlenecks",
+      "overheadMs",
+      "lbugLoad",
+      "parse",
+      "crossFile",
+      "resolution"
+    ],
+    "lbugLoadMetrics": [
+      "timings",
+      "counters",
+      "nodeCopyCount",
+      "relationshipCopyCount",
+      "insertedRelationships",
+      "skippedRelationships",
+      "csvRowsByTable",
+      "csvBytesByTable",
+      "nodeCopyByTableMs"
+    ],
+    "parseMetrics": [
+      "timings",
+      "counters"
+    ],
+    "crossFileMetrics": [
+      "timings",
+      "counters",
+      "filesWithGaps",
+      "candidateFiles",
+      "filesReprocessed",
+      "importLevels",
+      "importCycleFiles",
+      "skipped",
+      "skipReason"
+    ],
+    "resolutionMetrics": [
+      "timings",
+      "counters"
+    ]
+  },
+  "repoRegistryMetaShape": {
+    "repoMeta": [
+      "repoPath",
+      "lastCommit",
+      "indexedAt",
+      "stats",
+      "files",
+      "nodes",
+      "edges",
+      "communities",
+      "processes",
+      "embeddings"
+    ],
+    "registryEntry": [
+      "name",
+      "path",
+      "storagePath",
+      "indexedAt",
+      "lastCommit",
+      "stats"
+    ]
+  },
+  "architectureRuntimeReference": {
+    "status": "compared",
+    "referenceCommitRead": "79103232acb738d1536bc58e0c7ca7bb261d783d",
+    "mismatches": {
+      "cliCommands": {
+        "onlyInActive": [],
+        "onlyInReference": []
+      },
+      "httpRoutes": {
+        "onlyInActive": [],
+        "onlyInReference": []
+      },
+      "mcpTools": {
+        "onlyInActive": [],
+        "onlyInReference": []
+      },
+      "pipelinePhases": {
+        "onlyInActive": [],
+        "onlyInReference": []
+      }
+    }
+  },
+  "remainingPhase1Work": [
+    "payload-level snapshots",
+    "fixture-generated graph contract reconciliation",
+    "latest-stable dependency evidence",
+    "LadybugDB Windows feasibility proof",
+    "tree-sitter Windows feasibility proof"
+  ]
+}

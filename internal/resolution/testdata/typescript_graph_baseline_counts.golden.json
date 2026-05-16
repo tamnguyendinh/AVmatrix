@@ -1,0 +1,104 @@
+{
+  "source": "npx tsx .tmp\\resolution_baseline_benchmark.ts and npx tsx .tmp\\resolution_baseline_benchmark_full.ts",
+  "generatedAt": "2026-05-08T17:45:17Z",
+  "resolutionOnly": {
+    "nodes": 24,
+    "relationships": 54,
+    "counts": {
+      "ACCESSES": 3,
+      "CALLS": 5,
+      "CONTAINS": 5,
+      "DEFINES": 18,
+      "EXTENDS": 1,
+      "HAS_METHOD": 5,
+      "HAS_PROPERTY": 2,
+      "IMPLEMENTS": 1,
+      "IMPORTS": 5,
+      "INHERITS": 2,
+      "USES": 7
+    }
+  },
+  "fullGraph": {
+    "nodes": 28,
+    "relationships": 67,
+    "counts": {
+      "ACCESSES": 3,
+      "CALLS": 5,
+      "CONTAINS": 5,
+      "DEFINES": 18,
+      "EXTENDS": 1,
+      "HAS_METHOD": 5,
+      "HAS_PROPERTY": 2,
+      "IMPLEMENTS": 1,
+      "IMPORTS": 5,
+      "INHERITS": 2,
+      "MEMBER_OF": 9,
+      "METHOD_IMPLEMENTS": 1,
+      "STEP_IN_PROCESS": 3,
+      "USES": 7
+    }
+  },
+  "mustMatchResolutionOnly": [
+    "ACCESSES",
+    "CALLS",
+    "EXTENDS",
+    "HAS_METHOD",
+    "IMPLEMENTS",
+    "IMPORTS",
+    "INHERITS"
+  ],
+  "mustMatchFullGraph": [
+    "METHOD_IMPLEMENTS"
+  ],
+  "reconciledDeltas": [
+    {
+      "type": "CONTAINS",
+      "go": 0,
+      "typescriptResolutionOnly": 5,
+      "typescriptFullGraph": 5,
+      "classification": "structure-phase edge; not emitted by Go resolution-only surface"
+    },
+    {
+      "type": "DEFINES",
+      "go": 19,
+      "typescriptResolutionOnly": 18,
+      "typescriptFullGraph": 18,
+      "classification": "Go ScopeIR defines interface property signatures explicitly"
+    },
+    {
+      "type": "HAS_PROPERTY",
+      "go": 3,
+      "typescriptResolutionOnly": 2,
+      "typescriptFullGraph": 2,
+      "classification": "Go ScopeIR links interface property signatures explicitly"
+    },
+    {
+      "type": "MEMBER_OF",
+      "go": 0,
+      "typescriptResolutionOnly": 0,
+      "typescriptFullGraph": 9,
+      "classification": "full-graph post-resolution relationship; deferred to graph serving/persistence phases"
+    },
+    {
+      "type": "METHOD_OVERRIDES",
+      "go": 1,
+      "typescriptResolutionOnly": 0,
+      "typescriptFullGraph": 0,
+      "classification": "Go resolution emits the Phase 9 method override edge required by the conversion contract"
+    },
+    {
+      "type": "STEP_IN_PROCESS",
+      "go": 0,
+      "typescriptResolutionOnly": 0,
+      "typescriptFullGraph": 3,
+      "classification": "process-phase edge; deferred to the Go process extraction phase"
+    },
+    {
+      "type": "USES",
+      "go": 20,
+      "typescriptResolutionOnly": 7,
+      "typescriptFullGraph": 7,
+      "classification": "Go emits required finalized import-use and type-reference USES through the unified resolution path"
+    }
+  ]
+}

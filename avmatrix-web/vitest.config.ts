@@ -29,7 +29,6 @@ function findSiblingPackageDir(packageName: string): string {
 }
 
 const CLI_ROOT = findSiblingPackageDir('avmatrix');
-const SHARED_ROOT = findSiblingPackageDir('avmatrix-shared');
 const avmatrixPkg = _require(path.join(CLI_ROOT, 'package.json'));
 
 export default defineConfig({
@@ -40,7 +39,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      'avmatrix-shared': path.join(SHARED_ROOT, 'src', 'index.ts'),
       '@anthropic-ai/sdk/lib/transform-json-schema': path.resolve(
         __dirname,
         'node_modules/@anthropic-ai/sdk/lib/transform-json-schema.mjs',

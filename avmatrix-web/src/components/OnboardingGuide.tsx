@@ -2,10 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { Check, Copy, Terminal, Server, Zap } from '@/lib/lucide-icons';
 import { REQUIRED_NODE_VERSION } from '../config/ui-constants';
 
-// ── Design constants ─────────────────────────────────────────────────────────
-
-const isDev = import.meta.env.DEV;
-
 // ── Copy-to-clipboard button ─────────────────────────────────────────────────
 
 function CopyButton({ text }: { text: string }) {
@@ -25,7 +21,7 @@ function CopyButton({ text }: { text: string }) {
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Clipboard API requires secure context; localhost qualifies
+      // Clipboard API requires a secure loopback context.
     }
   };
 
@@ -195,7 +191,7 @@ interface OnboardingGuideProps {
 }
 
 export const OnboardingGuide = ({ isPolling }: OnboardingGuideProps) => {
-  const primary = isDev ? 'cd avmatrix && npm run serve' : 'avmatrix serve';
+  const primary = 'avmatrix serve';
   const termLabel = 'Start local bridge';
 
   // Step states: step 1 = copy command, step 2 = run/wait, step 3 = auto-connect
@@ -211,9 +207,8 @@ export const OnboardingGuide = ({ isPolling }: OnboardingGuideProps) => {
           <p className="press-eyebrow mb-3">Vol. XII · Local bridge</p>
           <h2 className="press-title text-3xl leading-snug">Start AVmatrix locally</h2>
           <p className="press-reading mx-auto mt-3 text-center text-text-secondary">
-            {isDev
-              ? 'Start the local bridge in a separate terminal. The browser stays local and auto-connects when it is ready.'
-              : 'One local command is all it takes. The browser connects automatically.'}
+            Start the local Go bridge in a separate terminal. The browser stays local and
+            auto-connects when it is ready.
           </p>
         </div>
       </div>
@@ -231,23 +226,6 @@ export const OnboardingGuide = ({ isPolling }: OnboardingGuideProps) => {
           description={isPolling ? undefined : 'Click the icon in the terminal to copy.'}
         >
           <TerminalWindow command={primary} label={termLabel} isActive={step1State === 'active'} />
-
-          {!isDev && (
-            <>
-              <div className="my-3 flex items-center gap-3">
-                <div className="h-px flex-1 bg-border-subtle" />
-                <span className="text-[11px] tracking-widest text-text-muted uppercase">
-                  or install globally
-                </span>
-                <div className="h-px flex-1 bg-border-subtle" />
-              </div>
-              <TerminalWindow
-                command="npm install -g avmatrix && avmatrix serve"
-                label="Global install"
-                isActive={false}
-              />
-            </>
-          )}
         </StepRow>
 
         {/* Step 2 — Run and wait */}
@@ -286,7 +264,7 @@ export const OnboardingGuide = ({ isPolling }: OnboardingGuideProps) => {
         </span>
         <span className="mx-1 text-border-default">·</span>
         <Terminal className="h-3 w-3 shrink-0" />
-        <span>Port 4747</span>
+        <span>Port 4848</span>
       </div>
     </div>
   );

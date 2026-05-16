@@ -1,7 +1,7 @@
 import { act, render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createKnowledgeGraph } from '../../src/core/graph/graph';
-import type { GraphNode } from 'avmatrix-shared';
+import type { GraphNode } from '@/generated/avmatrix-contracts';
 import { AppStateProvider, useAppState } from '../../src/hooks/useAppState.local-runtime';
 
 const {

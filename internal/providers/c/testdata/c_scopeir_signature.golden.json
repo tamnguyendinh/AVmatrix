@@ -1,0 +1,51 @@
+{
+  "scopes": [
+    "Class:scope:src/service.c#4:8-6:1:Class",
+    "Class:scope:src/service.c#8:8-11:1:Class",
+    "Function:scope:src/service.c#13:0-15:1:Function",
+    "Function:scope:src/service.c#17:0-21:1:Function",
+    "Module:scope:src/service.c#1:0-22:0:Module"
+  ],
+  "definitions": [
+    "Function:helper:int::",
+    "Function:service_save:int::",
+    "Property:Base.id::int:def:src/service.c#4:8:Struct:Base",
+    "Property:Service.base::Base:def:src/service.c#8:8:Struct:Service",
+    "Property:Service.write::int:def:src/service.c#8:8:Struct:Service",
+    "Struct:Base:::",
+    "Struct:Service:::",
+    "Variable:result::int:"
+  ],
+  "imports": [
+    "named:repo.h:repo.h::repo.h",
+    "named:stdio.h:stdio.h::stdio.h"
+  ],
+  "calls": [
+    "helper:free::1",
+    "printf:free::2",
+    "write:member:service:1"
+  ],
+  "accesses": [
+    "read:write:service"
+  ],
+  "typeReferences": [
+    "base:Base:annotation",
+    "id:int:annotation",
+    "result:int:annotation",
+    "service:Service:annotation",
+    "value:char:annotation",
+    "value:char:annotation",
+    "value:char:annotation",
+    "write:int:annotation"
+  ],
+  "typeBindings": [
+    "base:Base:annotation",
+    "id:int:annotation",
+    "result:int:assignment-inferred",
+    "service:Service:parameter-annotation",
+    "value:char:parameter-annotation",
+    "value:char:parameter-annotation",
+    "value:char:parameter-annotation",
+    "write:int:annotation"
+  ]
+}

@@ -17,19 +17,11 @@ RUN npm ci --prefix avmatrix-web
 COPY avmatrix-web ./avmatrix-web
 RUN npm run build --prefix avmatrix-web
 
-FROM node:22-alpine AS runtime
+FROM nginx:alpine AS runtime
 
 RUN apk add --no-cache curl
 
-WORKDIR /app
-
-COPY --from=builder /app/avmatrix-web/dist ./dist
-COPY docker-server.mjs ./docker-server.mjs
-
-RUN chown -R node:node /app
-
-USER node
+COPY docker/web-nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/avmatrix-web/dist /usr/share/nginx/html
 
 EXPOSE 4173
-
-CMD ["node", "docker-server.mjs"]

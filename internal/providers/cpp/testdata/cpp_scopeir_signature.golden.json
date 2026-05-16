@@ -1,0 +1,71 @@
+{
+  "scopes": [
+    "Class:scope:src/service.cpp#10:0-13:1:Class",
+    "Class:scope:src/service.cpp#15:0-18:1:Class",
+    "Class:scope:src/service.cpp#20:0-37:1:Class",
+    "Class:scope:src/service.cpp#5:0-8:1:Class",
+    "Function:scope:src/service.cpp#17:4-17:43:Function",
+    "Function:scope:src/service.cpp#25:4-25:44:Function",
+    "Function:scope:src/service.cpp#27:4-31:5:Function",
+    "Function:scope:src/service.cpp#34:4-36:5:Function",
+    "Function:scope:src/service.cpp#7:4-7:52:Function",
+    "Module:scope:src/service.cpp#1:0-39:0:Module",
+    "Namespace:scope:src/service.cpp#4:0-38:1:Namespace"
+  ],
+  "definitions": [
+    "Class:Base:::",
+    "Class:Named:::",
+    "Class:Repository:::",
+    "Class:Service:::",
+    "Constructor:Service.Service:::def:src/service.cpp#20:0:Class:Service",
+    "Method:Named.save:bool::def:src/service.cpp#5:0:Class:Named",
+    "Method:Repository.write:void::def:src/service.cpp#15:0:Class:Repository",
+    "Method:Service.normalize:std::string::def:src/service.cpp#20:0:Class:Service",
+    "Method:Service.save:bool::def:src/service.cpp#20:0:Class:Service",
+    "Package:app:::",
+    "Property:Base.id::int:def:src/service.cpp#10:0:Class:Base",
+    "Property:Service.repo::Repository:def:src/service.cpp#20:0:Class:Service",
+    "Variable:formatted::auto:"
+  ],
+  "imports": [
+    "named:repo.hpp:repo.hpp::repo.hpp",
+    "named:string:string::string"
+  ],
+  "calls": [
+    "normalize:free::1",
+    "write:member:this->repo:1"
+  ],
+  "accesses": [
+    "read:repo:this",
+    "read:write:this->repo"
+  ],
+  "heritage": [
+    "extends:Base:scope:src/service.cpp#20:0-37:1:Class",
+    "extends:Named:scope:src/service.cpp#20:0-37:1:Class"
+  ],
+  "typeReferences": [
+    "formatted:auto:annotation",
+    "id:int:annotation",
+    "repo:Repository:annotation",
+    "repo:Repository:annotation",
+    "value:std::string:annotation",
+    "value:std::string:annotation",
+    "value:std::string:annotation",
+    "value:std::string:annotation"
+  ],
+  "typeBindings": [
+    "formatted:auto:assignment-inferred",
+    "id:int:annotation",
+    "repo:Repository:annotation",
+    "repo:Repository:parameter-annotation",
+    "this:Named:self",
+    "this:Repository:self",
+    "this:Service:self",
+    "this:Service:self",
+    "this:Service:self",
+    "value:std::string:parameter-annotation",
+    "value:std::string:parameter-annotation",
+    "value:std::string:parameter-annotation",
+    "value:std::string:parameter-annotation"
+  ]
+}

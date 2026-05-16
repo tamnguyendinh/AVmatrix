@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { NODE_TABLES, REL_TYPES } from 'avmatrix-shared';
+import { NODE_TABLES, REL_TYPES } from '@/generated/avmatrix-contracts';
 
 // ---------------------------------------------------------------------------
 // Recreate the security guards locally so we can test the exact logic used in
 // production without exporting private helpers.
 //
 // Source locations:
-//   validLabel / validRelType  -- avmatrix-shared graph schema exports
+//   validLabel / validRelType  -- Go-generated graph schema exports
 //   isSafeId                   -- avmatrix-web/src/components/ProcessesPanel.tsx
 //   readOnly guard (regex)     -- avmatrix/src/core/lbug/lbug-adapter.ts
 // ---------------------------------------------------------------------------

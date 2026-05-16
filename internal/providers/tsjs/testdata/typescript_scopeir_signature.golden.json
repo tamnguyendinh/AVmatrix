@@ -1,0 +1,64 @@
+{
+  "scopes": [
+    "Class:scope:src/service.ts#4:0-4:31:Class",
+    "Class:scope:src/service.ts#9:0-18:1:Class",
+    "Function:scope:src/service.ts#11:2-11:47:Function",
+    "Function:scope:src/service.ts#12:2-17:3:Function",
+    "Function:scope:src/service.ts#7:0-7:48:Function",
+    "Module:scope:src/service.ts#1:0-19:0:Module"
+  ],
+  "definitions": [
+    "Class:Service:::",
+    "Constructor:Service.constructor:::def:src/service.ts#9:0:Class:Service",
+    "Function:makeRepo:Repo::",
+    "Interface:Named:::",
+    "Method:Service.save:Promise<void>::def:src/service.ts#9:0:Class:Service",
+    "Property:Named.id::string:def:src/service.ts#4:0:Interface:Named",
+    "Property:Service.repo::Repo:def:src/service.ts#9:0:Class:Service",
+    "TypeAlias:UserLike:::",
+    "Variable:formatted:::",
+    "Variable:made:::",
+    "Variable:model:::"
+  ],
+  "imports": [
+    "alias:fmt:format:fmt:./user",
+    "named:User:default::./user",
+    "reexport:UserService:Service:UserService:./service"
+  ],
+  "calls": [
+    "Model:constructor::0",
+    "Repo:constructor::0",
+    "fmt:free::1",
+    "makeRepo:free::0",
+    "write:member:this.repo:1"
+  ],
+  "accesses": [
+    "read:id:user",
+    "read:repo:this",
+    "write:repo:this"
+  ],
+  "heritage": [
+    "extends:BaseService",
+    "implements:Named"
+  ],
+  "typeReferences": [
+    "Named",
+    "Promise",
+    "Repo",
+    "Repo",
+    "Repo",
+    "User",
+    "User"
+  ],
+  "typeBindings": [
+    "formatted:fmt:call-return",
+    "id:string:annotation",
+    "made:Repo:return-annotation",
+    "model:Model:constructor-inferred",
+    "repo:Repo:annotation",
+    "repo:Repo:parameter-annotation",
+    "this:Service:annotation",
+    "this:Service:annotation",
+    "user:User:parameter-annotation"
+  ]
+}

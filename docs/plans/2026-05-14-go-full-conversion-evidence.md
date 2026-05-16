@@ -1,0 +1,2345 @@
+# AVmatrix Go Full Conversion Evidence Ledger
+
+Date: 2026-05-14
+
+Source plan: [2026-05-14-go-full-conversion-plan.md](2026-05-14-go-full-conversion-plan.md)
+
+Benchmark ledger: [2026-05-14-go-full-conversion-benchmark.md](2026-05-14-go-full-conversion-benchmark.md)
+
+## Rules
+
+- Record evidence as each evidenced task is completed.
+- Evidence must be written before the checklist item is marked complete.
+- Implementation evidence must include AVmatrix analysis/impact usage, build, tests, e2e, deletion proof, detect changes, and commit.
+- Docs-only evidence does not use AVmatrix.
+
+## Evidence Template
+
+```md
+### [TASK-ID] Short Title
+
+- Date:
+- Commit:
+- Status:
+- Scope:
+- Source files replaced:
+- Go files added/changed:
+- Tests converted:
+- Old files deleted:
+- Phase jump:
+- AVmatrix refresh:
+- Impact checks:
+- HIGH/CRITICAL risk:
+- Build command:
+- Focused test command:
+- E2E command:
+- Benchmark entry:
+- Detect changes:
+- Commit:
+- Remaining blockers:
+
+Evidence:
+- pending
+```
+
+## Docs Creation Evidence
+
+### [DOCS-2026-05-14] Create Fresh Conversion Plan Ledgers
+
+- Date: 2026-05-14
+- Commit: `b041a65`
+- Status: in progress
+- Scope:
+  - `docs/plans/2026-05-14-go-full-conversion-plan.md`
+  - `docs/plans/2026-05-14-go-full-conversion-benchmark.md`
+  - `docs/plans/2026-05-14-go-full-conversion-evidence.md`
+- Phase jump: none
+- AVmatrix refresh: not used, docs-only per plan rule 7
+- Impact checks: not used, docs-only per plan rule 7
+- Build command: not required for docs-only
+- Focused test command: not required for docs-only
+- E2E command: not required for docs-only
+- Benchmark entry: not benchmarkable, docs-only
+- Detect changes: not required unless committing implementation work
+- Commit: pending if requested
+
+Evidence:
+- Fresh plan files were created under `docs/plans/`.
+- This plan intentionally avoids depending on previous conversion plan structure.
+
+## Phase 0 - Inventory And Ownership
+
+### [P0-A] Fresh Non-Web TS/JS Inventory
+
+- Date: 2026-05-14
+- Status: done
+- Scope:
+  - `docs/plans/2026-05-14-go-full-conversion-plan.md`
+  - `docs/plans/2026-05-14-go-full-conversion-benchmark.md`
+  - `docs/plans/2026-05-14-go-full-conversion-evidence.md`
+- Phase jump: none
+- AVmatrix refresh:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\phase0-inventory-refresh-20260514.json`
+  - Result: scanned `1234`, parsed `1058`, unsupported `176`, failed `0`, graph `34007` nodes / `67770` relationships.
+- AVmatrix query:
+  - Command: `.\avmatrix\bin\avmatrix.exe query "TypeScript JavaScript runtime CLI MCP server package scripts contracts" --repo AVmatrix-GO --limit 8`
+  - Result: confirmed remaining TypeScript runtime authority is visible in legacy paths such as `avmatrix/src/core/run-analyze.ts`, `avmatrix/src/cli/ai-context.ts`, `avmatrix/src/core/group/storage.ts`, and `avmatrix/src/storage/repo-manager.ts`, while Go CLI tests and commands are also present.
+- Inventory command:
+  - `rg --files -g '*.ts' -g '*.tsx' -g '*.js' -g '*.jsx' -g '*.mjs' -g '*.cjs' -g '!node_modules/**' -g '!dist/**' -g '!build/**' -g '!coverage/**' -g '!.git/**' -g '!.avmatrix/**' -g '!avmatrix-web/dist/**' -g '!avmatrix-launcher/server-bundle/**' -g '!avmatrix/vendor/**'`
+- Inventory result:
+  - Total TS/JS-family files after exclusions: `1044`.
+  - Category counts: allowed Web UI `118`, generated Web glue `1`, non-Web runtime `339`, contract authority `34`, fixture input `290`, legacy test harness `252`, package/script glue `8`, package test config `1`, Web dev config `1`, unknown `0`.
+  - Top-level counts: `avmatrix=890`, `avmatrix-shared=34`, `avmatrix-web=119`, `eslint.config.mjs=1`.
+
+### [P0-B] Ownership Classification
+
+- Date: 2026-05-14
+- Status: done
+- Ownership classification:
+  - `avmatrix/src`: non-Web runtime authority; port to Go 1-1, convert tests, delete after pass.
+  - `avmatrix-shared`: TypeScript contract authority; replace with Go-owned contracts/generated browser glue, then delete or exclude only with evidence.
+  - `avmatrix/test/fixtures`: source-language fixture input; keep only when evidence proves fixture-only status.
+  - `avmatrix/test`: legacy non-Web test harness; convert runtime/analyzer coverage to Go tests or e2e, then delete.
+  - `avmatrix/scripts`: package/build/test glue; convert to Go, PowerShell, or documented native tooling unless needed only for allowed Web/npm ecosystem behavior.
+  - `avmatrix/vitest.config.ts`: legacy test config; delete after legacy Vitest coverage is converted or restricted to allowed Web surfaces.
+  - `avmatrix-web`: allowed TypeScript/React Web UI display/build surface.
+  - `avmatrix-web/src/generated`: allowed generated browser glue, owned by Go contracts.
+  - `eslint.config.mjs`: Web/dev lint config; may remain only as long as it serves allowed Web/generated TypeScript surfaces.
+- First implementation slice selected:
+  - [P6-A] `avmatrix/scripts/clean-go-source-package.cjs`.
+  - Reason: small package cleanup script, clear package-script ownership, lower risk than analyzer/MCP/shared contract surfaces.
+
+### [P0-C] Unknown Ownership Blockers
+
+- Date: 2026-05-14
+- Status: done
+- Result:
+  - Unknown ownership count is `0`.
+  - No phase jump is needed for unknown ownership.
+
+### [P0-D] First Implementation Slice Selection
+
+- Date: 2026-05-14
+- Status: done
+- Selected slice:
+  - Phase: [P6-A] Packaging/scripts/hooks.
+  - Source: `avmatrix/scripts/clean-go-source-package.cjs`.
+  - Expected target: Go-owned package cleanup command or native package-script replacement, to be confirmed after impact/context checks.
+  - Required before edit: AVmatrix refresh, impact checks on package script/build ownership, focused package-bin tests, full build before tests, at least one e2e test if package behavior touches runtime packaging, benchmark/evidence update, delete replaced CJS after pass, detect changes, commit.
+
+### [P0-E] Generator/Output Ownership Ledger
+
+- Date: 2026-05-15
+- Status: done
+- Scope:
+  - `docs/plans/2026-05-14-go-full-conversion-plan.md`
+  - `docs/plans/2026-05-14-go-full-conversion-evidence.md`
+- AVmatrix refresh:
+  - Not used; this is docs-only evidence per plan rule.
+- Scan commands:
+  - `rg -n "writeFile|writeFileSync|mkdir|mkdirSync|rmSync|copyFile|cpSync|createWriteStream|outputFile|ensureDir|generate|scaffold|template|contracts\\.json|group\\.yaml|AGENTS\\.md|CLAUDE\\.md|package\\.json|dist|generated" avmatrix\src avmatrix\scripts avmatrix-shared avmatrix-claude-plugin avmatrix-cursor-integration avmatrix-test-setup avmatrix-launcher internal cmd -g '!**/node_modules/**' -g '!**/dist/**'`
+  - `rg -n "os\\.WriteFile|os\\.MkdirAll|os\\.Remove|os\\.Create|json\\.MarshalIndent|template|Generate|Scaffold|Write|Copy|contracts\\.json|group\\.yaml|AGENTS\\.md|CLAUDE\\.md|package\\.json|generated" internal cmd avmatrix-launcher -g '*.go' -g '*.ps1'`
+  - `rg -n "func GenerateAIContextFiles|func InstallBaseSkills|func WriteRegistry|func WriteBenchmark|func ExportGraphCSVs|func WebUIContract|func TypeScript|func Manifest|func SaveMeta|func SetWikiMode|func Sync\\(|func \\(s Store\\) WriteRegistry|func writeFile" internal cmd -g '*.go'`
+  - `rg -n "generateSkillFiles|generateAIContextFiles|group\\.yaml|contracts\\.json|writeContractRegistry|writeBenchmark|phase1-contract-snapshot|prepare-go-source-package|build-go-runtime|build\\.js|patch-tree-sitter|generateHTMLViewer|class WikiGenerator|saveRuntimeConfig|saveSettings|writeRegistry" avmatrix\src avmatrix\scripts -g '*.ts' -g '*.cjs' -g '*.js'`
+- Ownership ledger:
+  - Web generated glue: owner is `cmd/generate-web-contracts` plus `internal/contracts/web_ui.go`; outputs include `contracts/web-ui-contract.json` and `avmatrix-web/src/generated/avmatrix-contracts.ts`.
+  - AI context/setup output: Go owner is `internal/aicontext`; legacy owners still present in `avmatrix/src/cli/ai-context.ts`, `avmatrix/src/cli/setup.ts`, and analyze/run-analyze callers; outputs include `AGENTS.md`, `CLAUDE.md`, and base skill files.
+  - Generated skills: legacy owner is `avmatrix/src/cli/skill-gen.ts`; outputs include `.claude/skills/generated/*/SKILL.md`; must not delete generated skill output before Go owner is selected.
+  - Group config/registry output: Go owners are `internal/group/storage.go`, `internal/group/sync.go`, and CLI/MCP group commands; legacy owners remain in `avmatrix/src/cli/group.ts`, `avmatrix/src/core/group/storage.ts`, and `avmatrix/src/core/group/sync.ts`; outputs include `group.yaml` and `contracts.json`.
+  - Repo storage/config output: Go owners include `internal/repo/registry.go`, `internal/repo/meta.go`, and `internal/repo/runtime_config.go`; legacy owners remain in `avmatrix/src/storage/repo-manager.ts`, `settings.ts`, and `runtime-config.ts`; outputs include registry, meta, settings, runtime config, and `.gitignore` updates.
+  - Analyze graph/benchmark output: Go owner is `internal/analyze/analyze.go`; outputs include `graph.json`, analyze temp files, and benchmark JSON. CSV export owner is `internal/lbugload/csv.go`.
+  - Package/build outputs: legacy owners still include `avmatrix/scripts/prepare-go-source-package.cjs`, `build-go-runtime.cjs`, `build-tree-sitter-proto.cjs`, `patch-tree-sitter-swift.cjs`, and `build.js`; Go/PowerShell owners include `avmatrix-launcher/build.ps1` and launcher/server wrapper build paths.
+  - Launcher runtime output: Go owner is `avmatrix-launcher/src/main.go`; outputs include launcher state file, logs, and served `web-dist`.
+  - Wiki output: legacy owners are `avmatrix/src/core/wiki/generator.ts` and `html-viewer.ts`; outputs include wiki markdown, snapshot, and generated HTML viewer. Needs implementation decision before deletion.
+  - Phase 1 baseline/snapshot output: legacy owner is `avmatrix/scripts/phase1-contract-snapshot.cjs`; output under baseline/contract snapshot areas must be treated as generated evidence until owner is ported or explicitly retired.
+  - Missing/needs-decision package path: `avmatrix-cursor-integration` is referenced in classification but is not present in the current working tree; keep as needs-decision/missing-path evidence rather than assuming ownership.
+- Rule outcome:
+  - Before converting/deleting any generated-looking file or directory, identify and convert/test the generator owner first. If owner is unclear, write a blocker inline and phase jump to a safe cluster.
+- Commit:
+  - pending docs-only commit.
+
+## Phase 1 - Contracts And Shared Types
+
+### [P1-A] Contract Authority Slice
+
+- Status: closed by [P8-A] final package/source cutover.
+- Evidence: `avmatrix-shared` was deleted after Go contract owners, generated Web glue check, full build/test/package validation, and final inventory proof.
+
+## Phase 2 - CLI And Command Surface
+
+### [P2-A] CLI Slice
+
+- Status: closed by [P8-A] final package/source cutover.
+- Evidence: legacy `avmatrix/src/cli` was deleted after Go CLI/package/runtime validation and CLI smoke proof.
+
+## Phase 3 - Analyze Pipeline And Providers
+
+### [P3-A] Analyze/Provider Slice
+
+- Status: closed by [P8-A] final package/source cutover.
+- Evidence: legacy analyzer/provider TypeScript source under `avmatrix/src/core` was deleted after Go analyzer/provider test coverage, full repo analyze benchmark, and final inventory proof.
+
+## Phase 4 - Graph, Resolution, And Persistence
+
+### [P4-A] Graph/Persistence Slice
+
+- Status: closed by [P8-A] final package/source cutover.
+- Evidence: graph/resolution/repo/storage TypeScript runtime authority was deleted after Go graph/DB/analyze validation and benchmark proof.
+
+## Phase 5 - HTTP API, MCP, Search, Session, Group Runtime
+
+### [P5-A] Runtime Surface Slice
+
+- Status: closed by [P8-A] final package/source cutover.
+- Evidence: HTTP/MCP/session/runtime TypeScript authority was deleted after Go HTTP/MCP/session validation, MCP smoke proof, and Web e2e against the Go backend.
+
+## Phase 6 - Packaging, Scripts, Hooks, Launcher Support
+
+### [P6-A] Packaging/Script/Hook Slice
+
+- Date: 2026-05-14
+- Commit: `06525ca`
+- Status: completed for the first packaging/script slice
+- Scope:
+  - `avmatrix/scripts/clean-go-source-package.cjs`
+  - `avmatrix/package.json`
+  - `internal/cli/command.go`
+  - `internal/cli/package_command.go`
+  - `internal/cli/package_command_test.go`
+  - AVmatrix-GO default local ports across Go backend, launcher, Web UI, tests, Docker config, and current docs.
+- Source files replaced:
+  - `avmatrix/scripts/clean-go-source-package.cjs`
+- Go files added/changed:
+  - added hidden Go command `avmatrix package clean-go-source`
+  - wired it through `NewRootCommand`
+  - added Go tests for package cleanup behavior
+- Tests converted:
+  - `avmatrix/test/unit/package-bin.test.ts` now asserts postpack uses the Go command instead of the deleted CJS cleanup script.
+- Old files deleted:
+  - `avmatrix/scripts/clean-go-source-package.cjs`
+- Phase jump:
+  - Stayed in [P6-A]. User-requested AVmatrix-GO port split to backend `4848` and Web/launcher `5228` was included because it is packaging/runtime support needed before E2E and later batch conversion.
+- AVmatrix refresh:
+  - Pre-impact command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p6-clean-go-source-preimpact-20260514.json`
+  - Pre-impact result: scanned `1234`, parsed `1058`, failed `0`, graph `34009` / `67772`.
+  - Final refresh command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p6-package-clean-port-delta-refresh-20260514.json`
+  - Final refresh result: scanned `1235`, parsed `1059`, failed `0`, graph `34032` / `67803`.
+- Impact checks:
+  - `clean-go-source-package`: LOW, direct `0`, processes `0`.
+  - `NewRootCommand`: CRITICAL, direct `1`, affected processes `11`; expected because adding a hidden root subcommand touches CLI registration.
+  - `backendHealthURL`: LOW.
+  - `DEFAULT_BACKEND_URL`: LOW.
+- HIGH/CRITICAL risk:
+  - CRITICAL accepted for `NewRootCommand` and final `detect_changes` because this slice intentionally adds a hidden CLI package helper and changes launcher/runtime defaults.
+- Build command:
+  - `powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1` passed after confirming it builds Web UI, packaged Go backend, launcher, server wrapper, copies `web-dist`, and registers the protocol.
+  - `cd avmatrix && npm run build` passed and rebuilt `avmatrix/bin/avmatrix.exe`.
+- Focused test command:
+  - `go test ./internal/cli -run "TestCleanGoSourcePackage|TestPackageCleanGoSourceCommand|TestHelpCommandPrintsStubHelp" -count=1` passed.
+  - `cd avmatrix && npx vitest run test/unit/package-bin.test.ts` passed.
+  - Package cleanup smoke passed through both `avmatrix\bin\avmatrix.exe` and `avmatrix-launcher\server-bundle\avmatrix.exe`.
+- Broader validation:
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `cd avmatrix && npm test` exited `0`; output included an existing Vitest worker unhandled-error report in the `lbug-pool` subrun.
+  - `cd avmatrix-web && npm test -- --run` passed `39` files / `296` tests.
+  - `cd avmatrix-launcher/src && go test . -count=1` passed.
+  - `cd avmatrix-launcher/server-wrapper && go test . -count=1` passed.
+- E2E command:
+  - Packaged backend on `127.0.0.1:4848`, `avmatrix-web` dev server on `127.0.0.1:5228`, `cd avmatrix-web && E2E=1 BACKEND_URL=http://127.0.0.1:4848 FRONTEND_URL=http://127.0.0.1:5228 npx playwright test e2e/server-connect.spec.ts --reporter=list`.
+  - Result: `5` passed in `2.0m`; `.last-run.json` reports `passed`.
+- Benchmark entry:
+  - [P6-A] in benchmark ledger.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope all --repo AVmatrix-GO` reported `changed_files=42`, `changed_count=72`, `affected_count=46`, risk `critical`.
+- Commit:
+  - `b041a65 feat: move package cleanup and local ports to Go`.
+- Remaining blockers:
+  - Continue with [P7-A] cluster map and ready-now bulk legacy test conversion batches after this checkpoint commit.
+
+## Phase 7 - Legacy Test Harness Removal
+
+### [P7-A] Legacy Test Cluster Map
+
+- Date: 2026-05-14
+- Status: done
+- Scope:
+  - `avmatrix/test` non-fixture TypeScript test inventory.
+- AVmatrix refresh:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-cluster-map-refresh-20260514.json`
+  - Result: scanned `1235`, parsed `1059`, unsupported `176`, failed `0`, graph `34032` nodes / `67803` relationships.
+- Result:
+  - Corrected non-fixture TS test count before batch deletion: `252`.
+  - Cluster counts: CLI/package `48`, DB/search/embed `16`, graph/provider `98`, HTTP backend `11`, MCP/tools `17`, repo/storage/config `12`, setup/skills/editor `5`, unclassified `45`.
+  - Decision: use per-batch owner confirmation before deletion. First safe batch selected package/serve/cors because matching Go owners already exist.
+
+### [P7-B..P7-I] Bulk Legacy Test Conversion Batches
+
+- Status: pending
+- Evidence will be added per cluster when Go coverage is added and corresponding TS tests are deleted or fixture-classified.
+- Validation is recorded per completed batch/slice, not per individual file.
+- Ready-now clusters are CLI, HTTP/local backend, MCP/tool dispatch, graph/resolution/provider, LadybugDB/search/embedding, and repo/storage/config where the map proves an existing Go owner.
+- Required evidence per cluster:
+  - source TS test files
+  - retained fixture input files, if any
+  - proof that corresponding Go implementation already exists before converting tests
+  - Go owner package and new/updated Go tests
+  - source implementation dependency, if still unported
+  - phase jump, if implementation must be ported before any test conversion/deletion
+  - validation commands
+  - deleted TS tests
+  - remaining TS/Vitest test count
+
+### [P7-C1] HTTP Graph Stream / Repo Hold Queue Legacy Test Batch
+
+- Date: 2026-05-15 local
+- Commit: `c521baf`
+- Status: done
+- Scope:
+  - deleted `avmatrix/test/unit/api-graph-streaming.test.ts`
+  - deleted `avmatrix/test/unit/repo-hold-queue-timeout.test.ts`
+  - updated `internal/httpapi/handlers_test.go`
+  - updated `internal/httpapi/analyze_test.go`
+  - updated `internal/httpapi/repos.go`
+  - updated `internal/mcp/impact.go`
+- Go files added/changed:
+  - `internal/httpapi/handlers_test.go`: graph streaming preserves route and tool labels plus route/tool metadata.
+  - `internal/httpapi/analyze_test.go`: hold-queue timeout contract remains 10 minutes.
+  - `internal/httpapi/repos.go`: hold-queue timeout aligned to the legacy contract.
+  - `internal/mcp/impact.go`: profiler duration measurement clamps zero/negative elapsed time to `1ns` to avoid fast-machine flaky test failures.
+- Tests converted:
+  - `api-graph-streaming.test.ts` -> Go HTTP graph streaming contract test.
+  - `repo-hold-queue-timeout.test.ts` -> Go hold-queue timeout contract test.
+- Old files deleted:
+  - `avmatrix/test/unit/api-graph-streaming.test.ts`
+  - `avmatrix/test/unit/repo-hold-queue-timeout.test.ts`
+- Phase jump:
+  - Kept `repo-graph-read-service.test.ts`, `server.test.ts`, `local-backend.test.ts`, and `local-backend-calltool.test.ts` because they cover broader TS runtime, graph read service, and MCP dispatch ownership beyond this endpoint/queue sub-slice. Return to [P7-C] or jump to [P5-A]/[P5-B] after those owners are confirmed.
+- AVmatrix refresh:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-c1-profile-refresh-20260515.json`.
+  - Result: scanned `1211`, parsed `1038`, unsupported `173`, failed `0`, graph `33992` nodes / `67832` relationships.
+- Impact checks:
+  - `repoHoldQueueTimeout`: LOW, affected processes `0`.
+  - `streamGraphNDJSON`: LOW, direct caller `handleGraph`, affected processes `1`.
+  - `handleGraph`: LOW, affected processes `0`.
+  - `impactToolInternal`: LOW, affected processes `0`.
+  - `runImpactBFSProfiled`: LOW, direct callers `runImpactBFS` and `impactToolInternal`, affected processes `0`.
+- HIGH/CRITICAL risk:
+  - None for edited symbols in this slice.
+- Build command:
+  - `powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1` passed in `34.3s`.
+- Focused test command:
+  - `go test ./internal/mcp -run TestImpactToolProfiledKeepsPayloadShape -count=20 -v` passed 20/20 after the profiler fix.
+- Broader validation:
+  - `go test ./cmd/... ./internal/... -count=1` passed in `48.3s`.
+  - `cd avmatrix && npm test` exited `0` in `577.3s`; output included a Vitest worker unhandled-error report in `lbug-pool`.
+  - `cd avmatrix && node node_modules\vitest\vitest.mjs run test/integration/lbug-pool.test.ts --pool=vmForks --reporter=dot` passed in `2.82s`, 17 tests.
+  - `cd avmatrix-web && npm test` passed in `33.9s`, 39 files / 296 tests.
+- E2E command:
+  - Existing Web dev server on `127.0.0.1:5228`, no backend on `4848`; `cd avmatrix-web && BACKEND_URL=http://127.0.0.1:4848 FRONTEND_URL=http://127.0.0.1:5228 npx playwright test e2e/onboarding.spec.ts --reporter=list`.
+  - Result: 12 passed, 2 skipped in `47.2s`; behavior coverage includes folder picker click/request/input fill and repo delete click/DELETE request/card removal.
+- Benchmark entry:
+  - [P7-C1] in benchmark ledger.
+- Detect changes:
+  - Final refresh command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-c1-final-refresh-20260515.json`.
+  - Final refresh result: scanned `1211`, parsed `1038`, unsupported `173`, failed `0`, graph `33992` nodes / `67840` relationships.
+  - Staged recheck command: `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO`.
+  - Staged recheck result: HIGH risk, changed files `9`, changed symbols `27`, affected processes `7`.
+  - HIGH scope is expected from `impactToolInternal` and `runImpactBFSProfiled` profiler support. Pre-edit impact checks for both symbols were LOW; mitigation is the 20-run profiler regression plus full Go, legacy TS, Web unit, and behavior e2e validation.
+- Commit:
+  - `c521baf test: convert http backend contracts to go`.
+- Remaining blockers:
+  - Continue [P7-C] for broader local backend graph/read/session coverage or jump to [P5-A]/[P5-B] if a remaining TS test proves unported implementation ownership.
+
+### [P7-B1] Package/Serve/CORS Legacy Test Batch
+
+- Date: 2026-05-14 / 2026-05-15 local validation rollover
+- Commit: `f43ab44`
+- Status: done
+- Scope:
+  - deleted `avmatrix/test/unit/package-bin.test.ts`
+  - deleted `avmatrix/test/unit/serve-command.test.ts`
+  - deleted `avmatrix/test/unit/cors.test.ts`
+  - updated `internal/cli/command_test.go`
+  - updated `internal/cli/package_command_test.go`
+  - updated `internal/httpapi/cors_test.go`
+- Source files replaced:
+  - none; this is a legacy test conversion/deletion batch.
+- Go files added/changed:
+  - `internal/cli/command_test.go`: serve help/default host/default port coverage.
+  - `internal/cli/package_command_test.go`: package metadata/bin/postpack coverage.
+  - `internal/httpapi/cors_test.go`: CORS loopback/reject cases migrated from TS.
+- Tests converted:
+  - `package-bin.test.ts` -> Go package metadata test.
+  - `serve-command.test.ts` -> Go serve help/default test; runtime host policy already owned by Go serve/httpapi path.
+  - `cors.test.ts` -> Go CORS policy cases.
+- Old files deleted:
+  - `avmatrix/test/unit/package-bin.test.ts`
+  - `avmatrix/test/unit/serve-command.test.ts`
+  - `avmatrix/test/unit/cors.test.ts`
+- Phase jump:
+  - Batch spans [P7-B], [P7-C], and [P7-I] because package metadata, serve defaults, and CORS protect the same local runtime/package boundary. Return to [P7-B] remaining CLI cluster after commit.
+- AVmatrix refresh:
+  - Pre-batch graph was refreshed during [P7-A].
+- Impact checks:
+  - `NewRootCommand`: CRITICAL, direct `1`, affected processes `11`; accepted because only tests were added around existing CLI root behavior and runtime behavior was not changed.
+  - `IsAllowedOrigin`: LOW, direct `1`, affected modules `Httpapi` and `Cli`.
+  - `DefaultPort`: LOW, direct `0`.
+- HIGH/CRITICAL risk:
+  - CRITICAL impact for `NewRootCommand` was reported before edits. Mitigation: no CLI runtime code changed in this batch; validation includes full launcher build, focused Go tests, full Go tests, legacy npm test, Web tests, and E2E.
+- Build command:
+  - `powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1` passed in `33.8s`.
+- Focused test command:
+  - `go test ./internal/cli -run "TestPackageJSONUsesCanonicalGoBinaryAndPackageCleanupCommand|TestPackageCleanGoSourceCommandUsesWorkingDirectoryPackageRoot|TestServeHelpShowsDefaultHostAndPortFlags" -count=1` passed in `1.390s`.
+  - `go test ./internal/httpapi -run "TestIsAllowedOriginMatchesLoopbackContract|TestCORS" -count=1` passed in `1.084s`.
+  - `go test ./cmd/... ./internal/... -count=1` passed in `32.3s`.
+  - `cd avmatrix && npm test` passed in `387.7s`.
+  - `cd avmatrix-web && npm test -- --run` passed in `43.9s`, `39` files / `296` tests.
+- E2E command:
+  - Packaged backend on `127.0.0.1:4848`, Web dev server on `127.0.0.1:5228`, `cd avmatrix-web && E2E=1 BACKEND_URL=http://127.0.0.1:4848 FRONTEND_URL=http://127.0.0.1:5228 npx playwright test e2e/server-connect.spec.ts --reporter=list`.
+  - Result: exit `0` in `131.7s`; `avmatrix-web\test-results\.last-run.json` status `passed` at `2026-05-15 00:07:48` local time.
+  - Note: two earlier e2e wrapper attempts timed out because readiness used streaming `/api/heartbeat`; readiness must use `/api/info` for future scripted e2e.
+- Benchmark entry:
+  - [P7-B1] in benchmark ledger.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope all --repo AVmatrix-GO` reported changed files `9`, changed symbols `29`, affected processes `0`, risk `low`.
+- Commit:
+  - pending.
+- Remaining blockers:
+  - Continue with remaining [P7-B] CLI tests after this commit.
+
+### [P7-B2] CLI Help/Benchmark/Wiki/Skip-Git Legacy Test Batch
+
+- Date: 2026-05-15 local
+- Commit: `d1b1325`
+- Status: done
+- Scope:
+  - deleted `avmatrix/test/unit/cli-index-help.test.ts`
+  - deleted `avmatrix/test/unit/benchmark-compare-command.test.ts`
+  - deleted `avmatrix/test/unit/skip-git-cli.test.ts`
+  - deleted `avmatrix/test/unit/wiki-gated.test.ts`
+  - updated `internal/cli/command_test.go`
+- Go files added/changed:
+  - `internal/cli/command_test.go`: root/help compatibility, direct tool help flags, wiki local gate help, wiki fail-safe text, skip-git/analyze help, benchmark comparison coverage.
+- Tests converted:
+  - CLI help surface -> Go root/direct tool help tests.
+  - Benchmark compare command -> existing Go benchmark delta test.
+  - Skip-git CLI flag -> Go analyze help and non-git rejection tests.
+  - Wiki gate -> Go wiki/wiki-mode command tests.
+- Old files deleted:
+  - `avmatrix/test/unit/cli-index-help.test.ts`
+  - `avmatrix/test/unit/benchmark-compare-command.test.ts`
+  - `avmatrix/test/unit/skip-git-cli.test.ts`
+  - `avmatrix/test/unit/wiki-gated.test.ts`
+- Phase jump:
+  - Returned from [P7-B1] to [P7-B]. Continue remaining [P7-B] CLI tests after this commit.
+- AVmatrix refresh:
+  - Initial refresh failed because legacy TypeScript MCP processes held `.avmatrix/graph.json`.
+  - Stopped two targeted legacy `node avmatrix/dist/cli/index.js mcp` processes, then reran refresh successfully.
+  - Successful command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-batch2-pre-refresh-20260515.json`.
+  - Result: scanned `1232`, parsed `1056`, unsupported `176`, failed `0`, graph `34038` nodes / `67822` relationships.
+- Impact checks:
+  - `NewRootCommand`: CRITICAL, direct `1`, affected processes `11`.
+  - `newBenchmarkCompareCommand`: CRITICAL, direct `1`, affected processes `39`.
+  - `formatWikiModeStatus` with UID `Function:internal/cli/wiki_command.go:formatWikiModeStatus#1`: CRITICAL, direct `2`, affected processes `39`.
+- HIGH/CRITICAL risk:
+  - Reported before edits. Mitigation: no runtime command implementation changed in this batch; only Go tests and legacy TS test deletions changed.
+- Build command:
+  - `powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1` passed in `38.2s`.
+- Focused test command:
+  - Focused CLI Go command passed in `4.526s`.
+  - Full Go suite initially hit a flaky `internal/mcp` profile timing assertion; targeted rerun passed, then full suite rerun passed in `24.9s`.
+  - `cd avmatrix && npm test` passed in `430.2s`.
+  - `cd avmatrix-web && npm test -- --run` passed in `51.9s`, `39` files / `296` tests.
+- E2E command:
+  - Full `server-connect.spec.ts` run on `4848/5228` had `4` passed and one flaky UI modal failure.
+  - Focused rerun of `shows process list and View button works` passed in `39.4s`.
+- Benchmark entry:
+  - [P7-B2] in benchmark ledger.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope all --repo AVmatrix-GO` reported changed files `8`, changed symbols `16`, affected processes `0`, risk `low`.
+- Commit:
+  - `d1b1325 test: convert mcp tool schema coverage to go`.
+- Remaining blockers:
+  - Continue remaining [P7-B] CLI tests after this commit.
+
+### [P7-B3] CLI Clean/Index/Package Metadata Legacy Test Batch
+
+- Date: 2026-05-15 local
+- Commit: `c5ecf47`
+- Status: done
+- Scope:
+  - deleted `avmatrix/test/unit/clean.test.ts`
+  - deleted `avmatrix/test/unit/index-repo-command.test.ts`
+  - deleted `avmatrix/test/unit/cli-commands.test.ts`
+  - updated `internal/cli/command_test.go`
+  - updated `internal/cli/package_command_test.go`
+- Go files added/changed:
+  - `internal/cli/command_test.go`: clean preservation, index missing index/lbug/meta, force registration, ambiguous args, existing index registration.
+  - `internal/cli/package_command_test.go`: package scripts metadata for test/build scripts.
+- Tests converted:
+  - `clean.test.ts` -> Go clean command and preservation tests.
+  - `index-repo-command.test.ts` -> Go index command tests.
+  - `cli-commands.test.ts` -> Go package metadata/root command tests.
+- Old files deleted:
+  - `avmatrix/test/unit/clean.test.ts`
+  - `avmatrix/test/unit/index-repo-command.test.ts`
+  - `avmatrix/test/unit/cli-commands.test.ts`
+- Phase jump:
+  - Continue [P7-B] remaining CLI/integration command tests after this commit.
+- AVmatrix refresh:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-batch3-pre-refresh-20260515.json`.
+  - Result: scanned `1228`, parsed `1052`, unsupported `176`, failed `0`, graph `34013` nodes / `67786` relationships.
+- Impact checks:
+  - `newCleanCommand`: CRITICAL, direct `1`, affected processes `39`.
+  - `newIndexCommand`: CRITICAL, direct `1`, affected processes `39`.
+  - `NewRootCommand`: CRITICAL, direct `1`, affected processes `11`.
+- HIGH/CRITICAL risk:
+  - Reported before edits. Mitigation: no runtime command implementation changed in this batch; only Go tests and legacy TS test deletions changed.
+- Build command:
+  - `powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1` passed in `33.7s`.
+- Focused test command:
+  - Focused CLI/package Go command passed in `11.937s`.
+  - Full Go suite initially hit the existing flaky `internal/mcp` profile timing assertion; targeted rerun passed, then full suite rerun passed in `26.8s`.
+  - `cd avmatrix && npm test` exited `0` in `420.8s`; output still included the existing Vitest worker unhandled-error report in the `lbug-pool` subrun.
+  - `cd avmatrix-web && npm test -- --run` passed in `43.7s`, `39` files / `296` tests.
+- E2E command:
+  - Full `server-connect.spec.ts` run on `4848/5228` passed `5/5` in `124.7s`.
+- Benchmark entry:
+  - [P7-B3] in benchmark ledger.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope all --repo AVmatrix-GO` reported changed files `8`, changed symbols `16`, affected processes `0`, risk `low`.
+- Commit:
+  - `06525ca`.
+- Remaining blockers:
+  - Continue remaining [P7-B] CLI/integration tests after this commit.
+
+### [P7-H1] Setup/Skills/Editor Legacy Test Batch
+
+- Date: 2026-05-15 local
+- Commit: `85c4773`
+- Status: done, pending detect changes and commit
+- Scope:
+  - deleted `avmatrix/test/unit/setup.test.ts`
+  - deleted `avmatrix/test/unit/setup-codex.test.ts`
+  - deleted `avmatrix/test/integration/setup-skills.test.ts`
+  - updated `internal/cli/command_test.go`
+- Go files added/changed:
+  - `internal/cli/command_test.go`: Claude setup skip/recovery, Codex setup skip/CLI invocation, and package-root skill install coverage.
+- Tests converted:
+  - `setup.test.ts` -> Go setup/editor config and Claude recovery tests.
+  - `setup-codex.test.ts` -> Go Codex skip and fake-CLI invocation test.
+  - `setup-skills.test.ts` -> Go flat-file and directory skill installation test.
+- Old files deleted:
+  - `avmatrix/test/unit/setup.test.ts`
+  - `avmatrix/test/unit/setup-codex.test.ts`
+  - `avmatrix/test/integration/setup-skills.test.ts`
+- Phase jump:
+  - Jumped from remaining [P7-B] test cleanup to [P7-H1] because the setup Go implementation already exists and the ready setup cluster could be converted in bulk. Return to [P7-B] or continue [P7-H] after this commit depending on the next safest ready cluster.
+- AVmatrix refresh:
+  - Pre-batch graph was refreshed during [P7-B3].
+- Impact checks:
+  - `runSetup`: CRITICAL, affected processes `39`.
+  - `setupCodex` with UID `Function:internal/cli/setup_command.go:setupCodex#1`: CRITICAL, affected processes `39`.
+  - `setupClaudeCode` with UID `Function:internal/cli/setup_command.go:setupClaudeCode#1`: CRITICAL, affected processes `39`.
+- HIGH/CRITICAL risk:
+  - Reported before edits. Mitigation: no runtime setup implementation changed in this batch; only Go tests and legacy TS test deletions changed.
+- Build command:
+  - `powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1` passed in `34.3s`.
+- Focused test command:
+  - Focused setup Go command passed in `2.629s` after full build.
+  - `go test ./cmd/... ./internal/... -count=1` passed in `28.0s`.
+  - `cd avmatrix && npm test` passed in `605.2s`.
+  - `cd avmatrix-web && npm test -- --run` passed in `48.4s`, `39` files / `296` tests.
+- E2E command:
+  - Full `server-connect.spec.ts` run on `4848/5228` passed `5/5` in `117.5s`.
+- Benchmark entry:
+  - [P7-H1] in benchmark ledger.
+- Detect changes:
+  - Final refresh command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-h1-final-refresh-20260515.json`.
+  - Refresh result: scanned `1222`, parsed `1046`, unsupported `176`, failed `0`, graph `33977` nodes / `67769` relationships.
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope all --repo AVmatrix-GO` reported changed files `7`, changed symbols `24`, affected processes `0`, risk `low`.
+- Commit:
+  - pending.
+- Remaining blockers:
+  - Continue remaining [P7-B] CLI/integration tests or [P7-H] setup leftovers after this commit.
+
+### [P7-H2] AI Context Legacy Test Batch
+
+- Date: 2026-05-15 local
+- Commit: pending
+- Status: done, pending detect changes and commit
+- Scope:
+  - deleted `avmatrix/test/unit/ai-context.test.ts`
+  - updated `internal/aicontext/aicontext.go`
+  - added `internal/aicontext/aicontext_test.go`
+- Go files added/changed:
+  - `internal/aicontext/aicontext.go`: added `FormatCrossRepoGroupsSection`, matching the legacy TS public helper for supported group tool/CLI guidance.
+  - `internal/aicontext/aicontext_test.go`: managed context generation/update, skip preservation, base skill installation, retired content exclusion, and cross-repo group guidance coverage.
+- Tests converted:
+  - `ai-context.test.ts` -> Go aicontext tests for AGENTS/CLAUDE generation, skip mode, block trimming, tool-name text, and cross-repo group guidance.
+- Old files deleted:
+  - `avmatrix/test/unit/ai-context.test.ts`
+- Phase jump:
+  - Continued [P7-H] because the Go `internal/aicontext` owner exists. At this point `skill-gen.test.ts` still needed a separate implementation decision; it was later converted in [P7-D11/P7-E6/P7-H3]. `skills-e2e.test.ts` remains a broad e2e until a Go replacement is selected.
+- AVmatrix refresh:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-next-pre-refresh-20260515.json`.
+  - Result: scanned `1222`, parsed `1046`, unsupported `176`, failed `0`, graph `33977` nodes / `67769` relationships.
+- Impact checks:
+  - `GenerateAIContextFiles`: CRITICAL, direct `1`, affected processes `16`.
+  - `GenerateSkillFiles`: CRITICAL, direct `1`, affected processes `16`.
+  - `renderAVmatrixBlock`: HIGH, direct `1`, affected processes `4`.
+- HIGH/CRITICAL risk:
+  - Reported before edits. Mitigation: runtime analyze path only gained a helper for cross-repo guidance; existing generated context path was covered with Go tests, full build, full Go tests, legacy npm test, Web unit tests, and E2E.
+- Build command:
+  - `powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1` passed in `33.7s`.
+- Focused test command:
+  - `go test ./internal/aicontext -count=1` passed in `0.580s` after full build.
+  - `go test ./cmd/... ./internal/... -count=1` passed in `27.7s`.
+  - `cd avmatrix && npm test` passed in `453.3s` on rerun after stopping orphan Web dev processes. First attempt timed out with no useful output.
+  - `cd avmatrix-web && npm test -- --run` passed in `31.0s`, `39` files / `296` tests.
+- E2E command:
+  - Full `server-connect.spec.ts` wrapper on `4848/5228` exited `0` in `160.3s`; `avmatrix-web/test-results/.last-run.json` reported `passed`.
+- Benchmark entry:
+  - [P7-H2] in benchmark ledger.
+- Detect changes:
+  - Final refresh command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-h2-final-refresh-20260515.json`.
+  - Refresh result: scanned `1222`, parsed `1046`, unsupported `176`, failed `0`, graph `33983` nodes / `67782` relationships.
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope all --repo AVmatrix-GO` reported changed files `5`, changed symbols `12`, affected processes `0`, risk `low`.
+- Commit:
+  - pending.
+- Remaining blockers:
+  - Continue [P7-H] for `skills-e2e.test.ts` only after a Go e2e replacement is selected, or jump to another ready cluster.
+
+### [P7-D1] Group Matching Legacy Test Batch
+
+- Date: 2026-05-15 local
+- Commit: pending
+- Status: done, pending detect changes and commit
+- Scope:
+  - deleted `avmatrix/test/unit/group/matching.test.ts`
+  - updated `internal/group/matching.go`
+  - updated `internal/group/sync.go`
+  - added `internal/group/matching_test.go`
+- Go files added/changed:
+  - `internal/group/matching.go`: gRPC wildcard exclusion from exact pass, wildcard matching pass, same-repo service-boundary rule, and helper parity with legacy TS matching behavior.
+  - `internal/group/sync.go`: runs wildcard matching after exact matching unless `SyncOptions.ExactOnly` is set.
+  - `internal/group/matching_test.go`: contract ID normalization, provider index, HTTP wildcard, same-repo service matching, gRPC wildcard matching, and confidence coverage.
+- Tests converted:
+  - `group/matching.test.ts` -> Go group matching tests.
+- Old files deleted:
+  - `avmatrix/test/unit/group/matching.test.ts`
+- Phase jump:
+  - Jumped from broad [P7-D] MCP/tool cluster to a safer group matching sub-slice because Go `internal/group` owner exists. Keep remaining group bridge/extractor/service tests until their Go owners are confirmed or ported.
+- AVmatrix refresh:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\continue-plan-pre-refresh-20260515.json`.
+  - Result: scanned `1222`, parsed `1046`, unsupported `176`, failed `0`, graph `33983` nodes / `67782` relationships.
+- Impact checks:
+  - `runExactMatch` with UID `Function:internal/group/matching.go:runExactMatch#1`: LOW, affected processes `0`.
+  - `normalizeContractID`: LOW, direct callers `2`, affected processes `0`.
+  - `providerIndex` with UID `Function:internal/group/matching.go:providerIndex#1`: LOW, direct callers `1`, affected processes `0`.
+  - `matchingProviders`: LOW, direct callers `1`, affected processes `0`.
+  - `Sync`: CRITICAL, direct callers `2`, affected processes `47`.
+- HIGH/CRITICAL risk:
+  - `Sync` was reported CRITICAL before editing because CLI and MCP group sync call it. Mitigation: only connected an already-tested wildcard matching pass behind `!ExactOnly`; validation included focused group tests, full build, full Go tests, legacy npm test, Web unit tests, and E2E.
+- Build command:
+  - `powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1` passed in `36.5s`.
+- Focused test command:
+  - `go test ./internal/group -count=1` passed in `0.053s` after full build.
+  - `go test ./cmd/... ./internal/... -count=1` passed in `26.3s`.
+  - `cd avmatrix && npm test` passed in `526.9s`.
+  - `cd avmatrix-web && npm test -- --run` passed in `26.6s`, `39` files / `296` tests.
+- E2E command:
+  - Full `server-connect.spec.ts` run on `4848/5228` passed `5/5` in `142.2s`.
+- Benchmark entry:
+  - [P7-D1] in benchmark ledger.
+- Detect changes:
+  - Final refresh command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-d1-final-refresh-20260515.json`.
+  - Refresh result: scanned `1219`, parsed `1046`, unsupported `173`, failed `0`, graph `33992` nodes / `67818` relationships.
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope all --repo AVmatrix-GO` reported changed files `6`, changed symbols `23`, affected processes `0`, risk `low`.
+- Commit:
+  - pending.
+- Remaining blockers:
+  - Continue [P7-D] or phase jump to extractor/bridge owner phases for the remaining group test files.
+
+### [P7-D2] Group Config/Types Legacy Test Batch
+
+- Date: 2026-05-15 local
+- Commit: pending
+- Status: done, pending detect changes and commit
+- Scope:
+  - deleted `avmatrix/test/unit/group/config-parser.test.ts`
+  - deleted `avmatrix/test/unit/group/types.test.ts`
+  - updated `internal/group/config.go`
+  - updated `internal/group/config_test.go`
+- Go files added/changed:
+  - `internal/group/config.go`: tracks whether `repos` was present so `repos: {}` is accepted while missing `repos` remains an error.
+  - `internal/group/config_test.go`: covers valid config parsing, defaults, empty repos, required-field errors, invalid version/role/repo references, disk load, and group type shape parity.
+- Tests converted:
+  - `group/config-parser.test.ts` -> Go group config parser/load tests.
+  - `group/types.test.ts` -> Go group shape/type construction coverage.
+- Old files deleted:
+  - `avmatrix/test/unit/group/config-parser.test.ts`
+  - `avmatrix/test/unit/group/types.test.ts`
+- Phase jump:
+  - Continued the safe group sub-slice from [P7-D] because Go `internal/group` config/type owners already exist. Keep remaining group bridge/extractor/service tests until their Go owners are confirmed or ported.
+- AVmatrix graph state:
+  - Used current graph from the [P7-D1] final refresh before impact checks: graph `33992` nodes / `67818` relationships.
+- Impact checks:
+  - `ParseConfig`: CRITICAL, affected by group config loading flows.
+  - `Load` with UID `Function:internal/group/storage.go:Load#2`: CRITICAL, direct callers `3`, affected processes `47`.
+- HIGH/CRITICAL risk:
+  - Reported before edits. Mitigation: runtime change is narrowly scoped parser parity for `repos` presence/empty object behavior; validation included focused group tests, full launcher build, full Go tests, legacy npm test, Web unit tests, and E2E.
+- Build command:
+  - `powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1` passed in `38.8s`.
+- Focused test command:
+  - `go test ./internal/group -count=1` passed in `0.057s` after full build.
+  - `go test ./cmd/... ./internal/... -count=1` passed in `29.1s`.
+  - `cd avmatrix && npm test` passed in `421.1s`; output still includes the existing Vitest worker unhandled-error report in `lbug-pool` subrun.
+  - `cd avmatrix-web && npm test -- --run` passed in `26.0s`, `39` files / `296` tests.
+- E2E command:
+  - Full `server-connect.spec.ts` run on `4848/5228` passed `5/5` in `130.8s`.
+- Benchmark entry:
+  - [P7-D2] in benchmark ledger.
+- Detect changes:
+  - Final refresh command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-d2-final-refresh-20260515.json`.
+  - Refresh result: scanned `1217`, parsed `1044`, unsupported `173`, failed `0`, graph `34001` nodes / `67805` relationships.
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope all --repo AVmatrix-GO` reported changed files `7`, changed symbols `30`, affected processes `0`, risk `low`.
+- Commit:
+  - pending.
+- Remaining blockers:
+  - Continue [P7-D] or phase jump to extractor/bridge owner phases for the remaining group test files.
+
+### [P7-D3] Group Storage/Tool Registration Legacy Test Batch
+
+- Date: 2026-05-15 local
+- Commit: pending
+- Status: done, pending detect changes and commit
+- Scope:
+  - deleted `avmatrix/test/unit/group/storage.test.ts`
+  - deleted `avmatrix/test/unit/group/group-tools.test.ts`
+  - added `internal/group/storage_test.go`
+  - updated `internal/mcp/surface_snapshot_test.go`
+  - updated plan rules with generator/output ownership guardrail after user raised the risk.
+- Go files added/changed:
+  - `internal/group/storage_test.go`: covers group base/dir path helpers, registry round-trip and missing registry nil behavior, group listing by `group.yaml`, invalid group names, and valid group names.
+  - `internal/mcp/surface_snapshot_test.go`: covers the five group MCP tools, descriptions, object schemas, and `group_sync` required `name`.
+- Tests converted:
+  - `group/storage.test.ts` -> Go group storage tests.
+  - `group/group-tools.test.ts` -> Go MCP surface/tool schema tests.
+- Old files deleted:
+  - `avmatrix/test/unit/group/storage.test.ts`
+  - `avmatrix/test/unit/group/group-tools.test.ts`
+- Generator/output ownership:
+  - No generated output was converted or deleted in this slice. The plan now requires [P0-E] generator/output ownership checks before touching generated-looking files, snapshots, browser glue, setup output, skill/plugin output, or packaged configs.
+- Phase jump:
+  - Continued the safe group sub-slice from [P7-D] because Go `internal/group` and `internal/mcp` owners already exist. Before converting generated-looking group outputs or config snapshots, return to [P0-E].
+- AVmatrix refresh:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-d3-pre-refresh-20260515.json`.
+  - Result: scanned `1217`, parsed `1044`, unsupported `173`, failed `0`, graph `34001` nodes / `67805` relationships.
+- Impact checks:
+  - `GroupsBaseDir`: CRITICAL, direct callers `2`, affected processes `8`.
+  - `Dir`: CRITICAL, direct callers `5`, affected processes `47`.
+  - `List` with UID `Function:internal/group/storage.go:List#1`: CRITICAL, direct callers `2`, affected processes `47`.
+  - `WriteRegistry` with UID `Function:internal/group/storage.go:WriteRegistry#3`: CRITICAL, direct callers `1`, affected processes `8`.
+  - `ReadRegistry` with UID `Function:internal/group/storage.go:ReadRegistry#2`: CRITICAL, direct callers `2`, affected processes `8`.
+  - `mcpTools`: HIGH, direct callers `1`, affected processes `3`.
+- HIGH/CRITICAL risk:
+  - Reported before edits. Mitigation: no runtime storage/MCP behavior changed; this slice adds Go parity tests and deletes replaced TS tests only after focused Go tests passed. Validation included full launcher build, full Go tests, legacy npm test, Web unit tests, and E2E.
+- Build command:
+  - `powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1` passed in `38.8s`.
+- Focused test command:
+  - `go test ./internal/group ./internal/mcp -run "TestStoragePathsUseConfiguredHome|TestRegistryRoundTripsAndMissingReturnsNil|TestListReturnsGroupsWithConfig|TestValidateGroupNameThroughPathHelpers|TestGroupMCPToolsAreRegisteredWithSchemas|TestMCPSurfaceMatchesTypeScriptBaselineSnapshot" -count=1` passed in `2.2s`.
+  - `go test ./cmd/... ./internal/... -count=1` passed in `60.6s`.
+  - `cd avmatrix && npm test` passed in `405.8s`; output still includes the existing Vitest worker unhandled-error report.
+  - `cd avmatrix-web && npm test -- --run` passed in `25.8s`.
+- E2E command:
+  - Full `server-connect.spec.ts` wrapper on `4848/5228` exited `0` in `134.8s`.
+- Benchmark entry:
+  - [P7-D3] in benchmark ledger.
+- Detect changes:
+  - Final refresh command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-d3-final-refresh-20260515.json`.
+  - Refresh result: scanned `1216`, parsed `1043`, unsupported `173`, failed `0`, graph `34009` nodes / `67825` relationships.
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope all --repo AVmatrix-GO` reported changed files `6`, changed symbols `19`, affected processes `0`, risk `low`.
+  - Staged recheck command: `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO`.
+  - Staged recheck result: changed files `7`, changed symbols `36`, affected processes `0`, risk `low`.
+- Commit:
+  - pending.
+- Remaining blockers:
+  - Continue [P7-D] or phase jump to extractor/bridge owner phases for the remaining group test files, but run [P0-E] generator/output ownership checks before touching generated-looking files.
+
+### [P7-D4] Group Service/Sync/CLI/Impact Legacy Test Batch
+
+- Date: 2026-05-15 local
+- Commit: pending
+- Status: done, pending detect changes and commit
+- Scope:
+  - deleted `avmatrix/test/unit/group/service.test.ts`
+  - deleted `avmatrix/test/unit/group/sync.test.ts`
+  - deleted `avmatrix/test/unit/group/impact-by-uid.test.ts`
+  - deleted `avmatrix/test/integration/group/group-cli.test.ts`
+  - deleted `avmatrix/test/integration/group/group-sync.test.ts`
+  - added `internal/mcp/group_tools_test.go`
+  - updated `internal/group/sync_test.go`
+  - updated `internal/cli/command_test.go`
+  - updated `internal/mcp/impact_profile_test.go`
+- Go files added/changed:
+  - `internal/mcp/group_tools_test.go`: group tool list/status/contracts/sync/query errors, filters, unmatched behavior, and subgroup handling.
+  - `internal/group/sync_test.go`: missing repos, empty repos, manifest synthetic cross-links, and fixture `group.yaml` parse coverage.
+  - `internal/cli/command_test.go`: invalid group name CLI rejection.
+  - `internal/mcp/impact_profile_test.go`: missing `target_uid` impact smoke coverage.
+- Tests converted:
+  - `service.test.ts` -> Go MCP group tool tests.
+  - `sync.test.ts` and `group-sync.test.ts` -> Go group sync tests.
+  - `group-cli.test.ts` -> Go CLI group command tests.
+  - `impact-by-uid.test.ts` -> Go impact tool `target_uid` smoke test.
+- Old files deleted:
+  - `avmatrix/test/unit/group/service.test.ts`
+  - `avmatrix/test/unit/group/sync.test.ts`
+  - `avmatrix/test/unit/group/impact-by-uid.test.ts`
+  - `avmatrix/test/integration/group/group-cli.test.ts`
+  - `avmatrix/test/integration/group/group-sync.test.ts`
+- Generator/output ownership:
+  - No generated output was deleted. Group `group.yaml` and `contracts.json` are covered through Go generator/writer owners from [P0-E].
+- Phase jump:
+  - Kept `monorepo-sync.test.ts`, extractor tests, and bridge DB tests for a separate extractor/bridge owner cluster because they involve service-boundary extraction, protocol extractors, bridge DB files, and DB-output ownership.
+- AVmatrix refresh:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-d4-pre-refresh-20260515.json`.
+  - Result: scanned `1216`, parsed `1043`, unsupported `173`, failed `0`, graph `34010` nodes / `67826` relationships.
+- Impact checks:
+  - `groupListTool`: LOW, affected processes `0`.
+  - `groupContractsTool`: LOW, affected processes `0`.
+  - `groupQueryTool`: LOW, affected processes `0`.
+  - `groupStatusTool`: LOW, affected processes `0`.
+  - `groupSyncTool`: LOW, affected processes `0`.
+- HIGH/CRITICAL risk:
+  - None for the edited MCP group tool methods. The batch still received full build, full Go tests, legacy npm tests, Web unit tests, and E2E because it deletes legacy tests.
+- Build command:
+  - First `powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1` attempt took `29.9s` and hit cleanup lock on `avmatrix-launcher/server-bundle/avmatrix-server.exe`.
+  - Stopped repo-local `avmatrix`, `avmatrix-server`, `AVmatrixLauncher`, and `esbuild` processes that held files under `E:\AVmatrix-GO`.
+  - Rerun `powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1` passed in `34.6s`.
+- Test commands:
+  - `go test ./cmd/... ./internal/... -count=1` passed in `63.6s`.
+  - `cd avmatrix && npm test` passed in `669.9s`; output still includes existing Vitest stderr/warnings.
+  - `cd avmatrix-web && npm test -- --run` passed in `27.7s`.
+- E2E command:
+  - Full `server-connect.spec.ts` wrapper on `4848/5228` exited `0` in `133.0s`.
+- Benchmark entry:
+  - [P7-D4] in benchmark ledger.
+- Detect changes:
+  - Final refresh command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-d4-final-refresh-20260515.json`.
+  - Final refresh result: scanned `1212`, parsed `1039`, unsupported `173`, failed `0`, graph `33967` nodes / `67773` relationships.
+  - All-scope command: `.\avmatrix\bin\avmatrix.exe detect-changes --scope all --repo AVmatrix-GO`.
+  - All-scope result: LOW risk, changed files `11`, changed symbols `25`, affected processes `0`.
+  - Staged recheck command: `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO`.
+  - Staged recheck result: LOW risk, changed files `12`, changed symbols `57`, affected processes `0`.
+- Commit:
+  - pending.
+- Remaining blockers:
+  - Continue group extractor/bridge cluster separately, or jump to another ready cluster if extractor/bridge owner scope is too large.
+
+### [P7-D5] MCP Tool Surface Schema Legacy Test Batch
+
+- Date: 2026-05-15 local
+- Commit: pending
+- Status: done, pending detect changes and commit
+- Scope:
+  - deleted `avmatrix/test/unit/tools.test.ts`
+  - updated `internal/mcp/surface_snapshot_test.go`
+- Go files added/changed:
+  - `internal/mcp/surface_snapshot_test.go`: added static MCP schema parity coverage for all tool definitions, required fields, optional repo parameter rules, group tool repo exclusions, impact schema defaults/enums, relationTypes enum, and detect_changes scope enum.
+- Tests converted:
+  - `tools.test.ts` -> Go `TestMCPToolSchemasKeepRuntimeContract`.
+- Old files deleted:
+  - `avmatrix/test/unit/tools.test.ts`
+- Phase jump:
+  - Kept `tool-runtime-alignment.test.ts`, `mcp-runtime-alignment.test.ts`, and `calltool-dispatch.test.ts` for behavior/runtime-dispatch batches because they test execution routing and backend lifecycle, not static MCP tool schema.
+- AVmatrix graph state:
+  - Used current graph from `p7-g-pre-refresh-20260515.json` before the test-only patch: scanned `1211`, parsed `1038`, unsupported `173`, failed `0`, graph `33992` / `67840`.
+- Impact checks:
+  - Runtime implementation was not changed. No symbol impact was required for the Go test-only surface assertion patch.
+- HIGH/CRITICAL risk:
+  - None expected for test-only changes.
+- Build command:
+  - `powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1` passed in `34.4s`.
+- Focused test command:
+  - `go test ./internal/mcp -run "TestMCPSurfaceMatchesTypeScriptBaselineSnapshot|TestGroupMCPToolsAreRegisteredWithSchemas|TestMCPToolSchemasKeepRuntimeContract" -count=1` passed in `2.0s`.
+- Broader validation:
+  - `go test ./cmd/... ./internal/... -count=1` passed in `46.3s`.
+  - `cd avmatrix && npm test` exited `0` in `662.0s`; `lbug-pool` subrun passed cleanly.
+  - `cd avmatrix-web && npm test` passed in `33.9s`, 39 files / 296 tests.
+- E2E command:
+  - Existing Web dev server on `127.0.0.1:5228`, no backend on `4848`; `cd avmatrix-web && BACKEND_URL=http://127.0.0.1:4848 FRONTEND_URL=http://127.0.0.1:5228 npx playwright test e2e/onboarding.spec.ts --reporter=list`.
+  - Result: 12 passed, 2 skipped in `79.6s`.
+- Benchmark entry:
+  - [P7-D5] in benchmark ledger.
+- Detect changes:
+  - Final refresh command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-d5-final-refresh-20260515.json`.
+  - Final refresh result: scanned `1210`, parsed `1037`, unsupported `173`, failed `0`, graph `33989` nodes / `67844` relationships.
+  - Staged recheck command: `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO`.
+  - Staged recheck result: LOW risk, changed files `5`, changed symbols `23`, affected processes `0`.
+- Commit:
+  - pending.
+- Remaining blockers:
+  - Continue [P7-D] runtime dispatch/direct-command tests, or jump to [P7-F]/[P7-E] if those owners are cleaner for the next batch.
+
+### [P7-D6] Impact Parser Contract Legacy Test Batch
+
+- Date: 2026-05-15 local
+- Commit: pending
+- Status: done, pending detect changes and commit
+- Scope:
+  - deleted `avmatrix/test/unit/impact-contract.test.ts`
+  - added `internal/mcp/impact_contract_test.go`
+- Go files added/changed:
+  - `internal/mcp/impact_contract_test.go`: added parser contract parity coverage for `target_uid`-only arguments, default values, validation failures, relation type filters, and `OVERRIDES` alias expansion.
+- Tests converted:
+  - `impact-contract.test.ts` -> Go `TestParseImpactArgsAcceptsTargetUIDOnlyAndDefaults`, `TestParseImpactArgsValidationContract`, and `TestParseImpactArgsRelationTypeAliasesAndScopeFilters`.
+- Old files deleted:
+  - `avmatrix/test/unit/impact-contract.test.ts`
+- Phase jump:
+  - Kept `impact-confidence.test.ts` and `impact-batching-grouping.test.ts` for a later behavior/runtime owner batch because their TS local-backend confidence/chunking contracts differ from the current Go runtime surface.
+- AVmatrix graph state:
+  - Final refresh command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-d6-final-refresh-20260515.json`.
+  - Final refresh result: scanned `1210`, parsed `1037`, unsupported `173`, failed `0`, graph `34011` nodes / `67858` relationships.
+- Impact checks:
+  - Runtime implementation was not changed. No symbol impact was required for the Go test-only parser assertion patch.
+- HIGH/CRITICAL risk:
+  - None expected for test-only changes.
+- Build command:
+  - `powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1` passed in `34.2s`.
+- Focused test command:
+  - `go test ./internal/mcp -run TestParseImpactArgs -count=1` passed in `2.0s`.
+- Broader validation:
+  - `go test ./cmd/... ./internal/... -count=1` passed in `53.1s`.
+  - `cd avmatrix && npm test` exited `0` in `390.0s`; Vitest reported an existing unhandled `lbug-pool` worker error.
+  - Targeted `lbug-pool` rerun exited `0` in `3.1s`; Vitest still reported the same unhandled worker error.
+  - `cd avmatrix-web && npm test` passed in `35.4s`, 39 files / 296 tests.
+- E2E command:
+  - Existing Web dev server on `127.0.0.1:5228`; `cd avmatrix-web && BACKEND_URL=http://127.0.0.1:4848 FRONTEND_URL=http://127.0.0.1:5228 npx playwright test e2e/onboarding.spec.ts --reporter=list`.
+  - Result: 12 passed, 2 skipped in `85.7s`; this is behavior coverage for folder chooser and repository delete flows.
+- Benchmark entry:
+  - [P7-D6] in benchmark ledger.
+- Detect changes:
+  - Staged recheck command: `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO`.
+  - Staged recheck result: LOW risk, changed files `5`, changed symbols `19`, affected processes `0`.
+- Commit:
+  - pending.
+- Remaining blockers:
+  - Continue [P7-D] runtime dispatch/direct-command tests or jump to a cleaner owner batch.
+
+### [P7-D7] MCP Runtime Dispatch And Direct CLI Legacy Test Batch
+
+- Date: 2026-05-15 local
+- Commit: `52f83f5`
+- Status: done
+- Scope:
+  - deleted `avmatrix/test/unit/tool-runtime-alignment.test.ts`
+  - deleted `avmatrix/test/unit/mcp-runtime-alignment.test.ts`
+  - deleted `avmatrix/test/unit/calltool-dispatch.test.ts`
+  - updated `internal/cli/command_test.go`
+  - updated `internal/mcp/server_test.go`
+- Go files added/changed:
+  - `internal/cli/command_test.go`: added direct CLI command coverage proving `query`, `context`, `impact`, `cypher`, and `detect-changes` call through the Go local MCP runtime against a registered graph fixture.
+  - `internal/mcp/server_test.go`: added coverage for initialize/tools-list before repo discovery, dispatch validation errors, context/impact structured validation payloads, and case-insensitive/ambiguous repo resolution.
+- Tests converted:
+  - `tool-runtime-alignment.test.ts` -> Go `TestDirectToolCommandsUseLocalMCPRuntime` and `TestDirectDetectChangesCommandUsesLocalMCPRuntime`.
+  - `mcp-runtime-alignment.test.ts` -> Go `TestServeInitializesAndListsToolsBeforeRepoDiscovery`.
+  - `calltool-dispatch.test.ts` -> Go `TestServeCallToolDispatchValidationErrors`, `TestResolveResourceRepoMatchesCaseInsensitiveNamesAndRejectsAmbiguity`, and existing/retained Go MCP dispatch coverage in `server_test.go`.
+- Old files deleted:
+  - `avmatrix/test/unit/tool-runtime-alignment.test.ts`
+  - `avmatrix/test/unit/mcp-runtime-alignment.test.ts`
+  - `avmatrix/test/unit/calltool-dispatch.test.ts`
+- Phase jump:
+  - Did not add Go `search`/`explore` LocalBackend aliases from the TS-only test because canonical MCP/CLI docs list `query` and `context`, not those legacy aliases.
+  - Kept `impact-confidence.test.ts` and `impact-batching-grouping.test.ts` for a later impact behavior/runtime owner batch, matching the P7-D6 note.
+- AVmatrix graph state:
+  - Pre-edit refresh command: `avmatrix analyze --force`.
+  - Pre-edit refresh result: graph `30082` nodes / `54858` relationships, `671` flows, embeddings `0`.
+- Impact checks:
+  - `Server.callTool` upstream impact: HIGH; direct caller `Server.handle`, affected flow `handleMCPPostRaw`, modules MCP/HTTP/CLI. Production symbol was not modified.
+  - `callLocalMCPTool` upstream impact: LOW; direct callers `newAugmentCommand` and `printLocalMCPTool`. Production symbol was not modified.
+  - `newMCPCommand` upstream impact: HIGH; direct caller `NewRootCommand`, affected CLI process. Production symbol was not modified.
+- HIGH/CRITICAL risk:
+  - HIGH risks were limited to production entrypoints inspected for blast radius. This batch made test-only Go changes plus TS test deletion; no high-risk runtime symbol was edited.
+- Focused test command:
+  - `go test ./internal/cli ./internal/mcp -run "TestDirectToolCommandsUseLocalMCPRuntime|TestDirectDetectChangesCommandUsesLocalMCPRuntime|TestServeInitializesAndListsToolsBeforeRepoDiscovery|TestServeCallToolDispatchValidationErrors|TestResolveResourceRepoMatchesCaseInsensitiveNamesAndRejectsAmbiguity" -count=1` passed in `5.2s` after an initial 120s timeout during first compile/rerun investigation.
+- Build commands:
+  - `cd avmatrix && npm run build` passed in `116.7s`; output includes the known tree-sitter-swift compiler warning.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed in `124.3s`; this rebuilt Web UI, packaged Go backend, launcher, server wrapper, and protocol registration. Output includes existing Vite chunk-size/dynamic-import warnings and the known tree-sitter-swift compiler warning.
+- Broader validation:
+  - `go test ./cmd/... ./internal/... -count=1` passed in `39.5s`.
+  - `cd avmatrix && npm test` exited `0` in `425.0s`; Vitest still reported the existing unhandled `lbug-pool` vmFork worker error also seen in prior batches.
+  - Targeted `cd avmatrix && node node_modules\vitest\vitest.mjs run test/integration/lbug-pool.test.ts --pool=vmForks --reporter=dot` passed in `3.7s`.
+  - `cd avmatrix-web && npm test` passed in `54.7s`, 39 files / 296 tests.
+- E2E command:
+  - Built Go binary MCP stdio flow: pipe JSON-RPC `initialize` and `tools/call` `query` into `.\avmatrix\bin\avmatrix.exe mcp` with repo `AVmatrix-GO`.
+  - Result: final shell assertion pass in `1.2s`, with initialize `serverInfo` and query payload containing `processes` for `MCP runtime dispatch`. Two earlier attempts returned the expected MCP payload but failed because the PowerShell assertion treated output as an array / looked for unescaped nested JSON.
+- Benchmark entry:
+  - [P7-D7] in benchmark ledger.
+- Detect changes:
+  - Final refresh command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-d7-final-refresh-20260515.json`.
+  - Final refresh result: scanned `1207`, parsed `1034`, unsupported `173`, failed `0`, graph `33973` nodes / `67854` relationships.
+  - All-scope command: `.\avmatrix\bin\avmatrix.exe detect-changes --scope all --repo AVmatrix-GO`.
+  - All-scope result: LOW risk, changed files `8`, changed symbols `38`, affected processes `0`.
+  - Staged recheck command: `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO`.
+  - Staged recheck result: LOW risk, changed files `8`, changed symbols `40`, affected processes `0`.
+- Remaining blockers:
+  - Continue the impact confidence/chunking owner decision before deleting `impact-confidence.test.ts` and `impact-batching-grouping.test.ts`, or jump to another ready P7 cluster.
+
+### [P7-D8] Impact Confidence And In-Memory Traversal Legacy Test Batch
+
+- Date: 2026-05-15 local
+- Commit: pending
+- Status: done
+- Scope:
+  - deleted `avmatrix/test/unit/impact-confidence.test.ts`
+  - deleted `avmatrix/test/unit/impact-batching-grouping.test.ts`
+  - updated `internal/mcp/impact_profile_test.go`
+- Go files added/changed:
+  - `internal/mcp/impact_profile_test.go`: added Go runtime coverage for stored confidence priority, fallback confidence tiers, allowed impact relation types, affected-process grouping, and full in-memory traversal across 500 impacted callers without a DB chunk cap.
+- Tests converted:
+  - `impact-confidence.test.ts` -> Go `TestImpactConfidenceUsesStoredValueAndGoFallbacks`.
+  - `impact-batching-grouping.test.ts` -> Go `TestImpactAffectedProcessesGroupsRowsByProcess` and `TestImpactTraversalUsesCompleteInMemoryGraphWithoutChunkCap`.
+- Old files deleted:
+  - `avmatrix/test/unit/impact-confidence.test.ts`
+  - `avmatrix/test/unit/impact-batching-grouping.test.ts`
+- Phase jump:
+  - The TS `IMPACT_MAX_CHUNKS`/DB enrichment cap is not ported because Go impact traversal operates over the loaded in-memory graph and does not issue chunked DB enrichment queries.
+  - Marked parent [P7-D] complete for MCP/tool dispatch unit coverage; broader TS local-backend integration tests remain assigned to [P7-C]/[P5-A]/[P5-B].
+- AVmatrix graph state:
+  - Pre-edit refresh command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-d8-pre-refresh-20260515.json`.
+  - Pre-edit refresh result: scanned `1207`, parsed `1034`, unsupported `173`, failed `0`, graph `33973` nodes / `67854` relationships.
+- Impact checks:
+  - `impactConfidence` upstream impact: LOW, direct caller `impactItemPayload`, affected processes `runImpactBFSProfiled` and `impactToolInternal`.
+  - `runImpactBFSProfiled` upstream impact: LOW, direct callers `runImpactBFS` and `impactToolInternal`.
+  - `impactAffectedProcesses` upstream impact: LOW, direct caller `runImpactBFSProfiled`.
+  - Production symbols were not modified.
+- HIGH/CRITICAL risk:
+  - None.
+- Focused test command:
+  - `go test ./internal/mcp -run "TestImpactConfidenceUsesStoredValueAndGoFallbacks|TestImpactAffectedProcessesGroupsRowsByProcess|TestImpactTraversalUsesCompleteInMemoryGraphWithoutChunkCap" -count=1` passed in `3.2s`.
+- Full validation:
+  - `npm run build` in `avmatrix/` passed and rebuilt `avmatrix/bin/avmatrix.exe`.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed; Vite emitted the known chunk-size/dynamic-import warnings.
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `npm test` in `avmatrix/` exited `0`; it still printed the known unhandled vmFork worker error around `lbug-pool`.
+  - Targeted rerun `node node_modules\vitest\vitest.mjs run test/integration/lbug-pool.test.ts --pool=vmForks --reporter=dot` passed with `17` tests.
+  - `npm test` in `avmatrix-web/` passed with `39` files / `296` tests.
+- Runtime e2e:
+  - MCP stdio smoke through `.\avmatrix\bin\avmatrix.exe mcp` initialized successfully and called `impact` for `impactConfidence`, returning `impactedCount=2` and `risk=HIGH`.
+  - First smoke attempt returned the same payload but failed due an overly strict PowerShell assertion against nested JSON text; rerun with text-token assertions passed.
+- Final graph refresh:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-d8-final-refresh-20260515.json`.
+  - Result: scanned `1205`, parsed `1032`, unsupported `173`, failed `0`, graph `33945` nodes / `67850` relationships.
+- Benchmark entry:
+  - [P7-D8] in benchmark ledger.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope all --repo AVmatrix-GO` reported changed files `6`, changed symbols `25`, affected processes `0`, risk `low`.
+  - Staged recheck command: `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO`.
+  - Staged recheck result: changed files `6`, changed symbols `27`, affected processes `0`, risk `low`.
+- Remaining blockers:
+  - None for [P7-D]. Continue to the next ready P7 cluster.
+
+### [P7-G1] Repo Git, Ignore, And Runtime Config Legacy Test Batch
+
+- Date: 2026-05-15 local
+- Commit: pending
+- Status: done
+- Scope:
+  - deleted `avmatrix/test/unit/git.test.ts`
+  - deleted `avmatrix/test/unit/git-utils.test.ts`
+  - deleted `avmatrix/test/unit/ignore-service.test.ts`
+  - deleted `avmatrix/test/unit/runtime-config.test.ts`
+  - updated `internal/repo/git_test.go`
+  - updated `internal/repo/registry_test.go`
+  - added `internal/repo/runtime_config_test.go`
+  - updated `internal/ignore/matcher_test.go`
+- Go files added/changed:
+  - `internal/repo/git_test.go`: added Go coverage for non-git fallbacks, expanded remote URL parsing, and real git repository root/commit/origin/inferred-name behavior.
+  - `internal/repo/registry_test.go`: added inferred-name precedence, preserved alias, basename collision, and missing-registry read coverage.
+  - `internal/repo/runtime_config_test.go`: added runtime config default, persistence, and invalid-value normalization coverage.
+  - `internal/ignore/matcher_test.go`: added hardcoded ignore list, hardcoded directory helper, comments/bare directory patterns, file globs, and negation whitelist coverage.
+- Tests converted:
+  - `git.test.ts` and `git-utils.test.ts` -> Go `TestParseRepoNameFromURL`, `TestGitHelpersReturnEmptyValuesOutsideGitRepo`, and `TestGitHelpersReadRealRepository`.
+  - `ignore-service.test.ts` -> Go ignore matcher tests for hardcoded ignores, `.gitignore`, `.avmatrixignore`, `AVMATRIX_NO_GITIGNORE`, glob patterns, and negation whitelists.
+  - `runtime-config.test.ts` -> Go runtime config tests.
+- Old files deleted:
+  - `avmatrix/test/unit/git.test.ts`
+  - `avmatrix/test/unit/git-utils.test.ts`
+  - `avmatrix/test/unit/ignore-service.test.ts`
+  - `avmatrix/test/unit/runtime-config.test.ts`
+- Phase jump:
+  - The legacy TS ignore test expected `.doc/.docx/.pdf` and spreadsheet/CSV files to be ignored. Go intentionally includes document and spreadsheet inputs for document ingestion, matching the prior Go conversion evidence; the old ignore expectation was not ported.
+  - `repo-manager.test.ts`, `repo-resolver.test.ts`, `repo-read-executor.test.ts`, and MCP `resources.test.ts` remain for later P7-G/P7-C/P7-D owner batches because they include legacy CLI config, session binding, read executor, and MCP resource behavior beyond this first repo/ignore slice.
+- AVmatrix graph state:
+  - Pre-edit refresh command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-g1-pre-refresh-20260515.json`.
+  - Pre-edit refresh result: scanned `1205`, parsed `1032`, unsupported `173`, failed `0`, graph `33945` nodes / `67850` relationships.
+- Impact checks:
+  - `Store.Register` upstream impact: LOW, direct caller `AnalyzeService.recordResult`, affected processes `0`.
+  - `IsGitRepo` upstream impact: CRITICAL, direct callers `newIndexCommand`, `resolveIndexPath`, `resolveAnalyzeArgument`, and `newStatusCommand`, affected processes `main`, CLI tests, `newAnalyzeCommand`, and `newIndexCommand`. Production symbol not modified.
+  - `ShouldIgnorePath` upstream impact: LOW, direct caller `Matcher.Ignored`, affected processes `0`.
+  - `ignore.Load` upstream impact: LOW, direct caller `WalkRepositoryPaths`, affected process `newAnalyzeCommand`.
+  - `LoadRuntimeConfig` upstream impact: HIGH, direct callers `newWikiCommand` and `newWikiModeCommand`, affected processes on CLI wiki path. Production symbol not modified.
+  - `SaveRuntimeConfig` upstream impact: HIGH, direct caller `newWikiModeCommand`, affected processes on CLI wiki path. Production symbol not modified.
+  - `ParseRepoNameFromURL` upstream impact: LOW, direct caller `InferredName`, affected processes `0`.
+- HIGH/CRITICAL risk:
+  - `IsGitRepo` returned CRITICAL and runtime config helpers returned HIGH. This batch proceeded test-only and did not modify those production symbols.
+- Focused test command:
+  - `go test ./internal/repo ./internal/ignore -count=1` passed after fixing a Windows short-path assertion in the new test.
+- Full validation:
+  - `npm run build` in `avmatrix/` passed and rebuilt `avmatrix/bin/avmatrix.exe`.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed; Vite emitted the known chunk-size/dynamic-import warnings.
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `npm test` in `avmatrix/` exited `0`; this run did not reproduce the prior unhandled `lbug-pool` worker error.
+  - `npm test` in `avmatrix-web/` passed with `39` files / `296` tests.
+- Runtime e2e:
+  - `.\avmatrix\bin\avmatrix.exe wiki-mode local` with isolated `AVMATRIX_HOME` wrote `runtime.json` with `"wikiMode": "local"`.
+  - `.\avmatrix\bin\avmatrix.exe wiki-mode` read the persisted local mode.
+  - `.\avmatrix\bin\avmatrix.exe status` inspected the current git repository and reported it up to date.
+  - First smoke attempt returned the same valid output but failed due a PowerShell assertion against an array instead of joined text; rerun with joined-text assertions passed.
+- Final graph refresh:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-g1-final-refresh-20260515.json`.
+  - Result: scanned `1202`, parsed `1029`, unsupported `173`, failed `0`, graph `33961` nodes / `67878` relationships.
+- Deletion proof:
+  - Non-fixture TS test count is now `215`.
+  - `rg --files avmatrix/test | rg '(git\.test|git-utils|ignore-service|runtime-config)\.test\.ts$'` returned no matches.
+- Benchmark entry:
+  - [P7-G1] in benchmark ledger.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope all --repo AVmatrix-GO` reported changed files `10`, changed symbols `36`, affected processes `0`, risk `low`.
+  - Staged recheck command: `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO`.
+  - Staged recheck result: changed files `11`, changed symbols `47`, affected processes `0`, risk `low`.
+- Remaining blockers:
+  - Continue [P7-G] with repo resolver/manager/storage slices after owner confirmation.
+
+### [P7-B4] CLI E2E And Wiki Compatibility Legacy Test Batch
+
+- Date: 2026-05-15 local
+- Commit: `20e905b`
+- Status: done, pending commit
+- Scope:
+  - deleted `avmatrix/test/integration/cli-e2e.test.ts`
+  - deleted `avmatrix/test/unit/wiki.compat.test.ts`
+  - updated `internal/cli/command_test.go`
+  - updated `avmatrix/scripts/run-vitest-suite.cjs`
+- Go files added/changed:
+  - `internal/cli/command_test.go`: added Go CLI coverage for `analyze --name` collision rejection, `--allow-duplicate-name` duplicate-registration bypass, and `--skills` not bypassing the collision guard.
+- Tests converted:
+  - `cli-e2e.test.ts` -> existing Go CLI coverage plus new `TestAnalyzeNameCollisionRequiresExplicitDuplicateBypass`.
+  - `wiki.compat.test.ts` -> existing Go `TestWikiCommandReportsDisabledAndFailsSilently`.
+- Old files deleted:
+  - `avmatrix/test/integration/cli-e2e.test.ts`
+  - `avmatrix/test/unit/wiki.compat.test.ts`
+- Phase jump:
+  - The TS compatibility import path for `src/cli/wiki.js` is not retained as runtime authority; Go `avmatrix wiki` is canonical and already covered.
+  - Existing Go CLI tests cover status on non-git/indexed repos, analyze output/artifacts, direct tool JSON on stdout, wiki local-only gate, unknown command/help behavior, and direct MCP runtime dispatch. This batch adds the missing analyze-name collision wiring before deleting the TS e2e.
+- AVmatrix graph state:
+  - Pre-edit refresh command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-b4-pre-refresh-20260515.json`.
+  - Pre-edit refresh result: scanned `1202`, parsed `1029`, unsupported `173`, failed `0`, graph `33961` nodes / `67878` relationships.
+- Impact checks:
+  - `NewRootCommand` upstream impact: LOW, direct caller `main`, affected process `main`.
+  - `newAnalyzeCommand` upstream impact: HIGH, direct caller `NewRootCommand`, affected processes on CLI main/analyze path. Production symbol not modified.
+  - `newWikiCommand` upstream impact: HIGH, direct caller `NewRootCommand`, affected processes on CLI wiki path. Production symbol not modified.
+- HIGH/CRITICAL risk:
+  - `newAnalyzeCommand` and `newWikiCommand` returned HIGH. This batch proceeded test-only and did not modify those production symbols.
+- Focused test command:
+  - `go test ./internal/cli -run "TestAnalyzeNameCollisionRequiresExplicitDuplicateBypass|TestAnalyzeCommandRunsGoPipelineAndWritesBenchmark|TestWikiCommandReportsDisabledAndFailsSilently|TestDirectToolCommandsUseLocalMCPRuntime|TestStatusReportsNotGitRepository" -count=1` passed after changing the new test to assert registry state instead of non-existent registration text in stdout.
+- Full validation:
+  - `npm run build` in `avmatrix/` passed and rebuilt `avmatrix/bin/avmatrix.exe`.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed; Vite emitted the known chunk-size/dynamic-import warnings.
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - First `npm test` in `avmatrix/` failed because `scripts/run-vitest-suite.cjs` still listed deleted `test/integration/cli-e2e.test.ts`; the runner list was updated in this batch.
+  - Second `npm test` in `avmatrix/` exited `0`; Vitest printed the known `lbug-pool` vmFork worker warning.
+  - Targeted rerun `node node_modules\vitest\vitest.mjs run test/integration/lbug-pool.test.ts --pool=vmForks --reporter=dot` exited `0` with `17` tests passed and the same known vmFork worker warning.
+  - `npm test` in `avmatrix-web/` passed with `39` files / `296` tests.
+- Runtime e2e:
+  - First PowerShell smoke attempt failed before invoking the CLI assertion because `$home` collided with read-only `$HOME`.
+  - Rerun with isolated `AVMATRIX_HOME` passed: `analyze repo-a --name shared` registered, `analyze repo-b --name shared` exited `1` with the expected registry collision message, and `analyze repo-b --name shared --allow-duplicate-name` passed.
+- Final graph refresh:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-b4-final-refresh-20260515.json`.
+  - Result: scanned `1200`, parsed `1027`, unsupported `173`, failed `0`, graph `33910` nodes / `67822` relationships.
+- Deletion proof:
+  - Non-fixture TS inventory count is now `213` using the benchmark ledger scope (`avmatrix/test` non-fixture `.ts/.tsx` plus `avmatrix/vitest.config.ts`); raw `avmatrix/test` non-fixture `.ts/.tsx` count is `212`.
+  - `rg --files avmatrix/test | rg '(cli-e2e|wiki\.compat)\.test\.ts$'` returned no matches.
+- Benchmark entry:
+  - [P7-B4] in benchmark ledger.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope all --repo AVmatrix-GO` reported changed files `7`, changed symbols `17`, affected processes `0`, risk `low`.
+  - Staged recheck command: `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO`.
+  - Staged recheck result: changed files `7`, changed symbols `19`, affected processes `0`, risk `low`.
+- Remaining blockers:
+  - Continue [P7-B] only for CLI-adjacent tests whose Go owner is confirmed; TS runtime/session adapter tests remain separate owner decisions.
+
+### [P7-D9] MCP Resources Static/Read Legacy Test Batch
+
+- Date: 2026-05-15 local
+- Commit: `e46e65b`
+- Status: done, pending commit
+- Scope:
+  - deleted `avmatrix/test/unit/resources.test.ts`
+  - added `internal/mcp/resources_parity_test.go`
+- Go files added/changed:
+  - `internal/mcp/resources_parity_test.go`: added direct Go resource parity coverage for static resource definitions/templates, encoded URI parsing, repos/setup resources, multi-repo hints, escaped repo names, and unknown resource errors.
+- Tests converted:
+  - `resources.test.ts` -> Go `TestResourceDefinitionsAndTemplatesParity`, `TestParseRepoResourceURIDecodesRepoAndDetailNames`, `TestReadResourceTextStaticReposAndSetup`, and `TestReadResourceTextRejectsUnknownResources`, plus existing Go JSON-RPC resource tests in `internal/mcp/server_test.go`.
+- Old files deleted:
+  - `avmatrix/test/unit/resources.test.ts`
+- Phase jump:
+  - Existing Go `internal/mcp/server_test.go` already covers JSON-RPC reads for context, clusters, processes, schema, cluster detail, process detail, prompts, and stale context warnings. This batch adds the static/URI/error coverage before deleting the TS resource unit test.
+  - Broader TS local-backend integration tests such as `local-backend.test.ts` and `local-backend-calltool.test.ts` remain under [P7-C]/[P5-A]/[P5-B] because they cover legacy HTTP/MCP bridge ownership beyond direct MCP resources.
+- AVmatrix graph state:
+  - Pre-edit refresh command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-d9-pre-refresh-20260515.json`.
+  - Pre-edit refresh result: scanned `1200`, parsed `1027`, unsupported `173`, failed `0`, graph `33910` nodes / `67822` relationships.
+- Impact checks:
+  - `resourceTemplates` upstream impact by UID `Function:internal/mcp/resources.go:resourceTemplates#0`: HIGH, direct caller `Server.handle`, affected processes `Handle -> PromptContent`, `Handle -> PromptMessage`, and `Handle -> StringArg`.
+  - `Server.readResourceText` upstream impact: LOW, affected processes `0`.
+  - `parseRepoResourceURI` upstream impact: LOW, direct caller `Server.readResourceText`, affected processes `0`.
+  - `Server.reposResource` upstream impact: LOW, affected processes `0`.
+- HIGH/CRITICAL risk:
+  - `resourceTemplates` returned HIGH. This batch proceeded test-only and did not modify production MCP resource symbols.
+- Focused test command:
+  - `go test ./internal/mcp -run "TestResourceDefinitionsAndTemplatesParity|TestParseRepoResourceURIDecodesRepoAndDetailNames|TestReadResourceTextStaticReposAndSetup|TestReadResourceTextRejectsUnknownResources|TestServeReadsSchemaDetailResourcesAndPrompts" -count=1` passed.
+- Full validation:
+  - `npm run build` in `avmatrix/` passed and rebuilt `avmatrix/bin/avmatrix.exe`.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed; Vite emitted the known chunk-size/dynamic-import warnings.
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `npm test` in `avmatrix/` exited `0`; Vitest printed the known `lbug-pool` vmFork worker warning.
+  - `npm test` in `avmatrix-web/` passed with `39` files / `296` tests.
+- Runtime e2e:
+  - `.\avmatrix\bin\avmatrix.exe mcp` with isolated `AVMATRIX_HOME` returned `resources/list`, `resources/templates/list`, and `resources/read` for `avmatrix://repos` through stdio framing.
+  - First PowerShell pipeline smoke attempt returned valid responses but exited `1` on a trailing pipeline read (`missing Content-Length header`); rerun using `ProcessStartInfo` and direct stdin close exited `0`.
+- Final graph refresh:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-d9-final-refresh-20260515.json`.
+  - Result: scanned `1200`, parsed `1027`, unsupported `173`, failed `0`, graph `33932` nodes / `67858` relationships.
+- Deletion proof:
+  - Non-fixture TS inventory count is now `212` using the benchmark ledger scope.
+  - `rg --files avmatrix/test | rg 'resources\.test\.ts$'` returned no matches.
+- Benchmark entry:
+  - [P7-D9] in benchmark ledger.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope all --repo AVmatrix-GO` reported changed files `4`, changed symbols `9`, affected processes `0`, risk `low` before staging the new Go test file.
+  - Staged recheck command: `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO`.
+  - Staged recheck result: changed files `5`, changed symbols `32`, affected processes `0`, risk `low`.
+- Remaining blockers:
+  - Continue [P7-D] only for MCP/resource tests whose Go owner is confirmed; local-backend bridge tests remain separate owner decisions.
+
+### [P7-F1] LadybugDB Schema Legacy Test Batch
+
+- Date: 2026-05-15 local
+- Commit: `51c2243`
+- Status: done, pending docs-only commit record
+- Scope:
+  - deleted `avmatrix/test/unit/schema.test.ts`
+  - updated `internal/lbugschema/schema_test.go`
+- Go files added/changed:
+  - `internal/lbugschema/schema_test.go`: added Go schema surface coverage for core and modern node tables, relationship types, DDL columns, HAS_METHOD/HAS_PROPERTY relation pairs, and schema query ordering.
+- Tests converted:
+  - `schema.test.ts` -> existing frozen-contract Go schema tests plus new `TestSchemaSurfaceCoversLegacyCoreAndModernNodeTypes`.
+- Old files deleted:
+  - `avmatrix/test/unit/schema.test.ts`
+- Phase jump:
+  - The legacy TS test expected `31` node tables. Go canonical schema intentionally has `32` because it includes `Package` and `Section` in addition to core, multi-language, `Route`, and `Tool` nodes.
+- AVmatrix graph state:
+  - Pre-edit refresh command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-f1-pre-refresh-20260515.json`.
+  - Pre-edit refresh result: scanned `1200`, parsed `1027`, unsupported `173`, failed `0`, graph `33932` nodes / `67858` relationships.
+  - Final refresh command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-f1-final-refresh-20260515.json`.
+  - Final refresh result: scanned `1199`, parsed `1026`, unsupported `173`, failed `0`, graph `33921` nodes / `67863` relationships.
+- Impact checks:
+  - `SchemaQueries` upstream impact: LOW, direct caller `writeRunner.initializeSchema`, affected processes `0`.
+  - `NodeSchema` upstream impact: LOW, direct caller `NodeSchemaQueries`, affected processes `0`.
+  - `RelationSchema` upstream impact: LOW, direct caller `SchemaQueries`, affected processes `0`.
+  - `EmbeddingSchema` upstream impact: LOW, direct caller `SchemaQueries`, affected processes `0`.
+- HIGH/CRITICAL risk:
+  - none.
+- Focused test command:
+  - `go test ./internal/lbugschema -count=1` passed.
+- Full validation:
+  - `cd avmatrix && npm run build` passed.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed with known Vite chunk-size warnings.
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `cd avmatrix-web && npm test` passed: `39` files / `296` tests.
+  - `cd avmatrix && npm test` passed on rerun. The first run hit the command timeout after roughly `303s` and killed the reporter with `EPIPE`; rerun with a longer timeout exited `0`.
+- Runtime e2e:
+  - Built Go binary MCP schema smoke passed for `resources/read` on `avmatrix://repo/AVmatrix-GO/schema`; output contained `AVmatrix Graph Schema`, `CodeRelation`, and `INHERITS`.
+- Deletion proof:
+  - Non-fixture TS inventory count is now `211` using the benchmark ledger scope.
+  - `rg --files avmatrix/test | rg 'schema\.test\.ts$'` returned no matches.
+- Benchmark entry:
+  - [P7-F1] in benchmark ledger.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope all --repo AVmatrix-GO` reported changed files `5`, changed symbols `15`, affected processes `0`, risk `low`.
+  - Staged recheck command: `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO`.
+  - Staged recheck result: changed files `5`, changed symbols `18`, affected processes `0`, risk `low`.
+- Remaining blockers:
+  - Continue [P7-F] with DB/search/embed tests whose Go owners are confirmed.
+
+### [P7-F2] Embedding HTTP/Cache/Pipeline Legacy Test Batch
+
+- Date: 2026-05-15 local
+- Commit: `70fef52`
+- Status: done
+- Scope:
+  - deleted `avmatrix/test/unit/embedder.test.ts`
+  - deleted `avmatrix/test/unit/http-embedder.test.ts`
+  - deleted `avmatrix/test/unit/lbug-embedding-hashes.test.ts`
+  - deleted `avmatrix/test/unit/embedding-pipeline.test.ts`
+  - updated Go embedding/runtime/native/HTTP/CLI tests and runtime schema wiring.
+- Go files added/changed:
+  - `internal/embeddings/text_test.go`: content hash SHA-1/generated-text/determinism/content/path/default-config parity.
+  - `internal/embeddings/http_client_test.go`: HTTP timeout no-retry and secret-safe status error coverage.
+  - `internal/embeddings/pipeline_test.go`: stale delete failure coverage.
+  - `internal/lbugruntime/embedding_cache_test.go`: chunk-aware metadata missing means stale even when `contentHash` exists.
+  - `internal/lbugnative/runner_ladybugdb.go` and `runner_default.go`: dimension-aware write runner schema initialization, with `OpenWriteRunner` default preserved.
+  - `internal/cli/command.go`: passes resolved HTTP embedding dimensions into native DB schema initialization during `analyze --embeddings`.
+  - `internal/httpapi/embed.go` and `embed_test.go`: HTTP embed service opens native DB schema with resolved embedding dimensions.
+- Tests converted:
+  - `embedder.test.ts`, `http-embedder.test.ts`, `lbug-embedding-hashes.test.ts`, `embedding-pipeline.test.ts` -> Go tests in `internal/embeddings`, `internal/lbugruntime`, `internal/httpapi`, and runtime e2e.
+- Old files deleted:
+  - `avmatrix/test/unit/embedder.test.ts`
+  - `avmatrix/test/unit/http-embedder.test.ts`
+  - `avmatrix/test/unit/lbug-embedding-hashes.test.ts`
+  - `avmatrix/test/unit/embedding-pipeline.test.ts`
+- Phase jump:
+  - Kept `avmatrix/test/unit/chunker.test.ts` and `avmatrix/test/unit/embedding-chunking.test.ts` because they assert AST-aware chunking behavior that the current Go chunker does not yet implement 1-1. Return after the chunking owner is implemented or explicitly rescoped.
+- AVmatrix graph state:
+  - Pre-batch refresh command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-f2-pre-scan-refresh-20260515.json`.
+  - Pre-batch refresh result: scanned `1199`, parsed `1026`, unsupported `173`, failed `0`, graph `33921` nodes / `67863` relationships.
+- Impact checks:
+  - `ContentHashForNode` upstream impact: CRITICAL, direct callers include `embeddings.Run` and Go tests, affected processes `33`.
+  - `Run` by UID `Function:internal/embeddings/pipeline.go:Run#5` upstream impact: CRITICAL, direct callers include analyze and HTTP embed service, affected processes `45`.
+  - `FetchExistingEmbeddingHashes` upstream impact: CRITICAL, direct callers include analyze and HTTP embed service, affected processes `16`.
+  - `DefaultConfig` upstream impact: CRITICAL, affected processes `80`.
+  - `EmbeddingSchema` upstream impact: CRITICAL, affected processes `11`.
+  - `HTTPEmbedder.Embed` by UID upstream impact: LOW, affected processes `0`.
+  - `EmbedService.Run`, `nativeDBRunnerFactory`, `OpenWriteRunner`, and `writeRunner.initializeSchema` upstream impacts: LOW.
+- HIGH/CRITICAL risk:
+  - Reported before edits. Mitigation: the batch adds focused Go parity tests and only changes production runtime code to align DB schema dimensions with the resolved embedding runtime dimensions, which the runtime e2e proved.
+- Focused test command:
+  - `go test ./internal/embeddings ./internal/lbugruntime ./internal/httpapi ./internal/cli ./internal/lbugnative -run "Test(ContentHashForNodeUsesGeneratedTextAndStableInputs|RunEmbedsNewAndStaleNodesAndCreatesVectorIndex|RunCreatesVectorIndexWhenAllNodesAreFresh|RunRejectsEmbeddingDimensionMismatch|RunReturnsErrorWhenStaleDeleteFails|HTTPEmbedder|SafeURL|FetchExistingEmbeddingHashes|EmbedService|OpenWriteRunner)" -count=1` passed.
+- Full validation:
+  - `cd avmatrix && npm run build` passed after the production fix and rebuilt `avmatrix/bin/avmatrix.exe`.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed with known Vite chunk-size warnings.
+  - `go test ./cmd/... ./internal/... -count=1` passed before and after the final schema-pair fix.
+  - `cd avmatrix && npm test` exited `0`; the known `lbug-pool.test.ts` vmFork worker error appeared while all `17` assertions passed.
+  - Targeted rerun `node node_modules\vitest\vitest.mjs run test/integration/lbug-pool.test.ts --pool=vmForks --reporter=dot` passed cleanly: `17` tests after the final schema-pair fix.
+  - `cd avmatrix-web && npm test` passed: `39` files / `296` tests.
+- Runtime e2e:
+  - First embedding smoke exposed a real bug: `analyze --embeddings` with HTTP embeddings at `AVMATRIX_EMBEDDING_DIMS=3` initialized `CodeEmbedding.embedding` as `FLOAT[384]`, causing a LadybugDB cast failure.
+  - After the fix, built Go CLI smoke passed using an isolated `AVMATRIX_HOME`, a temporary TypeScript repo, and a local OpenAI-compatible HTTP embedding endpoint returning `3d` vectors. Command wrote benchmark JSON `.tmp\p7-f2-embedding-smoke-59278.json`, recorded embedding metrics, and created the vector index.
+  - Final post-schema-pair smoke passed with benchmark JSON `.tmp\p7-f2-embedding-smoke-20260515221451.json`: `embeddedNodes=3`, `chunks=3`, `vectorIndexCreated=true`.
+- Schema-pair follow-up:
+  - First final graph refresh failed in `db_load` on unsupported relationship schema pair `Property->Method`.
+  - Impact attempts for `RelationPairs` and `RelationSchema` could not run after the failed forced refresh because `.avmatrix/graph.json` had been removed by the failed rebuild; this was recorded before applying the minimal schema-pair repair.
+  - Added `Property -> Method` to the canonical LadybugDB relation pair set, updated schema tests, rebuilt `avmatrix/bin/avmatrix.exe`, and reran the graph refresh successfully.
+- Final graph refresh:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-f2-final-refresh-20260515.json`.
+  - Result: scanned `1195`, parsed `1022`, unsupported `173`, failed `0`, graph `33882` nodes / `67873` relationships.
+- Deletion proof:
+  - Non-fixture TS inventory count is now `207` using the benchmark ledger scope.
+  - `rg --files avmatrix/test | rg '(embedder|http-embedder|lbug-embedding-hashes|embedding-pipeline)\.test\.ts$'` returned no matches.
+- Benchmark entry:
+  - [P7-F2] in benchmark ledger.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope all --repo AVmatrix-GO` reported changed files `18`, changed symbols `51`, affected processes `34`, risk `critical`.
+  - Staged recheck command: `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO`.
+  - Staged recheck result: changed files `18`, changed symbols `51`, affected processes `34`, risk `critical`.
+  - Critical scope is expected for this batch because staged production changes touch the CLI analyze path (`newAnalyzeCommand`), embedding pipeline `Run`, HTTP `EmbedService.Run`, native write runner schema initialization, and canonical `RelationPairs`. Full build, Go suite, legacy suite, Web suite, final graph refresh, and embedding e2e all passed.
+- Remaining blockers:
+  - Continue [P7-F] with search/DB tests whose Go owners are confirmed; chunking tests remain blocked on AST-aware chunking parity.
+
+### [P7-F3] Semantic Chunk And Lbug Retry/Vector Legacy Test Batch
+
+- Date: 2026-05-15 local
+- Commit: `933cfdf`
+- Status: done
+- Scope:
+  - deleted `avmatrix/test/unit/semantic-chunk-search.test.ts`
+  - deleted `avmatrix/test/integration/lbug-lock-retry.test.ts`
+  - deleted `avmatrix/test/integration/lbug-vector-extension.test.ts`
+  - updated Go semantic search chunk-window tests, LadybugDB busy retry/vector extension tests, and legacy Vitest runner/config lists.
+- Go files added/changed:
+  - `internal/embeddings/search_test.go`: added parity coverage for semantic chunk fetch-window expansion, fetch exhaustion, and large-limit fetch growth beyond the default `200` row window.
+  - `internal/lbugruntime/extensions_retry_test.go`: added parity coverage for busy error detection, max retry attempts, and vector extension reload after retry cleanup/reset.
+- Tests converted:
+  - `semantic-chunk-search.test.ts` -> direct Go `collectBestChunks` tests.
+  - `lbug-lock-retry.test.ts` -> Go `IsBusyError` and `BusyRetryPolicy` tests.
+  - `lbug-vector-extension.test.ts` -> Go `ExtensionState.EnsureVector` idempotency/reset tests.
+- Old files deleted:
+  - `avmatrix/test/unit/semantic-chunk-search.test.ts`
+  - `avmatrix/test/integration/lbug-lock-retry.test.ts`
+  - `avmatrix/test/integration/lbug-vector-extension.test.ts`
+- Runner/config updates:
+  - Removed the deleted integration files from `avmatrix/vitest.config.ts`.
+  - Removed the deleted integration files from `avmatrix/scripts/run-vitest-suite.cjs`.
+- Docs correction:
+  - Corrected the previous docs-record entry so P7-F2 evidence records commit `70fef52`; restored P7-H2 evidence to pending because that commit hash does not belong to P7-H2.
+- Phase jump:
+  - Kept `lbug-core-adapter.test.ts`, `lbug-pool.test.ts`, and `lbug-pool-stability.test.ts` because their legacy global/pool adapter API needs a separate Go runtime owner decision before deletion.
+  - Kept `bm25-search.test.ts`, `hybrid-search.test.ts`, `search-core.test.ts`, and `search-pool.test.ts` because Go HTTP search currently reports BM25 as not wired; deleting those tests requires [P5-C] search parity or an explicit scope decision.
+  - Kept `chunker.test.ts` and `embedding-chunking.test.ts` because AST-aware chunking parity remains blocked.
+- AVmatrix graph state:
+  - Pre-batch refresh command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-f3-pre-refresh-20260515.json`.
+  - Pre-batch refresh result: scanned `1195`, parsed `1022`, unsupported `173`, failed `0`, graph `33882` nodes / `67873` relationships.
+- Impact checks:
+  - `collectBestChunks` by UID `Function:internal/embeddings/search.go:collectBestChunks#4` upstream impact: LOW, direct caller `SemanticSearch`, affected processes `0`.
+  - `IsBusyError` upstream impact: LOW, direct caller `BusyRetryPolicy.Run`, affected processes `0`.
+  - `BusyRetryPolicy.Run` by UID upstream impact: LOW, direct test caller only, affected processes `0`.
+  - `ExtensionState.EnsureVector` by UID upstream impact: CRITICAL, direct callers `createVectorIndex` and tests, affected processes `47`.
+- HIGH/CRITICAL risk:
+  - `ExtensionState.EnsureVector` returned CRITICAL. This batch did not modify production `EnsureVector`; it added Go parity tests and removed legacy TS tests after validation.
+- Focused test command:
+  - `go test ./internal/embeddings ./internal/lbugruntime -run "Test(CollectBestChunks|IsBusyError|BusyRetryPolicy|ExtensionState)" -count=1` passed after calling `normalizeSearchOptions` in direct `collectBestChunks` tests, matching the production `SemanticSearch` precondition.
+- Full validation:
+  - `cd avmatrix && npm run build` passed and rebuilt `avmatrix/bin/avmatrix.exe`.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed with known Vite chunk-size/dynamic-import warnings.
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `cd avmatrix && npm test` exited `0`; the deleted files were no longer referenced by the custom Vitest runner.
+  - `cd avmatrix-web && npm test` passed: `39` files / `296` tests.
+- Runtime e2e:
+  - Built Go CLI smoke passed using isolated `AVMATRIX_HOME` and a temporary TypeScript repo. Command wrote benchmark JSON `.tmp\p7-f3-cli-smoke-20260515223038.json`, parsed `1` file, and loaded `4` nodes / `5` relationships.
+- Final graph refresh:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-f3-final-refresh-20260515.json`.
+  - Result: scanned `1192`, parsed `1019`, unsupported `173`, failed `0`, graph `33910` nodes / `67936` relationships.
+- Deletion proof:
+  - Non-fixture TS inventory count is now `204` using the benchmark ledger scope.
+  - `rg --files avmatrix/test | rg '(semantic-chunk-search|lbug-lock-retry|lbug-vector-extension)\.test\.ts$'` returned no matches.
+- Benchmark entry:
+  - [P7-F3] in benchmark ledger.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope all --repo AVmatrix-GO` reported changed files `10`, changed symbols `41`, affected processes `0`, risk `low`.
+  - Staged recheck command: `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO`.
+  - Staged recheck result: changed files `10`, changed symbols `41`, affected processes `0`, risk `low`.
+- Remaining blockers:
+  - Continue [P7-F] only after confirming Go parity for the remaining LadybugDB pool/core adapter and BM25/hybrid search tests, or phase jump to [P5-C] for missing search runtime behavior.
+
+### [P7-F4] LadybugDB Runtime CSV Security Legacy Test Cluster
+
+- Date: 2026-05-15 local
+- Commit: `49d7058`
+- Status: done
+- Scope:
+  - deleted `avmatrix/test/unit/isWriteQuery.test.ts`
+  - deleted `avmatrix/test/unit/security.test.ts`
+  - deleted `avmatrix/test/unit/csv-escaping.test.ts`
+  - deleted `avmatrix/test/unit/rel-csv-split.test.ts`
+  - deleted `avmatrix/test/integration/csv-pipeline.test.ts`
+  - deleted `avmatrix/test/integration/lbug-core-adapter.test.ts`
+  - deleted `avmatrix/test/integration/lbug-pool.test.ts`
+  - deleted `avmatrix/test/integration/lbug-pool-stability.test.ts`
+  - deleted `avmatrix/test/unit/local-backend-maxbuffer.test.ts`
+  - deleted `avmatrix/test/unit/stdout-silence.test.ts`
+- Go files added/changed:
+  - `internal/lbugruntime/query_guard.go` and `query_guard_test.go`: ported query guard/security keyword coverage and fixed identifier scanning so write-keyword substrings inside identifiers do not produce false positives.
+  - `internal/lbugruntime/pool_test.go`: ported pool waiter drain, timeout, closed checkout, and close idempotence coverage.
+  - `internal/lbugruntime/stdio_test.go`: ported stdout/stderr silencer nil-operation and concurrent-restore coverage.
+  - `internal/lbugload/csv_test.go`: ported CSV escaping, scalar sanitization, relationship pair splitting, unknown endpoint skipping, and empty graph/header-only relation coverage.
+  - `internal/lbugnative/integration_ladybugdb_test.go`: added native readback, empty query result, malformed query, unknown label, and read-only rejection coverage.
+  - `internal/mcp/detect_changes_large_test.go`: added >1 MiB git diff regression coverage for Go detect_changes.
+  - `internal/mcp/impact.go`, `impact_contract_test.go`, `internal/processes/processes.go`, and `processes_test.go`: aligned test-path classification with `_test.py`, root `test/`, root `tests/`, and root `__tests__/`.
+  - `internal/scopeir/kinds_security_test.go`: added node-label security contract coverage.
+- Legacy runner/config updates:
+  - removed deleted LadybugDB integration files from `avmatrix/vitest.config.ts`.
+  - removed deleted LadybugDB integration files from `avmatrix/scripts/run-vitest-suite.cjs`.
+- Impact checks:
+  - `IsWriteQuery` upstream impact: CRITICAL; affected MCP `cypherTool`, `ReadPool.Execute`, native read runners, and existing native persistence readback tests.
+  - `ValidateReadQuery` upstream impact: CRITICAL; same read-query guard/runtime blast radius.
+  - `isImpactTestPath` upstream impact: CRITICAL; direct `runImpactBFSProfiled`, `impactToolInternal`, and seven process summaries.
+  - `isTestFile` upstream impact by UID `Function:internal/processes/processes.go:isTestFile#1`: HIGH; direct `findEntryPoints`, upstream `Apply`, and `analyze.Run`.
+- HIGH/CRITICAL risk:
+  - Reported before edits. Mitigation: production changes were limited to query guard identifier scanning and test-path classification; focused Go parity tests, full Go suite, legacy suite, Web suite, launcher build, and graph refresh all passed.
+- Focused test command:
+  - `go test ./internal/lbugload ./internal/lbugruntime ./internal/mcp ./internal/processes ./internal/scopeir -run "Test(ExportGraphCSVs|CSV|ReadPool|StdioSilencer|GitDiffForDetectChanges|IsWriteQuery|ValidateReadQuery|Impact|IsTestFile|NodeLabel)" -count=1` passed.
+- Full validation:
+  - `cd avmatrix && npm run build` passed after runner/config cleanup.
+  - `cd avmatrix && npm test` passed. The deleted files were no longer referenced by the legacy suite.
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed with known Vite chunk-size/dynamic-import warnings.
+  - `cd avmatrix-web && npm test` passed: `39` files / `296` tests.
+- Final graph refresh / benchmark artifact:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-lbug-runtime-cluster-refresh-20260515.json`.
+  - Result: scanned `1184`, parsed `1011`, unsupported `173`, failed `0`, graph `33715` nodes / `66989` relationships.
+- Deletion proof:
+  - Non-fixture TS inventory count is now `185` using `rg --files avmatrix\test | rg "\.(test|spec)\.ts$" | rg -v "^avmatrix\\test\\fixtures\\" | Measure-Object`.
+  - `rg --files avmatrix\test | rg "(isWriteQuery|security|csv-escaping|rel-csv-split|csv-pipeline|lbug-core-adapter|lbug-pool|lbug-pool-stability|local-backend-maxbuffer|stdout-silence)\.test\.ts$"` returned no matches.
+- Benchmark entry:
+  - [P7-F4] in benchmark ledger, including inventory count and graph artifact metrics.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope all --repo AVmatrix-GO` reported changed files `22`, changed symbols `61`, affected processes `0`, risk `low`.
+  - Staged recheck command: `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO`.
+  - Staged recheck result: changed files `24`, changed symbols `71`, affected processes `0`, risk `low`.
+- Remaining blockers:
+  - Keep `avmatrix/test/unit/lbug-wal-recovery.test.ts` for a separate WAL recovery owner batch.
+  - Keep BM25/hybrid/search-core/search-pool and AST chunking tests until [P5-C] search/chunking parity is implemented or explicitly rescoped.
+
+### [P7-C2/P7-G2] Local Backend And Repo Runtime/Storage Legacy Test Cluster
+
+- Date: 2026-05-15 local
+- Commit: `688f07b`
+- Status: done
+- Scope:
+  - deleted `avmatrix/test/integration/local-backend.test.ts`
+  - deleted `avmatrix/test/integration/local-backend-calltool.test.ts`
+  - deleted `avmatrix/test/integration/server-analyze.test.ts`
+  - deleted `avmatrix/test/unit/analyze-api.test.ts`
+  - deleted `avmatrix/test/unit/analyze-job.test.ts`
+  - deleted `avmatrix/test/unit/compatibility-repo-cache.test.ts`
+  - deleted `avmatrix/test/unit/repo-graph-read-service.test.ts`
+  - deleted `avmatrix/test/unit/repo-manager.test.ts`
+  - deleted `avmatrix/test/unit/repo-read-executor.test.ts`
+  - deleted `avmatrix/test/unit/repo-resolver.test.ts`
+  - deleted `avmatrix/test/unit/server.test.ts`
+  - deleted `avmatrix/test/unit/settings.test.ts`
+- Go files added/changed:
+  - `internal/repo/settings.go` and `settings_test.go`: added repo-local settings path/load/save/default normalization parity for `maxExecutionFlows`.
+  - `internal/httpapi/handlers_test.go`: extended graph response coverage to prove relationship audit metadata (`resolutionSource`, `fileHash`, `evidence`) survives JSON responses.
+  - Existing Go owners already cover repository paths/registry/git/runtime identity, analyze path policy, HTTP analyze jobs, graph/query endpoints, MCP direct/calltool behavior, and read-only LadybugDB query guards.
+- Legacy runner/config updates:
+  - removed `local-backend.test.ts` and `local-backend-calltool.test.ts` from `avmatrix/vitest.config.ts`.
+  - removed both files from `avmatrix/scripts/run-vitest-suite.cjs`.
+- Focused test command:
+  - `go test ./internal/repo ./internal/httpapi ./internal/mcp ./internal/lbugruntime -run "Test(LoadSettings|SaveSettings|Repo|Graph|Analyze|Job|MCP|Direct|IsWriteQuery|Impact|Query|Context|Cypher|Search|Resources|Server)" -count=1` passed.
+- Full validation:
+  - `cd avmatrix && npm run build` passed and rebuilt `avmatrix/bin/avmatrix.exe`.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed with known Vite chunk-size/dynamic-import warnings.
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `cd avmatrix && npm test` passed; deleted local-backend files were no longer referenced by the custom Vitest runner.
+  - `cd avmatrix-web && npm test` passed: `39` files / `296` tests.
+- Final graph refresh / benchmark artifact:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-cg-local-backend-repo-cluster-refresh-20260515.json`.
+  - Result: scanned `1174`, parsed `1001`, unsupported `173`, failed `0`, graph `33639` nodes / `66895` relationships.
+- Deletion proof:
+  - Non-fixture TS inventory count is now `173` using `rg --files avmatrix\test | rg "\.(test|spec)\.ts$" | rg -v "^avmatrix\\test\\fixtures\\" | Measure-Object`.
+  - `rg --files avmatrix\test | rg "(local-backend|local-backend-calltool|server-analyze|analyze-api|analyze-job|compatibility-repo-cache|repo-graph-read-service|repo-manager|repo-read-executor|repo-resolver|server|settings)\.test\.ts$"` returned no matches.
+- Benchmark entry:
+  - [P7-C2/G2] in benchmark ledger, including inventory count and graph artifact metrics.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO` reported changed files `17`, changed symbols `26`, affected processes `0`, risk `low`.
+- Remaining blockers:
+  - Keep TS session/chat adapter tests until [P5-C] session bridge ownership is explicitly ported or retired.
+  - Keep BM25/hybrid/search-core/search-pool under [P5-C] search runtime parity.
+
+### [P7-E1] Graph Process Pipeline Parser Filesystem Legacy Test Cluster
+
+- Date: 2026-05-16 local
+- Commit: `cae3b19`
+- Status: done
+- Scope:
+  - deleted `avmatrix/test/unit/structure-processor.test.ts`
+  - deleted `avmatrix/test/unit/process-processor.test.ts`
+  - deleted `avmatrix/test/unit/processes-phase.test.ts`
+  - deleted `avmatrix/test/unit/parser-loader.test.ts`
+  - deleted `avmatrix/test/integration/filesystem-walker.test.ts`
+  - deleted `avmatrix/test/unit/analyze-metrics.test.ts`
+  - deleted `avmatrix/test/unit/analyze-benchmark-snapshot.test.ts`
+  - deleted `avmatrix/test/unit/run-analyze.test.ts`
+  - deleted `avmatrix/test/unit/pipeline-exports.test.ts`
+  - deleted `avmatrix/test/integration/pipeline.test.ts`
+  - deleted `avmatrix/test/integration/pipeline-graph-golden.test.ts`
+- Go files added/changed:
+  - `internal/analyze/analyze.go`: resolved process cap once from explicit config, `AVMATRIX_MAX_PROCESSES`, repo settings `maxExecutionFlows`, or default cap before passing it into the process phase.
+  - `internal/processes/processes.go`: added `MaxProcessesCap` to `processes.Config` and threaded it through `withDefaults`.
+  - `internal/analyze/process_config_test.go`: covered default/env/settings/invalid cap behavior plus explicit option preservation.
+  - `internal/analyze/pipeline_parity_test.go`: added mini-repo `Run` parity for benchmark JSON, graph snapshot, file/function nodes, `CONTAINS`/`CALLS`, and process/structure/resolved-call metrics.
+  - `internal/processes/processes_test.go`: covered configured cap, empty graph, no calls, low confidence calls, cycles, and max depth.
+  - `internal/structure/structure_test.go`: covered empty graph, single root, deep paths, deduplication, `filePath`, and confidence.
+  - `internal/communities/communities_test.go`: extended deterministic community output coverage.
+  - `internal/graph/types_test.go` and `internal/graph/snapshot_test.go`: added graph add/get/count/iteration, replacement semantics, count/sort, and test-only digest/diff helpers.
+  - `internal/parser/parser_readiness_test.go`: covered parser readiness for JS/TS/Python/Java/C/C++/C#/Go/Rust/PHP/Ruby/Swift, TS/TSX grammar, empty/binary files, and fixture existence.
+  - `internal/scanner/filesystem_parity_test.go`: covered scanner sizes/progress, empty/ignored/missing directories, and `ReadFileContents` empty/missing/binary behavior.
+- Impact checks:
+  - `Run` by UID `Function:internal/analyze/analyze.go:Run#3`: CRITICAL; direct caller `newAnalyzeCommand`, `23` affected processes.
+  - `Apply` by UID `Function:internal/processes/processes.go:Apply#2`: CRITICAL; direct caller `analyze.Run`, `13` affected processes.
+  - `dynamicMaxProcesses` by UID `Function:internal/processes/processes.go:dynamicMaxProcesses#2`: LOW.
+  - `Config.withDefaults`: LOW.
+- HIGH/CRITICAL risk:
+  - Reported before edits. Mitigation: production changes were limited to process cap resolution/config threading; focused Go parity tests, full Go suite, legacy suite, Web suite, launcher build, graph refresh, and staged detect-changes all passed.
+- Focused test command:
+  - `go test ./internal/structure ./internal/processes ./internal/communities ./internal/analyze ./internal/parser ./internal/scanner ./internal/graph -count=1` passed.
+- Full validation:
+  - `cd avmatrix && npm run build` passed and rebuilt `avmatrix/bin/avmatrix.exe`.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed with known Vite chunk-size/dynamic-import warnings.
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `cd avmatrix && npm test` passed; deleted legacy tests were no longer referenced by the custom Vitest runner.
+  - `cd avmatrix-web && npm test` passed: `39` files / `296` tests.
+- Final graph refresh / benchmark artifact:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-e1-graph-process-pipeline-refresh-20260516.json`.
+  - Result: scanned `1168`, parsed `995`, unsupported `173`, failed `0`, graph `33678` nodes / `67091` relationships, processes `560`, communities `1216`, total duration `36365.4` ms.
+- Deletion proof:
+  - Non-fixture TS inventory count is now `162` using `rg --files avmatrix\test | rg "\.(test|spec)\.ts$" | rg -v "^avmatrix\\test\\fixtures\\" | Measure-Object`.
+  - `rg --files avmatrix\test | rg "(structure-processor|process-processor|processes-phase|parser-loader|filesystem-walker|analyze-metrics|analyze-benchmark-snapshot|run-analyze|pipeline-exports|pipeline\.test|pipeline-graph-golden)\.test\.ts$"` returned no matches.
+- Benchmark entry:
+  - [P7-E1] in benchmark ledger, including inventory count and graph artifact metrics.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO` reported changed files `22`, changed symbols `169`, affected processes `4`, risk `medium`.
+  - Affected processes: `NewAnalyzeCommand -> OnEvent`, `NewAnalyzeCommand -> WriteBenchmark`, `NewAnalyzeCommand -> CurrentAlloc`, and `NewAnalyzeCommand -> CurrentSys`.
+- Phase jumps / remaining blockers:
+  - Keep `avmatrix/test/unit/graph.test.ts`: Go graph semantics differ from the TS test because duplicate adds replace existing nodes and TS remove APIs are absent.
+  - Keep `avmatrix/test/unit/graph-correctness-snapshot.test.ts`: Go now has test-only snapshot helpers, but no production snapshot API parity owner was added.
+  - Keep `avmatrix/test/unit/community-processor.test.ts`: deterministic processor coverage is ported, but TS color helper/source behavior still needs an owner decision.
+  - `avmatrix/test/integration/parsing.test.ts` returned in [P7-E3] and is now deleted after provider/parser coverage was added.
+
+### [P7-E2/P7-E3/P7-I1] Resolution Provider Parser Hook Legacy Test Clusters
+
+- Date: 2026-05-16 local
+- Commit: `268e406`
+- Status: done
+- Parallelization:
+  - Used exactly two subagents for the two large P7-E owner clusters; local work handled the disjoint hook batch. No further subagents were spawned.
+- Scope:
+  - P7-E2 deleted `avmatrix/test/unit/binding-accumulator.test.ts`, `avmatrix/test/unit/model/field-registry.test.ts`, `method-registry.test.ts`, `registration-table.test.ts`, `resolution-context.test.ts`, `semantic-model.test.ts`, `type-registry.test.ts`, orphan `avmatrix/test/unit/model/helpers.ts`, and selected `scope-resolution` tests: `emit-references.test.ts`, `finalize-orchestrator.test.ts`, `resolution-phase.test.ts`, `scope-reference-resolver.test.ts`, `typescript-single-pass-parity.test.ts`.
+  - P7-E3 deleted `avmatrix/test/integration/parsing.test.ts`, `tree-sitter-languages.test.ts`, `tree-sitter-queries.test.ts`, `language-skip.test.ts`, `sequential-language-availability.test.ts`, `dart-type-extractor.test.ts`, `field-extraction.test.ts`, `method-extraction.test.ts`, `receiver-extraction.test.ts`, and `variable-extraction.test.ts`.
+  - P7-I1 deleted `avmatrix/test/unit/hooks.test.ts` and `avmatrix/test/integration/hooks-e2e.test.ts`.
+- Go files added/changed:
+  - `internal/resolution/legacy_parity_test.go`: added parity for tier precedence, model/binding resolution, imports, unresolved imports, Go package import expansion, reference emission, access steps, reference index, inheritance, overrides, and implements.
+  - `internal/parser/registry_test.go`: added default registry coverage for supported grammars and unsupported languages.
+  - `internal/providers/dart/extract_test.go`: added Dart import/type edge coverage.
+  - `internal/providers/ruby/extract_test.go`: added Ruby require, `attr_reader`, and implicit member-call coverage.
+  - `internal/providers/sfc/extract_test.go`: added SFC script extraction coverage for TS/JS, multiline script attributes, external-script skipping, and line offsets.
+  - `internal/cli/hook_command_test.go`: added Go Claude hook runtime and plugin static-guard coverage.
+- Impact checks:
+  - No production function/class/method was modified in this batch. Impact analysis was not required for the test-only Go additions and legacy TS deletions.
+- Focused validation:
+  - `go test ./internal/cli -count=1` passed.
+  - `go test ./internal/parser ./internal/providers/dart ./internal/providers/ruby ./internal/providers/sfc ./internal/providers/... ./internal/routes ./internal/cobol -count=1` passed.
+  - `go test ./internal/resolution ./internal/scopeir -count=1` passed.
+- Full validation:
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `cd avmatrix && npm run build` passed and rebuilt `avmatrix/bin/avmatrix.exe`.
+  - `cd avmatrix && npm test` passed.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed with known Vite chunk-size/dynamic-import warnings.
+  - `cd avmatrix-web && npm test` passed: `39` files / `296` tests.
+- Final graph refresh / benchmark artifact:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-e23-hook-resolution-provider-refresh-20260516.json`.
+  - Result: scanned `1146`, parsed `973`, unsupported `173`, failed `0`, graph `33151` nodes / `66305` relationships, processes `567`, communities `1215`, total duration `22718.1` ms.
+- Deletion proof:
+  - Non-fixture TS inventory count is now `138`.
+  - `rg --files avmatrix\test | rg "^(avmatrix\\test\\integration\\(hooks-e2e|parsing|tree-sitter-languages)\\.test\\.ts|avmatrix\\test\\unit\\(binding-accumulator|dart-type-extractor|field-extraction|hooks|language-skip|method-extraction|receiver-extraction|sequential-language-availability|tree-sitter-queries|variable-extraction)\\.test\\.ts|avmatrix\\test\\unit\\model\\(field-registry|method-registry|registration-table|resolution-context|semantic-model|type-registry)\\.test\\.ts|avmatrix\\test\\unit\\model\\helpers\\.ts|avmatrix\\test\\unit\\scope-resolution\\(emit-references|finalize-orchestrator|resolution-phase|scope-reference-resolver|typescript-single-pass-parity)\\.test\\.ts)$"` returned no matches.
+- Benchmark entry:
+  - [P7-E2/E3/I1] in benchmark ledger, including inventory count and graph artifact metrics.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO` reported changed files `31`, changed symbols `112`, affected processes `0`, risk `low`.
+- Phase jumps / remaining blockers:
+  - Keep `scope-resolution` shared-contract/index/scope-tree tests such as `def-index`, `finalize-algorithm`, `registries`, `resolve-type-ref`, scope tree/id/position, and parse-worker scope integration until their `avmatrix-shared` or scope-index owner is ported or explicitly rescoped.
+  - Keep Dart import resolver, Vue template extraction, Ruby self-call/call-routing, and full resolver integration tests until their Go runtime/owner parity is implemented.
+  - Keep broader runtime/session/staleness stability tests until [P5-C] or [P7-I] runtime-owner parity is complete.
+
+### [P7-E4] Framework ORM Expo Route Community Text Provider Legacy Test Cluster
+
+- Date: 2026-05-16 local
+- Commit: `e92e6c1`
+- Status: done
+- Parallelization:
+  - Used exactly two subagents for disjoint community and provider parity work; local work handled framework/ORM/routes/graph/text coverage. No more than two subagents were active.
+- Scope:
+  - deleted `avmatrix/test/unit/framework-detection.test.ts`
+  - deleted `avmatrix/test/integration/orm-dataflow.test.ts`
+  - deleted `avmatrix/test/unit/expo-routes.test.ts`
+  - deleted `avmatrix/test/integration/expo-routes.test.ts`
+  - deleted `avmatrix/test/unit/graph-correctness-snapshot.test.ts`
+  - deleted `avmatrix/test/unit/cohesion-consistency.test.ts`
+  - deleted `avmatrix/test/unit/text-generator.test.ts`
+  - deleted `avmatrix/test/unit/utils.test.ts`
+- Go files added/changed:
+  - `internal/frameworks/ast.go` and `frameworks_test.go`: added Express AST detection patterns and broadened path/AST framework coverage across Next.js, Expo Router, Express, MVC/handlers, React views, Python, Java, C#, Go, Rust, PHP/Laravel, Swift/iOS, C/C++, and Windows paths.
+  - `internal/routes/routes.go` and `routes_test.go`: added Expo filesystem route fallback plus router/href navigation extraction and route edge coverage.
+  - `internal/orm/orm_test.go`: added Prisma and Supabase query/dataflow parity.
+  - `internal/communities/cohesion_test.go`: added cohesion and community empty-graph parity.
+  - `internal/embeddings/text_test.go`: added legacy text generator parity for structural metadata, declaration-only output, chunk body, type alias, constructor labels, server omission, and truncation.
+  - `internal/providers/provider_parity_test.go`: added call extraction and heritage extraction coverage across TS/JS/Python/Java/C#/Go/Rust/C++/PHP/Ruby/Kotlin plus Ruby mixins and Go embedded fields.
+  - `internal/graph/types_test.go`: added legacy `generateId` utility parity.
+- Impact checks:
+  - `fileSystemRoutes` upstream: CRITICAL; direct caller `Apply`, affected modules `Routes`, `Analyze`, `Cli`, and `21` affected processes.
+  - `nextRouteURL` upstream: CRITICAL; direct caller `fileSystemRoutes`, affected modules `Routes`, `Analyze`, and `12` affected processes.
+  - `normalizeRouteURL` upstream: CRITICAL; direct callers `Apply`, `fetchCalls`, `frameworkRoutes`, affected modules `Routes`, `Analyze`, `Cli`, and `17` affected processes.
+  - `fetchCalls` exact UID `Function:internal/routes/routes.go:fetchCalls#2` upstream recheck: CRITICAL; direct caller `Apply`, affected modules `Routes`, `Analyze`, `Cli`, and `17` affected processes.
+  - `DetectFromAST` upstream: HIGH; direct caller `AnnotateScopeIR`, indirect `parseFiles` and `Run`, `4` affected processes.
+  - `astPatternsByLanguage` upstream: LOW; no affected modules/processes.
+  - Worker community impact for `Apply`/cohesion coverage: LOW.
+- HIGH/CRITICAL risk:
+  - Reported before the route/framework production edits where the graph target resolved. `fetchCalls` name lookup was ambiguous before the exact UID recheck; final recheck is recorded above. Mitigation: production changes were limited to route/framework parity helpers and pattern table entries, and focused plus full validation passed.
+- Focused validation:
+  - `go test ./internal/frameworks ./internal/orm -count=1` passed.
+  - `go test ./internal/frameworks ./internal/orm ./internal/routes ./internal/communities ./internal/graph -count=1` passed.
+  - `go test ./internal/embeddings ./internal/graph ./internal/frameworks ./internal/orm ./internal/routes ./internal/communities -count=1` passed.
+  - `go test ./internal/providers ./internal/providers/... ./internal/embeddings ./internal/graph ./internal/frameworks ./internal/orm ./internal/routes ./internal/communities -count=1` passed.
+  - `git diff --check -- internal avmatrix\test` passed.
+- Full validation:
+  - `cd avmatrix && npm run build` passed and rebuilt `avmatrix/bin/avmatrix.exe`.
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `cd avmatrix && npm test` passed.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed with known Vite dynamic-import/chunk-size warnings.
+  - `cd avmatrix-web && npm test` passed: `39` files / `296` tests.
+- Final graph refresh / benchmark artifact:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-e4-framework-route-orm-provider-refresh-20260516.json`.
+  - Result: scanned `1140`, parsed `967`, unsupported `173`, failed `0`, graph `33179` nodes / `66516` relationships, processes `563`, communities `1220`, total duration `31876.4` ms.
+- Deletion proof:
+  - Non-fixture TS inventory count is now `130` using `rg --files avmatrix\test | rg "\.(test|spec)\.ts$" | rg -v "^avmatrix\\test\\fixtures\\" | Measure-Object`.
+  - `rg --files avmatrix\test | rg "(^|\\)(framework-detection|orm-dataflow|expo-routes|graph-correctness-snapshot|cohesion-consistency|utils|text-generator)\.test\.ts$"` returned no matches.
+- Benchmark entry:
+  - [P7-E4] in benchmark ledger, including inventory count and graph artifact metrics.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO` reported changed files `17`, changed symbols `109`, affected processes `5`, risk `medium`.
+  - Affected processes were route-candidate filesystem flows around `fileSystemRoutes`, `expoRouteURL`, and `expoRouteFromSegments`.
+- Remaining blockers:
+  - Keep route-tool detection until the separate tool-route owner is ported or explicitly rescoped.
+  - Keep `graph.test.ts` and `community-processor.test.ts` because Go graph/community production behavior still differs from the legacy TS helper/API surface.
+  - Keep staleness/stability and session/runtime bridge tests until [P5-C] or [P7-I] runtime-owner parity is complete.
+  - Keep Vue template extraction, Ruby routing helpers, resolver integrations, and scope-index/shared-contract tests until their Go owners are implemented.
+
+### [P7-D10/P7-E5] MCP Provider Route Scope Legacy Test Cluster
+
+- Date: 2026-05-16 local
+- Commit: `3221e3c`
+- Status: done
+- Parallelization:
+  - Used exactly two subagents: one for the route/group/fetch-reason cluster and one for scope-id/scope-resolution triage. Local work handled MCP detect_changes/class-impact and provider qualified names. Both subagents were closed before commit; no more than two were active.
+- Scope:
+  - deleted `avmatrix/test/integration/class-impact-all-languages.test.ts`
+  - deleted `avmatrix/test/integration/java-class-impact.test.ts`
+  - deleted `avmatrix/test/integration/qualified-class-lookups.test.ts`
+  - deleted `avmatrix/test/unit/fetch-reason-parsing.test.ts`
+  - deleted `avmatrix/test/unit/parse-diff-hunks.test.ts`
+  - deleted `avmatrix/test/unit/scope-resolution/python-scope-captures.test.ts`
+  - deleted `avmatrix/test/unit/scope-resolution/scope-id.test.ts`
+- Go files added/changed:
+  - `internal/mcp/detect_changes.go` and `detect_changes_hunks_test.go`: restored new-side hunk ranges for normal diffs while using old-side ranges for deleted files so deleted-symbol detection still works.
+  - `internal/mcp/impact_class_topology_test.go`: added Java constructor/file-import and supported-language class impact/context topology coverage.
+  - `internal/mcp/fetch_reason_test.go`: added fetch reason parsing, count/confidence, and middleware partial-detection coverage.
+  - `internal/routes/routes.go` and `routes_test.go`: fixed bracketed catch-all route segment handling and broadened route/fetch extraction coverage.
+  - `internal/group/manifest_test.go`: added manifest contract/link role and HTTP canonicalization parity.
+  - `internal/providers/provider_parity_test.go`, `internal/providers/csharp`, `internal/providers/java`, and `internal/providers/ruby`: added qualified-name parity for C# namespaces, Java packages, Ruby modules/classes, plus updated goldens.
+  - `internal/providers/tsjs/scope_id_test.go`: added deterministic scope-id parity coverage.
+  - `avmatrix/scripts/run-vitest-suite.cjs`: removed stale native DB runner entries for the deleted class-impact integration tests.
+- Impact checks:
+  - `parseDetectHunk` exact UID `Function:internal/mcp/detect_changes.go:parseDetectHunk#1`: CRITICAL; direct caller `parseDetectDiffHunks`, upstream `detectChangesTool`, affected module `Mcp`, `7` affected processes.
+  - `routeFromSegments`: CRITICAL; direct caller `nextRouteURL`, then `fileSystemRoutes`, then `Apply` and `routeCandidateFiles`; affected module `Routes`, `9` affected process entries.
+  - C# `collector.emitDefinition`, Java `collector.emitDefinition`, and Ruby `collector.emitDefinition`: LOW; no affected modules/processes.
+  - `buildWorkspace` was checked before scope-resolution production parity edits: CRITICAL; no production edit was made under that owner in this batch.
+- HIGH/CRITICAL risk:
+  - Reported before the production edits. Mitigation: production changes were limited to diff hunk range selection, route segment parsing, and qualified-name population, with focused plus full validation passing.
+- Focused validation:
+  - `go test ./internal/mcp ./internal/routes ./internal/group ./internal/providers ./internal/providers/csharp ./internal/providers/java ./internal/providers/ruby ./internal/providers/python ./internal/providers/tsjs ./internal/resolution -count=1` passed.
+  - `git diff --check -- internal avmatrix\test` passed.
+- Full validation:
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `cd avmatrix && npm run build` passed and rebuilt `avmatrix/bin/avmatrix.exe`.
+  - `cd avmatrix-web && npm test` passed: `39` files / `296` tests.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed with known Vite dynamic-import/chunk-size warnings.
+  - First `cd avmatrix && npm test` run exposed stale runner entries for the deleted `class-impact-all-languages` and `java-class-impact` files; after removing those entries from `avmatrix/scripts/run-vitest-suite.cjs`, `cd avmatrix && npm test` passed.
+- Final graph refresh / benchmark artifact:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-e5-mcp-provider-route-scope-refresh-20260516.json`.
+  - Result: scanned `1138`, parsed `965`, unsupported `173`, failed `0`, graph `33222` nodes / `66645` relationships, processes `567`, communities `1223`, total duration `29181.4` ms.
+- Deletion proof:
+  - Non-fixture TS inventory count is now `123`.
+  - `rg --files avmatrix\test | rg "(class-impact-all-languages|java-class-impact|qualified-class-lookups|fetch-reason-parsing|parse-diff-hunks|python-scope-captures|scope-id)\.test\.ts$"` returned no matches.
+- Benchmark entry:
+  - [P7-D10/P7-E5] in benchmark ledger, including inventory count and graph artifact metrics.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO` reported changed files `24`, changed symbols `134`, affected processes `2`, risk `medium`.
+  - Affected processes: `ExtractScopeIR -> Collector` and `RouteCandidateFiles -> RouteFromSegments`.
+- Remaining blockers:
+  - Keep `route-tool-detection.test.ts` until the separate tool-route owner is ported or explicitly rescoped.
+  - Keep group bridge/db, gRPC, HTTP route, topic, service-boundary, and monorepo-sync tests until their Go owners are implemented or classified.
+  - Keep remaining scope-index/shared-contract tests because several still depend on `avmatrix-shared` or the CRITICAL `buildWorkspace` owner.
+  - Keep search/chunking and TS-only helper tests until their runtime owners are ported or explicitly retired.
+
+### [P7-D11/P7-E6/P7-H3] MRO Group Skill Legacy Test Cluster
+
+- Date: 2026-05-16 local
+- Commit: `b96e2a5`
+- Status: done
+- Parallelization:
+  - Used exactly two subagents at a time. Worker A converted the group manifest test, Worker B converted MRO coverage, and Worker C started only after Worker A was closed to convert skill generation coverage.
+- Scope:
+  - deleted `avmatrix/test/unit/group/manifest-extractor.test.ts`
+  - deleted `avmatrix/test/unit/mro-processor.test.ts`
+  - deleted `avmatrix/test/unit/skill-gen.test.ts`
+- Go files added/changed:
+  - `internal/group/manifest_test.go`: added non-HTTP manifest contract IDs and synthetic manifest symbol/link metadata coverage.
+  - `internal/mro/mro.go` and `mro_test.go`: added MRO parity coverage for override topology, diamond inheritance, inherited interface/default implementations, overload matching, confidence tiering, cycles, and empty graph behavior; production fix skips interface-like EXTENDS parents for concrete inherited lookup, then falls back through interface/trait ancestry for default methods.
+  - `internal/aicontext/skill_gen_test.go`: added Go skill generator coverage for empty/small communities, sorting/capping, SKILL.md content, rerun cleanup, sanitized names, missing paths, and Windows path normalization.
+- Impact checks:
+  - `inheritedMethod` upstream: CRITICAL; direct caller `emitMethodImplementsEdges`, upstream `Apply` and `analyze.Run`; affected modules `Mro` and `Analyze`, `10` affected process entries.
+  - `parameterTypesMatch` exact UID `Function:internal/mro/mro.go:parameterTypesMatch#4`: CRITICAL; direct callers `inheritedMethod` and `matchingOwnMethod`, upstream `emitMethodImplementsEdges` and `Apply`; affected module `Mro`, `6` affected process entries.
+  - `Apply` exact UID `Function:internal/mro/mro.go:Apply#1`: CRITICAL; direct caller `analyze.Run`, upstream CLI analyze/root command flows; affected modules `Analyze` and `Cli`, `23` affected process entries.
+  - Group manifest and skill generation changes were test-only; no production symbol impact was required.
+- HIGH/CRITICAL risk:
+  - Reported for the MRO production edit. Mitigation: production change was limited to MRO inherited/default method matching and arity-confidence handling; focused package tests, full Go suite, legacy Vitest suite, Web suite, launcher build, graph refresh, and staged detect-changes all passed.
+- Focused validation:
+  - `go test ./internal/group ./internal/mro ./internal/aicontext ./internal/cli -count=1` passed.
+  - `git diff --check -- internal\group internal\mro internal\aicontext avmatrix\test\unit\group\manifest-extractor.test.ts avmatrix\test\unit\mro-processor.test.ts avmatrix\test\unit\skill-gen.test.ts` passed.
+  - `rg -n "mro-processor\.test|skill-gen\.test|manifest-extractor\.test" avmatrix package.json` returned no runner/config references.
+- Full validation:
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `cd avmatrix && npm run build` passed and rebuilt `avmatrix/bin/avmatrix.exe`.
+  - `cd avmatrix-web && npm test` passed: `39` files / `296` tests.
+  - `cd avmatrix && npm test` passed.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed with known Vite dynamic-import/chunk-size warnings.
+- Final graph refresh / benchmark artifact:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-e6-mro-group-skill-refresh-20260516.json`.
+  - Result: scanned `1136`, parsed `963`, unsupported `173`, failed `0`, graph `33146` nodes / `66648` relationships, processes `567`, communities `1216`, total duration `22886.4` ms.
+- Deletion proof:
+  - Non-fixture TS inventory count is now `120`.
+  - `rg -n "mro-processor\.test|skill-gen\.test|manifest-extractor\.test" avmatrix package.json` returned no legacy runner/config references.
+- Benchmark entry:
+  - [P7-D11/P7-E6/P7-H3] in benchmark ledger, including inventory count and graph artifact metrics.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO` reported changed files `7`, changed symbols `113`, affected processes `4`, risk `medium`.
+  - Affected processes were `EmitMethodImplementsEdges -> BoolProperty`, `EmitMethodImplementsEdges -> IntProperty`, `EmitMethodImplementsEdges -> IsInterfaceLike`, and `EmitMethodImplementsEdges -> ParameterTypesMatch`.
+- Remaining blockers:
+  - Group bridge/db, gRPC, HTTP route, topic, service-boundary, and monorepo-sync tests still need Go owner parity before deletion.
+  - `skills-e2e.test.ts` remains a broad pipeline e2e and stays until a Go e2e replacement is selected.
+  - Search/BM25/hybrid/chunking tests remain because BM25/hybrid is not wired in the Go server and AST-aware chunking parity is not implemented.
+  - COBOL/JCL preprocessor/parser tests remain because Go `internal/cobol` currently covers enrichment, not the full legacy parser/preprocessor surface.
+
+### [P7-D12/P7-E7/P7-F5] Search Group Extractor JCL Chunk Call Legacy Test Cluster
+
+- Date: 2026-05-16 local
+- Commit: `22b3ef0`
+- Status: done
+- Parallelization:
+  - Used at most two active subagents. Worker D converted JCL parser coverage, Worker E converted embedding chunking coverage, Workers F/G then handled disjoint group extractor and call/cross-file coverage, and Worker H handled search after an earlier worker was closed.
+- Scope:
+  - deleted `avmatrix/test/integration/group/monorepo-sync.test.ts`
+  - deleted `avmatrix/test/integration/search-core.test.ts`
+  - deleted `avmatrix/test/integration/search-pool.test.ts`
+  - deleted `avmatrix/test/unit/bm25-search.test.ts`
+  - deleted `avmatrix/test/unit/call-extraction.test.ts`
+  - deleted `avmatrix/test/unit/chunker.test.ts`
+  - deleted `avmatrix/test/unit/cross-file-impl.test.ts`
+  - deleted `avmatrix/test/unit/cross-file.test.ts`
+  - deleted `avmatrix/test/unit/embedding-chunking.test.ts`
+  - deleted `avmatrix/test/unit/group/grpc-extractor.test.ts`
+  - deleted `avmatrix/test/unit/group/http-route-extractor.test.ts`
+  - deleted `avmatrix/test/unit/group/http-route-multi-verb.test.ts`
+  - deleted `avmatrix/test/unit/group/service-boundary-detector.test.ts`
+  - deleted `avmatrix/test/unit/group/topic-extractor.test.ts`
+  - deleted `avmatrix/test/unit/hybrid-search.test.ts`
+  - deleted `avmatrix/test/unit/jcl-parser.test.ts`
+- Go files added/changed:
+  - `internal/cobol/jcl.go`, `jcl_test.go`, and `cobol.go`: added logical JCL parsing, continuation handling, JOB/EXEC/DD/PROC/INCLUDE/SET/JCLLIB/IF coverage, and program/procedure metadata enrichment.
+  - `internal/embeddings/chunk.go`, `chunk_test.go`, and `text_test.go`: added structural chunk labels and start/end offsets for class/interface/function/constructor/method chunks with character fallback coverage.
+  - `internal/group/*_extractor.go`, `service_boundary.go`, `bridge_index.go`, and related tests: added Go parity helpers for source-level HTTP, gRPC, topic, service-boundary, monorepo extraction, and bridge lookup behavior.
+  - `internal/httpapi/search.go` and `search_test.go`: wired BM25, semantic, and hybrid search, including RRF merge, limits, escaping, fallback behavior, and debug scores.
+  - `internal/providers/provider_parity_test.go`: added provider call extraction parity for Python self receivers, Go selectors, Rust scoped calls, C++ field expressions, and Kotlin safe navigation.
+  - `avmatrix/scripts/run-vitest-suite.cjs` and `avmatrix/vitest.config.ts`: removed stale references to deleted search integration tests.
+- Impact checks:
+  - `processJCL` upstream: CRITICAL; direct caller `Apply`, upstream `Run` and `newAnalyzeCommand`; affected modules `Analyze`, `Cli`, and `Lbugload`, with `20` affected process entries.
+  - `ChunkNode` upstream: CRITICAL; direct callers include embedding batch preparation and HTTP embedding service paths; affected modules include embeddings/analyze/HTTP embedding flows, with `14` affected process entries.
+  - `CharacterChunks` upstream: CRITICAL through `ChunkNode` and embedding run paths, with `7` affected process entries.
+  - `SearchService.Search` exact UID `Method:internal/httpapi/search.go:SearchService.Search#3`: LOW, impacted count `0`.
+  - `searchBM25FromRunner` and `searchResultsFromSemantic`: LOW, impacted count `0`.
+  - `DetectServiceBoundaries`, `ExtractGRPCContracts`, `ExtractHTTPContractsFromSource`, and `ExtractTopicContracts`: LOW, impacted count `0`.
+- HIGH/CRITICAL risk:
+  - Reported for JCL and embedding production edits. Mitigation: changes were bounded to parser/enrichment and chunk/search/extractor owners, with focused package tests, full Go suite, legacy Vitest suite, Web suite, launcher build, graph refresh, and staged detect-changes all passing.
+- Focused validation:
+  - `go test ./internal/cobol ./internal/embeddings ./internal/httpapi -count=1` passed.
+  - `go test ./internal/cobol ./internal/embeddings ./internal/httpapi ./internal/providers ./internal/resolution -count=1` passed.
+  - `go test ./internal/group ./internal/cobol ./internal/embeddings ./internal/httpapi ./internal/providers ./internal/resolution -count=1` passed.
+  - `go test ./internal/group ./internal/cobol ./internal/embeddings ./internal/httpapi ./internal/providers ./internal/resolution ./internal/lbugruntime -count=1` passed.
+  - `git diff --cached --check` passed before commit.
+- Full validation:
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `npm run build` in `avmatrix` passed and rebuilt `avmatrix/bin/avmatrix.exe`.
+  - `cd avmatrix && npm test` passed after stale search runner/config references were removed.
+  - `cd avmatrix-web && npm test` passed: `39` files / `296` tests.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed with known Vite dynamic-import/chunk-size warnings.
+- Final graph refresh / benchmark artifact:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-e7-search-group-jcl-chunk-refresh-20260516.json`.
+  - Result: scanned `1134`, parsed `961`, unsupported `173`, failed `0`, graph `33522` nodes / `67490` relationships, processes `571`, communities `1253`, total duration `26315.5` ms.
+- Deletion proof:
+  - Non-fixture TS inventory count is now `104`.
+  - `rg --files avmatrix\test | rg "\.(test|spec)\.ts$" | rg -v "^avmatrix\\test\\fixtures\\" | Measure-Object` returned `104`.
+- Benchmark entry:
+  - [P7-D12/P7-E7/P7-F5] in benchmark ledger, including inventory count and graph artifact metrics.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO` reported changed files `38`, changed symbols `601`, affected processes `5`, risk `medium`.
+  - Affected processes were `ProcessJCL -> JclLogicalLine`, `ScanHTTPDetections -> ReadHTTPStringProp`, `ProcessJCL -> Init`, `ScanHTTPDetections -> HttpDetection`, and `ProcessJCL -> TrimJCLValue`.
+- Remaining blockers:
+  - Group bridge DB writer/reader/query tests remain: `group/bridge-db.test.ts` and `group/bridge-db-edge.test.ts`.
+  - COBOL copy expander and preprocessor tests remain separate from the JCL parser/enrichment batch.
+  - Scope-index/shared-contract/resolver integration, runtime/session/staleness, package/build, and broad e2e tests remain for their owning batches.
+
+### [P7-D13/P7-E8/P7-F6/P7-G3/P7-H4/P7-I2] Scope Runtime Provider COBOL Legacy Test Cluster
+
+- Date: 2026-05-16 local
+- Commit: `6b91dbf`
+- Status: done
+- Parallelization:
+  - Used at most two active subagents. Worker I converted a scope index/import target subset, Worker J converted group bridge/runtime/staleness/wiki/skills subset, Worker K converted COBOL/mainframe parity subset, and Worker L converted parser/provider/process subset after another worker slot freed.
+- Scope:
+  - deleted `avmatrix/test/integration/api-impact-e2e.test.ts`
+  - deleted `avmatrix/test/integration/heritage-extractor-wiring.test.ts`
+  - deleted `avmatrix/test/integration/ignore-and-skip-e2e.test.ts`
+  - deleted `avmatrix/test/integration/skills-e2e.test.ts`
+  - deleted `avmatrix/test/integration/staleness-and-stability.test.ts`
+  - deleted `avmatrix/test/unit/ast-utils.test.ts`
+  - deleted `avmatrix/test/unit/call-form.test.ts`
+  - deleted `avmatrix/test/unit/cobol-copy-expander.test.ts`
+  - deleted `avmatrix/test/unit/entry-point-scoring.test.ts`
+  - deleted `avmatrix/test/unit/group/bridge-db-edge.test.ts`
+  - deleted `avmatrix/test/unit/group/bridge-db.test.ts`
+  - deleted `avmatrix/test/unit/group/fixtures.ts`
+  - deleted `avmatrix/test/unit/phase-timer.test.ts`
+  - deleted `avmatrix/test/unit/scope-resolution/import-target-adapter.test.ts`
+  - deleted `avmatrix/test/unit/scope-resolution/method-dispatch-index.test.ts`
+  - deleted `avmatrix/test/unit/scope-resolution/module-scope-index.test.ts`
+  - deleted `avmatrix/test/unit/scope-resolution/qualified-name-index.test.ts`
+  - deleted `avmatrix/test/unit/wiki-llm-client.test.ts`
+- Go files added/changed:
+  - `internal/cobol`: added copy REPLACING parser coverage, fixed-column preprocessing, nested program extraction, free-format subset, quoted COPY, PERFORM THROUGH/TIMES filtering, JCL DD dataset node/link emission, and legacy COBOL graph subset tests.
+  - `internal/group`: added bridge registry round-trip/overwrite normalization and contract/cross-link dedupe coverage.
+  - `internal/httpapi`: added phase timer helper and concurrency/additive timing tests.
+  - `internal/lbugruntime`: added WAL corruption signal coverage.
+  - `internal/mcp`: added API impact response/error shape and mismatch record coverage.
+  - `internal/parser`, `internal/providers`, `internal/providers/tsjs`, `internal/processes`, and `internal/resolution`: added parser pool grammar reuse, provider owner/HAS_METHOD and heritage real-AST parity, TypeScript legacy scope-capture coverage, entry-point scoring coverage, and scope index/import target lookup coverage.
+  - `internal/scanner`: added Swift source discovery coverage before parser availability checks.
+  - `avmatrix/scripts/run-vitest-suite.cjs` and `avmatrix/vitest.config.ts`: removed stale native DB/slow-suite entries for deleted legacy tests.
+- Impact checks:
+  - `Apply` exact UID `Function:internal/cobol/cobol.go:Apply#3`: CRITICAL; direct caller `analyze.Run`, upstream CLI root/analyze flows; affected modules `Analyze` and `Cli`, `23` affected process entries.
+  - `extractPrograms`: CRITICAL; direct callers `Apply` and `extractProgram`, upstream `analyze.Run` and CLI analyze flows; affected modules `Cobol`, `Lbugload`, `Analyze`, and `Cli`, `19` affected process entries.
+  - `processJCL`: CRITICAL; direct caller `Apply`, upstream `analyze.Run` and CLI analyze flows; affected modules `Lbugload`, `Analyze`, and `Cli`, `19` affected process entries.
+  - `preprocessCobolSource`: CRITICAL; direct callers `extractProgram` and `extractPrograms`, upstream `Apply` and analyze flows; affected modules `Cobol`, `Lbugload`, and `Analyze`, `11` affected process entries.
+  - `parseReplacingClause` exact UID `Function:internal/cobol/copy_expander.go:parseReplacingClause#1`: LOW, impacted count `0`.
+  - `newPhaseTimer`: LOW, impacted count `0`.
+  - Worker I checked `buildWorkspace` before a possible production parity fix and received HIGH risk; no production edit was made there. `resolveName` impact was MEDIUM; no edit was made.
+- HIGH/CRITICAL risk:
+  - Reported for COBOL production edits. Mitigation: production changes were bounded to COBOL extraction/JCL DD enrichment; focused package tests, full Go suite, legacy Vitest suite, Web suite, launcher build, graph refresh, and staged detect-changes all passed.
+- Focused validation:
+  - `go test ./internal/group ./internal/mcp ./internal/scanner ./internal/lbugruntime ./internal/cobol ./internal/httpapi -count=1` passed.
+  - `go test ./internal/resolution ./internal/providers/tsjs -count=1` passed.
+  - `go test -count=1 ./internal/parser ./internal/providers ./internal/processes` passed.
+  - `go test -count=1 ./internal/parser ./internal/providers ./internal/processes ./internal/cobol ./internal/group ./internal/mcp ./internal/scanner ./internal/lbugruntime ./internal/httpapi ./internal/resolution ./internal/providers/tsjs` passed.
+  - `git diff --cached --check` passed.
+- Full validation:
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `npm run build` in `avmatrix` passed and rebuilt `avmatrix/bin/avmatrix.exe`.
+  - `cd avmatrix && npm test` passed. Native DB subset now runs `augmentation`, `shape-check-regression`, and `scope-audit-persistence`; expected warnings remain for unavailable COBOL parser binding and LLM fallback tests.
+  - `cd avmatrix-web && npm test` passed: `39` files / `296` tests.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed with known Vite dynamic-import/chunk-size warnings.
+- Final graph refresh / benchmark artifact:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-e8-scope-runtime-provider-cobol-refresh-20260516.json`.
+  - Result: scanned `1123`, parsed `950`, unsupported `173`, failed `0`, graph `33502` nodes / `67632` relationships, processes `567`, communities `1268`, total duration `25479.8` ms.
+- Deletion proof:
+  - Non-fixture TS inventory count is now `87`.
+  - `rg --files avmatrix\test | rg "\.(test|spec)\.ts$" | rg -v "^avmatrix\\test\\fixtures\\" | Measure-Object` returned `87`.
+- Benchmark entry:
+  - [P7-D13/P7-E8/P7-F6/P7-G3/P7-H4/P7-I2] in benchmark ledger, including inventory count and graph artifact metrics.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO` reported changed files `36`, changed symbols `247`, affected processes `13`, risk `high`.
+  - Affected processes included COBOL `Apply`, `extractPrograms`, `processJCL`, and copy replacing helper flows such as `Apply -> Node`, `Apply -> Relationship`, `ExtractPrograms -> FirstWord`, `ProcessJCL -> JclLogicalLine`, `ProcessJCL -> TrimJCLValue`, and `ParseReplacingClause -> Done/IsReplacementWordChar`.
+- Remaining blockers:
+  - `cobol-preprocessor.test.ts` and `resolvers/cobol.test.ts` remain because full parity still needs data division details, environment `SELECT`, EXEC SQL/CICS/DLI, linkage/ENTRY, CANCEL, SORT/MERGE, SET/INSPECT/INITIALIZE, property/record/constructor nodes, CICS/SQL/access edges, MOVE/data-flow edges, and exact grand totals.
+  - Scope/shadow/symbol/type-env tests remain where `buildWorkspace` or resolver semantics need a high-risk owner decision before production changes.
+  - Runtime-controller/session/Codex adapter/stdio/worker-pool tests remain because no complete Go runtime/session owner exists yet.
+  - Broad provider/import/Ruby routing/helper tests remain until their Go provider or routing owners are ported or explicitly rescoped.
+
+### [P7-D14/P7-E9/P7-F7] Provider Route Scope Resolver Legacy Test Cluster
+
+- Date: 2026-05-16 local
+- Commit: `d567e88`
+- Status: done
+- Parallelization:
+  - Used at most two active subagents. Worker M covered scope/index parity, Worker O covered route/shape/API behavior, Worker N covered Python MCP tool detection, and Worker P covered provider/import resolver parity after worker slots freed.
+- Scope:
+  - deleted `avmatrix/test/integration/resolvers/api-deep-flow.test.ts`
+  - deleted `avmatrix/test/integration/resolvers/cpp.test.ts`
+  - deleted `avmatrix/test/integration/resolvers/csharp.test.ts`
+  - deleted `avmatrix/test/integration/resolvers/dart.test.ts`
+  - deleted `avmatrix/test/integration/resolvers/express-routes.test.ts`
+  - deleted `avmatrix/test/integration/resolvers/go.test.ts`
+  - deleted `avmatrix/test/integration/resolvers/java.test.ts`
+  - deleted `avmatrix/test/integration/resolvers/javascript.test.ts`
+  - deleted `avmatrix/test/integration/resolvers/kotlin.test.ts`
+  - deleted `avmatrix/test/integration/resolvers/php-response-shapes.test.ts`
+  - deleted `avmatrix/test/integration/resolvers/python-mcp-tools.test.ts`
+  - deleted `avmatrix/test/integration/resolvers/python.test.ts`
+  - deleted `avmatrix/test/integration/resolvers/route-mapping.test.ts`
+  - deleted `avmatrix/test/integration/resolvers/ruby.test.ts`
+  - deleted `avmatrix/test/integration/resolvers/rust.test.ts`
+  - deleted `avmatrix/test/integration/resolvers/shape-check.test.ts`
+  - deleted `avmatrix/test/integration/resolvers/swift.test.ts`
+  - deleted `avmatrix/test/integration/resolvers/typescript.test.ts`
+  - deleted `avmatrix/test/integration/resolvers/vue.test.ts`
+  - deleted `avmatrix/test/integration/shape-check-regression.test.ts`
+  - deleted `avmatrix/test/unit/resolve-enclosing-owner.test.ts`
+  - deleted `avmatrix/test/unit/route-tool-detection.test.ts`
+  - deleted `avmatrix/test/unit/scope-resolution/def-index.test.ts`
+  - deleted `avmatrix/test/unit/scope-resolution/position-index.test.ts`
+  - deleted `avmatrix/test/unit/scope-resolution/scope-tree.test.ts`
+  - deleted `avmatrix/test/unit/shape-check.test.ts`
+- Go files added/changed:
+  - `internal/routes`: added PHP API file route extraction, dynamic/catch-all route matching, template-literal fetches, response/error shape extraction for JavaScript/PHP, middleware chain/project middleware, and fetch reason key/count metadata.
+  - `internal/tools`: added Python `@mcp.tool()` detection coverage and implementation.
+  - `internal/analyze`, `internal/mcp`, and `internal/routes`: added route/tool/analyze integration and shape/error-key consumer behavior coverage.
+  - `internal/providers` and `internal/providers/ruby`: added broad import extraction parity for TS/JS, C#, Go, Java, Kotlin, Python, Ruby, Rust, C++, Dart, Swift, plus Ruby singleton owner and implicit-self coverage.
+  - `internal/scopeir`: added definition-index, position-index, and scope-tree helpers plus legacy parity tests.
+  - `avmatrix/scripts/run-vitest-suite.cjs` and `avmatrix/vitest.config.ts`: removed stale native DB/slow-suite entries for deleted tests.
+- Impact checks:
+  - Route production checks were LOW: `Apply`, `emitRoute`, `addRoute`, `fileSystemRoutes`, `nextRouteURL`, `normalizeRouteURL`, and `fetchCalls`.
+  - Tools production checks were LOW: `extractDefinitions` and `isSupportedLanguage`.
+  - Scope worker checked `buildWorkspace` and received CRITICAL risk, but did not edit it. New `scopeir` helpers had no existing graph nodes.
+  - Provider work was test-only.
+- HIGH/CRITICAL risk:
+  - No HIGH/CRITICAL production edit proceeded. `detect-changes` reported CRITICAL after staging because route helper flows changed; mitigation was focused route/analyze/mcp/provider/tools/scope tests, full Go suite, full legacy Vitest suite, Web suite, build, launcher build, and graph refresh.
+- Focused validation:
+  - `go test ./internal/routes ./internal/analyze ./internal/mcp ./internal/providers/... ./internal/tools ./internal/scopeir ./internal/resolution -count=1` passed.
+  - `git diff --check` passed, with only the unrelated CRLF warning for `docs/avmatrix-canonical-spec.md`.
+- Full validation:
+  - `npm run build` in `avmatrix` passed.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed with known Vite dynamic-import/chunk-size warnings.
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `cd avmatrix-web && npm test` passed: `39` files / `296` tests.
+  - Initial `cd avmatrix && npm test` failed on stale native DB runner/config entries for deleted `shape-check-regression.test.ts`; after updating `avmatrix/scripts/run-vitest-suite.cjs` and `avmatrix/vitest.config.ts`, `cd avmatrix && npm test` passed. Expected warnings remain for unavailable COBOL parser binding, LLM fallback tests, and scope error-resilience warnings.
+- Final graph refresh / benchmark artifact:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-e9-provider-route-scope-refresh-20260516.json`.
+  - Result: scanned `1102`, parsed `929`, unsupported `173`, failed `0`, graph `32814` nodes / `67457` relationships, processes `572`, communities `1284`, total duration `20918.5` ms.
+  - Route metrics included `24` routes emitted, `24` route handles, `28` fetches, and `6` duplicate routes.
+- Deletion proof:
+  - Non-fixture TS inventory count is now `61`.
+  - `rg --files avmatrix\test | rg "\.(test|spec)\.ts$" | rg -v "^avmatrix\\test\\fixtures\\" | Measure-Object` returned `61`.
+- Benchmark entry:
+  - [P7-D14/P7-E9/P7-F7] in benchmark ledger, including inventory count and graph artifact metrics.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO` reported changed files `38`, changed symbols `340`, affected processes `21`, risk `critical`.
+  - Affected processes included route and shape helper flows: `Apply -> IntToString`, `Apply -> NormalizeRouteURL`, `ExtractJSResponseShapes -> IsSpace/CleanUniqueStrings/ParsePositiveInt/IsIdentifierStart`, `ExtractPHPResponseShapes -> IsSpace/ParsePositiveInt/CleanUniqueStrings`, `RouteCandidateFiles -> RouteEntry/RouteFromSegments/ExpoRouteFromSegments/IsRouteFileExtension/NormalizePath`, `EmitRoute -> Init/Node`, and `RouteMatches -> IsCatchAllRouteSegment`.
+- Remaining blockers:
+  - Broad PHP and COBOL resolver tests remain because their owners still need larger parser/analyzer decisions.
+  - Query compilation remains as its own integration cluster.
+  - Scope finalize/parse-worker/python-single-pass/registries/type-ref/extractor/shadow/symbol/type-env tests remain because `buildWorkspace` and resolver semantics are high-risk owner work.
+  - Runtime-controller/session/Codex adapter/stdio/worker-pool tests remain because no complete Go runtime/session owner exists yet.
+  - Package/build script tests remain for the final package/build owner batch.
+
+### [P7-D15/P7-E10/P7-F8] Runtime Graph Provider Scope/Symbol Legacy Test Cluster
+
+- Date: 2026-05-16 local
+- Commit: `587c96b`
+- Status: done
+- Parallelization:
+  - Used at most two active subagents. Worker Q converted scope/symbol/type-reference tests, Worker R converted provider C#/Ruby/Vue behavior tests, and local work covered graph/community/staleness/WAL behavior without touching those worker write sets.
+- Scope:
+  - deleted `avmatrix/test/integration/has-method.test.ts`
+  - deleted `avmatrix/test/unit/call-routing/ruby.test.ts`
+  - deleted `avmatrix/test/unit/community-processor.test.ts`
+  - deleted `avmatrix/test/unit/graph.test.ts`
+  - deleted `avmatrix/test/unit/has-method.test.ts`
+  - deleted `avmatrix/test/unit/lbug-wal-recovery.test.ts`
+  - deleted `avmatrix/test/unit/named-bindings/csharp.test.ts`
+  - deleted `avmatrix/test/unit/scope-resolution/finalize-algorithm.test.ts`
+  - deleted `avmatrix/test/unit/scope-resolution/python-single-pass-parity.test.ts`
+  - deleted `avmatrix/test/unit/scope-resolution/registries.test.ts`
+  - deleted `avmatrix/test/unit/scope-resolution/resolve-type-ref.test.ts`
+  - deleted `avmatrix/test/unit/scope-resolution/typescript-scope-captures.test.ts`
+  - deleted `avmatrix/test/unit/staleness.test.ts`
+  - deleted `avmatrix/test/unit/symbol-resolver.test.ts`
+  - deleted `avmatrix/test/unit/symbol-table.test.ts`
+  - deleted `avmatrix/test/unit/topological-sort.test.ts`
+  - deleted `avmatrix/test/unit/vue-sfc-extractor.test.ts`
+- Go files added/changed:
+  - `internal/graph`: added node/file/relationship removal APIs and legacy graph mutation parity tests.
+  - `internal/communities`: added deterministic 12-color palette helper and parity coverage.
+  - `internal/lbugruntime` and `internal/lbugnative`: added WAL sidecar cleanup/retry helper and native write-runner recovery.
+  - `internal/mcp`: added git staleness hint parity coverage.
+  - `internal/providers/csharp`: added alias/static/wildcard import parity.
+  - `internal/providers/ruby`: added require-relative import handling, import path guards, attr accessor/property/YARD return type support, and self-call routing guards.
+  - `internal/providers/sfc`: added Vue setup-script preference and template PascalCase component extraction.
+  - `internal/providers`: expanded provider import parity expectations.
+  - `internal/resolution`: added scope/symbol/type-reference legacy conversion coverage for imports, cycles, tiering, owner lookup, arity, and graph `USES` edges.
+- Impact checks:
+  - `OpenWriteRunnerWithEmbeddingDims` exact native UID: LOW, direct caller `OpenWriteRunner`, affected processes `0`. Default non-native UID: LOW, affected processes `0`.
+  - `ExtractHTMLScript`: LOW, direct callers `0`, affected processes `0`.
+  - Ruby `collector.emitImport`: LOW, direct callers `0`, affected processes `0`.
+  - C# `collector.emitImport`: LOW, direct callers `0`, affected processes `0`.
+  - Ruby `collector.emitAttrReaderProperties`: LOW, direct callers `0`, affected processes `0`.
+  - Ruby `collector.addPropertyDefinition`: LOW, direct callers `0`, affected processes `0`.
+  - Ruby `collector.emitCall`: LOW, direct callers `0`, affected processes `0`.
+  - Worker Q made test-only changes. New graph/community/lbug helper symbols had no pre-existing graph nodes to impact.
+- HIGH/CRITICAL risk:
+  - `readMessage` and `writeRawMessage` were inspected for MCP stdio parity and returned CRITICAL, so they were not edited and `compatible-stdio-transport.test.ts` remains. No HIGH/CRITICAL production edit proceeded.
+- Focused validation:
+  - `go test ./internal/graph ./internal/communities ./internal/mcp ./internal/lbugruntime ./internal/lbugnative ./internal/resolution ./internal/providers/... -count=1` passed.
+  - Worker Q focused validation passed: `go test ./internal/resolution ./internal/providers/python ./internal/providers/tsjs -count=1`.
+  - Worker R focused validation passed: `go test ./internal/providers/csharp ./internal/providers/ruby ./internal/providers/sfc ./internal/providers -count=1` and `go test ./internal/providers/... -count=1`.
+  - `git diff --check` passed, with only unrelated CRLF warning for `docs/avmatrix-canonical-spec.md`.
+- Full validation:
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `npm run build` in `avmatrix` passed and rebuilt `avmatrix/bin/avmatrix.exe`.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed with known Vite dynamic-import/chunk-size warnings.
+  - `cd avmatrix && npm test` passed. Expected stderr warnings remain for unavailable COBOL parser binding, LLM fallback test, and scope error-resilience warnings.
+  - `cd avmatrix-web && npm test` passed: `39` files / `296` tests.
+- Final graph refresh / benchmark artifact:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-e10-runtime-provider-scope-refresh-20260516.json`.
+  - Result: scanned `1087`, parsed `914`, unsupported `173`, failed `0`, graph `32491` nodes / `67038` relationships, processes `572`, communities `1277`, total duration `20621.7` ms.
+- Deletion proof:
+  - Non-fixture TS inventory count is now `44`.
+  - `rg --files avmatrix\test | rg "\.(test|spec)\.ts$" | rg -v "^avmatrix\\test\\fixtures\\" | Measure-Object` returned `44`.
+- Benchmark entry:
+  - [P7-D15/P7-E10/P7-F8] in benchmark ledger, including inventory count and graph artifact metrics.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO` reported changed files `35`, changed symbols `159`, affected processes `0`, risk `low`.
+- Remaining blockers:
+  - COBOL and PHP resolver integration files remain because they still need larger parser/analyzer decisions.
+  - `ruby-mixin-worker.test.ts` and `ruby-self-call.test.ts` remain because their old Node worker/helper expectations do not map 1:1 to current Go provider owners.
+  - `compatible-stdio-transport.test.ts` remains because MCP stdio `readMessage`/`writeRawMessage` are CRITICAL-risk entrypoints and need a dedicated owner batch.
+  - Scope extractor/parse-worker/shadow/type-env/suffix tests remain for a dedicated high-risk scope owner batch.
+  - Runtime-controller/session/Codex adapter/worker-pool tests remain because no complete Go runtime/session owner exists yet.
+
+### [P7-D16/P7-E11/P7-F9/P7-I3] Import Runtime Contract Scope-Audit Legacy Test Cluster
+
+- Date: 2026-05-16 local
+- Commit: `0048a64`
+- Status: done
+- Parallelization:
+  - Used at most two active subagents. Worker S converted import/cross-file/provider helper tests, and Worker T converted runtime pipeline/worker/contract/scope-audit tests.
+- Scope:
+  - deleted `avmatrix/test/integration/cross-file-binding.test.ts`
+  - deleted `avmatrix/test/integration/query-compilation.test.ts`
+  - deleted `avmatrix/test/integration/scope-audit-persistence.test.ts`
+  - deleted `avmatrix/test/integration/worker-pool.test.ts`
+  - deleted `avmatrix/test/unit/contract-freeze/phase1-contract-snapshot.test.ts`
+  - deleted `avmatrix/test/unit/dart-import-resolver.test.ts`
+  - deleted `avmatrix/test/unit/heritage-extraction.test.ts`
+  - deleted `avmatrix/test/unit/import-processor.test.ts`
+  - deleted `avmatrix/test/unit/import-resolution/preprocessing.test.ts`
+  - deleted `avmatrix/test/unit/import-resolver-factory.test.ts`
+  - deleted `avmatrix/test/unit/parse-impl-worker-canonical.test.ts`
+  - deleted `avmatrix/test/unit/pipeline-runner.test.ts`
+  - deleted `avmatrix/test/unit/ruby-self-call.test.ts`
+  - deleted `avmatrix/test/unit/transitive-include-closure.test.ts`
+  - deleted `avmatrix/test/unit/wildcard-synthesis.test.ts`
+- Go files added/changed:
+  - `internal/resolution`: added import target preprocessing, language-specific import resolution helpers, wildcard synthetic binding coverage, transitive C/C++ include closure coverage, and cross-language imported-call binding tests.
+  - `internal/providers`: expanded heritage/import parity expectations.
+  - `internal/parser`: added parser pool batch/failure/metrics coverage.
+  - `internal/analyze`: added parse worker semantic fact coverage and pipeline phase wrapper contracts.
+  - `internal/contracts`: added Go-owned phase-1 CLI/Web/MCP contract surface coverage.
+  - `internal/lbugload`: added scope audit relationship metadata CSV export/load coverage.
+  - `avmatrix/scripts/run-vitest-suite.cjs` and `avmatrix/vitest.config.ts`: removed stale native DB entries for deleted `scope-audit-persistence.test.ts`.
+- Impact checks:
+  - `resolveImportFiles`: CRITICAL; direct caller `resolveImports`; upstream through `buildWorkspace`, `BuildCrossFileBinding`, `ResolveInto`, and `analyze.Run`; affected import/resolution analyze flows.
+  - `resolveImports`: CRITICAL; direct caller `buildWorkspace`; upstream through `BuildCrossFileBinding`, `ResolveInto`, and `analyze.Run`; affected process entries in Resolution and indirect COBOL/analyze flows.
+  - Worker T was test-only plus Vitest harness cleanup, with no production symbol impact.
+- HIGH/CRITICAL risk:
+  - CRITICAL production risk proceeded only inside the import-resolution owner batch. Mitigation: changes were bounded to import preprocessing/resolution and wildcard synthesis, with focused package tests, full Go suite, legacy Vitest suite, Web suite, launcher build, graph refresh, benchmark, and staged detect-changes all passing.
+- Focused validation:
+  - `go test ./internal/resolution ./internal/providers/... -count=1` passed.
+  - `go test ./internal/contracts ./internal/parser ./internal/analyze ./internal/lbugload -count=1` passed.
+  - `git diff --cached --check` passed before commit.
+- Full validation:
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `npm run build` in `avmatrix` passed and rebuilt `avmatrix/bin/avmatrix.exe`.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed with known Vite dynamic-import/chunk-size warnings.
+  - `cd avmatrix && npm test` passed. Expected stderr warnings remain for unavailable COBOL parser binding, LLM fallback test, and scope error-resilience warnings.
+  - `cd avmatrix-web && npm test` passed: `39` files / `296` tests.
+- Final graph refresh / benchmark artifact:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-e11-import-runtime-contract-refresh-20260516.json`.
+  - Result: scanned `1078`, parsed `905`, unsupported `173`, failed `0`, graph `32436` nodes / `67017` relationships, processes `573`, communities `1284`, total duration `20068.6` ms.
+- Deletion proof:
+  - Non-fixture TS inventory count is now `29`.
+  - `rg --files avmatrix\test | rg "\.(test|spec)\.ts$" | rg -v "^avmatrix\\test\\fixtures\\" | Measure-Object` returned `29`.
+- Benchmark entry:
+  - [P7-D16/P7-E11/P7-F9/P7-I3] in benchmark ledger, including inventory count and graph artifact metrics.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO` reported changed files `24`, changed symbols `172`, affected processes `8`, risk `high`.
+  - Affected processes were import-resolution flows around `resolveImports`, `resolveImportFiles`, `preprocessImportTarget`, `cleanPath`, `goFilesInDir`, `looksLikeLocalGoPackageSuffix`, `uniqueStrings`, and `defRef`.
+- Remaining blockers:
+  - Remaining non-fixture TS tests are now `29`.
+  - COBOL and PHP resolver integration files remain because they still need larger parser/analyzer decisions.
+  - `ruby-mixin-worker.test.ts` remains for a separate worker/helper owner decision.
+  - Broad call processor, heritage map/processor, helper extractor, method property, noise filter, ingestion utility, and type environment tests remain until direct Go owners or broader production parity are finished.
+  - `compatible-stdio-transport.test.ts` remains because MCP stdio `readMessage`/`writeRawMessage` are CRITICAL-risk entrypoints and need a dedicated owner batch.
+  - Scope extractor/parse-worker/shadow/type-env/suffix tests remain for a dedicated high-risk scope owner batch.
+  - Runtime-controller/session/Codex adapter/registry/lazy/AST cache tests remain because no complete Go runtime/session owner exists yet.
+
+### [P7-D17/P7-E12/P7-F10/P7-I4] Resolution Shadow Enrichment Helper Legacy Test Cluster
+
+- Date: 2026-05-16 local
+- Commit: `1218e46`
+- Status: done
+- Parallelization:
+  - Used at most two active subagents. Worker U handled resolution suffix/import fallback and related legacy resolution tests. Worker V handled enrichment and parser/cache helper coverage. Local integration covered scanner registry-primary, shadow aggregate/diff/harness, and lazy action parity.
+- Scope:
+  - deleted `avmatrix/test/integration/enrichment.test.ts`
+  - deleted `avmatrix/test/unit/ast-cache.test.ts`
+  - deleted `avmatrix/test/unit/heritage-map.test.ts`
+  - deleted `avmatrix/test/unit/heritage-processor.test.ts`
+  - deleted `avmatrix/test/unit/lazy-action.test.ts`
+  - deleted `avmatrix/test/unit/registry-primary-flag.test.ts`
+  - deleted `avmatrix/test/unit/scope-resolution/shadow-harness.test.ts`
+  - deleted `avmatrix/test/unit/shadow/aggregate.test.ts`
+  - deleted `avmatrix/test/unit/shadow/diff.test.ts`
+  - deleted `avmatrix/test/unit/suffix-index-ambiguity.test.ts`
+- Go files added/changed:
+  - `internal/resolution`: added Python dotted/bare suffix import fallback, suffix ambiguity conversion coverage, heritage map/processor conversion coverage, and shadow aggregate/diff/harness parity coverage.
+  - `internal/communities`: added enrichment parity implementation and tests.
+  - `internal/parser`: added AST cache implementation and tests.
+  - `internal/scanner`: added registry primary-language selection helper and tests.
+  - `internal/cli`: added lazy action lifecycle helper and tests.
+- Impact checks:
+  - `workspace.resolvePythonImportFiles`: LOW; direct callers `0`, affected processes `0`. Worker U added suffix fallback within the resolution owner batch.
+  - `EnrichClusters`: MEDIUM; direct callers `5`, affected processes `0`. This was a new Go-owned enrichment symbol and did not modify an existing production symbol.
+  - `EnrichClustersBatch`: LOW; new Go-owned enrichment batch helper.
+  - Local helper additions for scanner registry-primary, shadow aggregate/diff, parser AST cache, and CLI lazy action were new symbols or test-only coverage.
+- HIGH/CRITICAL risk:
+  - None for this batch. Highest observed risk was MEDIUM for the new `EnrichClusters` helper.
+- Focused validation:
+  - `go test ./internal/cli ./internal/parser ./internal/scanner ./internal/resolution ./internal/communities -count=1` passed.
+  - `git diff --cached --check` passed before commit.
+- Full validation:
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `npm run build` in `avmatrix` passed and rebuilt `avmatrix/bin/avmatrix.exe`.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed with known Vite dynamic-import/chunk-size warnings.
+  - `cd avmatrix && npm test` passed. Expected stderr warnings remain for unavailable COBOL parser binding and scope error-resilience warning paths.
+  - `cd avmatrix-web && npm test` passed: `39` files / `296` tests.
+- Final graph refresh / benchmark artifact:
+  - Command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-e12-resolution-shadow-enrichment-refresh-20260516.json`.
+  - Result: scanned `1080`, parsed `907`, unsupported `173`, failed `0`, graph `32689` nodes / `67624` relationships, processes `573`, communities `1313`, total duration `20720.2` ms, memory max observed sys `529408248`.
+- Deletion proof:
+  - Non-fixture TS inventory count is now `19`.
+  - `rg --files avmatrix\test | rg "\.(test|spec)\.ts$" | rg -v "^avmatrix\\test\\fixtures\\" | Measure-Object` returned `19`.
+- Benchmark entry:
+  - [P7-D17/P7-E12/P7-F10/P7-I4] in benchmark ledger, including inventory count and graph artifact metrics.
+- Detect changes:
+  - `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO` reported changed files `23`, changed symbols `332`, affected processes `0`, risk `low`.
+- Remaining blockers:
+  - Remaining non-fixture TS tests are now `19`.
+  - Scope/type/call helper files remain for a broad owner batch: `type-env.test.ts`, `shared-type-extractors.test.ts`, `extract-element-type-from-string.test.ts`, `extract-generic-type-args.test.ts`, `method-props.test.ts`, `noise-filter.test.ts`, `ingestion-utils.test.ts`, `call-processor.test.ts`, `scope-resolution/scope-extractor.test.ts`, and `scope-resolution/parse-worker-scope-integration.test.ts`.
+  - Runtime/session/stdio/Codex files remain for the runtime owner batch: `runtime-controller.test.ts`, `session-bridge.test.ts`, `codex-session-adapter.test.ts`, and `compatible-stdio-transport.test.ts`.
+  - Resolver/augmentation/COBOL files remain for the resolver/runtime owner batch: `augmentation.test.ts`, `resolvers/php.test.ts`, `resolvers/cobol.test.ts`, `resolvers/ruby-mixin-worker.test.ts`, and `cobol-preprocessor.test.ts`.
+
+### [P7-D18/P7-E13/P7-F11/P7-I5/P7-J] Final Legacy Test And Harness Retirement Cluster
+
+- Date: 2026-05-16 local
+- Commits:
+  - `abc68ad` - final 19 non-fixture TypeScript tests retired.
+  - `cc52fb4` - legacy Vitest runner/config/helper harness retired.
+- Status: done
+- Parallelization:
+  - Used at most two active subagents. Worker A converted scope/type/call helper tests, Worker D converted resolver/COBOL tests, Worker C converted session/Codex tests, Worker B assisted augmentation/stdio parity, and local work handled MCP stdio plus final harness cleanup.
+- Scope:
+  - deleted final 19 non-fixture TS tests: augmentation; PHP/COBOL/Ruby resolver; type-env/shared extractors/generic extractor/method props/noise/ingestion/call processor/scope extractor/parse-worker integration; runtime-controller/session-bridge/Codex adapter/stdio; COBOL preprocessor.
+  - deleted remaining non-fixture TS harness helpers/config: `avmatrix/scripts/run-vitest-suite.cjs`, `avmatrix/vitest.config.ts`, `avmatrix/tsconfig.test.json`, `avmatrix/Dockerfile.test`, `avmatrix/test/global-setup.ts`, `avmatrix/test/helpers/*`, `avmatrix/test/integration/resolvers/helpers.ts`, `avmatrix/test/utils/hook-test-helpers.ts`, and `avmatrix/test/vitest.d.ts`.
+- Go files added/changed:
+  - `internal/session`, `internal/httpapi`, `internal/mcp`, `internal/cli`, `internal/cobol`, `internal/providers/php`, `internal/providers/ruby`, `internal/providers/tsjs`, `internal/resolution`, and `internal/scopeir`.
+  - `avmatrix/package.json`, `avmatrix/package-lock.json`, and `internal/cli/package_command_test.go` now prove the non-Web TypeScript test harness is retired and `npm test` is a no-op pointer to Go/Web tests.
+- Tests converted:
+  - Final 19 TS tests converted to Go package coverage or removed after equivalent Go owner coverage existed.
+- Old files deleted:
+  - Final 19 TS test files plus 11 legacy harness/config/helper files.
+- Phase jump:
+  - P7-J closed. No P7-K blocker remains because `avmatrix/test` now contains fixture input only.
+- AVmatrix refresh / benchmark artifacts:
+  - Test retirement command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-final-legacy-test-retirement-refresh-20260516.json`.
+  - Result: scanned `1076`, parsed `903`, unsupported `173`, failed `0`, graph `32761` nodes / `68116` relationships, processes `585`, communities `1328`, total duration `19586.8` ms.
+  - Harness retirement command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p7-final-harness-retirement-refresh-20260516.json`.
+  - Result: scanned `1066`, parsed `895`, unsupported `171`, failed `0`, graph `32639` nodes / `67926` relationships, processes `585`, communities `1327`, total duration `20249.4` ms, max observed sys `576545016`.
+- Impact checks:
+  - `stripTypeAnnotation`: LOW, direct callers `0`, affected processes `0`.
+  - PHP `collector.emitImport`: LOW, affected processes `0`.
+  - PHP `collector.emitUseClauseImport`: LOW, affected processes `0`.
+  - `readMessage`: HIGH, direct caller `Serve`, affected processes `1`; edited narrowly for newline framing and message size guard.
+  - `writeRawMessage`: LOW, direct callers `2`, affected processes `1`.
+  - `emitHeritageCompatibilityEdges`: HIGH, direct caller `ResolveBoundInto`; edited narrowly so Ruby include/extend/prepend heritage emits `IMPLEMENTS`.
+  - Ruby `declarationLabel`: LOW.
+  - `NewHandler`: LOW.
+  - `newServer`: LOW.
+- HIGH/CRITICAL risk:
+  - HIGH stdio and heritage edits proceeded only inside their owner batch with direct Go tests, full Go suite, build, Web tests, benchmark refresh, and staged detect_changes.
+  - Final test-retirement staged detect_changes was CRITICAL because the batch deleted the remaining legacy test surface and added session/runtime coverage. Scope was accepted after full validation.
+- Build command:
+  - `cd avmatrix && npm run build` passed and rebuilt `avmatrix/bin/avmatrix.exe`.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed with known Vite dynamic-import/chunk-size warnings.
+- Focused/full test commands:
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `cd avmatrix && npm test` passed and reports no AVmatrix TypeScript test files remain.
+  - `cd avmatrix-web && npm test` passed: `39` files / `296` tests.
+- Deletion proof:
+  - Non-fixture `.test.ts` / `.spec.ts` inventory is `0`.
+  - Non-fixture `avmatrix/test` file inventory is `0`; only `avmatrix/test/fixtures` remains.
+- Benchmark entry:
+  - [P7-D18/P7-E13/P7-F11/P7-I5/P7-J] in benchmark ledger, including inventory and graph artifacts.
+- Detect changes:
+  - `abc68ad` staged detect_changes: changed files `46`, changed symbols `580`, affected processes `31`, risk `critical`; artifact `.tmp\p7-final-legacy-test-retirement-detect-20260516.txt`.
+  - `cc52fb4` staged detect_changes: changed files `14`, changed symbols `1`, affected processes `0`, risk `low`; artifact `.tmp\p7-final-harness-retirement-detect-20260516.txt`.
+- Remaining blockers:
+  - None for Phase 7. Remaining plan work is Phase 8 final cutover audit and any non-test runtime/source inventory that Phase 8 identifies.
+
+## Phase 8 - Final Cutover Audit
+
+### [P8-A] Final Cutover Evidence
+
+- Date: 2026-05-16 local
+- Commit: pending final cutover commit
+- Status: done
+- Parallelization:
+  - Used at most two subagents, matching the user limit. Hooke and Kierkegaard performed read-only ownership checks for package/source cutover; no further subagents were spawned.
+- Scope:
+  - Go package/runtime lifecycle: `internal/cli/package_command.go`, `internal/cli/package_runtime.go`, `internal/cli/package_command_test.go`.
+  - Package metadata: `avmatrix/package.json`, `avmatrix/package-lock.json`.
+  - Current docs: `README.md`, `CONTRIBUTING.md`, `ARCHITECTURE.md`, `docs/code-indexing/cobol/performance.md`, plan/evidence/benchmark ledgers.
+  - Remaining inventory ledger: `docs/plans/2026-05-08-avmatrix-go-typescript-node-to-go-conversion-remaining-files.md`.
+- Source files replaced/deleted:
+  - Deleted `avmatrix/src`.
+  - Deleted `avmatrix-shared`.
+  - Deleted `avmatrix/scripts`.
+  - Deleted tracked legacy JS/parser vendor glue under `avmatrix/vendor`.
+  - Deleted `avmatrix/tsconfig.json`.
+- Go files added/changed:
+  - Added hidden package lifecycle helpers in `internal/cli/package_runtime.go`.
+  - Added hidden package subcommands: `build-runtime`, `prepare-go-source`, `ensure-runtime`, `clean-go-source`.
+  - Added package tests for runtime metadata, source package preparation, and package metadata.
+- Tests converted:
+  - No new legacy TS tests remained. This slice converts package/source authority and locks it with Go tests plus package/Web/CLI/MCP/e2e validation.
+- Old files deleted:
+  - Legacy TypeScript runtime/source, shared TS contracts, legacy package scripts, legacy JS parser/vendor glue, and TS config listed above.
+- Phase jump:
+  - None. P1-P6 were closed by the final source/package cutover because the Go owners already existed and Phase 7 had retired non-Web legacy tests.
+- AVmatrix refresh:
+  - Pre-impact command: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p8-package-source-cutover-preimpact-20260516.json`.
+  - Pre-impact result: scanned `1066`, parsed `895`, unsupported `171`, failed `0`, graph `32640` nodes / `67927` relationships.
+  - Final benchmark refresh: `.\avmatrix\bin\avmatrix.exe analyze --force --skip-agents-md --no-stats --benchmark-json .tmp\p8-package-source-cutover-refresh-20260516.json`.
+  - Final refresh result: scanned `684`, parsed `517`, unsupported `167`, failed `0`, graph `18969` nodes / `45066` relationships, processes `579`, communities `872`, total duration `12615.8ms`.
+- Impact checks:
+  - `newPackageCommand`: CRITICAL, direct caller `NewRootCommand`, affected processes `11`.
+  - `packageRootForLifecycle`: CRITICAL, direct caller `newPackageCommand`, affected processes `11`.
+  - `cleanGoSourcePackage`: CRITICAL, direct caller `newPackageCommand`, affected processes `11`.
+  - `packageJSONExists`: CRITICAL, direct caller `packageRootForLifecycle`, affected processes `11`.
+- HIGH/CRITICAL risk:
+  - CRITICAL risk accepted because the changes intentionally replace hidden package lifecycle behavior. Mitigation: edits were bounded to package lifecycle commands/package metadata, public CLI behavior remained stable, and full build/test/package/e2e/MCP/CLI smoke validation passed.
+- Build command:
+  - `cd avmatrix && npm run build` passed.
+  - `go run ./cmd/generate-web-contracts --check` passed.
+  - `cd avmatrix-web && npm run build` passed with known Vite dynamic-import/chunk-size warnings.
+  - `powershell -ExecutionPolicy Bypass -File .\avmatrix-launcher\build.ps1` passed with the same known Vite warnings.
+- Focused/full test command:
+  - `go test ./internal/cli -count=1` passed.
+  - `go test ./cmd/... ./internal/... -count=1` passed.
+  - `cd avmatrix && npm test` passed and reports no AVmatrix TypeScript test files remain.
+  - `cd avmatrix-web && npm test` passed: `39` files / `296` tests.
+- Package validation:
+  - `cd avmatrix && npm install --package-lock-only --ignore-scripts` passed, audited `1` package.
+  - `cd avmatrix && npm pack --dry-run --json` passed; clean JSON artifact saved as `.tmp\p8-npm-pack-dry-run-20260516.clean.json`.
+  - Tarball metrics: size `16270066`, unpacked size `70081542`, entry count `267`; contents include `bin/avmatrix.exe`, `bin/lbug_shared.dll`, `go-src`, `skills`, and `package.json`; no `dist`, `scripts`, `vendor`, or `avmatrix-shared`.
+- E2E command:
+  - Initial forced full-graph Playwright run against the current `AVmatrix-GO` repo was not accepted as pass evidence because `.last-run.json` reported `failed`; failures were graph-loading timeouts on the full `18969` node / `45066` edge repo.
+  - Final accepted e2e used an isolated `AVMATRIX_HOME` and fixture repo with `package.json`, TypeScript call chain, and Go entrypoint, served by `avmatrix/bin/avmatrix.exe serve` on `127.0.0.1:4848` plus Vite on `127.0.0.1:5228`.
+  - Command: `cd avmatrix-web && E2E=1 BACKEND_URL=http://127.0.0.1:4848 FRONTEND_URL=http://127.0.0.1:5228 npm run test:e2e -- --workers=1`.
+  - Result: `33 passed`, `1 skipped`, `.last-run.json` status `passed`.
+- MCP proof:
+  - Newline-framed initialize + tools/list smoke through `.\avmatrix\bin\avmatrix.exe mcp` passed; output artifact `.tmp\p8-mcp-smoke-20260516.out` contains `protocolVersion` and `tools`.
+- CLI smoke:
+  - Isolated smoke repo analyze passed: scanned `1`, parsed `1`, failed `0`, graph `5` nodes / `6` relationships.
+  - `query`, `context`, and `impact` commands exited `0`; artifacts are `.tmp\p8-cli-smoke-query-20260516.out`, `.tmp\p8-cli-smoke-context-20260516.out`, `.tmp\p8-cli-smoke-impact-20260516.out`.
+- Inventory/deletion proof:
+  - Final non-Web TS/JS inventory artifact: `.tmp\p8-final-non-web-tsjs-inventory-20260516.txt`.
+  - Result: `count=1`, only `eslint.config.mjs`, classified as root Web/dev lint config, not CLI/backend/runtime authority.
+  - `rg` stale-doc check over current main docs/package files found no remaining `avmatrix-shared`, `avmatrix/src`, `dist/cli`, legacy script, or vendor references.
+- Benchmark entry:
+  - [P8] in benchmark ledger.
+- Detect changes:
+  - Command: `.\avmatrix\bin\avmatrix.exe detect-changes --scope staged --repo AVmatrix-GO`.
+  - Artifact: `.tmp\p8-package-source-cutover-detect-20260516.txt`.
+  - Result: changed files `408`, changed symbols `146`, affected processes `7`, risk `high`, elapsed `2575.1ms`.
+  - Affected processes are package lifecycle traces rooted at `newPackageCommand`, including runtime build, runtime ensure, native runtime resolution/copy, platform/arch metadata checks, and package JSON checks.
+- Remaining blockers:
+  - None for implementation cutover. Unrelated local changes remain untouched: `docs/avmatrix-canonical-spec.md` and untracked `coder.md`.

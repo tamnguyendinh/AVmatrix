@@ -13,8 +13,8 @@ import { test, expect } from '@playwright/test';
  * require a live avmatrix server.
  */
 
-const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:4747';
-const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173';
+const BACKEND_URL = process.env.BACKEND_URL ?? 'http://127.0.0.1:4848';
+const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://127.0.0.1:5228';
 const ABSOLUTE_LOCAL_PATH = process.platform === 'win32' ? 'C:\\repos\\demo' : '/tmp/demo';
 
 let firstRepoName = '';
@@ -69,7 +69,7 @@ test.describe('Flow 1: Onboarding — no server', () => {
     await expect(terminal.first()).toBeVisible({ timeout: 10_000 });
 
     // The $ prompt should be present
-    await expect(page.getByText('$')).toBeVisible();
+    await expect(page.getByText('$').first()).toBeVisible();
   });
 
   test('shows polling indicator', async ({ page }) => {
@@ -85,7 +85,7 @@ test.describe('Flow 1: Onboarding — no server', () => {
     await page.goto('/');
 
     await expect(page.getByText(/Node\.js.*\d+/)).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText('Port 4747')).toBeVisible();
+    await expect(page.getByText('Port 4848')).toBeVisible();
   });
 
   test('copy button has accessible label', async ({ page }) => {
@@ -212,11 +212,61 @@ test.describe('Flow 3: Analyze form', () => {
   });
 
   test('local-only analyze form shows repository chooser', async ({ page }, testInfo) => {
+    let pickerCalled = false;
+    await page.route(`${BACKEND_URL}/api/local/folder-picker`, (route) => {
+      pickerCalled = true;
+      return route.fulfill({ json: { path: ABSOLUTE_LOCAL_PATH, cancelled: false } });
+    });
+
     await page.goto('/');
 
     await expect(page.getByLabel('Repository Folder')).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByRole('button', { name: 'Choose Repository' })).toBeVisible();
+    await page.getByRole('button', { name: 'Choose Repository' }).click();
+    await expect(page.getByLabel('Repository Folder')).toHaveValue(ABSOLUTE_LOCAL_PATH);
+    expect(pickerCalled).toBe(true);
     await page.screenshot({ path: testInfo.outputPath('local-folder-input.png') });
+  });
+
+  test('repo landing remove button deletes repo and removes card', async ({ page }) => {
+    const repos = [
+      {
+        name: 'demo-repo',
+        path: ABSOLUTE_LOCAL_PATH,
+        indexedAt: '2026-05-15T00:00:00Z',
+        lastCommit: 'abc123',
+        stats: { files: 3, nodes: 5 },
+      },
+    ];
+    let deleteCalled = false;
+    let deleted = false;
+
+    await page.route(`${BACKEND_URL}/api/repos`, (route) => {
+      return route.fulfill({ json: deleted ? [] : repos });
+    });
+    await page.route(`${BACKEND_URL}/api/info`, (route) =>
+      route.fulfill({ json: { version: '1.0.0', launchContext: 'npx', nodeVersion: 'go-test' } }),
+    );
+    await page.route(`${BACKEND_URL}/api/heartbeat`, (route) =>
+      route.fulfill({
+        status: 200,
+        headers: { 'Content-Type': 'text/event-stream' },
+        body: ':ok\n\n',
+      }),
+    );
+    await page.route(`${BACKEND_URL}/api/repo?repo=demo-repo`, (route) => {
+      expect(route.request().method()).toBe('DELETE');
+      deleteCalled = true;
+      deleted = true;
+      return route.fulfill({ json: { deleted: 'demo-repo' } });
+    });
+
+    await page.goto('/');
+    await expect(page.getByText('demo-repo')).toBeVisible({ timeout: 20_000 });
+    await page.getByRole('button', { name: 'Remove demo-repo from repository list' }).click();
+
+    await expect(page.getByText('demo-repo')).toHaveCount(0);
+    await expect(page.getByLabel('Repository Folder')).toBeVisible();
+    expect(deleteCalled).toBe(true);
   });
 
   test('invalid path keeps analyze disabled until corrected', async ({ page }) => {

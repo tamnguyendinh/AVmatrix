@@ -23,6 +23,6 @@ test('manual recording session', async ({ page }) => {
   });
   page.on('pageerror', (err) => console.log(`[crash] ${err.message}`));
 
-  await page.goto('http://localhost:5173');
+  await page.goto('http://127.0.0.1:5228');
   await page.pause();
 });

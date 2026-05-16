@@ -34,7 +34,7 @@ describe('analyze contract local-only', () => {
   });
 
   it('posts only the local analyze request body', async () => {
-    setBackendUrl('http://localhost:4747');
+    setBackendUrl('http://127.0.0.1:4848');
 
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ jobId: 'job-1', status: 'queued' }), {
@@ -47,7 +47,7 @@ describe('analyze contract local-only', () => {
     await startAnalyze({ path: 'repos/avmatrix' });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://localhost:4747/api/analyze',
+      'http://127.0.0.1:4848/api/analyze',
       expect.objectContaining({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

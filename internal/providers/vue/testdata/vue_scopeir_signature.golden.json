@@ -1,0 +1,55 @@
+{
+  "scopes": [
+    "Class:scope:src/Service.vue#13:0-21:1:Class",
+    "Class:scope:src/Service.vue#7:0-7:31:Class",
+    "Class:scope:src/Service.vue#9:0-11:1:Class",
+    "Function:scope:src/Service.vue#10:2-10:31:Function",
+    "Function:scope:src/Service.vue#16:2-16:53:Function",
+    "Function:scope:src/Service.vue#17:2-20:3:Function",
+    "Module:scope:src/Service.vue#5:0-22:0:Module"
+  ],
+  "definitions": [
+    "Class:Repository:::",
+    "Class:Service:::",
+    "Constructor:Service.constructor:::def:src/Service.vue#13:0:Class:Service",
+    "Interface:Named:::",
+    "Method:Repository.write:void::def:src/Service.vue#9:0:Class:Repository",
+    "Method:Service.save:void::def:src/Service.vue#13:0:Class:Service",
+    "Property:Named.id::string:def:src/Service.vue#7:0:Interface:Named",
+    "Property:Service.id::string:def:src/Service.vue#13:0:Class:Service",
+    "Property:Service.repo::Repository:def:src/Service.vue#13:0:Class:Service",
+    "Variable:formatted:::"
+  ],
+  "imports": [
+    "named:format:format::./format"
+  ],
+  "calls": [
+    "format:free::1",
+    "write:member:this.repo:1"
+  ],
+  "accesses": [
+    "read:id:user",
+    "read:repo:this",
+    "write:repo:this"
+  ],
+  "heritage": [
+    "implements:Named"
+  ],
+  "typeReferences": [
+    "Named",
+    "Repository",
+    "Repository"
+  ],
+  "typeBindings": [
+    "formatted:format:call-return",
+    "id:string:annotation",
+    "id:string:annotation",
+    "repo:Repository:annotation",
+    "repo:Repository:parameter-annotation",
+    "this:Repository:annotation",
+    "this:Service:annotation",
+    "this:Service:annotation",
+    "user:Named:parameter-annotation",
+    "value:string:parameter-annotation"
+  ]
+}

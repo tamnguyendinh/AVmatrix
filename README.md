@@ -37,7 +37,7 @@ You do not need to put API keys into AVmatrix. Indexing, graph storage, repo swi
 | MCP stdio | Agent-facing graph tools and resources | `avmatrix mcp` |
 | Local HTTP API | Web UI backend, graph streaming, analyze jobs, session bridge | `avmatrix serve` |
 | Web UI | Browser graph explorer, repo picker/analyze UI, Codex/Claude Code style session chat | `avmatrix-web/` or packaged launcher |
-| Windows launcher | Starts packaged Web UI and backend on localhost | `Start-AVmatrix.html`, `avmatrix://start` |
+| Windows launcher | Starts packaged Web UI and backend on `127.0.0.1` | `Start-AVmatrix.html`, `avmatrix://start` |
 
 The Web UI is a frontend over the local HTTP backend. Repo switching and graph loading use explicit repo-scoped read targets; they do not depend on one mutable process-global active repo.
 
@@ -59,7 +59,7 @@ Requires Node.js 20+.
 "Install AVmatrix from this repository and configure its MCP integration."
 ```
 
-The agent should install dependencies, build `avmatrix-shared`, install/link the local `avmatrix` CLI, run `avmatrix setup`, and verify `avmatrix --version`.
+The agent should build the Go-backed `avmatrix` package, install/link the local CLI, run `avmatrix setup`, and verify `avmatrix --version`.
 
 ### Manual install
 
@@ -67,11 +67,7 @@ The agent should install dependencies, build `avmatrix-shared`, install/link the
 git clone https://github.com/tamnguyendinh/AVmatrix.git
 cd AVmatrix
 
-cd avmatrix-shared
-npm install
-npm run build
-
-cd ../avmatrix
+cd avmatrix
 npm install
 npm link
 
@@ -115,21 +111,12 @@ args = ["mcp"]
 Development flow:
 
 ```bash
-# one-time source setup if you have not already built the CLI
-cd AVmatrix
-cd avmatrix-shared
-npm install
-npm run build
-
-cd ../avmatrix
-npm install
-cd ..
-
 # terminal 1, from the repo root
-cd avmatrix
-node dist/cli/index.js serve
-# or, after npm link:
-avmatrix serve
+go run ./cmd/avmatrix serve --host 127.0.0.1 --port 4848
+
+# or build the local Go CLI once, then run it
+go build -trimpath -o .tmp/avmatrix.exe ./cmd/avmatrix
+.\.tmp\avmatrix.exe serve --host 127.0.0.1 --port 4848
 
 # terminal 2, from the repo root
 cd avmatrix-web
@@ -140,13 +127,13 @@ npm run dev
 Open:
 
 ```text
-http://localhost:5173
+http://127.0.0.1:5228
 ```
 
 The browser connects to:
 
 ```text
-http://localhost:4747
+http://127.0.0.1:4848
 ```
 
 From the Web UI you can:
@@ -176,16 +163,16 @@ Important artifacts:
 Start-AVmatrix.html
 avmatrix-launcher\AVmatrixLauncher.exe
 avmatrix-launcher\server-bundle\avmatrix-server.exe
-avmatrix-launcher\server-bundle\node.exe
+avmatrix-launcher\server-bundle\avmatrix.exe
 avmatrix-launcher\web-dist\
 ```
 
 Runtime behavior:
 
 - `Start-AVmatrix.html` launches `avmatrix://start`.
-- `AVmatrixLauncher.exe` serves the packaged Web UI on `127.0.0.1:5173`.
-- `avmatrix-server.exe` starts the bundled Node backend and runs `avmatrix serve`.
-- backend health is checked at `http://localhost:4747/api/info`.
+- `AVmatrixLauncher.exe` serves the packaged Web UI on `127.0.0.1:5228`.
+- `avmatrix-server.exe` starts the packaged Go backend and runs `avmatrix serve`.
+- backend health is checked at `http://127.0.0.1:4848/api/info`.
 - reset/stop use the launcher state file plus process path sweep for the packaged runtime.
 
 The launcher must remain optional. `avmatrix serve` is still the direct backend entry point.
@@ -210,7 +197,7 @@ avmatrix status                    # Show index status for current repo
 avmatrix clean                     # Delete current repo index
 avmatrix clean --all --force       # Delete all indexes
 avmatrix mcp                       # Start MCP server over stdio
-avmatrix serve                     # Start local HTTP backend on localhost:4747
+avmatrix serve                     # Start local HTTP backend on 127.0.0.1:4848
 avmatrix wiki                      # Show wiki capability status
 avmatrix wiki-mode [off|local]     # Show or set local wiki capability mode
 ```
@@ -332,7 +319,8 @@ COBOL/JCL is handled through the dedicated COBOL phase rather than the normal tr
 
 | Endpoint | Purpose |
 |----------|---------|
-| `/api/info`, `/api/heartbeat` | Backend liveness |
+| `/api/info` | Finite backend liveness/readiness |
+| `/api/heartbeat` | Long-lived SSE heartbeat stream |
 | `/api/repos`, `/api/repo` | List/select/remove indexed repos |
 | `/api/graph` | Repo-scoped graph load/stream |
 | `/api/query`, `/api/search`, `/api/file`, `/api/grep` | Repo-scoped read/search helpers |
@@ -374,8 +362,8 @@ docker compose --env-file .env up -d
 Default ports:
 
 ```text
-server: http://localhost:4747
-web:    http://localhost:4173
+server: http://127.0.0.1:4848
+web:    http://127.0.0.1:4173
 ```
 
 To make host repos visible to the container, set `WORKSPACE_DIR` to a local folder that contains the repos you want to analyze. It is mounted read-only at `/workspace`.
@@ -386,9 +374,10 @@ To make host repos visible to the container, set `WORKSPACE_DIR` to a local fold
 
 | Path | Role |
 |------|------|
-| `avmatrix/` | CLI, MCP server, HTTP API, ingestion, LadybugDB, embeddings, session bridge |
+| `cmd/`, `internal/` | Go CLI, MCP server, HTTP API, ingestion, LadybugDB, embeddings, contracts, session/runtime code |
+| `avmatrix/` | npm packaging and Go runtime distribution glue |
 | `avmatrix-web/` | React/Vite Web UI and local runtime client |
-| `avmatrix-shared/` | Shared types, graph constants, language detection, session contracts |
+| `contracts/web-ui/` | Go-generated Web UI contract manifest |
 | `avmatrix-launcher/` | Windows launcher, server wrapper, packaged Web UI/backend assets |
 | `.claude/`, `avmatrix-claude-plugin/`, `avmatrix-cursor-integration/` | Agent skills and plugin metadata |
 | `docs/plans/` | Implementation plans and investigation records |
@@ -403,11 +392,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the detailed system map.
 Build core packages:
 
 ```bash
-cd avmatrix-shared
-npm install
-npm run build
-
-cd ../avmatrix
+cd avmatrix
 npm install
 npm run build
 ```
@@ -415,6 +400,8 @@ npm run build
 Build Web UI:
 
 ```bash
+go run ./cmd/generate-web-contracts --check
+
 cd avmatrix-web
 npm install
 npm run build
@@ -441,7 +428,7 @@ Useful docs:
 
 - Index data is stored locally in `<repo>/.avmatrix/`.
 - The global registry is local under `~/.avmatrix/`.
-- The Web UI talks to the local backend at `localhost:4747`.
+- The Web UI talks to the local backend at `127.0.0.1:4848`.
 - AVmatrix does not store AI provider API keys in the browser.
 - AVmatrix does not route chat through an AVmatrix cloud service.
 - Codex/Claude Code style chat depends on the local session/provider already available on the machine.

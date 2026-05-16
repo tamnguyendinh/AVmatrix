@@ -8,7 +8,7 @@ AVmatrix is a local code-intelligence tool:
 
 - `avmatrix analyze` indexes a local repository into `<repo>/.avmatrix/`.
 - `avmatrix mcp` exposes indexed repositories to MCP clients over stdio.
-- `avmatrix serve` exposes the same local runtime to the Web UI over localhost.
+- `avmatrix serve` exposes the same local runtime to the Web UI over `127.0.0.1`.
 - `avmatrix-web/` is a thin browser client. It does not own indexing or graph storage.
 - `avmatrix-launcher/` is an optional Windows convenience launcher around the same backend and Web UI.
 - Chat currently runs through the local session bridge and the Codex CLI adapter. `claude-code` exists as a shared provider identifier/UI slot, but there is no backend Claude Code adapter yet.
@@ -25,9 +25,9 @@ Keep these invariants intact:
 
 | Path | Purpose |
 |------|---------|
-| `avmatrix/` | npm package: CLI, MCP server, local HTTP API, ingestion pipeline, LadybugDB access, embeddings, session bridge. |
+| `cmd/`, `internal/` | Go CLI, MCP server, local HTTP API, ingestion pipeline, LadybugDB access, embeddings, contracts, and session bridge. |
+| `avmatrix/` | npm package metadata, generated Go runtime binary, and package lifecycle glue. |
 | `avmatrix-web/` | Vite + React Web UI for graph exploration, repo picker/analyze flows, and session chat. |
-| `avmatrix-shared/` | Shared TypeScript contracts used by backend and Web UI. |
 | `avmatrix-launcher/` | Windows launcher, protocol handler, server wrapper, bundled web/backend assets. |
 | `docs/` | Plans, design notes, and investigation history. |
 | `.github/` | CI, release, PR, and repository automation. |
@@ -42,14 +42,10 @@ Install root tooling first if you want Husky, lint-staged, ESLint, or Prettier a
 npm install
 ```
 
-Build the shared package and CLI:
+Build the Go-backed package and CLI:
 
 ```powershell
-cd avmatrix-shared
-npm install
-npm run build
-
-cd ..\avmatrix
+cd avmatrix
 npm install
 npm run build
 npm link
@@ -101,7 +97,7 @@ Run the local Web backend:
 
 ```powershell
 cd avmatrix
-node dist\cli\index.js serve
+npm run serve
 ```
 
 Or, after `npm link`:
@@ -120,8 +116,8 @@ npm run dev
 The default local endpoints are:
 
 ```text
-backend: http://localhost:4747
-web:     http://localhost:5173
+backend: http://127.0.0.1:4848
+web:     http://127.0.0.1:5228
 ```
 
 ## Validation
@@ -144,18 +140,10 @@ npm run lint
 CLI/core/MCP/backend changes:
 
 ```powershell
+go test ./cmd/... ./internal/... -count=1
 cd avmatrix
 npm run build
-npx tsc --noEmit
 npm test
-```
-
-Narrower CLI/core loops:
-
-```powershell
-cd avmatrix
-npm run test:unit
-npm run test:integration
 ```
 
 Web UI changes:
@@ -190,7 +178,7 @@ For graph/runtime changes, also manually verify repo switching across at least t
 
 The repo includes `.husky/pre-commit` for staged formatting and package typechecks. Tests are intended to run in CI, not in the pre-commit hook.
 
-If you touch `.husky/`, `.github/`, issue templates, or PR templates, keep paths aligned with the current package names: `avmatrix/`, `avmatrix-web/`, and `avmatrix-shared/`.
+If you touch `.husky/`, `.github/`, issue templates, or PR templates, keep paths aligned with the current package names: `cmd/`, `internal/`, `avmatrix/`, and `avmatrix-web/`.
 
 Do not rely on the hook as the only verification. Run the commands relevant to your touched area.
 
@@ -247,12 +235,14 @@ ci: update workflow paths for avmatrix packages
 
 Treat these areas as high-risk:
 
-- `avmatrix/src/core/run-analyze.ts`
-- `avmatrix/src/core/lbug/`
-- `avmatrix/src/runtime/repo-runtime/`
-- `avmatrix/src/server/api.ts`
-- `avmatrix/src/server/session-bridge.ts`
-- `avmatrix/src/mcp/`
+- `internal/analyze/`
+- `internal/lbugload/`, `internal/lbugruntime/`, `internal/lbugschema/`
+- `internal/repo/`
+- `internal/httpapi/`
+- `internal/session/`
+- `internal/mcp/`
+- `internal/cli/`
+- `internal/contracts/` and `cmd/generate-web-contracts/`
 - `avmatrix-web/src/hooks/useAppState.local-runtime.tsx`
 - `avmatrix-web/src/services/backend-client.ts`
 - `avmatrix-launcher/`

@@ -3,11 +3,16 @@ node_modules/
 
 # Build output
 dist/
+avmatrix/bin/
 
 # TypeScript build info
 *.tsbuildinfo
 
 # IDE
+.cursor/
+.github/
+.husky/
+.sisyphus/
 .vscode/
 .idea/
 *.swp
@@ -41,8 +46,10 @@ HANDOFF*.md
 
 
 .env*.local
-.avmatrix
+.avmatrix/
+.codex/
 .claude/settings.local.json
+
 
 # Claude Code worktrees
 .claude/worktrees/
@@ -86,7 +93,9 @@ avmatrix/vendor/**/node_modules/
 .claude/
 .claude-plugin/
 .history/
-
+avmatrix-claude-plugin/
+avmatrix-cursor-integration/
+.agents/
 .swarm/
 
 local_docs/

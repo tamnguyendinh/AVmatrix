@@ -1,0 +1,68 @@
+{
+  "scopes": [
+    "Class:scope:src/service.rs#13:4-16:5:Class",
+    "Class:scope:src/service.rs#5:4-7:5:Class",
+    "Class:scope:src/service.rs#9:4-11:5:Class",
+    "Function:scope:src/service.rs#19:8-21:9:Function",
+    "Function:scope:src/service.rs#23:8-25:9:Function",
+    "Function:scope:src/service.rs#29:8-33:9:Function",
+    "Function:scope:src/service.rs#6:8-6:46:Function",
+    "Module:scope:src/service.rs#1:0-36:0:Module",
+    "Namespace:scope:src/service.rs#4:0-35:1:Namespace"
+  ],
+  "definitions": [
+    "Method:Named.save:bool::def:src/service.rs#5:4:Trait:Named",
+    "Method:Service.new:Self::def:src/service.rs#13:4:Struct:Service",
+    "Method:Service.normalize:String::def:src/service.rs#13:4:Struct:Service",
+    "Method:Service.save:bool::def:src/service.rs#13:4:Struct:Service",
+    "Package:app:::",
+    "Property:Base.id::String:def:src/service.rs#9:4:Struct:Base",
+    "Property:Service.base::Base:def:src/service.rs#13:4:Struct:Service",
+    "Property:Service.repo::Repository:def:src/service.rs#13:4:Struct:Service",
+    "Struct:Base:::",
+    "Struct:Service:::",
+    "Trait:Named:::",
+    "Variable:formatted::String:"
+  ],
+  "imports": [
+    "named:Debug:Debug::std::fmt::Debug",
+    "named:Repository:Repository::crate::repo::Repository"
+  ],
+  "calls": [
+    "Self:constructor::2",
+    "normalize:member:self:1",
+    "write:member:self.repo:1"
+  ],
+  "accesses": [
+    "read:repo:self"
+  ],
+  "heritage": [
+    "trait-impl:Named:scope:src/service.rs#13:4-16:5:Class"
+  ],
+  "typeReferences": [
+    "base:Base:annotation",
+    "base:Base:annotation",
+    "formatted:String:annotation",
+    "id:String:annotation",
+    "repo:Repository:annotation",
+    "repo:Repository:annotation",
+    "value:String:annotation",
+    "value:String:annotation",
+    "value:String:annotation"
+  ],
+  "typeBindings": [
+    "base:Base:annotation",
+    "base:Base:parameter-annotation",
+    "formatted:String:assignment-inferred",
+    "id:String:annotation",
+    "repo:Repository:annotation",
+    "repo:Repository:parameter-annotation",
+    "self:Named:self",
+    "self:Service:self",
+    "self:Service:self",
+    "self:Service:self",
+    "value:String:parameter-annotation",
+    "value:String:parameter-annotation",
+    "value:String:parameter-annotation"
+  ]
+}

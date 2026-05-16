@@ -18,7 +18,7 @@ vi.mock('../../src/hooks/useBackend', () => ({
     startPolling: startPollingMock,
     stopPolling: stopPollingMock,
     isPolling: false,
-    backendUrl: 'http://localhost:4747',
+    backendUrl: 'http://127.0.0.1:4848',
   }),
 }));
 
@@ -43,7 +43,7 @@ describe('DropZone full analyze flow', () => {
     fetchReposMock.mockResolvedValue([
       {
         name: 'AVmatrix',
-        path: 'F:\\AVmatrix-main',
+        path: 'F:\\AVmatrix-GO',
         indexedAt: new Date().toISOString(),
         stats: { files: 10, nodes: 20 },
       },
@@ -54,7 +54,7 @@ describe('DropZone full analyze flow', () => {
       relationships: [],
       repoInfo: {
         name: 'AVmatrix',
-        path: 'F:\\AVmatrix-main',
+        path: 'F:\\AVmatrix-GO',
         indexedAt: new Date().toISOString(),
       },
     });
@@ -67,7 +67,7 @@ describe('DropZone full analyze flow', () => {
         repos={[
           {
             name: 'AVmatrix',
-            path: 'F:\\AVmatrix-main',
+            path: 'F:\\AVmatrix-GO',
             indexedAt: new Date().toISOString(),
             stats: { files: 10, nodes: 20 },
           },
@@ -82,7 +82,7 @@ describe('DropZone full analyze flow', () => {
     expect(onSelectRepo).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'AVmatrix',
-        path: 'F:\\AVmatrix-main',
+        path: 'F:\\AVmatrix-GO',
       }),
     );
   });
@@ -131,7 +131,7 @@ describe('DropZone full analyze flow', () => {
     });
 
     await waitFor(() => {
-      expect(startAnalyzeMock).toHaveBeenCalledWith({ path: 'F:\\AVmatrix-main' });
+      expect(startAnalyzeMock).toHaveBeenCalledWith({ path: 'F:\\AVmatrix-GO' });
     });
     expect(connectToServerMock).not.toHaveBeenCalled();
 
@@ -141,10 +141,10 @@ describe('DropZone full analyze flow', () => {
 
     await waitFor(() => {
       expect(connectToServerMock).toHaveBeenCalledWith(
-        'http://localhost:4747',
+        'http://127.0.0.1:4848',
         expect.any(Function),
         expect.any(AbortSignal),
-        'F:\\AVmatrix-main',
+        'F:\\AVmatrix-GO',
         { awaitAnalysis: true },
       );
     });
@@ -169,7 +169,7 @@ describe('DropZone full analyze flow', () => {
     });
 
     await waitFor(() => {
-      expect(startAnalyzeMock).toHaveBeenCalledWith({ path: 'F:\\AVmatrix-main' });
+      expect(startAnalyzeMock).toHaveBeenCalledWith({ path: 'F:\\AVmatrix-GO' });
     });
 
     act(() => {
@@ -177,6 +177,6 @@ describe('DropZone full analyze flow', () => {
     });
 
     expect(connectToServerMock).not.toHaveBeenCalled();
-    expect(await screen.findByText('boom (F:\\AVmatrix-main)')).toBeInTheDocument();
+    expect(await screen.findByText('boom (F:\\AVmatrix-GO)')).toBeInTheDocument();
   });
 });

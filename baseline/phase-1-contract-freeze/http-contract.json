@@ -1,0 +1,279 @@
+{
+  "observedAtLocal": "2026-05-08T21:18:00+07:00",
+  "status": "http_contract_frozen",
+  "sourceFiles": [
+    "avmatrix/src/server/api.ts",
+    "avmatrix/src/server/session-bridge.ts",
+    "avmatrix/src/server/mcp-http.ts"
+  ],
+  "serverDefaults": {
+    "defaultHostFromServeCommand": "localhost",
+    "defaultPortFromServeCommand": 4747,
+    "createServerDefaultHost": "127.0.0.1",
+    "jsonBodyLimit": "10mb",
+    "xPoweredBy": "disabled"
+  },
+  "cors": {
+    "allowedOriginRules": [
+      "undefined Origin is allowed for non-browser/server-to-server requests",
+      "http://localhost and http://localhost:<port>",
+      "http://127.0.0.1 and http://127.0.0.1:<port>",
+      "http://[::1] and http://[::1]:<port>",
+      "https://localhost and https://localhost:<port>",
+      "https://127.0.0.1 and https://127.0.0.1:<port>",
+      "https://[::1] and https://[::1]:<port>"
+    ],
+    "disallowedOriginBehavior": "cors callback returns false; browser receives no Access-Control-Allow-Origin instead of HTTP 500",
+    "privateNetworkAccess": "Access-Control-Allow-Private-Network is always set to true; OPTIONS * preflight passes through middleware"
+  },
+  "sseContracts": [
+    {
+      "route": "GET /api/heartbeat",
+      "contentType": "text/event-stream",
+      "headers": ["Cache-Control: no-cache", "Connection: keep-alive"],
+      "initialEvent": ":ok",
+      "heartbeat": ":ping every 15000ms",
+      "closeBehavior": "clears heartbeat interval on request close"
+    },
+    {
+      "route": "GET /api/analyze/:jobId/progress",
+      "contentType": "text/event-stream",
+      "headers": [
+        "Cache-Control: no-cache",
+        "Connection: keep-alive",
+        "X-Accel-Buffering: no"
+      ],
+      "missingJob": { "status": 404, "body": { "error": "Job not found" } },
+      "initialEvent": "id: 1 with current job.progress JSON",
+      "heartbeat": ":heartbeat every 30000ms",
+      "terminalEvents": ["event: complete", "event: failed"],
+      "terminalPayload": { "repoName": "string?", "repoPath": "string?", "error": "string?" }
+    },
+    {
+      "route": "GET /api/embed/:jobId/progress",
+      "contract": "same shared mountSSEProgress contract as analyze progress"
+    },
+    {
+      "route": "POST /api/session/chat",
+      "contentType": "text/event-stream",
+      "headers": [
+        "Cache-Control: no-cache",
+        "Connection: keep-alive",
+        "X-Accel-Buffering: no"
+      ],
+      "heartbeat": ":heartbeat every 15000ms",
+      "eventFormat": "event: <SessionStreamEvent.type> plus data JSON",
+      "terminalEvents": ["done", "error", "cancelled"],
+      "closeBehavior": "client close cancels session with reason Client disconnected"
+    }
+  ],
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/api/heartbeat",
+      "kind": "sse",
+      "success": "200 text/event-stream"
+    },
+    {
+      "method": "GET",
+      "path": "/api/info",
+      "success": { "version": "string", "launchContext": "npx|global|local", "nodeVersion": "string" }
+    },
+    {
+      "method": "GET",
+      "path": "/api/repos",
+      "success": "Array<{name,path,indexedAt,lastCommit,stats}>",
+      "errors": [{ "status": 500, "body": { "error": "Failed to list repos" } }]
+    },
+    {
+      "method": "GET",
+      "path": "/api/repo",
+      "query": { "repo": "optional repo name/path", "awaitAnalysis": "optional true" },
+      "success": { "name": "string", "repoPath": "string", "indexedAt": "string", "stats": "object" },
+      "errors": [404, 503, 500]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/repo",
+      "queryOrBody": { "repo": "required repo name/path" },
+      "success": { "deleted": "repo name" },
+      "errors": [400, 404, 409, 500],
+      "lockBehavior": "shared repo lock prevents delete during analyze/embed"
+    },
+    {
+      "method": "GET",
+      "path": "/api/graph",
+      "query": { "repo": "optional", "includeContent": "optional true", "stream": "optional true" },
+      "success": "Graph JSON or NDJSON streaming graph batches",
+      "errors": [404, 500]
+    },
+    {
+      "method": "POST",
+      "path": "/api/query",
+      "body": { "cypher": "required string", "repo": "optional" },
+      "success": { "result": "query result rows" },
+      "errors": [
+        { "status": 400, "error": "Missing \"cypher\" in request body" },
+        { "status": 403, "error": "Write queries are not allowed via the HTTP API" },
+        { "status": 404, "error": "Repository not found" },
+        { "status": 500, "error": "Query failed" }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/search",
+      "body": {
+        "query": "required string",
+        "repo": "optional",
+        "limit": "optional number, clamped 1..100, default 10",
+        "mode": "hybrid|semantic|bm25, default hybrid",
+        "enrich": "optional boolean, default true"
+      },
+      "success": { "results": "search results, optionally enriched with connections/cluster/processes" },
+      "errors": [400, 404, 500]
+    },
+    {
+      "method": "GET",
+      "path": "/api/file",
+      "query": {
+        "repo": "optional",
+        "path": "required repo-relative path",
+        "startLine": "optional zero-based number",
+        "endLine": "optional zero-based number"
+      },
+      "success": "Either {content,totalLines} or {content,startLine,endLine,totalLines}",
+      "errors": [400, 403, 404, 500],
+      "security": "resolved path must stay inside repo root"
+    },
+    {
+      "method": "GET",
+      "path": "/api/grep",
+      "query": {
+        "repo": "optional",
+        "pattern": "required regex string, max 200 chars",
+        "limit": "optional number, clamped 1..200, default 50"
+      },
+      "success": { "results": "Array<{filePath,line,text}>" },
+      "errors": [400, 404, 500],
+      "security": "regex syntax validated; file paths must stay inside repo root"
+    },
+    {
+      "method": "GET",
+      "path": "/api/processes",
+      "query": { "repo": "optional" },
+      "success": "backend.queryProcesses result",
+      "errors": "statusFromError: not found -> 404, multiple repos -> 400, else 500"
+    },
+    {
+      "method": "GET",
+      "path": "/api/process",
+      "query": { "repo": "optional", "name": "required string" },
+      "success": "backend.queryProcessDetail result",
+      "errors": [400, 404, 500]
+    },
+    {
+      "method": "GET",
+      "path": "/api/clusters",
+      "query": { "repo": "optional" },
+      "success": "backend.queryClusters result",
+      "errors": "statusFromError: not found -> 404, multiple repos -> 400, else 500"
+    },
+    {
+      "method": "GET",
+      "path": "/api/cluster",
+      "query": { "repo": "optional", "name": "required string" },
+      "success": "backend.queryClusterDetail result",
+      "errors": [400, 404, 500]
+    },
+    {
+      "method": "POST",
+      "path": "/api/local/folder-picker",
+      "success": "{path:string,cancelled:false} or {path:null,cancelled:true}",
+      "errors": [501, 500]
+    },
+    {
+      "method": "POST",
+      "path": "/api/analyze",
+      "body": { "path": "required local path string", "url": "unsupported", "embeddings": "optional truthy" },
+      "success": { "status": 202, "body": { "jobId": "string", "status": "queued|analyzing|failed|complete" } },
+      "errors": [400, 409, 500],
+      "lockBehavior": "shared repo lock by storage path; worker retries twice after crash"
+    },
+    {
+      "method": "GET",
+      "path": "/api/analyze/:jobId",
+      "success": "{id,status,repoPath,repoName,progress,error,startedAt,completedAt}",
+      "errors": [404]
+    },
+    {
+      "method": "GET",
+      "path": "/api/analyze/:jobId/progress",
+      "kind": "sse",
+      "contract": "see sseContracts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/analyze/:jobId",
+      "success": { "id": "job id", "status": "failed", "error": "Cancelled by user" },
+      "errors": [400, 404]
+    },
+    {
+      "method": "POST",
+      "path": "/api/embed",
+      "queryOrBody": { "repo": "optional repo name/path" },
+      "success": { "status": 202, "body": { "jobId": "string", "status": "analyzing" } },
+      "errors": [404, 409, 500],
+      "lockBehavior": "shared repo lock prevents concurrent analyze/embed; 30 minute timeout"
+    },
+    {
+      "method": "GET",
+      "path": "/api/embed/:jobId",
+      "success": "{id,status,repoName,progress,error,startedAt,completedAt}",
+      "errors": [404]
+    },
+    {
+      "method": "GET",
+      "path": "/api/embed/:jobId/progress",
+      "kind": "sse",
+      "contract": "see sseContracts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/embed/:jobId",
+      "success": { "id": "job id", "status": "failed", "error": "Cancelled by user" },
+      "errors": [400, 404]
+    },
+    {
+      "method": "GET",
+      "path": "/api/session/status",
+      "query": { "repoName": "optional", "repoPath": "optional" },
+      "success": "SessionStatus",
+      "errors": "SessionRuntimeError status or 500"
+    },
+    {
+      "method": "POST",
+      "path": "/api/session/chat",
+      "body": "SessionChatRequest with non-empty message plus optional repo binding",
+      "success": "200 text/event-stream of SessionStreamEvent records",
+      "errors": [400, "SessionRuntimeError status", 500]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/session/:sessionId",
+      "success": { "sessionId": "string", "status": "cancelled" },
+      "errors": [404]
+    },
+    {
+      "method": "ALL",
+      "path": "/api/mcp",
+      "headers": { "mcp-session-id": "optional existing session id" },
+      "success": "StreamableHTTP MCP transport response",
+      "errors": [
+        { "status": 404, "jsonrpcErrorCode": -32001 },
+        { "status": 400, "jsonrpcErrorCode": -32000 },
+        { "status": 500, "jsonrpcErrorCode": -32000 }
+      ],
+      "sessionBehavior": "POST without session initializes; idle sessions evicted after 30 minutes"
+    }
+  ]
+}

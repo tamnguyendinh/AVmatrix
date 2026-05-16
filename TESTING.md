@@ -64,9 +64,7 @@ npm run test:coverage
 Run these in separate terminals:
 
 ```bash
-cd avmatrix
-npm run build
-node dist/cli/index.js serve
+go run ./cmd/avmatrix serve --host 127.0.0.1 --port 4848
 ```
 
 ```bash
@@ -90,6 +88,7 @@ powershell -ExecutionPolicy Bypass -File avmatrix-launcher\build.ps1
 ```
 
 Use this when launcher code, bundled backend/web output, protocol behavior, or user-facing packaged runtime behavior changed.
+The launcher package must build the Go backend binary and must not depend on a bundled Node backend runtime.
 
 ## What To Run
 
@@ -99,7 +98,7 @@ Run the smallest useful validation for the change.
 | ----------- | ------------------------- |
 | Docs only | `git diff --check` |
 | Shared contracts | `cd avmatrix-shared && npm run build`, then build affected CLI/Web package. |
-| CLI command, MCP tool, graph query, ingestion, LadybugDB | `cd avmatrix && npm run build && npx tsc --noEmit && npm test` |
+| CLI command, MCP tool, graph query, ingestion, LadybugDB | Full launcher build first, then `go test ./cmd/... ./internal/... -count=1` |
 | Narrow core logic | `cd avmatrix && npm run test:unit` plus targeted integration tests if storage/MCP is involved. |
 | Web UI component/state only | `cd avmatrix-web && npm run build && npx tsc -b --noEmit && npm test` |
 | Repo switching, graph loading, analyze from Web UI | Web build/tests plus manual or Playwright E2E against `avmatrix serve`. |
@@ -129,7 +128,7 @@ Maintenance note: if `.husky/pre-commit` is edited, keep it aligned with the cur
 - **Unit** — Pure logic, parsers, graph/query helpers; fast; no network.
 - **Integration** — Real combinations (filesystem, MCP wiring, larger pipelines) as already organized under `avmatrix/test/integration`.
 - **Eval-style / golden sets** — For agent- or classification-style behavior, keep labeled inputs and expected outputs (JSON or table-driven tests) and run them in CI when relevant.
-- **E2E (web)** — Critical user paths only; prefer `data-testid` attributes for stable selectors. Tests run against the real backend (`avmatrix serve` or `node dist/cli/index.js serve`) and Vite dev server.
+- **E2E (web)** — Critical user paths only; prefer `data-testid` attributes for stable selectors. Tests run against the real Go backend (`avmatrix serve`) and Vite dev server.
 - **Manual smoke** — Required for packaged launcher behavior, OS folder picker behavior, and any browser flow that depends on real local machine state.
 
 ## Performance metrics (targets)
@@ -191,6 +190,6 @@ For staged releases or UI betas, use the packaged local runtime rather than a re
 
 1. Build with `avmatrix-launcher\build.ps1`.
 2. Open `Start-AVmatrix.html`.
-3. Verify backend health at `http://localhost:4747/api/info`.
+3. Verify backend health at `http://127.0.0.1:4848/api/info`.
 4. Verify repo picking, repo switching, graph selection, analyze, reset runtime, and chat status on the target Windows machine.
 5. Collect runtime logs from `avmatrix-launcher/logs/` when diagnosing failures.

@@ -1,0 +1,199 @@
+{
+  "tools": [
+    {
+      "name": "list_repos",
+      "properties": [],
+      "required": []
+    },
+    {
+      "name": "query",
+      "properties": [
+        "query",
+        "task_context",
+        "goal",
+        "limit",
+        "max_symbols",
+        "include_content",
+        "repo"
+      ],
+      "required": [
+        "query"
+      ]
+    },
+    {
+      "name": "cypher",
+      "properties": [
+        "query",
+        "repo"
+      ],
+      "required": [
+        "query"
+      ]
+    },
+    {
+      "name": "context",
+      "properties": [
+        "name",
+        "uid",
+        "file_path",
+        "kind",
+        "include_content",
+        "repo"
+      ],
+      "required": []
+    },
+    {
+      "name": "detect_changes",
+      "properties": [
+        "scope",
+        "base_ref",
+        "repo"
+      ],
+      "required": []
+    },
+    {
+      "name": "rename",
+      "properties": [
+        "symbol_name",
+        "symbol_uid",
+        "new_name",
+        "file_path",
+        "dry_run",
+        "repo"
+      ],
+      "required": [
+        "new_name"
+      ]
+    },
+    {
+      "name": "impact",
+      "properties": [
+        "target",
+        "target_uid",
+        "direction",
+        "file_path",
+        "kind",
+        "maxDepth",
+        "relationTypes",
+        "includeTests",
+        "minConfidence",
+        "repo"
+      ],
+      "required": [
+        "direction"
+      ]
+    },
+    {
+      "name": "route_map",
+      "properties": [
+        "route",
+        "repo"
+      ],
+      "required": []
+    },
+    {
+      "name": "tool_map",
+      "properties": [
+        "tool",
+        "repo"
+      ],
+      "required": []
+    },
+    {
+      "name": "shape_check",
+      "properties": [
+        "route",
+        "repo"
+      ],
+      "required": []
+    },
+    {
+      "name": "api_impact",
+      "properties": [
+        "route",
+        "file",
+        "repo"
+      ],
+      "required": []
+    },
+    {
+      "name": "group_list",
+      "properties": [
+        "name"
+      ],
+      "required": []
+    },
+    {
+      "name": "group_sync",
+      "properties": [
+        "name",
+        "skipEmbeddings",
+        "exactOnly"
+      ],
+      "required": [
+        "name"
+      ]
+    },
+    {
+      "name": "group_contracts",
+      "properties": [
+        "name",
+        "type",
+        "repo",
+        "unmatchedOnly"
+      ],
+      "required": [
+        "name"
+      ]
+    },
+    {
+      "name": "group_query",
+      "properties": [
+        "name",
+        "query",
+        "subgroup",
+        "limit"
+      ],
+      "required": [
+        "name",
+        "query"
+      ]
+    },
+    {
+      "name": "group_status",
+      "properties": [
+        "name"
+      ],
+      "required": [
+        "name"
+      ]
+    }
+  ],
+  "resources": [
+    "avmatrix://repos",
+    "avmatrix://setup"
+  ],
+  "resourceTemplates": [
+    "avmatrix://repo/{name}/context",
+    "avmatrix://repo/{name}/clusters",
+    "avmatrix://repo/{name}/processes",
+    "avmatrix://repo/{name}/schema",
+    "avmatrix://repo/{name}/cluster/{clusterName}",
+    "avmatrix://repo/{name}/process/{processName}"
+  ],
+  "prompts": [
+    {
+      "name": "detect_impact",
+      "arguments": [
+        "scope",
+        "base_ref"
+      ]
+    },
+    {
+      "name": "generate_map",
+      "arguments": [
+        "repo"
+      ]
+    }
+  ]
+}

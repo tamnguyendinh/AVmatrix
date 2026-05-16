@@ -4,15 +4,15 @@ import { test, expect } from '@playwright/test';
  * E2E tests for the AVmatrix web UI — exploring view features.
  *
  * Requires:
- *   - avmatrix serve running on localhost:4747 with at least one indexed repo
- *   - avmatrix-web dev server running on localhost:5173
+ *   - avmatrix serve running on 127.0.0.1:4848 with at least one indexed repo
+ *   - avmatrix-web dev server running on 127.0.0.1:5228
  *
  * Skipped when servers aren't available (CI without services, etc.).
  * Set E2E=1 to force-run even without the availability check.
  */
 
-const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:4747';
-const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173';
+const BACKEND_URL = process.env.BACKEND_URL ?? 'http://127.0.0.1:4848';
+const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://127.0.0.1:5228';
 
 let firstRepoName = '';
 
@@ -33,14 +33,14 @@ test.beforeAll(async () => {
       backendRes.status === 'rejected' ||
       (backendRes.status === 'fulfilled' && !backendRes.value.ok)
     ) {
-      test.skip(true, 'avmatrix serve not available on :4747');
+      test.skip(true, 'avmatrix serve not available on :4848');
       return;
     }
     if (
       frontendRes.status === 'rejected' ||
       (frontendRes.status === 'fulfilled' && !frontendRes.value.ok)
     ) {
-      test.skip(true, 'Vite dev server not available on :5173');
+      test.skip(true, 'Vite dev server not available on :5228');
       return;
     }
     // Check there's at least one indexed repo
@@ -97,7 +97,7 @@ test.describe('Processes Panel', () => {
     await waitForGraphLoaded(page);
 
     await page.getByRole('button', { name: 'My AI' }).click();
-    await page.getByText('Processes').click();
+    await page.getByRole('button', { name: /^Processes\b/ }).click();
 
     await expect(page.locator('[data-testid="process-list-loaded"]')).toBeVisible({
       timeout: 15_000,
@@ -110,14 +110,14 @@ test.describe('Processes Panel', () => {
     const viewBtn = processRow.locator('[data-testid="process-view-button"]');
     await viewBtn.waitFor({ state: 'visible', timeout: 5_000 });
     await viewBtn.click();
-    await expect(page.locator('[data-testid="process-modal"]')).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator('[data-testid="process-modal"]')).toBeVisible({ timeout: 15_000 });
   });
 
   test('lightbulb highlights nodes in graph', async ({ page }) => {
     await waitForGraphLoaded(page);
 
     await page.getByRole('button', { name: 'My AI' }).click();
-    await page.getByText('Processes').click();
+    await page.getByRole('button', { name: /^Processes\b/ }).click();
     await expect(page.locator('[data-testid="process-list-loaded"]')).toBeVisible({
       timeout: 15_000,
     });
@@ -129,7 +129,10 @@ test.describe('Processes Panel', () => {
     const lightbulb = processRow.locator('[data-testid="process-highlight-button"]');
     await lightbulb.waitFor({ state: 'visible', timeout: 5_000 });
     await lightbulb.click();
-    await expect(processRow).toHaveClass(/border-border-strong/, { timeout: 5_000 });
+    await expect(lightbulb).toHaveAttribute('title', 'Click to remove highlight from graph', {
+      timeout: 15_000,
+    });
+    await expect(processRow).toHaveClass(/border-border-strong/, { timeout: 15_000 });
   });
 });
 

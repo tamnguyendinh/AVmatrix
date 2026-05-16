@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { SessionStatusResponse, SessionStreamEvent } from 'avmatrix-shared';
+import type { SessionStatusResponse, SessionStreamEvent } from '@/generated/avmatrix-contracts';
 import { setBackendUrl } from '../../src/services/backend-client';
 import {
   SessionClientError,
@@ -35,7 +35,7 @@ describe('session-client', () => {
   });
 
   it('fetches session status with repo binding query params', async () => {
-    setBackendUrl('http://localhost:4747');
+    setBackendUrl('http://127.0.0.1:4848');
 
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify(readyStatus), {
@@ -52,12 +52,12 @@ describe('session-client', () => {
 
     expect(result).toEqual(readyStatus);
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://localhost:4747/api/session/status?repoName=avmatrix&repoPath=repos%2Favmatrix',
+      'http://127.0.0.1:4848/api/session/status?repoName=avmatrix&repoPath=repos%2Favmatrix',
     );
   });
 
   it('throws parsed SessionClientError for non-2xx status responses', async () => {
-    setBackendUrl('http://localhost:4747');
+    setBackendUrl('http://127.0.0.1:4848');
 
     vi.stubGlobal(
       'fetch',
@@ -85,7 +85,7 @@ describe('session-client', () => {
   });
 
   it('sends cancel requests to the session endpoint', async () => {
-    setBackendUrl('http://localhost:4747');
+    setBackendUrl('http://127.0.0.1:4848');
 
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ sessionId: 'session-1', status: 'cancelled' }), {
@@ -98,13 +98,13 @@ describe('session-client', () => {
     await cancelSession('session-1');
 
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://localhost:4747/api/session/session-1',
+      'http://127.0.0.1:4848/api/session/session-1',
       expect.objectContaining({ method: 'DELETE' }),
     );
   });
 
   it('parses SSE chat streams into ordered session events', async () => {
-    setBackendUrl('http://localhost:4747');
+    setBackendUrl('http://127.0.0.1:4848');
 
     const encoder = new TextEncoder();
     const events: SessionStreamEvent[] = [
@@ -229,7 +229,7 @@ describe('session-client', () => {
   });
 
   it('throws when the stream body is missing', async () => {
-    setBackendUrl('http://localhost:4747');
+    setBackendUrl('http://127.0.0.1:4848');
 
     vi.stubGlobal(
       'fetch',

@@ -41,8 +41,8 @@ jobs:
           --outputFile=web-test-results.json
         working-directory: avmatrix-web
 
-      - name: Run docker-server integration tests
-        run: node --test docker-server.test.mjs
+      - name: Validate web Docker nginx config
+        run: docker run --rm -v "${PWD}/docker/web-nginx.conf:/etc/nginx/conf.d/default.conf:ro" nginx:alpine nginx -t
 
       - name: Upload test reports
         if: always()

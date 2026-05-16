@@ -7,7 +7,8 @@ describe('OnboardingGuide local-only surface', () => {
     render(<OnboardingGuide />);
 
     expect(screen.getByText('Start AVmatrix locally')).toBeInTheDocument();
-    expect(screen.getByText('cd avmatrix && npm run serve')).toBeInTheDocument();
+    expect(screen.getByText('avmatrix serve')).toBeInTheDocument();
+    expect(screen.queryByText('cd avmatrix && npm run serve')).not.toBeInTheDocument();
     expect(screen.queryByText(/npm run --prefix avmatrix serve/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/npx avmatrix serve/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/avmatrix@latest/i)).not.toBeInTheDocument();

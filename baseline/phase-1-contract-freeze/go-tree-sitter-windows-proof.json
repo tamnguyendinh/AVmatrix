@@ -1,0 +1,52 @@
+{
+  "artifact": "go-tree-sitter-windows-proof",
+  "date": "2026-05-08",
+  "status": "pass",
+  "goal": "Prove a minimal Go tree-sitter parse path on Windows before broad provider work.",
+  "environment": {
+    "goVersion": "go version go1.26.3 windows/amd64",
+    "goos": "windows",
+    "goarch": "amd64",
+    "cgoEnabled": "1",
+    "cc": "gcc"
+  },
+  "dependencies": {
+    "treeSitterCore": {
+      "module": "github.com/tree-sitter/go-tree-sitter",
+      "version": "v0.25.0",
+      "evidence": "go list -m -versions github.com/tree-sitter/go-tree-sitter"
+    },
+    "goGrammar": {
+      "module": "github.com/tree-sitter/tree-sitter-go",
+      "import": "github.com/tree-sitter/tree-sitter-go/bindings/go",
+      "version": "v0.25.0",
+      "evidence": "GitHub latest release and go get github.com/tree-sitter/tree-sitter-go/bindings/go@v0.25.0"
+    }
+  },
+  "proofProgram": {
+    "location": ".tmp/phase1-go-proofs/tree-sitter",
+    "module": "avmatrix-phase1-treesitter-proof",
+    "operations": [
+      "create parser",
+      "load Go grammar through tree_sitter_go.Language()",
+      "parse a Go source snippet",
+      "assert root node is source_file",
+      "assert parse tree has no errors",
+      "assert function_declaration name is add",
+      "assert return_statement exists"
+    ]
+  },
+  "commands": [
+    "%USERPROFILE%/go/bin/go1.26.3.exe list -m -versions github.com/tree-sitter/go-tree-sitter",
+    "%USERPROFILE%/go/bin/go1.26.3.exe get github.com/tree-sitter/go-tree-sitter@v0.25.0",
+    "%USERPROFILE%/go/bin/go1.26.3.exe get github.com/tree-sitter/tree-sitter-go/bindings/go@v0.25.0",
+    "%USERPROFILE%/go/bin/go1.26.3.exe run ."
+  ],
+  "observedOutput": "tree-sitter proof ok: root=source_file function=add descendants=29 abi=15",
+  "acceptance": {
+    "windowsParserRuntime": "pass",
+    "grammarLoad": "pass",
+    "astRead": "pass",
+    "readyForBroadProviderWork": true
+  }
+}

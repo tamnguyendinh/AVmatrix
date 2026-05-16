@@ -9,11 +9,11 @@ const setBackendUrlMock = vi.fn();
 vi.mock('../../src/services/backend-client', () => ({
   normalizeServerUrl: (input: string) => {
     const trimmed = input.trim().replace(/\/+$/, '');
-    if (trimmed === 'localhost:4747' || trimmed === DEFAULT_BACKEND_URL) {
+    if (trimmed === 'localhost:4848' || trimmed === DEFAULT_BACKEND_URL) {
       return DEFAULT_BACKEND_URL;
     }
     throw new Error(
-      'AVmatrix local-only mode only supports backend URLs on localhost, 127.0.0.1, or [::1].',
+      'AVmatrix local-only mode only supports backend URLs on 127.0.0.1, localhost, or [::1].',
     );
   },
   probeBackend: (...args: unknown[]) => probeBackendMock(...args),
@@ -49,7 +49,7 @@ describe('useBackend local-only migration', () => {
   });
 
   it('keeps a normalized local loopback backend from storage', async () => {
-    localStorage.setItem('avmatrix-backend-url', 'localhost:4747');
+    localStorage.setItem('avmatrix-backend-url', 'localhost:4848');
 
     render(<TestProbe />);
 

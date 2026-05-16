@@ -1,0 +1,397 @@
+{
+  "status": "go_owned_web_contract_generated",
+  "generatedFrom": "internal/contracts",
+  "artifacts": {
+    "schemaManifest": "contracts/web-ui/avmatrix-web-contract.schema.json",
+    "typescriptAdapter": "avmatrix-web/src/generated/avmatrix-contracts.ts"
+  },
+  "graph": {
+    "nodeLabels": [
+      "Project",
+      "Package",
+      "Module",
+      "Folder",
+      "File",
+      "Class",
+      "Function",
+      "Method",
+      "Variable",
+      "Interface",
+      "Enum",
+      "Decorator",
+      "Import",
+      "Type",
+      "CodeElement",
+      "Community",
+      "Process",
+      "Struct",
+      "Macro",
+      "Typedef",
+      "Union",
+      "Namespace",
+      "Trait",
+      "Impl",
+      "TypeAlias",
+      "Const",
+      "Static",
+      "Property",
+      "Record",
+      "Delegate",
+      "Annotation",
+      "Constructor",
+      "Template",
+      "Section",
+      "Route",
+      "Tool"
+    ],
+    "graphRelationshipTypes": [
+      "CONTAINS",
+      "CALLS",
+      "INHERITS",
+      "METHOD_OVERRIDES",
+      "METHOD_IMPLEMENTS",
+      "IMPORTS",
+      "USES",
+      "DEFINES",
+      "DECORATES",
+      "IMPLEMENTS",
+      "EXTENDS",
+      "HAS_METHOD",
+      "HAS_PROPERTY",
+      "ACCESSES",
+      "MEMBER_OF",
+      "STEP_IN_PROCESS",
+      "HANDLES_ROUTE",
+      "FETCHES",
+      "HANDLES_TOOL",
+      "ENTRY_POINT_OF",
+      "WRAPS",
+      "QUERIES"
+    ],
+    "ladybugdbNodeTables": [
+      "File",
+      "Folder",
+      "Function",
+      "Class",
+      "Interface",
+      "Method",
+      "CodeElement",
+      "Community",
+      "Process",
+      "Package",
+      "Section",
+      "Struct",
+      "Enum",
+      "Macro",
+      "Typedef",
+      "Union",
+      "Namespace",
+      "Trait",
+      "Impl",
+      "TypeAlias",
+      "Const",
+      "Static",
+      "Variable",
+      "Property",
+      "Record",
+      "Delegate",
+      "Annotation",
+      "Constructor",
+      "Template",
+      "Module",
+      "Route",
+      "Tool"
+    ],
+    "ladybugdbRelationshipTypes": [
+      "CONTAINS",
+      "DEFINES",
+      "IMPORTS",
+      "CALLS",
+      "USES",
+      "INHERITS",
+      "EXTENDS",
+      "IMPLEMENTS",
+      "HAS_METHOD",
+      "HAS_PROPERTY",
+      "ACCESSES",
+      "METHOD_OVERRIDES",
+      "OVERRIDES",
+      "METHOD_IMPLEMENTS",
+      "MEMBER_OF",
+      "STEP_IN_PROCESS",
+      "HANDLES_ROUTE",
+      "FETCHES",
+      "HANDLES_TOOL",
+      "ENTRY_POINT_OF",
+      "WRAPS",
+      "QUERIES"
+    ],
+    "relationshipTableName": "CodeRelation",
+    "embeddingTableName": "CodeEmbedding"
+  },
+  "languages": {
+    "codeLanguages": [
+      {
+        "name": "JavaScript",
+        "value": "javascript",
+        "extensions": [
+          ".js",
+          ".jsx",
+          ".mjs",
+          ".cjs"
+        ],
+        "syntax": "javascript"
+      },
+      {
+        "name": "TypeScript",
+        "value": "typescript",
+        "extensions": [
+          ".ts",
+          ".tsx",
+          ".mts",
+          ".cts"
+        ],
+        "syntax": "typescript"
+      },
+      {
+        "name": "Python",
+        "value": "python",
+        "extensions": [
+          ".py"
+        ],
+        "syntax": "python"
+      },
+      {
+        "name": "Java",
+        "value": "java",
+        "extensions": [
+          ".java"
+        ],
+        "syntax": "java"
+      },
+      {
+        "name": "C",
+        "value": "c",
+        "extensions": [
+          ".c"
+        ],
+        "syntax": "c"
+      },
+      {
+        "name": "CPlusPlus",
+        "value": "cpp",
+        "extensions": [
+          ".cpp",
+          ".cc",
+          ".cxx",
+          ".h",
+          ".hpp",
+          ".hxx",
+          ".hh"
+        ],
+        "syntax": "cpp"
+      },
+      {
+        "name": "CSharp",
+        "value": "csharp",
+        "extensions": [
+          ".cs"
+        ],
+        "syntax": "csharp"
+      },
+      {
+        "name": "Go",
+        "value": "go",
+        "extensions": [
+          ".go"
+        ],
+        "syntax": "go"
+      },
+      {
+        "name": "Ruby",
+        "value": "ruby",
+        "extensions": [
+          ".rb",
+          ".rake",
+          ".gemspec"
+        ],
+        "syntax": "ruby"
+      },
+      {
+        "name": "Rust",
+        "value": "rust",
+        "extensions": [
+          ".rs"
+        ],
+        "syntax": "rust"
+      },
+      {
+        "name": "PHP",
+        "value": "php",
+        "extensions": [
+          ".php",
+          ".phtml",
+          ".php3",
+          ".php4",
+          ".php5",
+          ".php8"
+        ],
+        "syntax": "php"
+      },
+      {
+        "name": "Kotlin",
+        "value": "kotlin",
+        "extensions": [
+          ".kt",
+          ".kts"
+        ],
+        "syntax": "kotlin"
+      },
+      {
+        "name": "Swift",
+        "value": "swift",
+        "extensions": [
+          ".swift"
+        ],
+        "syntax": "swift"
+      },
+      {
+        "name": "Dart",
+        "value": "dart",
+        "extensions": [
+          ".dart"
+        ],
+        "syntax": "dart"
+      },
+      {
+        "name": "Vue",
+        "value": "vue",
+        "extensions": [
+          ".vue"
+        ],
+        "syntax": "typescript"
+      },
+      {
+        "name": "Svelte",
+        "value": "svelte",
+        "extensions": [
+          ".svelte"
+        ],
+        "syntax": "typescript"
+      },
+      {
+        "name": "Astro",
+        "value": "astro",
+        "extensions": [
+          ".astro"
+        ],
+        "syntax": "typescript"
+      },
+      {
+        "name": "Cobol",
+        "value": "cobol",
+        "extensions": [
+          ".cbl",
+          ".cob",
+          ".cpy",
+          ".cobol",
+          ".copybook",
+          ".jcl",
+          ".job",
+          ".proc"
+        ],
+        "syntax": "cobol"
+      }
+    ],
+    "rubyExtensionlessFiles": [
+      "Rakefile",
+      "Gemfile",
+      "Guardfile",
+      "Vagrantfile",
+      "Brewfile"
+    ],
+    "auxiliarySyntax": {
+      "bash": "bash",
+      "css": "css",
+      "dockerfile": "docker",
+      "erb": "markup",
+      "htm": "markup",
+      "html": "markup",
+      "ini": "ini",
+      "json": "json",
+      "md": "markdown",
+      "mdx": "markdown",
+      "sass": "css",
+      "scss": "css",
+      "sh": "bash",
+      "sql": "sql",
+      "toml": "toml",
+      "xml": "markup",
+      "yaml": "yaml",
+      "yml": "yaml",
+      "zsh": "bash"
+    },
+    "auxiliaryBasenames": {
+      "Dockerfile": "docker",
+      "Makefile": "makefile"
+    }
+  },
+  "pipeline": {
+    "phases": [
+      "idle",
+      "extracting",
+      "structure",
+      "parsing",
+      "imports",
+      "calls",
+      "heritage",
+      "communities",
+      "processes",
+      "enriching",
+      "complete",
+      "error"
+    ]
+  },
+  "session": {
+    "providers": [
+      "codex",
+      "claude-code"
+    ],
+    "availability": [
+      "ready",
+      "not_installed",
+      "not_signed_in",
+      "error"
+    ],
+    "executionModes": [
+      "sandboxed",
+      "bypass"
+    ],
+    "runtimeEnvironments": [
+      "native",
+      "wsl2"
+    ],
+    "errorCodes": [
+      "BAD_REQUEST",
+      "INVALID_REPO_BINDING",
+      "INVALID_REPO_PATH",
+      "REPO_NOT_FOUND",
+      "INDEX_REQUIRED",
+      "SESSION_NOT_FOUND",
+      "SESSION_RUNTIME_UNAVAILABLE",
+      "SESSION_NOT_SIGNED_IN",
+      "SESSION_START_FAILED",
+      "SESSION_CANCELLED"
+    ],
+    "streamEvents": [
+      "session_started",
+      "reasoning",
+      "content",
+      "tool_call",
+      "tool_result",
+      "error",
+      "cancelled",
+      "done"
+    ]
+  }
+}

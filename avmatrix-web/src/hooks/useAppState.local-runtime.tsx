@@ -9,7 +9,7 @@ import {
   ReactNode,
   startTransition,
 } from 'react';
-import type { GraphNode, NodeLabel, PipelineProgress } from 'avmatrix-shared';
+import type { GraphNode, NodeLabel, PipelineProgress } from '@/generated/avmatrix-contracts';
 import type { KnowledgeGraph } from '../core/graph/types';
 import { createKnowledgeGraph } from '../core/graph/graph';
 import { type EdgeType } from '../lib/constants';
@@ -801,7 +801,7 @@ const AppStateProviderInner = ({ children }: { children: ReactNode }) => {
         setProjectName(pName);
         repoRef.current = repoPath || repoName || pName;
 
-        pNameStr = repoPath || pName;
+        pNameStr = pName;
 
         const newGraph = createKnowledgeGraph();
         for (const node of result.nodes) newGraph.addNode(node);

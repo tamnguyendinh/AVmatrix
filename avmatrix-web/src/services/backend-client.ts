@@ -6,7 +6,7 @@
  * and file operations go through this client.
  */
 
-import type { GraphNode, GraphRelationship } from 'avmatrix-shared';
+import type { GraphNode, GraphRelationship } from '@/generated/avmatrix-contracts';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -195,10 +195,10 @@ export function streamSSE<T = unknown>(url: string, handlers: SSEHandlers<T>): A
 
 // ── Configuration ──────────────────────────────────────────────────────────
 
-let _backendUrl = 'http://localhost:4747';
+let _backendUrl = 'http://127.0.0.1:4848';
 
 const LOCAL_BACKEND_ERROR =
-  'AVmatrix local-only mode only supports backend URLs on localhost, 127.0.0.1, or [::1].';
+  'AVmatrix local-only mode only supports backend URLs on 127.0.0.1, localhost, or [::1].';
 
 const isLoopbackHostname = (hostname: string): boolean => {
   const normalized = hostname.replace(/^\[|\]$/g, '');
@@ -240,7 +240,11 @@ export function normalizeServerUrl(input: string): string {
     );
   }
 
-  return `${parsed.protocol}//${parsed.host}`;
+  const canonicalHost =
+    parsed.hostname === 'localhost'
+      ? `127.0.0.1${parsed.port ? `:${parsed.port}` : ''}`
+      : parsed.host;
+  return `${parsed.protocol}//${canonicalHost}`;
 }
 
 // ── Internal Helpers ───────────────────────────────────────────────────────
@@ -342,20 +346,59 @@ export const connectHeartbeat = (
 ): (() => void) => {
   let closed = false;
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
+  let recoveryProbeTimer: ReturnType<typeof setTimeout> | null = null;
+  let recoveryProbeAbort: AbortController | null = null;
   let es: EventSource | null = null;
   let attempt = 0;
   /** Whether we've already fired onReconnecting for the current drop. */
   let notifiedReconnecting = false;
   const MAX_BACKOFF_MS = 15_000;
 
+  const markConnected = () => {
+    attempt = 0;
+    notifiedReconnecting = false;
+    onConnect();
+  };
+
+  const probeHeartbeatRecovery = () => {
+    if (closed) return;
+    recoveryProbeAbort?.abort();
+    const controller = new AbortController();
+    recoveryProbeAbort = controller;
+
+    fetch(`${_backendUrl}/api/heartbeat`, { signal: controller.signal })
+      .then((response) => {
+        controller.abort();
+        if (closed || !response.ok) return;
+        if (retryTimer) {
+          clearTimeout(retryTimer);
+          retryTimer = null;
+        }
+        markConnected();
+        connect();
+      })
+      .catch(() => {
+        // The SSE endpoint is still unavailable. The EventSource retry loop remains authoritative.
+      })
+      .finally(() => {
+        if (recoveryProbeAbort === controller) {
+          recoveryProbeAbort = null;
+        }
+      });
+  };
+
   const connect = () => {
     if (closed) return;
     es = new EventSource(`${_backendUrl}/api/heartbeat`);
     es.onopen = () => {
       if (!closed) {
-        attempt = 0;
-        notifiedReconnecting = false;
-        onConnect();
+        if (recoveryProbeTimer) {
+          clearTimeout(recoveryProbeTimer);
+          recoveryProbeTimer = null;
+        }
+        recoveryProbeAbort?.abort();
+        recoveryProbeAbort = null;
+        markConnected();
       }
     };
     es.onerror = () => {
@@ -371,6 +414,8 @@ export const connectHeartbeat = (
       const delay = Math.min(1_000 * Math.pow(2, attempt), MAX_BACKOFF_MS);
       attempt++;
       retryTimer = setTimeout(connect, delay);
+      if (recoveryProbeTimer) clearTimeout(recoveryProbeTimer);
+      recoveryProbeTimer = setTimeout(probeHeartbeatRecovery, Math.min(delay, 1_000));
     };
   };
 
@@ -380,6 +425,8 @@ export const connectHeartbeat = (
     closed = true;
     es?.close();
     if (retryTimer) clearTimeout(retryTimer);
+    if (recoveryProbeTimer) clearTimeout(recoveryProbeTimer);
+    recoveryProbeAbort?.abort();
   };
 };
 

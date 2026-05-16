@@ -1,0 +1,55 @@
+{
+  "scopes": [
+    "Class:scope:Sources/App/Service.swift#12:0-27:1:Class",
+    "Class:scope:Sources/App/Service.swift#3:0-6:1:Class",
+    "Class:scope:Sources/App/Service.swift#8:0-10:1:Class",
+    "Function:scope:Sources/App/Service.swift#15:2-18:3:Function",
+    "Function:scope:Sources/App/Service.swift#19:2-21:3:Function",
+    "Function:scope:Sources/App/Service.swift#22:2-26:3:Function",
+    "Function:scope:Sources/App/Service.swift#5:2-5:24:Function",
+    "Function:scope:Sources/App/Service.swift#9:2-9:32:Function",
+    "Module:scope:Sources/App/Service.swift#1:0-28:0:Module"
+  ],
+  "definitions": [
+    "Class:Repository:::",
+    "Class:Service:::",
+    "Constructor:Service.init:::def:Sources/App/Service.swift#12:0:Class:Service",
+    "Interface:Named:::",
+    "Method:Named.label:String::def:Sources/App/Service.swift#3:0:Interface:Named",
+    "Method:Repository.write:::def:Sources/App/Service.swift#8:0:Class:Repository",
+    "Method:Service.label:String::def:Sources/App/Service.swift#12:0:Class:Service",
+    "Method:Service.save:String::def:Sources/App/Service.swift#12:0:Class:Service",
+    "Property:Named.id::String:def:Sources/App/Service.swift#3:0:Interface:Named",
+    "Property:Service.id::String:def:Sources/App/Service.swift#12:0:Class:Service",
+    "Property:Service.repo::Repository:def:Sources/App/Service.swift#12:0:Class:Service",
+    "Variable:formatted:::"
+  ],
+  "imports": [
+    "named:Foundation:Foundation::Foundation"
+  ],
+  "calls": [
+    "label:member:user:0",
+    "write:member:repo:1"
+  ],
+  "accesses": [
+    "write:id:self",
+    "write:repo:self"
+  ],
+  "heritage": [
+    "implements:Named"
+  ],
+  "typeReferences": null,
+  "typeBindings": [
+    "id:String:annotation",
+    "id:String:annotation",
+    "repo:Repository:annotation",
+    "repo:Repository:parameter-annotation",
+    "self:Named:self",
+    "self:Repository:self",
+    "self:Service:self",
+    "self:Service:self",
+    "self:Service:self",
+    "user:Named:parameter-annotation",
+    "value:String:parameter-annotation"
+  ]
+}

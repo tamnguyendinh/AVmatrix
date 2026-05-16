@@ -5,57 +5,84 @@ on:
 
 jobs:
   check-changes:
-    name: Check web module changes
+    name: Check runtime or web module changes
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      web_changed: ${{ steps.filter.outputs.web }}
+      e2e_changed: ${{ steps.filter.outputs.e2e }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v3
         id: filter
         with:
           filters: |
-            web:
+            e2e:
+              - 'cmd/**'
+              - 'internal/**'
+              - 'go.mod'
+              - 'go.sum'
+              - 'Dockerfile.cli'
+              - 'docker-compose.yaml'
+              - 'scripts/**'
+              - 'avmatrix-launcher/**'
               - 'avmatrix-web/**'
 
   e2e:
     name: e2e (chromium)
     needs: check-changes
-    if: needs.check-changes.result == 'success' && needs.check-changes.outputs.web_changed == 'true'
+    if: needs.check-changes.result == 'success' && needs.check-changes.outputs.e2e_changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - uses: ./.github/actions/setup-avmatrix-web
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: avmatrix-web/package-lock.json
+
+      - name: Install Web UI dependencies
+        run: npm ci
+        working-directory: avmatrix-web
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
         working-directory: avmatrix-web
 
-      - name: Install backend dependencies
-        run: npm ci
-        working-directory: avmatrix
+      - name: Prepare LadybugDB native runtime
+        run: |
+          LADYBUG_NATIVE_DIR="$(bash scripts/ensure-ladybug-native.sh auto .tmp/ladybug-native)"
+          echo "LADYBUG_NATIVE_DIR=$LADYBUG_NATIVE_DIR" >> "$GITHUB_ENV"
 
-      - name: Build backend
-        run: npm run build
-        working-directory: avmatrix
+      - name: Build Go backend
+        run: |
+          mkdir -p .tmp
+          CGO_CFLAGS="-I$LADYBUG_NATIVE_DIR" \
+            CGO_LDFLAGS="-L$LADYBUG_NATIVE_DIR -llbug" \
+            go build -tags ladybugdb -trimpath -o .tmp/avmatrix ./cmd/avmatrix
 
       - name: Analyze repository (index for backend)
         run: |
-          node avmatrix/dist/cli/index.js analyze || true
+          export LD_LIBRARY_PATH="$LADYBUG_NATIVE_DIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          ./.tmp/avmatrix analyze --force || true
           if [ ! -d ".avmatrix" ]; then
             echo "::error::No .avmatrix index created"
             exit 1
           fi
 
       - name: Start backend server
-        run: node dist/cli/index.js serve &
-        working-directory: avmatrix
+        run: |
+          export LD_LIBRARY_PATH="$LADYBUG_NATIVE_DIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          ./.tmp/avmatrix serve --host 127.0.0.1 --port 4747 &
 
       - name: Wait for backend readiness
-        run: npx wait-on http://localhost:4747/api/repos --timeout 30000
+        run: npx wait-on http://127.0.0.1:4747/api/info --timeout 30000
         working-directory: avmatrix-web
 
       - name: Start Vite dev server
@@ -63,11 +90,11 @@ jobs:
         working-directory: avmatrix-web
 
       - name: Wait for Vite dev server
-        run: npx wait-on http://localhost:5173 --timeout 30000
+        run: npx wait-on http://127.0.0.1:5173 --timeout 30000
         working-directory: avmatrix-web
 
       - name: Run E2E tests
-        run: npx playwright test
+        run: npx playwright test --workers=1
         working-directory: avmatrix-web
         env:
           E2E: '1'

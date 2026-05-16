@@ -12,8 +12,8 @@ import { test, expect } from '@playwright/test';
  * works end-to-end even with one repo.
  */
 
-const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:4747';
-const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173';
+const BACKEND_URL = process.env.BACKEND_URL ?? 'http://127.0.0.1:4848';
+const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://127.0.0.1:5228';
 
 let firstRepoName: string;
 

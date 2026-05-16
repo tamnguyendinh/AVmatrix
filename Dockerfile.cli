@@ -1,57 +1,57 @@
-ARG BUILDPLATFORM
-ARG TARGETPLATFORM
+ARG GO_VERSION=1.26.3
+ARG DEBIAN_VERSION=bookworm
+ARG LADYBUGDB_VERSION=auto
 
-# ── Builder ────────────────────────────────────────────────────────────
-# Native modules (tree-sitter-*, onnxruntime-node, node-gyp builds for
-# tree-sitter-proto / tree-sitter-swift) require python3 + a C/C++ toolchain.
-FROM node:22-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-${DEBIAN_VERSION} AS builder
+WORKDIR /src
 
-WORKDIR /app
+ARG LADYBUGDB_VERSION
 
-# Toolchain for node-gyp / native builds.
-RUN apk add --no-cache python3 make g++ git
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl git build-essential tar \
+    && rm -rf /var/lib/apt/lists/*
 
-# Build avmatrix-shared first — the CLI package depends on it as a workspace.
-COPY avmatrix-shared/package.json avmatrix-shared/package-lock.json ./avmatrix-shared/
-RUN npm ci --prefix avmatrix-shared
-COPY avmatrix-shared ./avmatrix-shared
-RUN npm run build --prefix avmatrix-shared
+COPY go.mod go.sum ./
+RUN go mod download
 
-# Copy the full avmatrix package before installing — `npm ci` triggers
-# `postinstall` (patches tree-sitter-swift, builds the vendored
-# tree-sitter-proto) and `prepare` (compiles TypeScript via scripts/build.js),
-# both of which need the source tree.
-COPY avmatrix ./avmatrix
-RUN npm ci --prefix avmatrix
+COPY scripts ./scripts
+RUN native_dir="$(bash ./scripts/ensure-ladybug-native.sh "${LADYBUGDB_VERSION}" /opt/ladybug-native)" \
+    && mkdir -p /opt/ladybug-current \
+    && cp -a "${native_dir}/." /opt/ladybug-current/
 
-# Drop dev dependencies for a smaller runtime layer.
-RUN npm prune --omit=dev --prefix avmatrix
+COPY cmd ./cmd
+COPY internal ./internal
 
-# ── Runtime ────────────────────────────────────────────────────────────
-FROM node:22-alpine AS runtime
+ARG TARGETOS
+ARG TARGETARCH
+RUN test "${TARGETOS:-linux}" = "linux" \
+    && test "${TARGETARCH:-amd64}" = "amd64" \
+    && LADYBUG_NATIVE_DIR="/opt/ladybug-current" \
+    && CGO_CFLAGS="-I${LADYBUG_NATIVE_DIR}" \
+       CGO_LDFLAGS="-L${LADYBUG_NATIVE_DIR} -llbug" \
+       GOOS=linux GOARCH=amd64 CGO_ENABLED=1 \
+       go build -tags ladybugdb -trimpath -ldflags="-s -w" -o /out/avmatrix ./cmd/avmatrix
 
-# curl for the healthcheck; git so `avmatrix` can clone repos at runtime.
-RUN apk add --no-cache curl git
+FROM debian:${DEBIAN_VERSION}-slim AS runtime
 
-WORKDIR /app
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl git libstdc++6 \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /data/avmatrix /workspace \
+    && groupadd --system avmatrix \
+    && useradd --system --gid avmatrix --home-dir /data/avmatrix avmatrix \
+    && chown -R avmatrix:avmatrix /data/avmatrix /workspace
 
-# Pre-create the data directory and hand it to the unprivileged `node` user
-# so the bind-mounted volume is writable without root.
-RUN mkdir -p /data/avmatrix && chown -R node:node /data
+USER avmatrix
+WORKDIR /workspace
 
-COPY --from=builder --chown=node:node /app/avmatrix/dist ./avmatrix/dist
-COPY --from=builder --chown=node:node /app/avmatrix/node_modules ./avmatrix/node_modules
-COPY --from=builder --chown=node:node /app/avmatrix/package.json ./avmatrix/package.json
-COPY --from=builder --chown=node:node /app/avmatrix/vendor ./avmatrix/vendor
+ENV AVMATRIX_HOME=/data/avmatrix \
+    LD_LIBRARY_PATH=/usr/local/lib \
+    PORT=4848
 
-USER node
+COPY --from=builder /out/avmatrix /usr/local/bin/avmatrix
+COPY --from=builder /opt/ladybug-current/liblbug.so* /usr/local/lib/
 
-# The web UI defaults to http://localhost:4747 — keep that contract.
-ENV avmatrix_HOME=/data/avmatrix \
-    NODE_ENV=production \
-    PORT=4747
+EXPOSE 4848
 
-EXPOSE 4747
-
-# Bind to 0.0.0.0 so the server is reachable from the host's mapped port.
-CMD ["node", "avmatrix/dist/cli/index.js", "serve", "--host", "0.0.0.0", "--port", "4747"]
+CMD ["avmatrix", "serve", "--host", "0.0.0.0", "--port", "4848"]

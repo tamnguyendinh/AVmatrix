@@ -1,4 +1,4 @@
-import type { PipelineProgress } from 'avmatrix-shared';
+import type { PipelineProgress } from '@/generated/avmatrix-contracts';
 import { EncouragementLine } from './EncouragementLine';
 import { useAppState } from '../hooks/useAppState.local-runtime';
 

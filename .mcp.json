@@ -2,8 +2,8 @@
   "mcpServers": {
     "avmatrix": {
       "type": "stdio",
-      "command": "node",
-      "args": ["avmatrix/dist/cli/index.js", "mcp"]
+      "command": "avmatrix",
+      "args": ["mcp"]
     }
   }
 }

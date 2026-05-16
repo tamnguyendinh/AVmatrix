@@ -1,0 +1,260 @@
+{
+  "observedAtLocal": "2026-05-08T20:55:00+07:00",
+  "status": "runtime_environment_contract_frozen",
+  "sourceMethod": "source scan of process.env usage under avmatrix/src plus direct source reads for defaults and parsing behavior",
+  "variables": [
+    {
+      "name": "AVMATRIX_HOME",
+      "category": "repo-home-config",
+      "source": "avmatrix/src/storage/repo-manager.ts",
+      "behavior": "Overrides global AVmatrix home directory; default is <os.homedir()>/.avmatrix.",
+      "default": "<home>/.avmatrix"
+    },
+    {
+      "name": "AVMATRIX_NO_GITIGNORE",
+      "category": "repo-scan-ignore",
+      "source": "avmatrix/src/config/ignore-service.ts; avmatrix/src/cli/analyze.ts",
+      "behavior": "Presence/truthiness skips .gitignore parsing but still reads .avmatrixignore.",
+      "default": "unset"
+    },
+    {
+      "name": "NODE_OPTIONS",
+      "category": "analyze-process",
+      "source": "avmatrix/src/cli/analyze.ts",
+      "behavior": "Analyze relaunch path appends the heap flag to existing NODE_OPTIONS; user-facing errors also instruct heap/stack override.",
+      "default": "existing process value or empty"
+    },
+    {
+      "name": "AVMATRIX_VERBOSE",
+      "category": "debug-verbosity",
+      "source": "avmatrix/src/cli/analyze.ts; avmatrix/src/core/ingestion/utils/verbose.ts; avmatrix/src/core/wiki/cursor-client.ts",
+      "behavior": "CLI --verbose sets value to 1. Runtime treats value 1 as verbose for ingestion/wiki diagnostics.",
+      "default": "unset"
+    },
+    {
+      "name": "DEBUG",
+      "category": "debug-verbosity",
+      "source": "avmatrix/src/server/api.ts; avmatrix/src/cli/serve.ts",
+      "behavior": "Truthy value enables additional stack logging for server/serve errors.",
+      "default": "unset"
+    },
+    {
+      "name": "NODE_ENV",
+      "category": "debug-verbosity",
+      "source": "avmatrix/src/core/ingestion/utils/env.ts; avmatrix/src/core/embeddings/embedder.ts; avmatrix/src/core/embeddings/embedding-pipeline.ts",
+      "behavior": "development enables diagnostic logs; production suppresses some development assertions.",
+      "default": "unset"
+    },
+    {
+      "name": "AVMATRIX_DEBUG",
+      "category": "debug-verbosity",
+      "source": "avmatrix/src/core/ingestion/type-env.ts",
+      "behavior": "Truthy value logs max-fixpoint diagnostics during type-env iteration.",
+      "default": "unset"
+    },
+    {
+      "name": "AVMATRIX_MAX_PROCESSES",
+      "category": "process-detection",
+      "source": "avmatrix/src/core/ingestion/pipeline-phases/processes.ts",
+      "behavior": "Positive integer overrides settings.maxExecutionFlows; invalid/unset falls back to repo settings then default cap 700.",
+      "default": "settings.maxExecutionFlows or 700"
+    },
+    {
+      "name": "AVMATRIX_SCOPE_RESOLUTION_WORKERS",
+      "category": "scope-resolution-workers",
+      "source": "avmatrix/src/core/ingestion/scope-reference-resolver.ts",
+      "behavior": "auto/unset enables automatic worker use. 1/true/yes/on/force forces workers. 0/false/no/off or unknown disables workers.",
+      "default": "auto"
+    },
+    {
+      "name": "AVMATRIX_SCOPE_RESOLUTION_WORKER_COUNT",
+      "category": "scope-resolution-workers",
+      "source": "avmatrix/src/core/ingestion/scope-reference-resolver.ts",
+      "behavior": "Positive integer overrides worker count; invalid/unset lets runtime choose.",
+      "default": "undefined"
+    },
+    {
+      "name": "INGESTION_EMIT_SCOPES",
+      "category": "scope-resolution-debug",
+      "source": "avmatrix/src/core/ingestion/emit-references.ts",
+      "behavior": "Truthy values true/1/yes emit lexical scope nodes and scope-tree edges for diagnostics.",
+      "default": "unset"
+    },
+    {
+      "name": "AVMATRIX_SHADOW_MODE",
+      "category": "scope-resolution-rollout",
+      "source": "avmatrix/src/core/ingestion/shadow-harness.ts",
+      "behavior": "Truthy values true/1/yes enable dual-run shadow parity accumulation and optional persistence.",
+      "default": "false"
+    },
+    {
+      "name": "REGISTRY_PRIMARY_<LANG>",
+      "category": "scope-resolution-rollout",
+      "source": "avmatrix/src/core/ingestion/registry-primary-flag.ts",
+      "behavior": "Dynamic per-language flag. Truthy values true/1/yes flip that language to registry-primary call resolution.",
+      "default": "false"
+    },
+    {
+      "name": "AVMATRIX_EMBEDDING_URL",
+      "category": "embeddings-http",
+      "source": "avmatrix/src/core/embeddings/http-client.ts",
+      "behavior": "Together with AVMATRIX_EMBEDDING_MODEL enables OpenAI-compatible HTTP embedding mode; trailing slash trimmed.",
+      "default": "unset"
+    },
+    {
+      "name": "AVMATRIX_EMBEDDING_MODEL",
+      "category": "embeddings-http",
+      "source": "avmatrix/src/core/embeddings/http-client.ts",
+      "behavior": "Model name sent to the HTTP embedding endpoint; required with AVMATRIX_EMBEDDING_URL for HTTP mode.",
+      "default": "unset"
+    },
+    {
+      "name": "AVMATRIX_EMBEDDING_DIMS",
+      "category": "embeddings-http-ladybug",
+      "source": "avmatrix/src/core/embeddings/http-client.ts; avmatrix/src/core/lbug/schema.ts",
+      "behavior": "Positive integer embedding dimension. HTTP mode validates returned vector length. LadybugDB schema defaults to 384 when unset.",
+      "default": "384"
+    },
+    {
+      "name": "AVMATRIX_EMBEDDING_API_KEY",
+      "category": "embeddings-http",
+      "source": "avmatrix/src/core/embeddings/http-client.ts",
+      "behavior": "Bearer token for HTTP embedding endpoint; default literal is unused.",
+      "default": "unused"
+    },
+    {
+      "name": "HF_HOME",
+      "category": "embeddings-local-cache",
+      "source": "avmatrix/src/core/embeddings/embedder.ts; avmatrix/src/mcp/core/embedder.ts",
+      "behavior": "Overrides HuggingFace/transformers cache directory; default falls back to HOME/.cache/huggingface.",
+      "default": "HOME/.cache/huggingface"
+    },
+    {
+      "name": "HOME",
+      "category": "embeddings-local-cache",
+      "source": "avmatrix/src/core/embeddings/embedder.ts; avmatrix/src/mcp/core/embedder.ts",
+      "behavior": "Used only to form the default HuggingFace cache directory when HF_HOME is unset.",
+      "default": "platform home environment"
+    },
+    {
+      "name": "ORT_LOG_LEVEL",
+      "category": "embeddings-onnx",
+      "source": "avmatrix/src/core/embeddings/embedder.ts",
+      "behavior": "If unset, module sets it to 3 before transformers imports ONNX Runtime to suppress native warnings.",
+      "default": "3"
+    },
+    {
+      "name": "CUDA_PATH",
+      "category": "embeddings-onnx-device",
+      "source": "avmatrix/src/core/embeddings/embedder.ts",
+      "behavior": "Linux CUDA fallback probe searches CUDA_PATH for libcublasLt.so.12 when ldconfig is unavailable.",
+      "default": "unset"
+    },
+    {
+      "name": "LD_LIBRARY_PATH",
+      "category": "embeddings-onnx-device",
+      "source": "avmatrix/src/core/embeddings/embedder.ts",
+      "behavior": "Linux CUDA fallback probe searches LD_LIBRARY_PATH for libcublasLt.so.12 when ldconfig is unavailable.",
+      "default": "unset"
+    },
+    {
+      "name": "AVMATRIX_CODEX_EXECUTABLE",
+      "category": "local-session-codex",
+      "source": "avmatrix/src/runtime/session-adapters/codex.ts",
+      "behavior": "Overrides Codex executable. If configured path ends with .js on Windows, Node executes that JS file directly.",
+      "default": "codex.cmd on Windows, codex elsewhere"
+    },
+    {
+      "name": "AVMATRIX_SESSION_EXECUTION_MODE",
+      "category": "local-session-codex",
+      "source": "avmatrix/src/runtime/session-adapters/codex.ts",
+      "behavior": "sandbox/sandboxed maps to sandboxed mode. bypass maps to bypass mode. Default is bypass on Windows and sandboxed elsewhere.",
+      "default": "bypass on Windows, sandboxed elsewhere"
+    },
+    {
+      "name": "ComSpec",
+      "category": "local-session-windows-shell",
+      "source": "avmatrix/src/runtime/session-adapters/codex.ts",
+      "behavior": "Preferred Windows command shell for native Codex launch.",
+      "default": "SystemRoot/windir/System32/cmd.exe fallback"
+    },
+    {
+      "name": "SystemRoot",
+      "category": "local-session-windows-shell",
+      "source": "avmatrix/src/runtime/session-adapters/codex.ts",
+      "behavior": "Used to build cmd.exe fallback path when ComSpec is unset.",
+      "default": "C:\\Windows fallback when both SystemRoot and windir are unset"
+    },
+    {
+      "name": "windir",
+      "category": "local-session-windows-shell",
+      "source": "avmatrix/src/runtime/session-adapters/codex.ts",
+      "behavior": "Secondary Windows root fallback for cmd.exe path.",
+      "default": "C:\\Windows fallback"
+    },
+    {
+      "name": "AVMATRIX_API_KEY",
+      "category": "wiki-llm",
+      "source": "avmatrix/src/core/wiki/llm-client.ts",
+      "behavior": "First-priority env API key for wiki LLM requests, after explicit override.",
+      "default": "unset"
+    },
+    {
+      "name": "OPENAI_API_KEY",
+      "category": "wiki-llm",
+      "source": "avmatrix/src/core/wiki/llm-client.ts",
+      "behavior": "Second-priority env API key fallback for wiki LLM requests.",
+      "default": "unset"
+    },
+    {
+      "name": "AVMATRIX_LLM_BASE_URL",
+      "category": "wiki-llm",
+      "source": "avmatrix/src/core/wiki/llm-client.ts",
+      "behavior": "Env override for OpenAI-compatible chat completions base URL.",
+      "default": "saved config or https://openrouter.ai/api/v1"
+    },
+    {
+      "name": "AVMATRIX_MODEL",
+      "category": "wiki-llm",
+      "source": "avmatrix/src/core/wiki/llm-client.ts",
+      "behavior": "Env override for wiki LLM model.",
+      "default": "saved config or minimax/minimax-m2.5"
+    },
+    {
+      "name": "AVMATRIX_AZURE_API_VERSION",
+      "category": "wiki-llm",
+      "source": "avmatrix/src/core/wiki/llm-client.ts",
+      "behavior": "Azure api-version query parameter fallback for Azure OpenAI endpoints.",
+      "default": "saved config or unset"
+    },
+    {
+      "name": "IMPACT_MAX_CHUNKS",
+      "category": "mcp-impact",
+      "source": "avmatrix/src/mcp/local/local-backend.ts",
+      "behavior": "Integer chunk count for impact result batching; default 10 means max items 1000.",
+      "default": "10"
+    },
+    {
+      "name": "npm_execpath",
+      "category": "server-info",
+      "source": "avmatrix/src/server/api.ts",
+      "behavior": "Used by /api/info to infer npx/runtime install context.",
+      "default": "empty string"
+    },
+    {
+      "name": "npm_config_prefix",
+      "category": "server-info",
+      "source": "avmatrix/src/server/api.ts",
+      "behavior": "Used by /api/info to infer npx/runtime install context.",
+      "default": "unset"
+    }
+  ],
+  "conversionRules": [
+    "Go runtime must preserve each env name exactly unless a later explicit contract migration is recorded.",
+    "Truthiness parsers are contract surface: AVMATRIX_SHADOW_MODE and REGISTRY_PRIMARY_<LANG> accept true/1/yes only.",
+    "HTTP embedding mode is enabled only when both AVMATRIX_EMBEDDING_URL and AVMATRIX_EMBEDDING_MODEL are set.",
+    "Local embedding defaults are model Snowflake/snowflake-arctic-embed-xs, 384 dimensions, and auto device fallback.",
+    "Session execution mode default differs by platform and must remain bypass on Windows, sandboxed elsewhere.",
+    "Secrets are never snapshotted; only variable names, defaults, and parsing rules are frozen."
+  ]
+}

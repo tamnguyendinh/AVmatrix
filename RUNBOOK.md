@@ -174,14 +174,14 @@ avmatrix serve
 Default backend:
 
 ```text
-http://localhost:4747
+http://127.0.0.1:4848
 ```
 
 Health checks:
 
 ```powershell
-Invoke-WebRequest http://localhost:4747/api/info
-Invoke-WebRequest http://localhost:4747/api/repos
+Invoke-WebRequest http://127.0.0.1:4848/api/info
+Invoke-WebRequest http://127.0.0.1:4848/api/repos
 ```
 
 Start the Web UI dev server:
@@ -195,7 +195,7 @@ npm run dev
 Open:
 
 ```text
-http://localhost:5173
+http://127.0.0.1:5228
 ```
 
 Important behavior:
@@ -214,7 +214,7 @@ Important behavior:
 Check backend:
 
 ```powershell
-Invoke-WebRequest http://localhost:4747/api/info
+Invoke-WebRequest http://127.0.0.1:4848/api/info
 ```
 
 If the port is down, restart:
@@ -224,13 +224,13 @@ cd avmatrix
 node dist\cli\index.js serve
 ```
 
-If port `4747` is already in use:
+If port `4848` is already in use:
 
 ```powershell
 avmatrix serve --port 4748
 ```
 
-The default Web UI expects `4747`; use the packaged/default path unless you are deliberately testing another backend URL.
+The default Web UI expects `4848`; use the packaged/default path unless you are deliberately testing another backend URL.
 
 ### Loading graph hangs
 
@@ -243,7 +243,7 @@ avmatrix list
 Check the graph endpoint directly:
 
 ```powershell
-Invoke-WebRequest "http://localhost:4747/api/graph?repo=MyRepo&stream=true"
+Invoke-WebRequest "http://127.0.0.1:4848/api/graph?repo=MyRepo&stream=true"
 ```
 
 If the response contains LadybugDB/WAL errors, stop active runtimes and rebuild the repo index.
@@ -253,7 +253,7 @@ If the response contains LadybugDB/WAL errors, stop active runtimes and rebuild 
 Check the registry response:
 
 ```powershell
-Invoke-WebRequest http://localhost:4747/api/repos
+Invoke-WebRequest http://127.0.0.1:4848/api/repos
 ```
 
 If the repo exists in CLI but not the Web UI, refresh the browser. If needed, restart `avmatrix serve`.
@@ -274,7 +274,7 @@ Artifacts:
 Start-AVmatrix.html
 avmatrix-launcher\AVmatrixLauncher.exe
 avmatrix-launcher\server-bundle\avmatrix-server.exe
-avmatrix-launcher\server-bundle\node.exe
+avmatrix-launcher\server-bundle\avmatrix.exe
 avmatrix-launcher\web-dist\
 ```
 
@@ -342,7 +342,7 @@ If chat is unavailable:
 - verify the local provider CLI is installed
 - verify the provider account is signed in
 - verify the selected repo is indexed
-- check `http://localhost:4747/api/session/status`
+- check `http://127.0.0.1:4848/api/session/status`
 
 AVmatrix does not store provider API keys in the browser and does not route chat through an AVmatrix cloud service.
 
@@ -483,8 +483,8 @@ docker compose --env-file .env up -d
 Default ports:
 
 ```text
-server: http://localhost:4747
-web:    http://localhost:4173
+server: http://127.0.0.1:4848
+web:    http://127.0.0.1:4173
 ```
 
 To analyze host repos inside Docker, set `WORKSPACE_DIR` to a local folder that contains those repos. It is mounted read-only at `/workspace`.

@@ -7,8 +7,8 @@ import { test, expect } from '@playwright/test';
  * The 503 hold-queue test uses route interception to simulate a slow analysis.
  */
 
-const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:4747';
-const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173';
+const BACKEND_URL = process.env.BACKEND_URL ?? 'http://127.0.0.1:4848';
+const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://127.0.0.1:5228';
 
 let firstRepoName: string;
 let repoNames: string[] = [];
@@ -212,6 +212,14 @@ test.describe('Windows path normalization', () => {
         }),
       }),
     );
+    await page.route(/\/api\/graph(\?.*)?$/, (route) => {
+      const url = new URL(route.request().url());
+      expect(url.searchParams.get('repo')).toBe(windowsPath);
+      return route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ nodes: [], relationships: [] }),
+      });
+    });
 
     await page.goto(graphUrl());
 

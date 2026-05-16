@@ -1,0 +1,253 @@
+{
+  "observedAtLocal": "2026-05-08T21:30:00+07:00",
+  "status": "mcp_contract_frozen",
+  "verification": {
+    "runtimeDumpCommand": "node --input-type=module import AVMATRIX_TOOLS/getResourceDefinitions/getResourceTemplates from avmatrix/dist",
+    "runtimeDumpPath": ".tmp/phase1_mcp_runtime_dump.json",
+    "buildPrerequisite": "npm run build had passed before the runtime dump"
+  },
+  "transport": {
+    "stdio": "avmatrix mcp starts the MCP server over CompatibleStdioServerTransport",
+    "http": "ALL /api/mcp uses StreamableHTTP transport with stateful sessions",
+    "httpSessionHeader": "mcp-session-id",
+    "httpSessionTtlMs": 1800000,
+    "httpCleanupIntervalMs": 300000
+  },
+  "tools": [
+    {
+      "name": "list_repos",
+      "required": [],
+      "properties": {},
+      "outputShape": "Array<{name,path,indexedAt,lastCommit,stats?}>"
+    },
+    {
+      "name": "query",
+      "required": ["query"],
+      "properties": {
+        "query": "string",
+        "task_context": "string?",
+        "goal": "string?",
+        "limit": "number default 5",
+        "max_symbols": "number default 10",
+        "include_content": "boolean default false",
+        "repo": "string?"
+      },
+      "outputShape": "{processes,process_symbols,definitions} grouped by execution flow"
+    },
+    {
+      "name": "cypher",
+      "required": ["query"],
+      "properties": { "query": "string", "repo": "string?" },
+      "outputShape": "{markdown,row_count} formatted as a Markdown table"
+    },
+    {
+      "name": "context",
+      "required": [],
+      "properties": {
+        "name": "string?",
+        "uid": "string?",
+        "file_path": "string?",
+        "kind": "string?",
+        "include_content": "boolean default false",
+        "repo": "string?"
+      },
+      "outputShape": "single symbol context or ranked disambiguation candidates"
+    },
+    {
+      "name": "detect_changes",
+      "required": [],
+      "properties": {
+        "scope": "unstaged|staged|all|compare default unstaged",
+        "base_ref": "string?",
+        "repo": "string?"
+      },
+      "outputShape": "{changed_symbols,affected_processes,risk_summary,...}"
+    },
+    {
+      "name": "rename",
+      "required": ["new_name"],
+      "properties": {
+        "symbol_name": "string?",
+        "symbol_uid": "string?",
+        "new_name": "string",
+        "file_path": "string?",
+        "dry_run": "boolean default true",
+        "repo": "string?"
+      },
+      "outputShape": "preview/apply edit plan with confidence tags"
+    },
+    {
+      "name": "impact",
+      "required": ["direction", "target or target_uid"],
+      "properties": {
+        "target": "string?",
+        "target_uid": "string?",
+        "direction": "upstream|downstream default upstream",
+        "file_path": "string?",
+        "kind": "string?",
+        "maxDepth": "number default 3",
+        "relationTypes": "array of allowed relationship types",
+        "includeTests": "boolean default false",
+        "minConfidence": "number default 0",
+        "repo": "string?"
+      },
+      "outputShape": "{risk,summary,affected_processes,affected_modules,byDepth,...}"
+    },
+    {
+      "name": "route_map",
+      "required": [],
+      "properties": { "route": "string?", "repo": "string?" },
+      "outputShape": "route nodes with handlers, middleware wrappers, and consumers"
+    },
+    {
+      "name": "tool_map",
+      "required": [],
+      "properties": { "tool": "string?", "repo": "string?" },
+      "outputShape": "tool nodes with handler files and descriptions"
+    },
+    {
+      "name": "shape_check",
+      "required": [],
+      "properties": { "route": "string?", "repo": "string?" },
+      "outputShape": "API response shape mismatch report"
+    },
+    {
+      "name": "api_impact",
+      "required": [],
+      "properties": { "route": "string?", "file": "string?", "repo": "string?" },
+      "outputShape": "route impact report or {routes,total}"
+    },
+    {
+      "name": "group_list",
+      "required": [],
+      "properties": { "name": "string?" },
+      "outputShape": "all groups or one group detail"
+    },
+    {
+      "name": "group_sync",
+      "required": ["name"],
+      "properties": { "name": "string", "skipEmbeddings": "boolean?", "exactOnly": "boolean?" },
+      "outputShape": "Contract Registry rebuild summary"
+    },
+    {
+      "name": "group_contracts",
+      "required": ["name"],
+      "properties": {
+        "name": "string",
+        "type": "string?",
+        "repo": "string?",
+        "unmatchedOnly": "boolean?"
+      },
+      "outputShape": "contracts and cross-links from contracts.json"
+    },
+    {
+      "name": "group_query",
+      "required": ["name", "query"],
+      "properties": {
+        "name": "string",
+        "query": "string",
+        "subgroup": "string?",
+        "limit": "number default 5"
+      },
+      "outputShape": "merged process results across group repos"
+    },
+    {
+      "name": "group_status",
+      "required": ["name"],
+      "properties": { "name": "string" },
+      "outputShape": "index and contract registry staleness status per group repo"
+    }
+  ],
+  "legacyToolAliases": {
+    "search": "query",
+    "explore": "context",
+    "overview": "overview"
+  },
+  "resources": [
+    {
+      "uri": "avmatrix://repos",
+      "name": "All Indexed Repositories",
+      "mimeType": "text/yaml",
+      "outputShape": "repos list or repos: [] with analyze hint"
+    },
+    {
+      "uri": "avmatrix://setup",
+      "name": "AVmatrix Setup Content",
+      "mimeType": "text/markdown",
+      "outputShape": "AGENTS.md content blocks for indexed repos"
+    }
+  ],
+  "resourceTemplates": [
+    {
+      "uriTemplate": "avmatrix://repo/{name}/context",
+      "name": "Repo Overview",
+      "mimeType": "text/yaml",
+      "outputShape": "project/stats/tools/resources plus optional staleness hint"
+    },
+    {
+      "uriTemplate": "avmatrix://repo/{name}/clusters",
+      "name": "Repo Modules",
+      "mimeType": "text/yaml",
+      "outputShape": "modules list; empty output includes analyze hint"
+    },
+    {
+      "uriTemplate": "avmatrix://repo/{name}/processes",
+      "name": "Repo Processes",
+      "mimeType": "text/yaml",
+      "outputShape": "processes list; empty output includes analyze hint"
+    },
+    {
+      "uriTemplate": "avmatrix://repo/{name}/schema",
+      "name": "Graph Schema",
+      "mimeType": "text/yaml",
+      "outputShape": "Cypher schema reference"
+    },
+    {
+      "uriTemplate": "avmatrix://repo/{name}/cluster/{clusterName}",
+      "name": "Module Detail",
+      "mimeType": "text/yaml",
+      "outputShape": "module detail and members"
+    },
+    {
+      "uriTemplate": "avmatrix://repo/{name}/process/{processName}",
+      "name": "Process Trace",
+      "mimeType": "text/yaml",
+      "outputShape": "process trace steps"
+    }
+  ],
+  "prompts": [
+    {
+      "name": "detect_impact",
+      "arguments": ["scope?", "base_ref?"],
+      "messageContract": "instructs agent to run detect_changes, context, impact, and summarize risk"
+    },
+    {
+      "name": "generate_map",
+      "arguments": ["repo?"],
+      "messageContract": "instructs agent to read context/clusters/processes/resources and write architecture documentation"
+    }
+  ],
+  "staleIndexBehavior": [
+    "LocalBackend init rejects stale legacy KuzuDB indexes with: AVmatrix: \"<repo>\" has a stale KuzuDB index. Run: avmatrix analyze <path>",
+    "No indexed repositories error: No indexed repositories. Run: avmatrix analyze",
+    "Repo context resource includes staleness: \"<hint>\" when checkStaleness reports stale",
+    "Repo context resource always includes re_index: Run `avmatrix analyze` in terminal if data is stale",
+    "FTS unavailable warning tells user to run avmatrix analyze --force to rebuild indexes"
+  ],
+  "callToolEnvelope": {
+    "success": [{ "type": "text", "text": "result text plus next-step hint" }],
+    "error": {
+      "content": [{ "type": "text", "text": "Error: <message>" }],
+      "isError": true
+    },
+    "nextStepHints": {
+      "list_repos": "READ avmatrix://repo/{name}/context",
+      "query": "use context({name})",
+      "context": "use impact({target}) or read processes",
+      "impact": "review d=1 and read processes",
+      "detect_changes": "review affected processes and use context",
+      "rename": "run detect_changes",
+      "cypher": "use context or schema resource"
+    }
+  }
+}

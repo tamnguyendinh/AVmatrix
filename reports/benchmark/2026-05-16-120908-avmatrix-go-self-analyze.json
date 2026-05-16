@@ -1,0 +1,3005 @@
+{
+  "schemaVersion": 3,
+  "generatedAt": "2026-05-16T12:40:05.7992761+07:00",
+  "target": "Compare avmatrix-go and E:\\avmatrix-main on Go-heavy and TypeScript-heavy repos",
+  "scenarios": {
+    "avmatrixGoSelf": {
+      "id": "avmatrix-go-self",
+      "repoPath": "E:\\AVmatrix-GO",
+      "profile": "Go-heavy / Go runtime home repo",
+      "notes": [
+        "avmatrix-main was run against E:\\AVmatrix-GO, not against E:\\avmatrix-main.",
+        "avmatrix-main reports Go language scopeResolutionReferenceSites=0 for this repo, so Go resolution counters are not semantically equivalent."
+      ],
+      "summary": {
+        "avmatrixGo": {
+          "engine": "avmatrix-go",
+          "command": ".\\avmatrix-launcher\\server-bundle\\avmatrix.exe analyze E:\\AVmatrix-GO --force --skip-agents-md --no-stats --benchmark-json reports\\benchmark\\2026-05-16-120908-avmatrix-go-self-analyze.json --benchmark-label 2026-05-16-120908-avmatrix-go-self-analyze",
+          "totalWallMs": 13588.1,
+          "graphNodes": 19984,
+          "graphRelationships": 47622,
+          "filesScanned": 676,
+          "filesParsed": 520,
+          "unsupportedFiles": 156,
+          "failedFiles": 0,
+          "parseMs": 5586.7,
+          "resolutionMs": 1057.8,
+          "dbLoadMs": 4902.5,
+          "resolvedCalls": 12792,
+          "resolvedReferences": 26541,
+          "unresolvedReferences": 49842,
+          "resolvedAccesses": 4959,
+          "resolvedTypeReferences": 8790,
+          "communities": 899,
+          "processes": 635,
+          "maxObservedSystemMemoryMb": 309.2
+        },
+        "avmatrixMain": {
+          "engine": "avmatrix-main",
+          "enginePath": "E:\\avmatrix-main",
+          "command": "node E:\\avmatrix-main\\avmatrix\\dist\\cli\\index.js analyze E:\\AVmatrix-GO --force --skip-agents-md --no-stats --benchmark-json reports\\benchmark\\2026-05-16-120908-avmatrix-main-self-analyze.json --benchmark-label 2026-05-16-120908-avmatrix-main-on-avmatrix-go",
+          "totalWallMs": 63215.2,
+          "graphNodes": 17539,
+          "graphRelationships": 39019,
+          "statsEdges": 38474,
+          "filesScanned": 678,
+          "filesParsed": 520,
+          "parseMs": 12003.0,
+          "resolutionMs": 232.0,
+          "dbLoadMs": 17539.5,
+          "resolvedCalls": 585,
+          "resolvedReferences": 1089,
+          "unresolvedReferences": 7321,
+          "resolvedAccesses": 257,
+          "resolvedTypeReferences": 247,
+          "communities": 435,
+          "processes": 562,
+          "languageCoverage": {
+            "go": {
+              "parseableFiles": 406,
+              "scopeExtractionAstReusedFiles": 0,
+              "scopeExtractionCompatibilityFiles": 0,
+              "scopeExtractionNoHookFiles": 406,
+              "scopeExtractionFailedFiles": 0,
+              "astReusedScopeCoveragePercent": 0,
+              "compatibilityOrUnavailableScopePercent": 100,
+              "scopeResolutionReferenceSites": 0,
+              "scopeResolutionResolvedReferences": 0,
+              "scopeResolutionUnresolvedReferences": 0
+            },
+            "javascript": {
+              "parseableFiles": 1,
+              "scopeExtractionAstReusedFiles": 1,
+              "scopeExtractionCompatibilityFiles": 0,
+              "scopeExtractionNoHookFiles": 0,
+              "scopeExtractionFailedFiles": 0,
+              "scopeParsedFiles": 1,
+              "scopeReferenceSites": 0,
+              "astReusedScopeCoveragePercent": 100,
+              "compatibilityOrUnavailableScopePercent": 0,
+              "scopeResolutionReferenceSites": 0,
+              "scopeResolutionResolvedReferences": 0,
+              "scopeResolutionUnresolvedReferences": 0
+            },
+            "typescript": {
+              "parseableFiles": 113,
+              "scopeExtractionAstReusedFiles": 113,
+              "scopeExtractionCompatibilityFiles": 0,
+              "scopeExtractionNoHookFiles": 0,
+              "scopeExtractionFailedFiles": 0,
+              "scopeParsedFiles": 113,
+              "scopeReferenceSites": 8410,
+              "astReusedScopeCoveragePercent": 100,
+              "compatibilityOrUnavailableScopePercent": 0,
+              "scopeResolutionReferenceSites": 8410,
+              "scopeResolutionResolvedReferences": 1089,
+              "scopeResolutionUnresolvedReferences": 7321
+            }
+          }
+        },
+        "deltas": {
+          "totalWallMainVsGoRatio": 4.65,
+          "avmatrixGoSpeedupVsMain": 4.65,
+          "graphNodesDeltaGoMinusMain": 2445,
+          "graphNodesDeltaGoMinusMainPercent": 13.94,
+          "graphRelationshipsDeltaGoMinusMain": 8603,
+          "graphRelationshipsDeltaGoMinusMainPercent": 22.05,
+          "filesScannedDeltaGoMinusMain": -2,
+          "filesParsedDeltaGoMinusMain": 0,
+          "parseMainVsGoRatio": 2.15,
+          "dbLoadMainVsGoRatio": 3.58,
+          "resolvedCallsDeltaGoMinusMain": 12207,
+          "resolvedReferencesDeltaGoMinusMain": 25452,
+          "resolvedAccessesDeltaGoMinusMain": 4702,
+          "resolvedTypeReferencesDeltaGoMinusMain": 8543
+        }
+      },
+      "runs": {
+        "avmatrixGo": {
+          "label": "2026-05-16-120908-avmatrix-go-self-analyze",
+          "totalDuration": 13588055400,
+          "phases": [
+            {
+              "name": "scan",
+              "duration": 81736300
+            },
+            {
+              "name": "structure",
+              "duration": 1627500
+            },
+            {
+              "name": "documents",
+              "duration": 14917000
+            },
+            {
+              "name": "cobol",
+              "duration": 0
+            },
+            {
+              "name": "parse",
+              "duration": 5586698200
+            },
+            {
+              "name": "routes",
+              "duration": 162423700
+            },
+            {
+              "name": "tools",
+              "duration": 28822500
+            },
+            {
+              "name": "orm",
+              "duration": 10047600
+            },
+            {
+              "name": "cross_file_binding",
+              "duration": 217936700
+            },
+            {
+              "name": "resolution",
+              "duration": 1057765000
+            },
+            {
+              "name": "mro",
+              "duration": 0
+            },
+            {
+              "name": "communities",
+              "duration": 30441500
+            },
+            {
+              "name": "processes",
+              "duration": 90959400
+            },
+            {
+              "name": "db_load",
+              "duration": 4902472400
+            }
+          ],
+          "scanner": {
+            "visited": 700,
+            "included": 676,
+            "skippedIgnored": 54,
+            "skippedLarge": 0,
+            "skippedErrored": 0
+          },
+          "structure": {
+            "fileNodesSeen": 676,
+            "folderNodesAdded": 110,
+            "containsEmitted": 1555
+          },
+          "documents": {
+            "markdownFiles": 61,
+            "sections": 920,
+            "links": 24,
+            "metadataFileNodes": 61
+          },
+          "cobol": {},
+          "routes": {
+            "filesScanned": 114
+          },
+          "tools": {
+            "filesScanned": 74
+          },
+          "orm": {
+            "filesScanned": 74
+          },
+          "crossFileBinding": {
+            "DefinitionsIndexed": 23763,
+            "ImportsResolved": 3752,
+            "ImportUsesEmitted": 0,
+            "ResolvedReferences": 0,
+            "UnresolvedReferences": 0,
+            "ResolvedCalls": 0,
+            "ResolvedAccesses": 0,
+            "ResolvedTypeReferences": 0,
+            "ResolvedInheritance": 0,
+            "DuplicateEdgesMerged": 0,
+            "MethodOverridesEmitted": 0,
+            "MethodImplementsEmitted": 0,
+            "FinalizedImportsEmitted": 0,
+            "CrossFileFilesReprocessed": 0,
+            "CrossFileSkipped": true,
+            "CrossFileSkipReason": "covered-by-scopeir-single-pass-resolution",
+            "BindingAccumulatorFiles": 89,
+            "BindingAccumulatorEntries": 400,
+            "BindingAccumulatorFinalized": true,
+            "BindingAccumulatorDisposed": false,
+            "GraphNodesEmitted": 0,
+            "GraphRelationshipsEmitted": 0
+          },
+          "mro": {},
+          "parser": {
+            "total": 520,
+            "succeeded": 520,
+            "failed": 0,
+            "unsupported": 0,
+            "timedOut": 0,
+            "createdParsers": 4,
+            "totalBytes": 3336814,
+            "totalDuration": 2753963900
+          },
+          "resolution": {
+            "DefinitionsIndexed": 23763,
+            "ImportsResolved": 3752,
+            "ImportUsesEmitted": 872,
+            "ResolvedReferences": 26541,
+            "UnresolvedReferences": 49842,
+            "ResolvedCalls": 12792,
+            "ResolvedAccesses": 4959,
+            "ResolvedTypeReferences": 8790,
+            "ResolvedInheritance": 0,
+            "DuplicateEdgesMerged": 18679,
+            "MethodOverridesEmitted": 0,
+            "MethodImplementsEmitted": 0,
+            "FinalizedImportsEmitted": 3752,
+            "CrossFileFilesReprocessed": 0,
+            "CrossFileSkipped": true,
+            "CrossFileSkipReason": "covered-by-scopeir-single-pass-resolution",
+            "BindingAccumulatorFiles": 89,
+            "BindingAccumulatorEntries": 400,
+            "BindingAccumulatorFinalized": true,
+            "BindingAccumulatorDisposed": true,
+            "GraphNodesEmitted": 18450,
+            "GraphRelationshipsEmitted": 40943
+          },
+          "communities": {
+            "communitiesEmitted": 899,
+            "membershipsEmitted": 3743,
+            "nodesConsidered": 3743,
+            "edgesConsidered": 6288,
+            "modularity": 0.640489310994242
+          },
+          "processes": {
+            "processesEmitted": 635,
+            "stepsEmitted": 2301,
+            "entryPointsFound": 200,
+            "crossCommunity": 466,
+            "averageStepCount": 3.6236220472440945,
+            "callsEdgesConsidered": 8171
+          },
+          "dbLoad": {
+            "nodeCopyCount": 16,
+            "relationshipCopyCount": 71,
+            "fallbackInsertCount": 0,
+            "fallbackInsertFailures": 0,
+            "skippedRelationships": 0,
+            "nodeRows": 19984,
+            "relationshipRows": 47622
+          },
+          "embeddings": {},
+          "files": {
+            "scanned": 676,
+            "parsed": 520,
+            "unsupported": 156,
+            "failed": 0
+          },
+          "memory": {
+            "startAllocBytes": 1168504,
+            "endAllocBytes": 41142456,
+            "maxObservedSys": 324192504
+          }
+        },
+        "avmatrixMain": {
+          "schemaVersion": 1,
+          "createdAt": "2026-05-16T05:26:45.338Z",
+          "label": "2026-05-16-120908-avmatrix-main-on-avmatrix-go",
+          "repoName": "AVmatrix-GO",
+          "repoPath": "E:\\AVmatrix-GO",
+          "environment": {
+            "avmatrixVersion": "1.2.1",
+            "nodeVersion": "v24.15.0",
+            "platform": "win32",
+            "arch": "x64",
+            "repoGitUnavailable": false,
+            "repoGitCommit": "c233131e594d120d01a271faea295252b9a8e247",
+            "repoGitDirty": true
+          },
+          "stats": {
+            "files": 678,
+            "nodes": 17539,
+            "edges": 38474,
+            "communities": 435,
+            "processes": 562,
+            "embeddings": 0
+          },
+          "graph": {
+            "nodeCount": 17539,
+            "relationshipCount": 39019,
+            "byNodeLabel": {
+              "Class": 4,
+              "CodeElement": 8,
+              "Community": 407,
+              "Const": 1610,
+              "File": 678,
+              "Folder": 110,
+              "Function": 3262,
+              "Interface": 98,
+              "Method": 803,
+              "Process": 562,
+              "Property": 2434,
+              "Section": 655,
+              "Struct": 483,
+              "Variable": 6425
+            },
+            "byRelationshipType": {
+              "ACCESSES": 866,
+              "CALLS": 8460,
+              "CONTAINS": 1412,
+              "DEFINES": 15119,
+              "EXTENDS": 2,
+              "HAS_METHOD": 797,
+              "HAS_PROPERTY": 2232,
+              "IMPORTS": 3838,
+              "MEMBER_OF": 3693,
+              "QUERIES": 10,
+              "STEP_IN_PROCESS": 2236,
+              "USES": 354
+            },
+            "nodeDigest": "ee0723800fdd381c45de9e83eab8bde822f4d0ae3575205fcf32a7a3d9ae0077",
+            "relationshipDigest": "153c537abf5efd50b788eea83589a001a930c2907aebeb3ce0a3aaea9e061414",
+            "totalFileCount": 678,
+            "communityCount": 435,
+            "processCount": 562,
+            "usedWorkerPool": true,
+            "crossFileReprocessedFiles": 277
+          },
+          "performance": {
+            "totalWallMs": 63215.2,
+            "buckets": {
+              "scan": 97,
+              "structure": 5,
+              "markdown": 20,
+              "cobol": 2,
+              "parse": 12003,
+              "routes": 2,
+              "tools": 1,
+              "orm": 0,
+              "crossFile": 17351,
+              "resolution": 232,
+              "mro": 4,
+              "communities": 247,
+              "processes": 204,
+              "lbugLoad": 17539.5,
+              "fts": 12839.3,
+              "metadata": 106.1,
+              "aiContext": 15
+            },
+            "pipelinePhaseMs": {
+              "scan": 97,
+              "structure": 5,
+              "markdown": 20,
+              "cobol": 2,
+              "parse": 12003,
+              "routes": 2,
+              "tools": 1,
+              "orm": 0,
+              "crossFile": 17351,
+              "resolution": 232,
+              "mro": 4,
+              "communities": 247,
+              "processes": 204
+            },
+            "ftsIndexMs": {
+              "File": 3902.3,
+              "Function": 3089.7,
+              "Class": 1758.6,
+              "Method": 2221.2,
+              "Interface": 1867.5
+            },
+            "counters": {
+              "totalFiles": 678,
+              "parseableFiles": 520,
+              "totalParseableMB": 3.2,
+              "workerCount": 7,
+              "parseChunkCount": 1,
+              "parserUnavailableFiles": 0,
+              "scopeParsedFiles": 114,
+              "scopeCount": 1603,
+              "scopeLocalDefs": 2156,
+              "scopeParsedImports": 936,
+              "scopeReferenceSites": 8410,
+              "scopeExtractionAstReusedFiles": 114,
+              "scopeExtractionCompatibilityFiles": 0,
+              "scopeExtractionNoHookFiles": 406,
+              "scopeExtractionFailedFiles": 0,
+              "scopeFinalizedFiles": 114,
+              "scopeFinalizeTotalImports": 936,
+              "scopeFinalizeLinkedImports": 294,
+              "scopeFinalizeUnresolvedImports": 642,
+              "scopeResolutionReferenceSites": 8410,
+              "scopeResolutionChunkSize": 1000,
+              "scopeResolutionChunks": 9,
+              "scopeResolutionMaxChunkReferenceSites": 1000,
+              "scopeResolutionReadonlyIndexBytes": 1434199,
+              "scopeResolutionUsedWorkers": 0,
+              "scopeResolutionWorkerCount": 0,
+              "scopeResolutionReferenceIndexSourceScopes": 478,
+              "scopeResolutionReferenceIndexTargetDefs": 363,
+              "scopeResolutionResolvedReferences": 1089,
+              "scopeResolutionUnresolvedReferences": 7321,
+              "scopeResolutionResolvedCalls": 585,
+              "scopeResolutionResolvedAccesses": 257,
+              "scopeResolutionResolvedTypeReferences": 247,
+              "scopeResolutionResolvedInheritance": 0,
+              "scopeResolutionResolvedImportUses": 0,
+              "scopeResolutionEdgesEmitted": 264,
+              "scopeResolutionDuplicateEdgesSkipped": 250,
+              "scopeResolutionFinalizedImportsEmitted": 0,
+              "scopeResolutionDuplicateImportsSkipped": 293,
+              "scopeResolutionFinalizedImportUsesEmitted": 237,
+              "scopeResolutionDuplicateImportUsesSkipped": 0,
+              "scopeResolutionEdgesSkippedNoCaller": 304,
+              "scopeResolutionEdgesSkippedMissingTarget": 271,
+              "languageCoverageByLanguage": {
+                "go": {
+                  "parseableFiles": 406,
+                  "scopeExtractionAstReusedFiles": 0,
+                  "scopeExtractionCompatibilityFiles": 0,
+                  "scopeExtractionNoHookFiles": 406,
+                  "scopeExtractionFailedFiles": 0,
+                  "astReusedScopeCoveragePercent": 0,
+                  "compatibilityOrUnavailableScopePercent": 100,
+                  "scopeResolutionReferenceSites": 0,
+                  "scopeResolutionResolvedReferences": 0,
+                  "scopeResolutionUnresolvedReferences": 0
+                },
+                "javascript": {
+                  "parseableFiles": 1,
+                  "scopeExtractionAstReusedFiles": 1,
+                  "scopeExtractionCompatibilityFiles": 0,
+                  "scopeExtractionNoHookFiles": 0,
+                  "scopeExtractionFailedFiles": 0,
+                  "scopeParsedFiles": 1,
+                  "scopeReferenceSites": 0,
+                  "astReusedScopeCoveragePercent": 100,
+                  "compatibilityOrUnavailableScopePercent": 0,
+                  "scopeResolutionReferenceSites": 0,
+                  "scopeResolutionResolvedReferences": 0,
+                  "scopeResolutionUnresolvedReferences": 0
+                },
+                "typescript": {
+                  "parseableFiles": 113,
+                  "scopeExtractionAstReusedFiles": 113,
+                  "scopeExtractionCompatibilityFiles": 0,
+                  "scopeExtractionNoHookFiles": 0,
+                  "scopeExtractionFailedFiles": 0,
+                  "scopeParsedFiles": 113,
+                  "scopeReferenceSites": 8410,
+                  "astReusedScopeCoveragePercent": 100,
+                  "compatibilityOrUnavailableScopePercent": 0,
+                  "scopeResolutionReferenceSites": 8410,
+                  "scopeResolutionResolvedReferences": 1089,
+                  "scopeResolutionUnresolvedReferences": 7321
+                }
+              },
+              "nodeCount": 17539,
+              "edgeCount": 38474,
+              "usedWorkerPool": true,
+              "crossFileReprocessedFiles": 277,
+              "csvNodeRows": 17539,
+              "csvRelationshipRows": 39019,
+              "ladybugCopyCount": 58,
+              "ftsIndexCount": 5
+            },
+            "bottlenecks": [
+              {
+                "bucket": "lbugLoad",
+                "durationMs": 17539.5,
+                "percentOfTotal": 27.7
+              },
+              {
+                "bucket": "crossFile",
+                "durationMs": 17351,
+                "percentOfTotal": 27.4
+              },
+              {
+                "bucket": "fts",
+                "durationMs": 12839.3,
+                "percentOfTotal": 20.3
+              },
+              {
+                "bucket": "parse",
+                "durationMs": 12003,
+                "percentOfTotal": 19
+              },
+              {
+                "bucket": "communities",
+                "durationMs": 247,
+                "percentOfTotal": 0.4
+              },
+              {
+                "bucket": "resolution",
+                "durationMs": 232,
+                "percentOfTotal": 0.4
+              },
+              {
+                "bucket": "processes",
+                "durationMs": 204,
+                "percentOfTotal": 0.3
+              },
+              {
+                "bucket": "metadata",
+                "durationMs": 106.1,
+                "percentOfTotal": 0.2
+              },
+              {
+                "bucket": "scan",
+                "durationMs": 97,
+                "percentOfTotal": 0.2
+              },
+              {
+                "bucket": "markdown",
+                "durationMs": 20,
+                "percentOfTotal": 0
+              },
+              {
+                "bucket": "aiContext",
+                "durationMs": 15,
+                "percentOfTotal": 0
+              },
+              {
+                "bucket": "structure",
+                "durationMs": 5,
+                "percentOfTotal": 0
+              },
+              {
+                "bucket": "mro",
+                "durationMs": 4,
+                "percentOfTotal": 0
+              },
+              {
+                "bucket": "cobol",
+                "durationMs": 2,
+                "percentOfTotal": 0
+              },
+              {
+                "bucket": "routes",
+                "durationMs": 2,
+                "percentOfTotal": 0
+              },
+              {
+                "bucket": "tools",
+                "durationMs": 1,
+                "percentOfTotal": 0
+              }
+            ],
+            "overheadMs": 2547.3,
+            "lbugLoad": {
+              "timings": {
+                "csvGenerationMs": 1219.1,
+                "csvContentCacheHitMs": 0.2,
+                "csvContentReadMs": 182.8,
+                "csvContentExtractMs": 143.8,
+                "csvRowBuildMs": 20.5,
+                "csvWriterFlushMs": 169.7,
+                "nodeCopyMs": 7649.9,
+                "relationshipSplitMs": 325.3,
+                "relationshipCopyMs": 8257.6,
+                "fallbackRelationshipInsertMs": 68.5,
+                "cleanupMs": 8.6
+              },
+              "counters": {
+                "csvNodeRows": 17539,
+                "csvRelationshipRows": 39019,
+                "ladybugCopyCount": 58,
+                "nodeCopyCount": 14,
+                "relationshipCopyCount": 44,
+                "insertedRelationships": 39019,
+                "skippedRelationships": 0,
+                "csvRowsByTable": {
+                  "File": 678,
+                  "Folder": 110,
+                  "Function": 3262,
+                  "Class": 4,
+                  "Interface": 98,
+                  "Method": 803,
+                  "CodeElement": 8,
+                  "Community": 407,
+                  "Process": 562,
+                  "Section": 655,
+                  "Struct": 483,
+                  "Const": 1610,
+                  "Variable": 6425,
+                  "Property": 2434,
+                  "Relationship": 39019
+                },
+                "csvBytesByTable": {
+                  "File": 3757575,
+                  "Folder": 7170,
+                  "Function": 3021589,
+                  "Class": 2287,
+                  "Interface": 43267,
+                  "Method": 585126,
+                  "CodeElement": 773,
+                  "Community": 25248,
+                  "Process": 140110,
+                  "Section": 1249011,
+                  "Struct": 171071,
+                  "Const": 964547,
+                  "Variable": 2116295,
+                  "Property": 644204,
+                  "Relationship": 5592587
+                }
+              },
+              "nodeCopyByTableMs": {
+                "File": 2416.2,
+                "Folder": 480.7,
+                "Function": 640.4,
+                "Class": 258.3,
+                "Interface": 292,
+                "Method": 359.2,
+                "CodeElement": 302.4,
+                "Community": 363.5,
+                "Process": 381.5,
+                "Section": 411.1,
+                "Struct": 346.5,
+                "Const": 521.7,
+                "Variable": 475.2,
+                "Property": 389.7
+              }
+            },
+            "parse": {
+              "timings": {
+                "readContentsMs": 133.9,
+                "workerParseMs": 11153.5,
+                "importResolveMs": 147,
+                "wildcardSynthesisMs": 14.9,
+                "routeResolveMs": 0.3,
+                "heritageResolveMs": 11.8,
+                "callResolveMs": 238.9,
+                "assignmentResolveMs": 35.9,
+                "exportedTypeMapEnrichMs": 1.3,
+                "scopeFinalizeMs": 53.9
+              },
+              "counters": {
+                "workerCount": 7,
+                "scopeExtractionAstReusedFiles": 114,
+                "scopeExtractionCompatibilityFiles": 0,
+                "scopeExtractionNoHookFiles": 406,
+                "scopeExtractionFailedFiles": 0,
+                "scopeFinalizedFiles": 114,
+                "scopeFinalizeTotalImports": 936,
+                "scopeFinalizeLinkedImports": 294,
+                "scopeFinalizeUnresolvedImports": 642,
+                "parseableFiles": 520,
+                "totalParseableMB": 3.2,
+                "parseChunkCount": 1,
+                "parserUnavailableFiles": 0,
+                "scopeParsedFiles": 114,
+                "scopeCount": 1603,
+                "scopeLocalDefs": 2156,
+                "scopeParsedImports": 936,
+                "scopeReferenceSites": 8410,
+                "languageCoverageByLanguage": {
+                  "go": {
+                    "parseableFiles": 406,
+                    "scopeExtractionAstReusedFiles": 0,
+                    "scopeExtractionCompatibilityFiles": 0,
+                    "scopeExtractionNoHookFiles": 406,
+                    "scopeExtractionFailedFiles": 0,
+                    "astReusedScopeCoveragePercent": 0,
+                    "compatibilityOrUnavailableScopePercent": 100
+                  },
+                  "javascript": {
+                    "parseableFiles": 1,
+                    "scopeExtractionAstReusedFiles": 1,
+                    "scopeExtractionCompatibilityFiles": 0,
+                    "scopeExtractionNoHookFiles": 0,
+                    "scopeExtractionFailedFiles": 0,
+                    "scopeParsedFiles": 1,
+                    "scopeReferenceSites": 0,
+                    "astReusedScopeCoveragePercent": 100,
+                    "compatibilityOrUnavailableScopePercent": 0
+                  },
+                  "typescript": {
+                    "parseableFiles": 113,
+                    "scopeExtractionAstReusedFiles": 113,
+                    "scopeExtractionCompatibilityFiles": 0,
+                    "scopeExtractionNoHookFiles": 0,
+                    "scopeExtractionFailedFiles": 0,
+                    "scopeParsedFiles": 113,
+                    "scopeReferenceSites": 8410,
+                    "astReusedScopeCoveragePercent": 100,
+                    "compatibilityOrUnavailableScopePercent": 0
+                  }
+                }
+              }
+            },
+            "crossFile": {
+              "timings": {
+                "topologicalSortMs": 0.9,
+                "candidateSelectionMs": 4.3,
+                "importedReturnMapsMs": 17.2,
+                "readContentsMs": 28.5,
+                "processCallsParserParseMs": 862.8,
+                "processCallsQueryCompileMs": 156.9,
+                "processCallsQueryExecuteMs": 621.6,
+                "processCallsQueryMatchesMs": 789.8,
+                "processCallsTypeEnvConstructorBindingScanMs": 32.8,
+                "processCallsTypeEnvWalkMs": 2233.5,
+                "processCallsTypeEnvExtractTypeBindingMs": 506.8,
+                "processCallsTypeEnvPendingAssignmentMs": 14.7,
+                "processCallsTypeEnvFixpointMs": 30.7,
+                "processCallsTypeEnvForLoopReplayMs": 52.4,
+                "processCallsBuildTypeEnvMs": 11440,
+                "processCallsEdgeEmissionMs": 0.1,
+                "processCallsResolutionTraversalMs": 3898,
+                "processCallsMs": 17273.1,
+                "processCallsTypeEnvPatternBindingMs": 3.4,
+                "processCallsTypeEnvSeedImportedBindingsMs": 0.1,
+                "totalMs": 17349.9
+              },
+              "counters": {
+                "importLevels": 7,
+                "importCycleFiles": 32,
+                "filesWithGaps": 151,
+                "candidateFiles": 277,
+                "filesReprocessed": 277
+              }
+            },
+            "resolution": {
+              "timings": {
+                "referenceResolveMs": 96.7,
+                "readonlyIndexInitMs": 10.4,
+                "referenceWorkerResolveMs": 83.2,
+                "referenceMergeMs": 0.1,
+                "referenceIndexBuildMs": 1.2,
+                "graphEmitMs": 131.8
+              },
+              "counters": {
+                "scopeResolutionReferenceSites": 8410,
+                "scopeResolutionChunkSize": 1000,
+                "scopeResolutionChunks": 9,
+                "scopeResolutionMaxChunkReferenceSites": 1000,
+                "scopeResolutionReadonlyIndexBytes": 1434199,
+                "scopeResolutionUsedWorkers": 0,
+                "scopeResolutionWorkerCount": 0,
+                "scopeResolutionReferenceIndexSourceScopes": 478,
+                "scopeResolutionReferenceIndexTargetDefs": 363,
+                "scopeResolutionResolvedReferences": 1089,
+                "scopeResolutionUnresolvedReferences": 7321,
+                "scopeResolutionResolvedCalls": 585,
+                "scopeResolutionResolvedAccesses": 257,
+                "scopeResolutionResolvedTypeReferences": 247,
+                "scopeResolutionResolvedInheritance": 0,
+                "scopeResolutionResolvedImportUses": 0,
+                "scopeResolutionEdgesEmitted": 264,
+                "scopeResolutionDuplicateEdgesSkipped": 250,
+                "scopeResolutionFinalizedImportsEmitted": 0,
+                "scopeResolutionDuplicateImportsSkipped": 293,
+                "scopeResolutionFinalizedImportUsesEmitted": 237,
+                "scopeResolutionDuplicateImportUsesSkipped": 0,
+                "scopeResolutionEdgesSkippedNoCaller": 304,
+                "scopeResolutionEdgesSkippedMissingTarget": 271,
+                "languageCoverageByLanguage": {
+                  "go": {
+                    "parseableFiles": 406,
+                    "scopeExtractionAstReusedFiles": 0,
+                    "scopeExtractionCompatibilityFiles": 0,
+                    "scopeExtractionNoHookFiles": 406,
+                    "scopeExtractionFailedFiles": 0,
+                    "astReusedScopeCoveragePercent": 0,
+                    "compatibilityOrUnavailableScopePercent": 100,
+                    "scopeResolutionReferenceSites": 0,
+                    "scopeResolutionResolvedReferences": 0,
+                    "scopeResolutionUnresolvedReferences": 0
+                  },
+                  "javascript": {
+                    "parseableFiles": 1,
+                    "scopeExtractionAstReusedFiles": 1,
+                    "scopeExtractionCompatibilityFiles": 0,
+                    "scopeExtractionNoHookFiles": 0,
+                    "scopeExtractionFailedFiles": 0,
+                    "scopeParsedFiles": 1,
+                    "scopeReferenceSites": 0,
+                    "astReusedScopeCoveragePercent": 100,
+                    "compatibilityOrUnavailableScopePercent": 0,
+                    "scopeResolutionReferenceSites": 0,
+                    "scopeResolutionResolvedReferences": 0,
+                    "scopeResolutionUnresolvedReferences": 0
+                  },
+                  "typescript": {
+                    "parseableFiles": 113,
+                    "scopeExtractionAstReusedFiles": 113,
+                    "scopeExtractionCompatibilityFiles": 0,
+                    "scopeExtractionNoHookFiles": 0,
+                    "scopeExtractionFailedFiles": 0,
+                    "scopeParsedFiles": 113,
+                    "scopeReferenceSites": 8410,
+                    "astReusedScopeCoveragePercent": 100,
+                    "compatibilityOrUnavailableScopePercent": 0,
+                    "scopeResolutionReferenceSites": 8410,
+                    "scopeResolutionResolvedReferences": 1089,
+                    "scopeResolutionUnresolvedReferences": 7321
+                  }
+                }
+              }
+            }
+          },
+          "keyMetrics": {
+            "totalWallMs": 63215.2,
+            "phaseMs": {
+              "scan": 97,
+              "structure": 5,
+              "markdown": 20,
+              "cobol": 2,
+              "parse": 12003,
+              "routes": 2,
+              "tools": 1,
+              "orm": 0,
+              "crossFile": 17351,
+              "resolution": 232,
+              "mro": 4,
+              "communities": 247,
+              "processes": 204
+            },
+            "nodeCount": 17539,
+            "relationshipCount": 39019,
+            "nodeCountsByLabel": {
+              "Class": 4,
+              "CodeElement": 8,
+              "Community": 407,
+              "Const": 1610,
+              "File": 678,
+              "Folder": 110,
+              "Function": 3262,
+              "Interface": 98,
+              "Method": 803,
+              "Process": 562,
+              "Property": 2434,
+              "Section": 655,
+              "Struct": 483,
+              "Variable": 6425
+            },
+            "relationshipCountsByType": {
+              "ACCESSES": 866,
+              "CALLS": 8460,
+              "CONTAINS": 1412,
+              "DEFINES": 15119,
+              "EXTENDS": 2,
+              "HAS_METHOD": 797,
+              "HAS_PROPERTY": 2232,
+              "IMPORTS": 3838,
+              "MEMBER_OF": 3693,
+              "QUERIES": 10,
+              "STEP_IN_PROCESS": 2236,
+              "USES": 354
+            },
+            "semanticRelationshipUniqueCountsByType": {
+              "CONTAINS": 1412,
+              "IMPORTS": 3838,
+              "DEFINES": 14918,
+              "HAS_PROPERTY": 2227,
+              "HAS_METHOD": 332,
+              "CALLS": 8420,
+              "ACCESSES": 852,
+              "QUERIES": 9,
+              "USES": 354,
+              "MEMBER_OF": 3665,
+              "STEP_IN_PROCESS": 2122
+            },
+            "semanticRelationshipDuplicateCountsByType": {
+              "CONTAINS": 0,
+              "IMPORTS": 0,
+              "DEFINES": 201,
+              "HAS_PROPERTY": 0,
+              "HAS_METHOD": 0,
+              "CALLS": 36,
+              "ACCESSES": 14,
+              "QUERIES": 1,
+              "USES": 0,
+              "MEMBER_OF": 0,
+              "STEP_IN_PROCESS": 114
+            },
+            "parseMs": 12003,
+            "crossFileMs": 17351,
+            "resolutionMs": 232,
+            "lbugLoadMs": 17539.5,
+            "parseableFiles": 520,
+            "totalParseableMB": 3.2,
+            "workerCount": 7,
+            "parseChunkCount": 1,
+            "scopeParsedFiles": 114,
+            "scopeCount": 1603,
+            "scopeLocalDefs": 2156,
+            "scopeParsedImports": 936,
+            "scopeReferenceSites": 8410,
+            "scopeExtractionAstReusedFiles": 114,
+            "scopeExtractionCompatibilityFiles": 0,
+            "scopeExtractionNoHookFiles": 406,
+            "scopeExtractionFailedFiles": 0,
+            "scopeFinalizedFiles": 114,
+            "scopeFinalizeTotalImports": 936,
+            "scopeFinalizeLinkedImports": 294,
+            "scopeFinalizeUnresolvedImports": 642,
+            "scopeResolutionReferenceSites": 8410,
+            "scopeResolutionChunkSize": 1000,
+            "scopeResolutionChunks": 9,
+            "scopeResolutionMaxChunkReferenceSites": 1000,
+            "scopeResolutionReadonlyIndexBytes": 1434199,
+            "scopeResolutionUsedWorkers": 0,
+            "scopeResolutionWorkerCount": 0,
+            "scopeResolutionReferenceIndexSourceScopes": 478,
+            "scopeResolutionReferenceIndexTargetDefs": 363,
+            "scopeResolutionResolvedReferences": 1089,
+            "scopeResolutionUnresolvedReferences": 7321,
+            "scopeResolutionResolvedCalls": 585,
+            "scopeResolutionResolvedAccesses": 257,
+            "scopeResolutionResolvedTypeReferences": 247,
+            "scopeResolutionResolvedInheritance": 0,
+            "scopeResolutionResolvedImportUses": 0,
+            "scopeResolutionEdgesEmitted": 264,
+            "scopeResolutionDuplicateEdgesSkipped": 250,
+            "scopeResolutionFinalizedImportsEmitted": 0,
+            "scopeResolutionDuplicateImportsSkipped": 293,
+            "scopeResolutionFinalizedImportUsesEmitted": 237,
+            "scopeResolutionDuplicateImportUsesSkipped": 0,
+            "scopeResolutionEdgesSkippedNoCaller": 304,
+            "scopeResolutionEdgesSkippedMissingTarget": 271,
+            "crossFileReprocessedFiles": 277,
+            "crossFileReadContentsMs": 28.5,
+            "crossFileProcessCallsParserParseMs": 862.8,
+            "csvRelationshipRows": 39019,
+            "ladybugCopyCount": 58,
+            "languageCoverageByLanguage": {
+              "go": {
+                "parseableFiles": 406,
+                "scopeExtractionAstReusedFiles": 0,
+                "scopeExtractionCompatibilityFiles": 0,
+                "scopeExtractionNoHookFiles": 406,
+                "scopeExtractionFailedFiles": 0,
+                "astReusedScopeCoveragePercent": 0,
+                "compatibilityOrUnavailableScopePercent": 100,
+                "scopeResolutionReferenceSites": 0,
+                "scopeResolutionResolvedReferences": 0,
+                "scopeResolutionUnresolvedReferences": 0
+              },
+              "javascript": {
+                "parseableFiles": 1,
+                "scopeExtractionAstReusedFiles": 1,
+                "scopeExtractionCompatibilityFiles": 0,
+                "scopeExtractionNoHookFiles": 0,
+                "scopeExtractionFailedFiles": 0,
+                "scopeParsedFiles": 1,
+                "scopeReferenceSites": 0,
+                "astReusedScopeCoveragePercent": 100,
+                "compatibilityOrUnavailableScopePercent": 0,
+                "scopeResolutionReferenceSites": 0,
+                "scopeResolutionResolvedReferences": 0,
+                "scopeResolutionUnresolvedReferences": 0
+              },
+              "typescript": {
+                "parseableFiles": 113,
+                "scopeExtractionAstReusedFiles": 113,
+                "scopeExtractionCompatibilityFiles": 0,
+                "scopeExtractionNoHookFiles": 0,
+                "scopeExtractionFailedFiles": 0,
+                "scopeParsedFiles": 113,
+                "scopeReferenceSites": 8410,
+                "astReusedScopeCoveragePercent": 100,
+                "compatibilityOrUnavailableScopePercent": 0,
+                "scopeResolutionReferenceSites": 8410,
+                "scopeResolutionResolvedReferences": 1089,
+                "scopeResolutionUnresolvedReferences": 7321
+              }
+            }
+          }
+        }
+      }
+    },
+    "websiteTypescriptHeavy": {
+      "id": "website-typescript-heavy",
+      "repoPath": "E:\\Website",
+      "profile": "TypeScript-heavy / Next.js-style application repo",
+      "notes": [
+        "Both engines were run against E:\\Website.",
+        "avmatrix-main reports 100% AST-reused ScopeIR coverage for JavaScript and TypeScript files in this repo, so this scenario is more objective for TS-heavy comparison than the Go-heavy self repo."
+      ],
+      "summary": {
+        "avmatrixGo": {
+          "engine": "avmatrix-go",
+          "command": ".\\avmatrix-launcher\\server-bundle\\avmatrix.exe analyze E:\\Website --force --skip-agents-md --no-stats --benchmark-json reports\\benchmark\\2026-05-16-120908-avmatrix-go-on-website.json --benchmark-label 2026-05-16-120908-avmatrix-go-on-website",
+          "totalWallMs": 20763.6,
+          "graphNodes": 26081,
+          "graphRelationships": 48163,
+          "filesScanned": 1870,
+          "filesParsed": 998,
+          "unsupportedFiles": 872,
+          "failedFiles": 0,
+          "parseMs": 6316.1,
+          "resolutionMs": 487.4,
+          "dbLoadMs": 4057.5,
+          "resolvedCalls": 11303,
+          "resolvedReferences": 20849,
+          "unresolvedReferences": 64274,
+          "resolvedAccesses": 3,
+          "resolvedTypeReferences": 9543,
+          "communities": 587,
+          "processes": 700,
+          "maxObservedSystemMemoryMb": 412.0
+        },
+        "avmatrixMain": {
+          "engine": "avmatrix-main",
+          "enginePath": "E:\\avmatrix-main",
+          "command": "node E:\\avmatrix-main\\avmatrix\\dist\\cli\\index.js analyze E:\\Website --force --skip-agents-md --no-stats --benchmark-json reports\\benchmark\\2026-05-16-120908-avmatrix-main-on-website.json --benchmark-label 2026-05-16-120908-avmatrix-main-on-website",
+          "totalWallMs": 70428.1,
+          "graphNodes": 18607,
+          "graphRelationships": 34055,
+          "statsEdges": 33745,
+          "filesScanned": 1870,
+          "filesParsed": 998,
+          "parseMs": 27611.0,
+          "resolutionMs": 2149.0,
+          "dbLoadMs": 14604.8,
+          "resolvedCalls": 6037,
+          "resolvedReferences": 10232,
+          "unresolvedReferences": 63863,
+          "resolvedAccesses": 755,
+          "resolvedTypeReferences": 3440,
+          "communities": 589,
+          "processes": 700,
+          "languageCoverage": {
+            "javascript": {
+              "parseableFiles": 7,
+              "scopeExtractionAstReusedFiles": 7,
+              "scopeExtractionCompatibilityFiles": 0,
+              "scopeExtractionNoHookFiles": 0,
+              "scopeExtractionFailedFiles": 0,
+              "scopeParsedFiles": 7,
+              "scopeReferenceSites": 523,
+              "astReusedScopeCoveragePercent": 100,
+              "compatibilityOrUnavailableScopePercent": 0,
+              "scopeResolutionReferenceSites": 523,
+              "scopeResolutionResolvedReferences": 81,
+              "scopeResolutionUnresolvedReferences": 442
+            },
+            "typescript": {
+              "parseableFiles": 991,
+              "scopeExtractionAstReusedFiles": 991,
+              "scopeExtractionCompatibilityFiles": 0,
+              "scopeExtractionNoHookFiles": 0,
+              "scopeExtractionFailedFiles": 0,
+              "scopeParsedFiles": 991,
+              "scopeReferenceSites": 73572,
+              "astReusedScopeCoveragePercent": 100,
+              "compatibilityOrUnavailableScopePercent": 0,
+              "scopeResolutionReferenceSites": 73572,
+              "scopeResolutionResolvedReferences": 10151,
+              "scopeResolutionUnresolvedReferences": 63421
+            }
+          }
+        },
+        "deltas": {
+          "totalWallMainVsGoRatio": 3.39,
+          "avmatrixGoSpeedupVsMain": 3.39,
+          "graphNodesDeltaGoMinusMain": 7474,
+          "graphNodesDeltaGoMinusMainPercent": 40.17,
+          "graphRelationshipsDeltaGoMinusMain": 14108,
+          "graphRelationshipsDeltaGoMinusMainPercent": 41.43,
+          "filesScannedDeltaGoMinusMain": 0,
+          "filesParsedDeltaGoMinusMain": 0,
+          "parseMainVsGoRatio": 4.37,
+          "dbLoadMainVsGoRatio": 3.6,
+          "resolvedCallsDeltaGoMinusMain": 5266,
+          "resolvedReferencesDeltaGoMinusMain": 10617,
+          "resolvedAccessesDeltaGoMinusMain": -752,
+          "resolvedTypeReferencesDeltaGoMinusMain": 6103
+        }
+      },
+      "runs": {
+        "avmatrixGo": {
+          "label": "2026-05-16-120908-avmatrix-go-on-website",
+          "totalDuration": 20763563800,
+          "phases": [
+            {
+              "name": "scan",
+              "duration": 6074462100
+            },
+            {
+              "name": "structure",
+              "duration": 5916000
+            },
+            {
+              "name": "documents",
+              "duration": 120821700
+            },
+            {
+              "name": "cobol",
+              "duration": 0
+            },
+            {
+              "name": "parse",
+              "duration": 6316130700
+            },
+            {
+              "name": "routes",
+              "duration": 1327133200
+            },
+            {
+              "name": "tools",
+              "duration": 424789000
+            },
+            {
+              "name": "orm",
+              "duration": 86312600
+            },
+            {
+              "name": "cross_file_binding",
+              "duration": 204396400
+            },
+            {
+              "name": "resolution",
+              "duration": 487395000
+            },
+            {
+              "name": "mro",
+              "duration": 1001500
+            },
+            {
+              "name": "communities",
+              "duration": 23424500
+            },
+            {
+              "name": "processes",
+              "duration": 244637500
+            },
+            {
+              "name": "db_load",
+              "duration": 4057468300
+            }
+          ],
+          "scanner": {
+            "visited": 1968,
+            "included": 1870,
+            "skippedIgnored": 113,
+            "skippedLarge": 0,
+            "skippedErrored": 0
+          },
+          "structure": {
+            "fileNodesSeen": 1870,
+            "folderNodesAdded": 317,
+            "containsEmitted": 5512
+          },
+          "documents": {
+            "markdownFiles": 771,
+            "sections": 8401,
+            "links": 214,
+            "metadataFileNodes": 771
+          },
+          "cobol": {},
+          "routes": {
+            "filesScanned": 998,
+            "routesEmitted": 53,
+            "handlesEmitted": 53,
+            "fetchesEmitted": 75,
+            "duplicates": 1
+          },
+          "tools": {
+            "filesScanned": 998
+          },
+          "orm": {
+            "filesScanned": 998
+          },
+          "crossFileBinding": {
+            "DefinitionsIndexed": 17823,
+            "ImportsResolved": 5749,
+            "ImportUsesEmitted": 0,
+            "ResolvedReferences": 0,
+            "UnresolvedReferences": 0,
+            "ResolvedCalls": 0,
+            "ResolvedAccesses": 0,
+            "ResolvedTypeReferences": 0,
+            "ResolvedInheritance": 0,
+            "DuplicateEdgesMerged": 0,
+            "MethodOverridesEmitted": 0,
+            "MethodImplementsEmitted": 0,
+            "FinalizedImportsEmitted": 0,
+            "CrossFileFilesReprocessed": 0,
+            "CrossFileSkipped": true,
+            "CrossFileSkipReason": "covered-by-scopeir-single-pass-resolution",
+            "BindingAccumulatorFiles": 525,
+            "BindingAccumulatorEntries": 6088,
+            "BindingAccumulatorFinalized": true,
+            "BindingAccumulatorDisposed": false,
+            "GraphNodesEmitted": 0,
+            "GraphRelationshipsEmitted": 0
+          },
+          "mro": {},
+          "parser": {
+            "total": 998,
+            "succeeded": 998,
+            "failed": 0,
+            "unsupported": 0,
+            "timedOut": 0,
+            "createdParsers": 3,
+            "totalBytes": 5840075,
+            "totalDuration": 3061516800
+          },
+          "resolution": {
+            "DefinitionsIndexed": 17823,
+            "ImportsResolved": 5749,
+            "ImportUsesEmitted": 3873,
+            "ResolvedReferences": 20849,
+            "UnresolvedReferences": 64274,
+            "ResolvedCalls": 11303,
+            "ResolvedAccesses": 3,
+            "ResolvedTypeReferences": 9543,
+            "ResolvedInheritance": 0,
+            "DuplicateEdgesMerged": 17731,
+            "MethodOverridesEmitted": 0,
+            "MethodImplementsEmitted": 0,
+            "FinalizedImportsEmitted": 5749,
+            "CrossFileFilesReprocessed": 0,
+            "CrossFileSkipped": true,
+            "CrossFileSkipReason": "covered-by-scopeir-single-pass-resolution",
+            "BindingAccumulatorFiles": 525,
+            "BindingAccumulatorEntries": 6088,
+            "BindingAccumulatorFinalized": true,
+            "BindingAccumulatorDisposed": true,
+            "GraphNodesEmitted": 24794,
+            "GraphRelationshipsEmitted": 41459
+          },
+          "communities": {
+            "communitiesEmitted": 587,
+            "membershipsEmitted": 2275,
+            "nodesConsidered": 2275,
+            "edgesConsidered": 3711,
+            "modularity": 0.5588069393351677
+          },
+          "processes": {
+            "processesEmitted": 700,
+            "stepsEmitted": 3303,
+            "entryPointsFound": 200,
+            "crossCommunity": 678,
+            "averageStepCount": 4.718571428571429,
+            "callsEdgesConsidered": 5567,
+            "entryResourcesLinked": 426
+          },
+          "dbLoad": {
+            "nodeCopyCount": 13,
+            "relationshipCopyCount": 40,
+            "fallbackInsertCount": 0,
+            "fallbackInsertFailures": 0,
+            "skippedRelationships": 0,
+            "nodeRows": 26081,
+            "relationshipRows": 48163
+          },
+          "embeddings": {},
+          "files": {
+            "scanned": 1870,
+            "parsed": 998,
+            "unsupported": 872,
+            "failed": 0
+          },
+          "memory": {
+            "startAllocBytes": 1163088,
+            "endAllocBytes": 48414424,
+            "maxObservedSys": 431986936
+          }
+        },
+        "avmatrixMain": {
+          "schemaVersion": 1,
+          "createdAt": "2026-05-16T05:37:28.854Z",
+          "label": "2026-05-16-120908-avmatrix-main-on-website",
+          "repoName": "Website",
+          "repoPath": "E:\\Website",
+          "environment": {
+            "avmatrixVersion": "1.2.1",
+            "nodeVersion": "v24.15.0",
+            "platform": "win32",
+            "arch": "x64",
+            "repoGitUnavailable": false,
+            "repoGitCommit": "d561b7d5f00bcc0396d1e42c9eb7fce7d337718b",
+            "repoGitDirty": false
+          },
+          "stats": {
+            "files": 1870,
+            "nodes": 18607,
+            "edges": 33745,
+            "communities": 589,
+            "processes": 700,
+            "embeddings": 0
+          },
+          "graph": {
+            "nodeCount": 18607,
+            "relationshipCount": 34055,
+            "byNodeLabel": {
+              "Class": 5,
+              "Community": 284,
+              "Const": 4792,
+              "File": 1870,
+              "Folder": 317,
+              "Function": 2647,
+              "Method": 29,
+              "Process": 700,
+              "Property": 3,
+              "Section": 7960
+            },
+            "byRelationshipType": {
+              "ACCESSES": 3,
+              "CALLS": 5061,
+              "CONTAINS": 10122,
+              "DEFINES": 7476,
+              "EXTENDS": 5,
+              "HAS_METHOD": 5,
+              "HAS_PROPERTY": 3,
+              "IMPORTS": 3467,
+              "MEMBER_OF": 2583,
+              "STEP_IN_PROCESS": 3397,
+              "USES": 1933
+            },
+            "nodeDigest": "8564ef4e8f6e0aec50884909a48a7a835e26021ec462a68e34c524a07d6f8707",
+            "relationshipDigest": "f69d799bbee43083b16076e7c8e9a2e4687539f72269d9280f6f0da36b35e1d9",
+            "totalFileCount": 1870,
+            "communityCount": 589,
+            "processCount": 700,
+            "usedWorkerPool": true,
+            "crossFileReprocessedFiles": 0
+          },
+          "performance": {
+            "totalWallMs": 70428.1,
+            "buckets": {
+              "scan": 3154,
+              "structure": 15,
+              "markdown": 5490,
+              "cobol": 2,
+              "parse": 27611,
+              "routes": 3,
+              "tools": 0,
+              "orm": 1,
+              "crossFile": 0,
+              "resolution": 2149,
+              "mro": 4,
+              "communities": 159,
+              "processes": 579,
+              "lbugLoad": 14604.8,
+              "fts": 13644.4,
+              "metadata": 93.4,
+              "aiContext": 35.4
+            },
+            "pipelinePhaseMs": {
+              "scan": 3154,
+              "structure": 15,
+              "markdown": 5490,
+              "cobol": 2,
+              "parse": 27611,
+              "routes": 3,
+              "tools": 0,
+              "orm": 1,
+              "crossFile": 0,
+              "resolution": 2149,
+              "mro": 4,
+              "communities": 159,
+              "processes": 579
+            },
+            "ftsIndexMs": {
+              "File": 5872.6,
+              "Function": 2943.5,
+              "Class": 1709.3,
+              "Method": 1779.6,
+              "Interface": 1339.4
+            },
+            "counters": {
+              "totalFiles": 1870,
+              "parseableFiles": 998,
+              "totalParseableMB": 5.6,
+              "workerCount": 7,
+              "parseChunkCount": 1,
+              "parserUnavailableFiles": 0,
+              "scopeParsedFiles": 998,
+              "scopeCount": 6934,
+              "scopeLocalDefs": 9993,
+              "scopeParsedImports": 7545,
+              "scopeReferenceSites": 74095,
+              "scopeExtractionAstReusedFiles": 998,
+              "scopeExtractionCompatibilityFiles": 0,
+              "scopeExtractionNoHookFiles": 0,
+              "scopeExtractionFailedFiles": 0,
+              "scopeFinalizedFiles": 998,
+              "scopeFinalizeTotalImports": 7545,
+              "scopeFinalizeLinkedImports": 4005,
+              "scopeFinalizeUnresolvedImports": 3540,
+              "scopeResolutionReferenceSites": 74095,
+              "scopeResolutionChunkSize": 1000,
+              "scopeResolutionChunks": 75,
+              "scopeResolutionMaxChunkReferenceSites": 1000,
+              "scopeResolutionReadonlyIndexBytes": 10514940,
+              "scopeResolutionUsedWorkers": 0,
+              "scopeResolutionWorkerCount": 0,
+              "scopeResolutionReferenceIndexSourceScopes": 3364,
+              "scopeResolutionReferenceIndexTargetDefs": 4041,
+              "scopeResolutionResolvedReferences": 10232,
+              "scopeResolutionUnresolvedReferences": 63863,
+              "scopeResolutionResolvedCalls": 6037,
+              "scopeResolutionResolvedAccesses": 755,
+              "scopeResolutionResolvedTypeReferences": 3440,
+              "scopeResolutionResolvedInheritance": 0,
+              "scopeResolutionResolvedImportUses": 0,
+              "scopeResolutionEdgesEmitted": 8,
+              "scopeResolutionDuplicateEdgesSkipped": 3604,
+              "scopeResolutionFinalizedImportsEmitted": 0,
+              "scopeResolutionDuplicateImportsSkipped": 3977,
+              "scopeResolutionFinalizedImportUsesEmitted": 1933,
+              "scopeResolutionDuplicateImportUsesSkipped": 0,
+              "scopeResolutionEdgesSkippedNoCaller": 3932,
+              "scopeResolutionEdgesSkippedMissingTarget": 2688,
+              "languageCoverageByLanguage": {
+                "javascript": {
+                  "parseableFiles": 7,
+                  "scopeExtractionAstReusedFiles": 7,
+                  "scopeExtractionCompatibilityFiles": 0,
+                  "scopeExtractionNoHookFiles": 0,
+                  "scopeExtractionFailedFiles": 0,
+                  "scopeParsedFiles": 7,
+                  "scopeReferenceSites": 523,
+                  "astReusedScopeCoveragePercent": 100,
+                  "compatibilityOrUnavailableScopePercent": 0,
+                  "scopeResolutionReferenceSites": 523,
+                  "scopeResolutionResolvedReferences": 81,
+                  "scopeResolutionUnresolvedReferences": 442
+                },
+                "typescript": {
+                  "parseableFiles": 991,
+                  "scopeExtractionAstReusedFiles": 991,
+                  "scopeExtractionCompatibilityFiles": 0,
+                  "scopeExtractionNoHookFiles": 0,
+                  "scopeExtractionFailedFiles": 0,
+                  "scopeParsedFiles": 991,
+                  "scopeReferenceSites": 73572,
+                  "astReusedScopeCoveragePercent": 100,
+                  "compatibilityOrUnavailableScopePercent": 0,
+                  "scopeResolutionReferenceSites": 73572,
+                  "scopeResolutionResolvedReferences": 10151,
+                  "scopeResolutionUnresolvedReferences": 63421
+                }
+              },
+              "nodeCount": 18607,
+              "edgeCount": 33745,
+              "usedWorkerPool": true,
+              "crossFileReprocessedFiles": 0,
+              "csvNodeRows": 18607,
+              "csvRelationshipRows": 34055,
+              "ladybugCopyCount": 33,
+              "ftsIndexCount": 5
+            },
+            "bottlenecks": [
+              {
+                "bucket": "parse",
+                "durationMs": 27611,
+                "percentOfTotal": 39.2
+              },
+              {
+                "bucket": "lbugLoad",
+                "durationMs": 14604.8,
+                "percentOfTotal": 20.7
+              },
+              {
+                "bucket": "fts",
+                "durationMs": 13644.4,
+                "percentOfTotal": 19.4
+              },
+              {
+                "bucket": "markdown",
+                "durationMs": 5490,
+                "percentOfTotal": 7.8
+              },
+              {
+                "bucket": "scan",
+                "durationMs": 3154,
+                "percentOfTotal": 4.5
+              },
+              {
+                "bucket": "resolution",
+                "durationMs": 2149,
+                "percentOfTotal": 3.1
+              },
+              {
+                "bucket": "processes",
+                "durationMs": 579,
+                "percentOfTotal": 0.8
+              },
+              {
+                "bucket": "communities",
+                "durationMs": 159,
+                "percentOfTotal": 0.2
+              },
+              {
+                "bucket": "metadata",
+                "durationMs": 93.4,
+                "percentOfTotal": 0.1
+              },
+              {
+                "bucket": "aiContext",
+                "durationMs": 35.4,
+                "percentOfTotal": 0.1
+              },
+              {
+                "bucket": "structure",
+                "durationMs": 15,
+                "percentOfTotal": 0
+              },
+              {
+                "bucket": "mro",
+                "durationMs": 4,
+                "percentOfTotal": 0
+              },
+              {
+                "bucket": "routes",
+                "durationMs": 3,
+                "percentOfTotal": 0
+              },
+              {
+                "bucket": "cobol",
+                "durationMs": 2,
+                "percentOfTotal": 0
+              },
+              {
+                "bucket": "orm",
+                "durationMs": 1,
+                "percentOfTotal": 0
+              }
+            ],
+            "overheadMs": 2883.1,
+            "lbugLoad": {
+              "timings": {
+                "csvGenerationMs": 2748.6,
+                "csvContentCacheHitMs": 0.7,
+                "csvContentReadMs": 1444.4,
+                "csvContentExtractMs": 253.5,
+                "csvRowBuildMs": 26.5,
+                "csvWriterFlushMs": 225.6,
+                "nodeCopyMs": 6451.2,
+                "relationshipSplitMs": 373.6,
+                "relationshipCopyMs": 5007.3,
+                "cleanupMs": 20.4
+              },
+              "counters": {
+                "csvNodeRows": 18607,
+                "csvRelationshipRows": 34055,
+                "ladybugCopyCount": 33,
+                "nodeCopyCount": 10,
+                "relationshipCopyCount": 23,
+                "insertedRelationships": 34055,
+                "skippedRelationships": 0,
+                "csvRowsByTable": {
+                  "File": 1870,
+                  "Folder": 317,
+                  "Function": 2647,
+                  "Class": 5,
+                  "Method": 29,
+                  "Community": 284,
+                  "Process": 700,
+                  "Section": 7960,
+                  "Const": 4792,
+                  "Property": 3,
+                  "Relationship": 34055
+                },
+                "csvBytesByTable": {
+                  "File": 9464145,
+                  "Folder": 28558,
+                  "Function": 2939784,
+                  "Class": 3037,
+                  "Method": 17152,
+                  "Community": 20281,
+                  "Process": 235511,
+                  "Section": 10546091,
+                  "Const": 2554244,
+                  "Property": 1380,
+                  "Relationship": 9137187
+                }
+              },
+              "nodeCopyByTableMs": {
+                "File": 2755.5,
+                "Folder": 383,
+                "Function": 468.3,
+                "Class": 243,
+                "Method": 251.6,
+                "Community": 293.5,
+                "Process": 354.7,
+                "Section": 879.6,
+                "Const": 517.4,
+                "Property": 294.1
+              }
+            },
+            "parse": {
+              "timings": {
+                "readContentsMs": 8752,
+                "workerParseMs": 17728.3,
+                "importResolveMs": 327.1,
+                "routeResolveMs": 0.2,
+                "heritageResolveMs": 1.8,
+                "callResolveMs": 109.4,
+                "assignmentResolveMs": 10.5,
+                "exportedTypeMapEnrichMs": 1.3,
+                "wildcardSynthesisMs": 21.3,
+                "scopeFinalizeMs": 527.2
+              },
+              "counters": {
+                "workerCount": 7,
+                "scopeExtractionAstReusedFiles": 998,
+                "scopeExtractionCompatibilityFiles": 0,
+                "scopeExtractionNoHookFiles": 0,
+                "scopeExtractionFailedFiles": 0,
+                "scopeFinalizedFiles": 998,
+                "scopeFinalizeTotalImports": 7545,
+                "scopeFinalizeLinkedImports": 4005,
+                "scopeFinalizeUnresolvedImports": 3540,
+                "parseableFiles": 998,
+                "totalParseableMB": 5.6,
+                "parseChunkCount": 1,
+                "parserUnavailableFiles": 0,
+                "scopeParsedFiles": 998,
+                "scopeCount": 6934,
+                "scopeLocalDefs": 9993,
+                "scopeParsedImports": 7545,
+                "scopeReferenceSites": 74095,
+                "languageCoverageByLanguage": {
+                  "javascript": {
+                    "parseableFiles": 7,
+                    "scopeExtractionAstReusedFiles": 7,
+                    "scopeExtractionCompatibilityFiles": 0,
+                    "scopeExtractionNoHookFiles": 0,
+                    "scopeExtractionFailedFiles": 0,
+                    "scopeParsedFiles": 7,
+                    "scopeReferenceSites": 523,
+                    "astReusedScopeCoveragePercent": 100,
+                    "compatibilityOrUnavailableScopePercent": 0
+                  },
+                  "typescript": {
+                    "parseableFiles": 991,
+                    "scopeExtractionAstReusedFiles": 991,
+                    "scopeExtractionCompatibilityFiles": 0,
+                    "scopeExtractionNoHookFiles": 0,
+                    "scopeExtractionFailedFiles": 0,
+                    "scopeParsedFiles": 991,
+                    "scopeReferenceSites": 73572,
+                    "astReusedScopeCoveragePercent": 100,
+                    "compatibilityOrUnavailableScopePercent": 0
+                  }
+                }
+              }
+            },
+            "crossFile": {
+              "timings": {
+                "totalMs": 0
+              },
+              "counters": {
+                "filesReprocessed": 0,
+                "skipped": true,
+                "skipReason": "covered-by-ast-reused-scope-resolution"
+              }
+            },
+            "resolution": {
+              "timings": {
+                "referenceResolveMs": 1844.3,
+                "readonlyIndexInitMs": 42.7,
+                "referenceWorkerResolveMs": 1787,
+                "referenceMergeMs": 0.3,
+                "referenceIndexBuildMs": 8.2,
+                "graphEmitMs": 272.3
+              },
+              "counters": {
+                "scopeResolutionReferenceSites": 74095,
+                "scopeResolutionChunkSize": 1000,
+                "scopeResolutionChunks": 75,
+                "scopeResolutionMaxChunkReferenceSites": 1000,
+                "scopeResolutionReadonlyIndexBytes": 10514940,
+                "scopeResolutionUsedWorkers": 0,
+                "scopeResolutionWorkerCount": 0,
+                "scopeResolutionReferenceIndexSourceScopes": 3364,
+                "scopeResolutionReferenceIndexTargetDefs": 4041,
+                "scopeResolutionResolvedReferences": 10232,
+                "scopeResolutionUnresolvedReferences": 63863,
+                "scopeResolutionResolvedCalls": 6037,
+                "scopeResolutionResolvedAccesses": 755,
+                "scopeResolutionResolvedTypeReferences": 3440,
+                "scopeResolutionResolvedInheritance": 0,
+                "scopeResolutionResolvedImportUses": 0,
+                "scopeResolutionEdgesEmitted": 8,
+                "scopeResolutionDuplicateEdgesSkipped": 3604,
+                "scopeResolutionFinalizedImportsEmitted": 0,
+                "scopeResolutionDuplicateImportsSkipped": 3977,
+                "scopeResolutionFinalizedImportUsesEmitted": 1933,
+                "scopeResolutionDuplicateImportUsesSkipped": 0,
+                "scopeResolutionEdgesSkippedNoCaller": 3932,
+                "scopeResolutionEdgesSkippedMissingTarget": 2688,
+                "languageCoverageByLanguage": {
+                  "javascript": {
+                    "parseableFiles": 7,
+                    "scopeExtractionAstReusedFiles": 7,
+                    "scopeExtractionCompatibilityFiles": 0,
+                    "scopeExtractionNoHookFiles": 0,
+                    "scopeExtractionFailedFiles": 0,
+                    "scopeParsedFiles": 7,
+                    "scopeReferenceSites": 523,
+                    "astReusedScopeCoveragePercent": 100,
+                    "compatibilityOrUnavailableScopePercent": 0,
+                    "scopeResolutionReferenceSites": 523,
+                    "scopeResolutionResolvedReferences": 81,
+                    "scopeResolutionUnresolvedReferences": 442
+                  },
+                  "typescript": {
+                    "parseableFiles": 991,
+                    "scopeExtractionAstReusedFiles": 991,
+                    "scopeExtractionCompatibilityFiles": 0,
+                    "scopeExtractionNoHookFiles": 0,
+                    "scopeExtractionFailedFiles": 0,
+                    "scopeParsedFiles": 991,
+                    "scopeReferenceSites": 73572,
+                    "astReusedScopeCoveragePercent": 100,
+                    "compatibilityOrUnavailableScopePercent": 0,
+                    "scopeResolutionReferenceSites": 73572,
+                    "scopeResolutionResolvedReferences": 10151,
+                    "scopeResolutionUnresolvedReferences": 63421
+                  }
+                }
+              }
+            }
+          },
+          "keyMetrics": {
+            "totalWallMs": 70428.1,
+            "phaseMs": {
+              "scan": 3154,
+              "structure": 15,
+              "markdown": 5490,
+              "cobol": 2,
+              "parse": 27611,
+              "routes": 3,
+              "tools": 0,
+              "orm": 1,
+              "crossFile": 0,
+              "resolution": 2149,
+              "mro": 4,
+              "communities": 159,
+              "processes": 579
+            },
+            "nodeCount": 18607,
+            "relationshipCount": 34055,
+            "nodeCountsByLabel": {
+              "Class": 5,
+              "Community": 284,
+              "Const": 4792,
+              "File": 1870,
+              "Folder": 317,
+              "Function": 2647,
+              "Method": 29,
+              "Process": 700,
+              "Property": 3,
+              "Section": 7960
+            },
+            "relationshipCountsByType": {
+              "ACCESSES": 3,
+              "CALLS": 5061,
+              "CONTAINS": 10122,
+              "DEFINES": 7476,
+              "EXTENDS": 5,
+              "HAS_METHOD": 5,
+              "HAS_PROPERTY": 3,
+              "IMPORTS": 3467,
+              "MEMBER_OF": 2583,
+              "STEP_IN_PROCESS": 3397,
+              "USES": 1933
+            },
+            "semanticRelationshipUniqueCountsByType": {
+              "CONTAINS": 10122,
+              "IMPORTS": 3467,
+              "DEFINES": 7444,
+              "HAS_METHOD": 5,
+              "HAS_PROPERTY": 3,
+              "CALLS": 5061,
+              "ACCESSES": 3,
+              "USES": 1933,
+              "MEMBER_OF": 2278,
+              "STEP_IN_PROCESS": 2944
+            },
+            "semanticRelationshipDuplicateCountsByType": {
+              "CONTAINS": 0,
+              "IMPORTS": 0,
+              "DEFINES": 32,
+              "HAS_METHOD": 0,
+              "HAS_PROPERTY": 0,
+              "CALLS": 0,
+              "ACCESSES": 0,
+              "USES": 0,
+              "MEMBER_OF": 0,
+              "STEP_IN_PROCESS": 453
+            },
+            "parseMs": 27611,
+            "crossFileMs": 0,
+            "resolutionMs": 2149,
+            "lbugLoadMs": 14604.8,
+            "parseableFiles": 998,
+            "totalParseableMB": 5.6,
+            "workerCount": 7,
+            "parseChunkCount": 1,
+            "scopeParsedFiles": 998,
+            "scopeCount": 6934,
+            "scopeLocalDefs": 9993,
+            "scopeParsedImports": 7545,
+            "scopeReferenceSites": 74095,
+            "scopeExtractionAstReusedFiles": 998,
+            "scopeExtractionCompatibilityFiles": 0,
+            "scopeExtractionNoHookFiles": 0,
+            "scopeExtractionFailedFiles": 0,
+            "scopeFinalizedFiles": 998,
+            "scopeFinalizeTotalImports": 7545,
+            "scopeFinalizeLinkedImports": 4005,
+            "scopeFinalizeUnresolvedImports": 3540,
+            "scopeResolutionReferenceSites": 74095,
+            "scopeResolutionChunkSize": 1000,
+            "scopeResolutionChunks": 75,
+            "scopeResolutionMaxChunkReferenceSites": 1000,
+            "scopeResolutionReadonlyIndexBytes": 10514940,
+            "scopeResolutionUsedWorkers": 0,
+            "scopeResolutionWorkerCount": 0,
+            "scopeResolutionReferenceIndexSourceScopes": 3364,
+            "scopeResolutionReferenceIndexTargetDefs": 4041,
+            "scopeResolutionResolvedReferences": 10232,
+            "scopeResolutionUnresolvedReferences": 63863,
+            "scopeResolutionResolvedCalls": 6037,
+            "scopeResolutionResolvedAccesses": 755,
+            "scopeResolutionResolvedTypeReferences": 3440,
+            "scopeResolutionResolvedInheritance": 0,
+            "scopeResolutionResolvedImportUses": 0,
+            "scopeResolutionEdgesEmitted": 8,
+            "scopeResolutionDuplicateEdgesSkipped": 3604,
+            "scopeResolutionFinalizedImportsEmitted": 0,
+            "scopeResolutionDuplicateImportsSkipped": 3977,
+            "scopeResolutionFinalizedImportUsesEmitted": 1933,
+            "scopeResolutionDuplicateImportUsesSkipped": 0,
+            "scopeResolutionEdgesSkippedNoCaller": 3932,
+            "scopeResolutionEdgesSkippedMissingTarget": 2688,
+            "crossFileReprocessedFiles": 0,
+            "csvRelationshipRows": 34055,
+            "ladybugCopyCount": 33,
+            "languageCoverageByLanguage": {
+              "javascript": {
+                "parseableFiles": 7,
+                "scopeExtractionAstReusedFiles": 7,
+                "scopeExtractionCompatibilityFiles": 0,
+                "scopeExtractionNoHookFiles": 0,
+                "scopeExtractionFailedFiles": 0,
+                "scopeParsedFiles": 7,
+                "scopeReferenceSites": 523,
+                "astReusedScopeCoveragePercent": 100,
+                "compatibilityOrUnavailableScopePercent": 0,
+                "scopeResolutionReferenceSites": 523,
+                "scopeResolutionResolvedReferences": 81,
+                "scopeResolutionUnresolvedReferences": 442
+              },
+              "typescript": {
+                "parseableFiles": 991,
+                "scopeExtractionAstReusedFiles": 991,
+                "scopeExtractionCompatibilityFiles": 0,
+                "scopeExtractionNoHookFiles": 0,
+                "scopeExtractionFailedFiles": 0,
+                "scopeParsedFiles": 991,
+                "scopeReferenceSites": 73572,
+                "astReusedScopeCoveragePercent": 100,
+                "compatibilityOrUnavailableScopePercent": 0,
+                "scopeResolutionReferenceSites": 73572,
+                "scopeResolutionResolvedReferences": 10151,
+                "scopeResolutionUnresolvedReferences": 63421
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "summary": {
+    "avmatrixGoSelf": {
+      "avmatrixGo": {
+        "engine": "avmatrix-go",
+        "command": ".\\avmatrix-launcher\\server-bundle\\avmatrix.exe analyze E:\\AVmatrix-GO --force --skip-agents-md --no-stats --benchmark-json reports\\benchmark\\2026-05-16-120908-avmatrix-go-self-analyze.json --benchmark-label 2026-05-16-120908-avmatrix-go-self-analyze",
+        "totalWallMs": 13588.1,
+        "graphNodes": 19984,
+        "graphRelationships": 47622,
+        "filesScanned": 676,
+        "filesParsed": 520,
+        "unsupportedFiles": 156,
+        "failedFiles": 0,
+        "parseMs": 5586.7,
+        "resolutionMs": 1057.8,
+        "dbLoadMs": 4902.5,
+        "resolvedCalls": 12792,
+        "resolvedReferences": 26541,
+        "unresolvedReferences": 49842,
+        "resolvedAccesses": 4959,
+        "resolvedTypeReferences": 8790,
+        "communities": 899,
+        "processes": 635,
+        "maxObservedSystemMemoryMb": 309.2
+      },
+      "avmatrixMain": {
+        "engine": "avmatrix-main",
+        "enginePath": "E:\\avmatrix-main",
+        "command": "node E:\\avmatrix-main\\avmatrix\\dist\\cli\\index.js analyze E:\\AVmatrix-GO --force --skip-agents-md --no-stats --benchmark-json reports\\benchmark\\2026-05-16-120908-avmatrix-main-self-analyze.json --benchmark-label 2026-05-16-120908-avmatrix-main-on-avmatrix-go",
+        "totalWallMs": 63215.2,
+        "graphNodes": 17539,
+        "graphRelationships": 39019,
+        "statsEdges": 38474,
+        "filesScanned": 678,
+        "filesParsed": 520,
+        "parseMs": 12003.0,
+        "resolutionMs": 232.0,
+        "dbLoadMs": 17539.5,
+        "resolvedCalls": 585,
+        "resolvedReferences": 1089,
+        "unresolvedReferences": 7321,
+        "resolvedAccesses": 257,
+        "resolvedTypeReferences": 247,
+        "communities": 435,
+        "processes": 562,
+        "languageCoverage": {
+          "go": {
+            "parseableFiles": 406,
+            "scopeExtractionAstReusedFiles": 0,
+            "scopeExtractionCompatibilityFiles": 0,
+            "scopeExtractionNoHookFiles": 406,
+            "scopeExtractionFailedFiles": 0,
+            "astReusedScopeCoveragePercent": 0,
+            "compatibilityOrUnavailableScopePercent": 100,
+            "scopeResolutionReferenceSites": 0,
+            "scopeResolutionResolvedReferences": 0,
+            "scopeResolutionUnresolvedReferences": 0
+          },
+          "javascript": {
+            "parseableFiles": 1,
+            "scopeExtractionAstReusedFiles": 1,
+            "scopeExtractionCompatibilityFiles": 0,
+            "scopeExtractionNoHookFiles": 0,
+            "scopeExtractionFailedFiles": 0,
+            "scopeParsedFiles": 1,
+            "scopeReferenceSites": 0,
+            "astReusedScopeCoveragePercent": 100,
+            "compatibilityOrUnavailableScopePercent": 0,
+            "scopeResolutionReferenceSites": 0,
+            "scopeResolutionResolvedReferences": 0,
+            "scopeResolutionUnresolvedReferences": 0
+          },
+          "typescript": {
+            "parseableFiles": 113,
+            "scopeExtractionAstReusedFiles": 113,
+            "scopeExtractionCompatibilityFiles": 0,
+            "scopeExtractionNoHookFiles": 0,
+            "scopeExtractionFailedFiles": 0,
+            "scopeParsedFiles": 113,
+            "scopeReferenceSites": 8410,
+            "astReusedScopeCoveragePercent": 100,
+            "compatibilityOrUnavailableScopePercent": 0,
+            "scopeResolutionReferenceSites": 8410,
+            "scopeResolutionResolvedReferences": 1089,
+            "scopeResolutionUnresolvedReferences": 7321
+          }
+        }
+      },
+      "deltas": {
+        "totalWallMainVsGoRatio": 4.65,
+        "avmatrixGoSpeedupVsMain": 4.65,
+        "graphNodesDeltaGoMinusMain": 2445,
+        "graphNodesDeltaGoMinusMainPercent": 13.94,
+        "graphRelationshipsDeltaGoMinusMain": 8603,
+        "graphRelationshipsDeltaGoMinusMainPercent": 22.05,
+        "filesScannedDeltaGoMinusMain": -2,
+        "filesParsedDeltaGoMinusMain": 0,
+        "parseMainVsGoRatio": 2.15,
+        "dbLoadMainVsGoRatio": 3.58,
+        "resolvedCallsDeltaGoMinusMain": 12207,
+        "resolvedReferencesDeltaGoMinusMain": 25452,
+        "resolvedAccessesDeltaGoMinusMain": 4702,
+        "resolvedTypeReferencesDeltaGoMinusMain": 8543
+      }
+    },
+    "websiteTypescriptHeavy": {
+      "avmatrixGo": {
+        "engine": "avmatrix-go",
+        "command": ".\\avmatrix-launcher\\server-bundle\\avmatrix.exe analyze E:\\Website --force --skip-agents-md --no-stats --benchmark-json reports\\benchmark\\2026-05-16-120908-avmatrix-go-on-website.json --benchmark-label 2026-05-16-120908-avmatrix-go-on-website",
+        "totalWallMs": 20763.6,
+        "graphNodes": 26081,
+        "graphRelationships": 48163,
+        "filesScanned": 1870,
+        "filesParsed": 998,
+        "unsupportedFiles": 872,
+        "failedFiles": 0,
+        "parseMs": 6316.1,
+        "resolutionMs": 487.4,
+        "dbLoadMs": 4057.5,
+        "resolvedCalls": 11303,
+        "resolvedReferences": 20849,
+        "unresolvedReferences": 64274,
+        "resolvedAccesses": 3,
+        "resolvedTypeReferences": 9543,
+        "communities": 587,
+        "processes": 700,
+        "maxObservedSystemMemoryMb": 412.0
+      },
+      "avmatrixMain": {
+        "engine": "avmatrix-main",
+        "enginePath": "E:\\avmatrix-main",
+        "command": "node E:\\avmatrix-main\\avmatrix\\dist\\cli\\index.js analyze E:\\Website --force --skip-agents-md --no-stats --benchmark-json reports\\benchmark\\2026-05-16-120908-avmatrix-main-on-website.json --benchmark-label 2026-05-16-120908-avmatrix-main-on-website",
+        "totalWallMs": 70428.1,
+        "graphNodes": 18607,
+        "graphRelationships": 34055,
+        "statsEdges": 33745,
+        "filesScanned": 1870,
+        "filesParsed": 998,
+        "parseMs": 27611.0,
+        "resolutionMs": 2149.0,
+        "dbLoadMs": 14604.8,
+        "resolvedCalls": 6037,
+        "resolvedReferences": 10232,
+        "unresolvedReferences": 63863,
+        "resolvedAccesses": 755,
+        "resolvedTypeReferences": 3440,
+        "communities": 589,
+        "processes": 700,
+        "languageCoverage": {
+          "javascript": {
+            "parseableFiles": 7,
+            "scopeExtractionAstReusedFiles": 7,
+            "scopeExtractionCompatibilityFiles": 0,
+            "scopeExtractionNoHookFiles": 0,
+            "scopeExtractionFailedFiles": 0,
+            "scopeParsedFiles": 7,
+            "scopeReferenceSites": 523,
+            "astReusedScopeCoveragePercent": 100,
+            "compatibilityOrUnavailableScopePercent": 0,
+            "scopeResolutionReferenceSites": 523,
+            "scopeResolutionResolvedReferences": 81,
+            "scopeResolutionUnresolvedReferences": 442
+          },
+          "typescript": {
+            "parseableFiles": 991,
+            "scopeExtractionAstReusedFiles": 991,
+            "scopeExtractionCompatibilityFiles": 0,
+            "scopeExtractionNoHookFiles": 0,
+            "scopeExtractionFailedFiles": 0,
+            "scopeParsedFiles": 991,
+            "scopeReferenceSites": 73572,
+            "astReusedScopeCoveragePercent": 100,
+            "compatibilityOrUnavailableScopePercent": 0,
+            "scopeResolutionReferenceSites": 73572,
+            "scopeResolutionResolvedReferences": 10151,
+            "scopeResolutionUnresolvedReferences": 63421
+          }
+        }
+      },
+      "deltas": {
+        "totalWallMainVsGoRatio": 3.39,
+        "avmatrixGoSpeedupVsMain": 3.39,
+        "graphNodesDeltaGoMinusMain": 7474,
+        "graphNodesDeltaGoMinusMainPercent": 40.17,
+        "graphRelationshipsDeltaGoMinusMain": 14108,
+        "graphRelationshipsDeltaGoMinusMainPercent": 41.43,
+        "filesScannedDeltaGoMinusMain": 0,
+        "filesParsedDeltaGoMinusMain": 0,
+        "parseMainVsGoRatio": 4.37,
+        "dbLoadMainVsGoRatio": 3.6,
+        "resolvedCallsDeltaGoMinusMain": 5266,
+        "resolvedReferencesDeltaGoMinusMain": 10617,
+        "resolvedAccessesDeltaGoMinusMain": -752,
+        "resolvedTypeReferencesDeltaGoMinusMain": 6103
+      }
+    }
+  },
+  "runs": {
+    "avmatrixGo": {
+      "label": "2026-05-16-120908-avmatrix-go-self-analyze",
+      "totalDuration": 13588055400,
+      "phases": [
+        {
+          "name": "scan",
+          "duration": 81736300
+        },
+        {
+          "name": "structure",
+          "duration": 1627500
+        },
+        {
+          "name": "documents",
+          "duration": 14917000
+        },
+        {
+          "name": "cobol",
+          "duration": 0
+        },
+        {
+          "name": "parse",
+          "duration": 5586698200
+        },
+        {
+          "name": "routes",
+          "duration": 162423700
+        },
+        {
+          "name": "tools",
+          "duration": 28822500
+        },
+        {
+          "name": "orm",
+          "duration": 10047600
+        },
+        {
+          "name": "cross_file_binding",
+          "duration": 217936700
+        },
+        {
+          "name": "resolution",
+          "duration": 1057765000
+        },
+        {
+          "name": "mro",
+          "duration": 0
+        },
+        {
+          "name": "communities",
+          "duration": 30441500
+        },
+        {
+          "name": "processes",
+          "duration": 90959400
+        },
+        {
+          "name": "db_load",
+          "duration": 4902472400
+        }
+      ],
+      "scanner": {
+        "visited": 700,
+        "included": 676,
+        "skippedIgnored": 54,
+        "skippedLarge": 0,
+        "skippedErrored": 0
+      },
+      "structure": {
+        "fileNodesSeen": 676,
+        "folderNodesAdded": 110,
+        "containsEmitted": 1555
+      },
+      "documents": {
+        "markdownFiles": 61,
+        "sections": 920,
+        "links": 24,
+        "metadataFileNodes": 61
+      },
+      "cobol": {},
+      "routes": {
+        "filesScanned": 114
+      },
+      "tools": {
+        "filesScanned": 74
+      },
+      "orm": {
+        "filesScanned": 74
+      },
+      "crossFileBinding": {
+        "DefinitionsIndexed": 23763,
+        "ImportsResolved": 3752,
+        "ImportUsesEmitted": 0,
+        "ResolvedReferences": 0,
+        "UnresolvedReferences": 0,
+        "ResolvedCalls": 0,
+        "ResolvedAccesses": 0,
+        "ResolvedTypeReferences": 0,
+        "ResolvedInheritance": 0,
+        "DuplicateEdgesMerged": 0,
+        "MethodOverridesEmitted": 0,
+        "MethodImplementsEmitted": 0,
+        "FinalizedImportsEmitted": 0,
+        "CrossFileFilesReprocessed": 0,
+        "CrossFileSkipped": true,
+        "CrossFileSkipReason": "covered-by-scopeir-single-pass-resolution",
+        "BindingAccumulatorFiles": 89,
+        "BindingAccumulatorEntries": 400,
+        "BindingAccumulatorFinalized": true,
+        "BindingAccumulatorDisposed": false,
+        "GraphNodesEmitted": 0,
+        "GraphRelationshipsEmitted": 0
+      },
+      "mro": {},
+      "parser": {
+        "total": 520,
+        "succeeded": 520,
+        "failed": 0,
+        "unsupported": 0,
+        "timedOut": 0,
+        "createdParsers": 4,
+        "totalBytes": 3336814,
+        "totalDuration": 2753963900
+      },
+      "resolution": {
+        "DefinitionsIndexed": 23763,
+        "ImportsResolved": 3752,
+        "ImportUsesEmitted": 872,
+        "ResolvedReferences": 26541,
+        "UnresolvedReferences": 49842,
+        "ResolvedCalls": 12792,
+        "ResolvedAccesses": 4959,
+        "ResolvedTypeReferences": 8790,
+        "ResolvedInheritance": 0,
+        "DuplicateEdgesMerged": 18679,
+        "MethodOverridesEmitted": 0,
+        "MethodImplementsEmitted": 0,
+        "FinalizedImportsEmitted": 3752,
+        "CrossFileFilesReprocessed": 0,
+        "CrossFileSkipped": true,
+        "CrossFileSkipReason": "covered-by-scopeir-single-pass-resolution",
+        "BindingAccumulatorFiles": 89,
+        "BindingAccumulatorEntries": 400,
+        "BindingAccumulatorFinalized": true,
+        "BindingAccumulatorDisposed": true,
+        "GraphNodesEmitted": 18450,
+        "GraphRelationshipsEmitted": 40943
+      },
+      "communities": {
+        "communitiesEmitted": 899,
+        "membershipsEmitted": 3743,
+        "nodesConsidered": 3743,
+        "edgesConsidered": 6288,
+        "modularity": 0.640489310994242
+      },
+      "processes": {
+        "processesEmitted": 635,
+        "stepsEmitted": 2301,
+        "entryPointsFound": 200,
+        "crossCommunity": 466,
+        "averageStepCount": 3.6236220472440945,
+        "callsEdgesConsidered": 8171
+      },
+      "dbLoad": {
+        "nodeCopyCount": 16,
+        "relationshipCopyCount": 71,
+        "fallbackInsertCount": 0,
+        "fallbackInsertFailures": 0,
+        "skippedRelationships": 0,
+        "nodeRows": 19984,
+        "relationshipRows": 47622
+      },
+      "embeddings": {},
+      "files": {
+        "scanned": 676,
+        "parsed": 520,
+        "unsupported": 156,
+        "failed": 0
+      },
+      "memory": {
+        "startAllocBytes": 1168504,
+        "endAllocBytes": 41142456,
+        "maxObservedSys": 324192504
+      }
+    },
+    "avmatrixMain": {
+      "schemaVersion": 1,
+      "createdAt": "2026-05-16T05:26:45.338Z",
+      "label": "2026-05-16-120908-avmatrix-main-on-avmatrix-go",
+      "repoName": "AVmatrix-GO",
+      "repoPath": "E:\\AVmatrix-GO",
+      "environment": {
+        "avmatrixVersion": "1.2.1",
+        "nodeVersion": "v24.15.0",
+        "platform": "win32",
+        "arch": "x64",
+        "repoGitUnavailable": false,
+        "repoGitCommit": "c233131e594d120d01a271faea295252b9a8e247",
+        "repoGitDirty": true
+      },
+      "stats": {
+        "files": 678,
+        "nodes": 17539,
+        "edges": 38474,
+        "communities": 435,
+        "processes": 562,
+        "embeddings": 0
+      },
+      "graph": {
+        "nodeCount": 17539,
+        "relationshipCount": 39019,
+        "byNodeLabel": {
+          "Class": 4,
+          "CodeElement": 8,
+          "Community": 407,
+          "Const": 1610,
+          "File": 678,
+          "Folder": 110,
+          "Function": 3262,
+          "Interface": 98,
+          "Method": 803,
+          "Process": 562,
+          "Property": 2434,
+          "Section": 655,
+          "Struct": 483,
+          "Variable": 6425
+        },
+        "byRelationshipType": {
+          "ACCESSES": 866,
+          "CALLS": 8460,
+          "CONTAINS": 1412,
+          "DEFINES": 15119,
+          "EXTENDS": 2,
+          "HAS_METHOD": 797,
+          "HAS_PROPERTY": 2232,
+          "IMPORTS": 3838,
+          "MEMBER_OF": 3693,
+          "QUERIES": 10,
+          "STEP_IN_PROCESS": 2236,
+          "USES": 354
+        },
+        "nodeDigest": "ee0723800fdd381c45de9e83eab8bde822f4d0ae3575205fcf32a7a3d9ae0077",
+        "relationshipDigest": "153c537abf5efd50b788eea83589a001a930c2907aebeb3ce0a3aaea9e061414",
+        "totalFileCount": 678,
+        "communityCount": 435,
+        "processCount": 562,
+        "usedWorkerPool": true,
+        "crossFileReprocessedFiles": 277
+      },
+      "performance": {
+        "totalWallMs": 63215.2,
+        "buckets": {
+          "scan": 97,
+          "structure": 5,
+          "markdown": 20,
+          "cobol": 2,
+          "parse": 12003,
+          "routes": 2,
+          "tools": 1,
+          "orm": 0,
+          "crossFile": 17351,
+          "resolution": 232,
+          "mro": 4,
+          "communities": 247,
+          "processes": 204,
+          "lbugLoad": 17539.5,
+          "fts": 12839.3,
+          "metadata": 106.1,
+          "aiContext": 15
+        },
+        "pipelinePhaseMs": {
+          "scan": 97,
+          "structure": 5,
+          "markdown": 20,
+          "cobol": 2,
+          "parse": 12003,
+          "routes": 2,
+          "tools": 1,
+          "orm": 0,
+          "crossFile": 17351,
+          "resolution": 232,
+          "mro": 4,
+          "communities": 247,
+          "processes": 204
+        },
+        "ftsIndexMs": {
+          "File": 3902.3,
+          "Function": 3089.7,
+          "Class": 1758.6,
+          "Method": 2221.2,
+          "Interface": 1867.5
+        },
+        "counters": {
+          "totalFiles": 678,
+          "parseableFiles": 520,
+          "totalParseableMB": 3.2,
+          "workerCount": 7,
+          "parseChunkCount": 1,
+          "parserUnavailableFiles": 0,
+          "scopeParsedFiles": 114,
+          "scopeCount": 1603,
+          "scopeLocalDefs": 2156,
+          "scopeParsedImports": 936,
+          "scopeReferenceSites": 8410,
+          "scopeExtractionAstReusedFiles": 114,
+          "scopeExtractionCompatibilityFiles": 0,
+          "scopeExtractionNoHookFiles": 406,
+          "scopeExtractionFailedFiles": 0,
+          "scopeFinalizedFiles": 114,
+          "scopeFinalizeTotalImports": 936,
+          "scopeFinalizeLinkedImports": 294,
+          "scopeFinalizeUnresolvedImports": 642,
+          "scopeResolutionReferenceSites": 8410,
+          "scopeResolutionChunkSize": 1000,
+          "scopeResolutionChunks": 9,
+          "scopeResolutionMaxChunkReferenceSites": 1000,
+          "scopeResolutionReadonlyIndexBytes": 1434199,
+          "scopeResolutionUsedWorkers": 0,
+          "scopeResolutionWorkerCount": 0,
+          "scopeResolutionReferenceIndexSourceScopes": 478,
+          "scopeResolutionReferenceIndexTargetDefs": 363,
+          "scopeResolutionResolvedReferences": 1089,
+          "scopeResolutionUnresolvedReferences": 7321,
+          "scopeResolutionResolvedCalls": 585,
+          "scopeResolutionResolvedAccesses": 257,
+          "scopeResolutionResolvedTypeReferences": 247,
+          "scopeResolutionResolvedInheritance": 0,
+          "scopeResolutionResolvedImportUses": 0,
+          "scopeResolutionEdgesEmitted": 264,
+          "scopeResolutionDuplicateEdgesSkipped": 250,
+          "scopeResolutionFinalizedImportsEmitted": 0,
+          "scopeResolutionDuplicateImportsSkipped": 293,
+          "scopeResolutionFinalizedImportUsesEmitted": 237,
+          "scopeResolutionDuplicateImportUsesSkipped": 0,
+          "scopeResolutionEdgesSkippedNoCaller": 304,
+          "scopeResolutionEdgesSkippedMissingTarget": 271,
+          "languageCoverageByLanguage": {
+            "go": {
+              "parseableFiles": 406,
+              "scopeExtractionAstReusedFiles": 0,
+              "scopeExtractionCompatibilityFiles": 0,
+              "scopeExtractionNoHookFiles": 406,
+              "scopeExtractionFailedFiles": 0,
+              "astReusedScopeCoveragePercent": 0,
+              "compatibilityOrUnavailableScopePercent": 100,
+              "scopeResolutionReferenceSites": 0,
+              "scopeResolutionResolvedReferences": 0,
+              "scopeResolutionUnresolvedReferences": 0
+            },
+            "javascript": {
+              "parseableFiles": 1,
+              "scopeExtractionAstReusedFiles": 1,
+              "scopeExtractionCompatibilityFiles": 0,
+              "scopeExtractionNoHookFiles": 0,
+              "scopeExtractionFailedFiles": 0,
+              "scopeParsedFiles": 1,
+              "scopeReferenceSites": 0,
+              "astReusedScopeCoveragePercent": 100,
+              "compatibilityOrUnavailableScopePercent": 0,
+              "scopeResolutionReferenceSites": 0,
+              "scopeResolutionResolvedReferences": 0,
+              "scopeResolutionUnresolvedReferences": 0
+            },
+            "typescript": {
+              "parseableFiles": 113,
+              "scopeExtractionAstReusedFiles": 113,
+              "scopeExtractionCompatibilityFiles": 0,
+              "scopeExtractionNoHookFiles": 0,
+              "scopeExtractionFailedFiles": 0,
+              "scopeParsedFiles": 113,
+              "scopeReferenceSites": 8410,
+              "astReusedScopeCoveragePercent": 100,
+              "compatibilityOrUnavailableScopePercent": 0,
+              "scopeResolutionReferenceSites": 8410,
+              "scopeResolutionResolvedReferences": 1089,
+              "scopeResolutionUnresolvedReferences": 7321
+            }
+          },
+          "nodeCount": 17539,
+          "edgeCount": 38474,
+          "usedWorkerPool": true,
+          "crossFileReprocessedFiles": 277,
+          "csvNodeRows": 17539,
+          "csvRelationshipRows": 39019,
+          "ladybugCopyCount": 58,
+          "ftsIndexCount": 5
+        },
+        "bottlenecks": [
+          {
+            "bucket": "lbugLoad",
+            "durationMs": 17539.5,
+            "percentOfTotal": 27.7
+          },
+          {
+            "bucket": "crossFile",
+            "durationMs": 17351,
+            "percentOfTotal": 27.4
+          },
+          {
+            "bucket": "fts",
+            "durationMs": 12839.3,
+            "percentOfTotal": 20.3
+          },
+          {
+            "bucket": "parse",
+            "durationMs": 12003,
+            "percentOfTotal": 19
+          },
+          {
+            "bucket": "communities",
+            "durationMs": 247,
+            "percentOfTotal": 0.4
+          },
+          {
+            "bucket": "resolution",
+            "durationMs": 232,
+            "percentOfTotal": 0.4
+          },
+          {
+            "bucket": "processes",
+            "durationMs": 204,
+            "percentOfTotal": 0.3
+          },
+          {
+            "bucket": "metadata",
+            "durationMs": 106.1,
+            "percentOfTotal": 0.2
+          },
+          {
+            "bucket": "scan",
+            "durationMs": 97,
+            "percentOfTotal": 0.2
+          },
+          {
+            "bucket": "markdown",
+            "durationMs": 20,
+            "percentOfTotal": 0
+          },
+          {
+            "bucket": "aiContext",
+            "durationMs": 15,
+            "percentOfTotal": 0
+          },
+          {
+            "bucket": "structure",
+            "durationMs": 5,
+            "percentOfTotal": 0
+          },
+          {
+            "bucket": "mro",
+            "durationMs": 4,
+            "percentOfTotal": 0
+          },
+          {
+            "bucket": "cobol",
+            "durationMs": 2,
+            "percentOfTotal": 0
+          },
+          {
+            "bucket": "routes",
+            "durationMs": 2,
+            "percentOfTotal": 0
+          },
+          {
+            "bucket": "tools",
+            "durationMs": 1,
+            "percentOfTotal": 0
+          }
+        ],
+        "overheadMs": 2547.3,
+        "lbugLoad": {
+          "timings": {
+            "csvGenerationMs": 1219.1,
+            "csvContentCacheHitMs": 0.2,
+            "csvContentReadMs": 182.8,
+            "csvContentExtractMs": 143.8,
+            "csvRowBuildMs": 20.5,
+            "csvWriterFlushMs": 169.7,
+            "nodeCopyMs": 7649.9,
+            "relationshipSplitMs": 325.3,
+            "relationshipCopyMs": 8257.6,
+            "fallbackRelationshipInsertMs": 68.5,
+            "cleanupMs": 8.6
+          },
+          "counters": {
+            "csvNodeRows": 17539,
+            "csvRelationshipRows": 39019,
+            "ladybugCopyCount": 58,
+            "nodeCopyCount": 14,
+            "relationshipCopyCount": 44,
+            "insertedRelationships": 39019,
+            "skippedRelationships": 0,
+            "csvRowsByTable": {
+              "File": 678,
+              "Folder": 110,
+              "Function": 3262,
+              "Class": 4,
+              "Interface": 98,
+              "Method": 803,
+              "CodeElement": 8,
+              "Community": 407,
+              "Process": 562,
+              "Section": 655,
+              "Struct": 483,
+              "Const": 1610,
+              "Variable": 6425,
+              "Property": 2434,
+              "Relationship": 39019
+            },
+            "csvBytesByTable": {
+              "File": 3757575,
+              "Folder": 7170,
+              "Function": 3021589,
+              "Class": 2287,
+              "Interface": 43267,
+              "Method": 585126,
+              "CodeElement": 773,
+              "Community": 25248,
+              "Process": 140110,
+              "Section": 1249011,
+              "Struct": 171071,
+              "Const": 964547,
+              "Variable": 2116295,
+              "Property": 644204,
+              "Relationship": 5592587
+            }
+          },
+          "nodeCopyByTableMs": {
+            "File": 2416.2,
+            "Folder": 480.7,
+            "Function": 640.4,
+            "Class": 258.3,
+            "Interface": 292,
+            "Method": 359.2,
+            "CodeElement": 302.4,
+            "Community": 363.5,
+            "Process": 381.5,
+            "Section": 411.1,
+            "Struct": 346.5,
+            "Const": 521.7,
+            "Variable": 475.2,
+            "Property": 389.7
+          }
+        },
+        "parse": {
+          "timings": {
+            "readContentsMs": 133.9,
+            "workerParseMs": 11153.5,
+            "importResolveMs": 147,
+            "wildcardSynthesisMs": 14.9,
+            "routeResolveMs": 0.3,
+            "heritageResolveMs": 11.8,
+            "callResolveMs": 238.9,
+            "assignmentResolveMs": 35.9,
+            "exportedTypeMapEnrichMs": 1.3,
+            "scopeFinalizeMs": 53.9
+          },
+          "counters": {
+            "workerCount": 7,
+            "scopeExtractionAstReusedFiles": 114,
+            "scopeExtractionCompatibilityFiles": 0,
+            "scopeExtractionNoHookFiles": 406,
+            "scopeExtractionFailedFiles": 0,
+            "scopeFinalizedFiles": 114,
+            "scopeFinalizeTotalImports": 936,
+            "scopeFinalizeLinkedImports": 294,
+            "scopeFinalizeUnresolvedImports": 642,
+            "parseableFiles": 520,
+            "totalParseableMB": 3.2,
+            "parseChunkCount": 1,
+            "parserUnavailableFiles": 0,
+            "scopeParsedFiles": 114,
+            "scopeCount": 1603,
+            "scopeLocalDefs": 2156,
+            "scopeParsedImports": 936,
+            "scopeReferenceSites": 8410,
+            "languageCoverageByLanguage": {
+              "go": {
+                "parseableFiles": 406,
+                "scopeExtractionAstReusedFiles": 0,
+                "scopeExtractionCompatibilityFiles": 0,
+                "scopeExtractionNoHookFiles": 406,
+                "scopeExtractionFailedFiles": 0,
+                "astReusedScopeCoveragePercent": 0,
+                "compatibilityOrUnavailableScopePercent": 100
+              },
+              "javascript": {
+                "parseableFiles": 1,
+                "scopeExtractionAstReusedFiles": 1,
+                "scopeExtractionCompatibilityFiles": 0,
+                "scopeExtractionNoHookFiles": 0,
+                "scopeExtractionFailedFiles": 0,
+                "scopeParsedFiles": 1,
+                "scopeReferenceSites": 0,
+                "astReusedScopeCoveragePercent": 100,
+                "compatibilityOrUnavailableScopePercent": 0
+              },
+              "typescript": {
+                "parseableFiles": 113,
+                "scopeExtractionAstReusedFiles": 113,
+                "scopeExtractionCompatibilityFiles": 0,
+                "scopeExtractionNoHookFiles": 0,
+                "scopeExtractionFailedFiles": 0,
+                "scopeParsedFiles": 113,
+                "scopeReferenceSites": 8410,
+                "astReusedScopeCoveragePercent": 100,
+                "compatibilityOrUnavailableScopePercent": 0
+              }
+            }
+          }
+        },
+        "crossFile": {
+          "timings": {
+            "topologicalSortMs": 0.9,
+            "candidateSelectionMs": 4.3,
+            "importedReturnMapsMs": 17.2,
+            "readContentsMs": 28.5,
+            "processCallsParserParseMs": 862.8,
+            "processCallsQueryCompileMs": 156.9,
+            "processCallsQueryExecuteMs": 621.6,
+            "processCallsQueryMatchesMs": 789.8,
+            "processCallsTypeEnvConstructorBindingScanMs": 32.8,
+            "processCallsTypeEnvWalkMs": 2233.5,
+            "processCallsTypeEnvExtractTypeBindingMs": 506.8,
+            "processCallsTypeEnvPendingAssignmentMs": 14.7,
+            "processCallsTypeEnvFixpointMs": 30.7,
+            "processCallsTypeEnvForLoopReplayMs": 52.4,
+            "processCallsBuildTypeEnvMs": 11440,
+            "processCallsEdgeEmissionMs": 0.1,
+            "processCallsResolutionTraversalMs": 3898,
+            "processCallsMs": 17273.1,
+            "processCallsTypeEnvPatternBindingMs": 3.4,
+            "processCallsTypeEnvSeedImportedBindingsMs": 0.1,
+            "totalMs": 17349.9
+          },
+          "counters": {
+            "importLevels": 7,
+            "importCycleFiles": 32,
+            "filesWithGaps": 151,
+            "candidateFiles": 277,
+            "filesReprocessed": 277
+          }
+        },
+        "resolution": {
+          "timings": {
+            "referenceResolveMs": 96.7,
+            "readonlyIndexInitMs": 10.4,
+            "referenceWorkerResolveMs": 83.2,
+            "referenceMergeMs": 0.1,
+            "referenceIndexBuildMs": 1.2,
+            "graphEmitMs": 131.8
+          },
+          "counters": {
+            "scopeResolutionReferenceSites": 8410,
+            "scopeResolutionChunkSize": 1000,
+            "scopeResolutionChunks": 9,
+            "scopeResolutionMaxChunkReferenceSites": 1000,
+            "scopeResolutionReadonlyIndexBytes": 1434199,
+            "scopeResolutionUsedWorkers": 0,
+            "scopeResolutionWorkerCount": 0,
+            "scopeResolutionReferenceIndexSourceScopes": 478,
+            "scopeResolutionReferenceIndexTargetDefs": 363,
+            "scopeResolutionResolvedReferences": 1089,
+            "scopeResolutionUnresolvedReferences": 7321,
+            "scopeResolutionResolvedCalls": 585,
+            "scopeResolutionResolvedAccesses": 257,
+            "scopeResolutionResolvedTypeReferences": 247,
+            "scopeResolutionResolvedInheritance": 0,
+            "scopeResolutionResolvedImportUses": 0,
+            "scopeResolutionEdgesEmitted": 264,
+            "scopeResolutionDuplicateEdgesSkipped": 250,
+            "scopeResolutionFinalizedImportsEmitted": 0,
+            "scopeResolutionDuplicateImportsSkipped": 293,
+            "scopeResolutionFinalizedImportUsesEmitted": 237,
+            "scopeResolutionDuplicateImportUsesSkipped": 0,
+            "scopeResolutionEdgesSkippedNoCaller": 304,
+            "scopeResolutionEdgesSkippedMissingTarget": 271,
+            "languageCoverageByLanguage": {
+              "go": {
+                "parseableFiles": 406,
+                "scopeExtractionAstReusedFiles": 0,
+                "scopeExtractionCompatibilityFiles": 0,
+                "scopeExtractionNoHookFiles": 406,
+                "scopeExtractionFailedFiles": 0,
+                "astReusedScopeCoveragePercent": 0,
+                "compatibilityOrUnavailableScopePercent": 100,
+                "scopeResolutionReferenceSites": 0,
+                "scopeResolutionResolvedReferences": 0,
+                "scopeResolutionUnresolvedReferences": 0
+              },
+              "javascript": {
+                "parseableFiles": 1,
+                "scopeExtractionAstReusedFiles": 1,
+                "scopeExtractionCompatibilityFiles": 0,
+                "scopeExtractionNoHookFiles": 0,
+                "scopeExtractionFailedFiles": 0,
+                "scopeParsedFiles": 1,
+                "scopeReferenceSites": 0,
+                "astReusedScopeCoveragePercent": 100,
+                "compatibilityOrUnavailableScopePercent": 0,
+                "scopeResolutionReferenceSites": 0,
+                "scopeResolutionResolvedReferences": 0,
+                "scopeResolutionUnresolvedReferences": 0
+              },
+              "typescript": {
+                "parseableFiles": 113,
+                "scopeExtractionAstReusedFiles": 113,
+                "scopeExtractionCompatibilityFiles": 0,
+                "scopeExtractionNoHookFiles": 0,
+                "scopeExtractionFailedFiles": 0,
+                "scopeParsedFiles": 113,
+                "scopeReferenceSites": 8410,
+                "astReusedScopeCoveragePercent": 100,
+                "compatibilityOrUnavailableScopePercent": 0,
+                "scopeResolutionReferenceSites": 8410,
+                "scopeResolutionResolvedReferences": 1089,
+                "scopeResolutionUnresolvedReferences": 7321
+              }
+            }
+          }
+        }
+      },
+      "keyMetrics": {
+        "totalWallMs": 63215.2,
+        "phaseMs": {
+          "scan": 97,
+          "structure": 5,
+          "markdown": 20,
+          "cobol": 2,
+          "parse": 12003,
+          "routes": 2,
+          "tools": 1,
+          "orm": 0,
+          "crossFile": 17351,
+          "resolution": 232,
+          "mro": 4,
+          "communities": 247,
+          "processes": 204
+        },
+        "nodeCount": 17539,
+        "relationshipCount": 39019,
+        "nodeCountsByLabel": {
+          "Class": 4,
+          "CodeElement": 8,
+          "Community": 407,
+          "Const": 1610,
+          "File": 678,
+          "Folder": 110,
+          "Function": 3262,
+          "Interface": 98,
+          "Method": 803,
+          "Process": 562,
+          "Property": 2434,
+          "Section": 655,
+          "Struct": 483,
+          "Variable": 6425
+        },
+        "relationshipCountsByType": {
+          "ACCESSES": 866,
+          "CALLS": 8460,
+          "CONTAINS": 1412,
+          "DEFINES": 15119,
+          "EXTENDS": 2,
+          "HAS_METHOD": 797,
+          "HAS_PROPERTY": 2232,
+          "IMPORTS": 3838,
+          "MEMBER_OF": 3693,
+          "QUERIES": 10,
+          "STEP_IN_PROCESS": 2236,
+          "USES": 354
+        },
+        "semanticRelationshipUniqueCountsByType": {
+          "CONTAINS": 1412,
+          "IMPORTS": 3838,
+          "DEFINES": 14918,
+          "HAS_PROPERTY": 2227,
+          "HAS_METHOD": 332,
+          "CALLS": 8420,
+          "ACCESSES": 852,
+          "QUERIES": 9,
+          "USES": 354,
+          "MEMBER_OF": 3665,
+          "STEP_IN_PROCESS": 2122
+        },
+        "semanticRelationshipDuplicateCountsByType": {
+          "CONTAINS": 0,
+          "IMPORTS": 0,
+          "DEFINES": 201,
+          "HAS_PROPERTY": 0,
+          "HAS_METHOD": 0,
+          "CALLS": 36,
+          "ACCESSES": 14,
+          "QUERIES": 1,
+          "USES": 0,
+          "MEMBER_OF": 0,
+          "STEP_IN_PROCESS": 114
+        },
+        "parseMs": 12003,
+        "crossFileMs": 17351,
+        "resolutionMs": 232,
+        "lbugLoadMs": 17539.5,
+        "parseableFiles": 520,
+        "totalParseableMB": 3.2,
+        "workerCount": 7,
+        "parseChunkCount": 1,
+        "scopeParsedFiles": 114,
+        "scopeCount": 1603,
+        "scopeLocalDefs": 2156,
+        "scopeParsedImports": 936,
+        "scopeReferenceSites": 8410,
+        "scopeExtractionAstReusedFiles": 114,
+        "scopeExtractionCompatibilityFiles": 0,
+        "scopeExtractionNoHookFiles": 406,
+        "scopeExtractionFailedFiles": 0,
+        "scopeFinalizedFiles": 114,
+        "scopeFinalizeTotalImports": 936,
+        "scopeFinalizeLinkedImports": 294,
+        "scopeFinalizeUnresolvedImports": 642,
+        "scopeResolutionReferenceSites": 8410,
+        "scopeResolutionChunkSize": 1000,
+        "scopeResolutionChunks": 9,
+        "scopeResolutionMaxChunkReferenceSites": 1000,
+        "scopeResolutionReadonlyIndexBytes": 1434199,
+        "scopeResolutionUsedWorkers": 0,
+        "scopeResolutionWorkerCount": 0,
+        "scopeResolutionReferenceIndexSourceScopes": 478,
+        "scopeResolutionReferenceIndexTargetDefs": 363,
+        "scopeResolutionResolvedReferences": 1089,
+        "scopeResolutionUnresolvedReferences": 7321,
+        "scopeResolutionResolvedCalls": 585,
+        "scopeResolutionResolvedAccesses": 257,
+        "scopeResolutionResolvedTypeReferences": 247,
+        "scopeResolutionResolvedInheritance": 0,
+        "scopeResolutionResolvedImportUses": 0,
+        "scopeResolutionEdgesEmitted": 264,
+        "scopeResolutionDuplicateEdgesSkipped": 250,
+        "scopeResolutionFinalizedImportsEmitted": 0,
+        "scopeResolutionDuplicateImportsSkipped": 293,
+        "scopeResolutionFinalizedImportUsesEmitted": 237,
+        "scopeResolutionDuplicateImportUsesSkipped": 0,
+        "scopeResolutionEdgesSkippedNoCaller": 304,
+        "scopeResolutionEdgesSkippedMissingTarget": 271,
+        "crossFileReprocessedFiles": 277,
+        "crossFileReadContentsMs": 28.5,
+        "crossFileProcessCallsParserParseMs": 862.8,
+        "csvRelationshipRows": 39019,
+        "ladybugCopyCount": 58,
+        "languageCoverageByLanguage": {
+          "go": {
+            "parseableFiles": 406,
+            "scopeExtractionAstReusedFiles": 0,
+            "scopeExtractionCompatibilityFiles": 0,
+            "scopeExtractionNoHookFiles": 406,
+            "scopeExtractionFailedFiles": 0,
+            "astReusedScopeCoveragePercent": 0,
+            "compatibilityOrUnavailableScopePercent": 100,
+            "scopeResolutionReferenceSites": 0,
+            "scopeResolutionResolvedReferences": 0,
+            "scopeResolutionUnresolvedReferences": 0
+          },
+          "javascript": {
+            "parseableFiles": 1,
+            "scopeExtractionAstReusedFiles": 1,
+            "scopeExtractionCompatibilityFiles": 0,
+            "scopeExtractionNoHookFiles": 0,
+            "scopeExtractionFailedFiles": 0,
+            "scopeParsedFiles": 1,
+            "scopeReferenceSites": 0,
+            "astReusedScopeCoveragePercent": 100,
+            "compatibilityOrUnavailableScopePercent": 0,
+            "scopeResolutionReferenceSites": 0,
+            "scopeResolutionResolvedReferences": 0,
+            "scopeResolutionUnresolvedReferences": 0
+          },
+          "typescript": {
+            "parseableFiles": 113,
+            "scopeExtractionAstReusedFiles": 113,
+            "scopeExtractionCompatibilityFiles": 0,
+            "scopeExtractionNoHookFiles": 0,
+            "scopeExtractionFailedFiles": 0,
+            "scopeParsedFiles": 113,
+            "scopeReferenceSites": 8410,
+            "astReusedScopeCoveragePercent": 100,
+            "compatibilityOrUnavailableScopePercent": 0,
+            "scopeResolutionReferenceSites": 8410,
+            "scopeResolutionResolvedReferences": 1089,
+            "scopeResolutionUnresolvedReferences": 7321
+          }
+        }
+      }
+    }
+  },
+  "notes": [
+    "Top-level runs are kept for backward compatibility and refer to the AVmatrix-GO self-analyze scenario.",
+    "Full raw payloads for every scenario are embedded under scenarios.<name>.runs.",
+    "Temporary raw benchmark files for E:\\Website were merged into this JSON and can be regenerated from the commands in each scenario."
+  ]
+}

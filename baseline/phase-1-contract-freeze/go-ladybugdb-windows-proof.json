@@ -1,0 +1,58 @@
+{
+  "artifact": "go-ladybugdb-windows-proof",
+  "date": "2026-05-08",
+  "status": "pass",
+  "goal": "Prove a minimal Go LadybugDB load/read path on Windows before broad analyzer work.",
+  "environment": {
+    "goVersion": "go version go1.26.3 windows/amd64",
+    "goos": "windows",
+    "goarch": "amd64",
+    "cgoEnabled": "1",
+    "cc": "gcc"
+  },
+  "dependencies": {
+    "goBinding": {
+      "module": "github.com/LadybugDB/go-ladybug",
+      "version": "v0.13.1",
+      "selectionReason": "latest available Go module version observed during Phase 1 dependency freshness check"
+    },
+    "nativeRuntime": {
+      "repository": "https://github.com/LadybugDB/ladybug",
+      "release": "v0.16.1",
+      "asset": "liblbug-windows-x86_64.zip",
+      "assetSha256": "3825B9B8ECCA5DE85EA9ECD308F14608545D5E3C551E62F7E112146A50BDCDD4",
+      "dll": "lbug_shared.dll",
+      "dllSha256": "EB976DEBD08D8C9602E89B71DD6798E89A7802997598F11A832A21B91AF6FB20"
+    }
+  },
+  "proofProgram": {
+    "location": ".tmp/phase1-go-proofs/ladybugdb",
+    "module": "avmatrix-phase1-ladybug-proof",
+    "operations": [
+      "open in-memory LadybugDB database",
+      "open connection",
+      "create Person node table",
+      "insert one Person node",
+      "MATCH query reads id and name back through the Go binding"
+    ]
+  },
+  "commands": [
+    "go install golang.org/dl/go1.26.3@latest",
+    "%USERPROFILE%/go/bin/go1.26.3.exe download",
+    "%USERPROFILE%/go/bin/go1.26.3.exe get github.com/LadybugDB/go-ladybug@v0.13.1",
+    "Invoke-WebRequest https://github.com/LadybugDB/ladybug/releases/download/v0.16.1/liblbug-windows-x86_64.zip",
+    "CGO_ENABLED=1 CGO_LDFLAGS=-L.tmp/phase1-go-proofs/ladybugdb/native/liblbug-windows-x86_64 -llbug_shared PATH=<native-lib-dir>;%PATH% %USERPROFILE%/go/bin/go1.26.3.exe run ."
+  ],
+  "observedOutput": "ladybugdb proof ok: created Person and read p1/Alice",
+  "notes": [
+    "The Go module expects a native library named lbug_shared on Windows.",
+    "The native Windows release asset supplies lbug_shared.dll, lbug_shared.lib, lbug.h, and lbug.hpp.",
+    "The proof requires the native library directory in PATH at runtime."
+  ],
+  "acceptance": {
+    "loadPath": "pass",
+    "readPath": "pass",
+    "windowsNativeLink": "pass",
+    "readyForBroadAnalyzerWork": true
+  }
+}

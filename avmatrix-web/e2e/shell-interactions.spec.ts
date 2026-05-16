@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
-const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:4747';
-const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173';
+const BACKEND_URL = process.env.BACKEND_URL ?? 'http://127.0.0.1:4848';
+const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://127.0.0.1:5228';
 const ABSOLUTE_LOCAL_PATH =
   process.platform === 'win32' ? 'C:\\repos\\shell-check' : '/tmp/shell-check';
 
@@ -164,18 +164,25 @@ test.describe('Shell interactions', () => {
     await page.getByTitle('Clear chat').click();
     await expect(page.getByText('Ask me anything')).toBeVisible({ timeout: 10_000 });
 
-    await page.getByRole('button', { name: 'Processes' }).click();
+    await page.getByRole('button', { name: /^Processes\b/ }).click();
     await expect(page.locator('[data-testid="process-list-loaded"]')).toBeVisible({
       timeout: 15_000,
     });
 
     const processRow = page.locator('[data-testid="process-row"]').first();
     await processRow.hover();
-    await processRow.locator('[data-testid="process-highlight-button"]').click();
-    await expect(processRow).toHaveClass(/border-border-strong/, { timeout: 5_000 });
+    const highlightButton = processRow.locator('[data-testid="process-highlight-button"]');
+    await highlightButton.click();
+    await expect(highlightButton).toHaveAttribute('title', 'Click to remove highlight from graph', {
+      timeout: 15_000,
+    });
+    await expect(processRow).toHaveClass(/border-border-strong/, { timeout: 15_000 });
 
-    await processRow.locator('[data-testid="process-view-button"]').click();
-    await expect(page.locator('[data-testid="process-modal"]')).toBeVisible({ timeout: 5_000 });
+    await processRow.hover();
+    const viewButton = processRow.locator('[data-testid="process-view-button"]');
+    await viewButton.waitFor({ state: 'visible', timeout: 5_000 });
+    await viewButton.click();
+    await expect(page.locator('[data-testid="process-modal"]')).toBeVisible({ timeout: 15_000 });
     await page
       .locator('[data-testid="process-modal"]')
       .getByRole('button', { name: 'Close' })
@@ -183,9 +190,11 @@ test.describe('Shell interactions', () => {
     await expect(page.locator('[data-testid="process-modal"]')).not.toBeVisible({ timeout: 5_000 });
 
     await page.getByTitle('Close Panel').click();
-    await expect(page.getByRole('button', { name: 'Processes' })).not.toBeVisible({
-      timeout: 5_000,
-    });
+    await expect(page.locator('textarea[placeholder="Ask about the codebase..."]')).not.toBeVisible(
+      {
+        timeout: 5_000,
+      },
+    );
   });
 
   test('can stop an in-flight chat response', async ({ page }) => {

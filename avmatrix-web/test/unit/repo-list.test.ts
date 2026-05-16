@@ -11,7 +11,7 @@ const repo = (
 
 describe('repo list merge', () => {
   it('adds the analyzed repo when the refreshed backend list is still stale', () => {
-    const existing = repo({ name: 'AVmatrix', path: 'F:\\AVmatrix-main' });
+    const existing = repo({ name: 'AVmatrix', path: 'F:\\AVmatrix-GO' });
     const analyzed = repo({
       name: 'restaurant_manager',
       path: 'E:\\Lap_trinh\\restaurant_manager',

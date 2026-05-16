@@ -1,0 +1,227 @@
+{
+  "observedAtLocal": "2026-05-08T21:39:40+07:00",
+  "status": "web_ui_shared_contract_exported",
+  "scope": "Current browser-facing payload contracts between the local backend and avmatrix-web. Web UI remains TypeScript/React; non-Web UI runtime is the future Go owner.",
+  "authorities": {
+    "graphTypes": "avmatrix-shared/src/graph/types.ts",
+    "schemaConstants": "avmatrix-shared/src/lbug/schema-constants.ts",
+    "pipelineTypes": "avmatrix-shared/src/pipeline.ts",
+    "sessionTypes": "avmatrix-shared/src/session.ts",
+    "webClientTypes": "avmatrix-web/src/services/backend-client.ts",
+    "httpProducer": "avmatrix/src/server/api.ts",
+    "sessionProducer": "avmatrix/src/server/session-bridge.ts",
+    "jobProducer": "avmatrix/src/server/analyze-job.ts"
+  },
+  "graphPayload": {
+    "endpoints": [
+      "GET /api/graph?repo=<repo>&includeContent=true|false&stream=true|false"
+    ],
+    "jsonShape": {
+      "nodes": "GraphNode[]",
+      "relationships": "GraphRelationship[]"
+    },
+    "ndjsonShape": [
+      { "type": "node", "data": "GraphNode" },
+      { "type": "relationship", "data": "GraphRelationship" },
+      { "type": "error", "error": "string" }
+    ],
+    "graphNode": {
+      "id": "string",
+      "label": "NodeLabel",
+      "properties": "NodeProperties"
+    },
+    "nodePropertiesRequired": ["name", "filePath"],
+    "nodePropertiesOptional": [
+      "startLine",
+      "endLine",
+      "language",
+      "isExported",
+      "astFrameworkMultiplier",
+      "astFrameworkReason",
+      "heuristicLabel",
+      "cohesion",
+      "symbolCount",
+      "keywords",
+      "description",
+      "enrichedBy",
+      "processType",
+      "stepCount",
+      "communities",
+      "entryPointId",
+      "terminalId",
+      "entryPointScore",
+      "entryPointReason",
+      "parameterCount",
+      "level",
+      "returnType",
+      "declaredType",
+      "visibility",
+      "isStatic",
+      "isReadonly",
+      "isAbstract",
+      "isFinal",
+      "isVirtual",
+      "isOverride",
+      "isAsync",
+      "isPartial",
+      "annotations",
+      "responseKeys",
+      "errorKeys",
+      "middleware"
+    ],
+    "graphRelationship": {
+      "id": "string",
+      "sourceId": "string",
+      "targetId": "string",
+      "type": "RelationshipType",
+      "confidence": "number",
+      "reason": "string",
+      "step": "number?",
+      "resolutionSource": "string?",
+      "fileHash": "string?",
+      "evidence": "Array<{kind:string, weight:number, note?:string}>?"
+    },
+    "relationshipTypes": [
+      "CONTAINS",
+      "DEFINES",
+      "IMPORTS",
+      "CALLS",
+      "USES",
+      "INHERITS",
+      "EXTENDS",
+      "IMPLEMENTS",
+      "HAS_METHOD",
+      "HAS_PROPERTY",
+      "ACCESSES",
+      "METHOD_OVERRIDES",
+      "OVERRIDES",
+      "METHOD_IMPLEMENTS",
+      "MEMBER_OF",
+      "STEP_IN_PROCESS",
+      "HANDLES_ROUTE",
+      "FETCHES",
+      "HANDLES_TOOL",
+      "ENTRY_POINT_OF",
+      "WRAPS",
+      "QUERIES"
+    ],
+    "typeOnlyRelationshipCandidates": ["DECORATES"]
+  },
+  "repoPayloads": {
+    "listEndpoint": "GET /api/repos",
+    "infoEndpoint": "GET /api/repo?repo=<repo>&awaitAnalysis=true|false",
+    "deleteEndpoint": "DELETE /api/repo?repo=<repo>",
+    "backendRepo": {
+      "name": "string",
+      "path": "string",
+      "repoPath": "string?",
+      "indexedAt": "string",
+      "lastCommit": "string?",
+      "stats": {
+        "files": "number?",
+        "nodes": "number?",
+        "edges": "number?",
+        "communities": "number?",
+        "processes": "number?"
+      }
+    },
+    "deleteSuccess": { "deleted": "string" }
+  },
+  "analyzeAndEmbedJobs": {
+    "jobProgress": {
+      "phase": "string",
+      "percent": "number",
+      "message": "string"
+    },
+    "sharedPipelineProgress": {
+      "phase": "idle|extracting|structure|parsing|imports|calls|heritage|communities|processes|enriching|complete|error",
+      "percent": "number",
+      "showPercent": "boolean?",
+      "message": "string",
+      "detail": "string?",
+      "targetRepoName": "string?",
+      "stats": "{filesProcessed:number,totalFiles:number,nodesCreated:number}?"
+    },
+    "jobStatus": {
+      "id": "string",
+      "status": "queued|analyzing|loading|complete|failed",
+      "repoPath": "string?",
+      "repoName": "string?",
+      "progress": "JobProgress",
+      "error": "string?",
+      "startedAt": "number",
+      "completedAt": "number?"
+    },
+    "analyze": {
+      "start": {
+        "endpoint": "POST /api/analyze",
+        "request": { "path": "string", "embeddings": "boolean?" },
+        "successStatus": 202,
+        "response": { "jobId": "string", "status": "string" }
+      },
+      "poll": "GET /api/analyze/:jobId -> JobStatus",
+      "cancel": "DELETE /api/analyze/:jobId -> {id:string,status:'failed',error:string}",
+      "progressSse": {
+        "endpoint": "GET /api/analyze/:jobId/progress",
+        "messageData": "JobProgress",
+        "terminalEvents": ["complete", "failed"],
+        "terminalData": { "repoName": "string?", "repoPath": "string?", "error": "string?" }
+      }
+    },
+    "embed": {
+      "start": {
+        "endpoint": "POST /api/embed",
+        "request": { "repo": "string" },
+        "successStatus": 202,
+        "response": { "jobId": "string", "status": "analyzing" }
+      },
+      "poll": "GET /api/embed/:jobId -> JobStatus",
+      "cancel": "DELETE /api/embed/:jobId -> {id:string,status:'failed',error:string}",
+      "progressSse": {
+        "endpoint": "GET /api/embed/:jobId/progress",
+        "messageData": "JobProgress",
+        "terminalEvents": ["complete", "failed"],
+        "terminalData": { "repoName": "string?", "repoPath": "string?", "error": "string?" }
+      }
+    }
+  },
+  "sessionRuntime": {
+    "statusEndpoint": "GET /api/session/status?repoName=<name>|repoPath=<path>",
+    "chatEndpoint": "POST /api/session/chat",
+    "cancelEndpoint": "DELETE /api/session/:sessionId",
+    "providers": ["codex", "claude-code"],
+    "availability": ["ready", "not_installed", "not_signed_in", "error"],
+    "executionModes": ["sandboxed", "bypass"],
+    "runtimeEnvironments": ["native", "wsl2"],
+    "statusResponse": "SessionStatusResponse from avmatrix-shared/src/session.ts",
+    "chatRequest": { "message": "string", "repoName": "string?", "repoPath": "string?" },
+    "streamEvents": [
+      "session_started",
+      "reasoning",
+      "content",
+      "tool_call",
+      "tool_result",
+      "error",
+      "cancelled",
+      "done"
+    ],
+    "sseEncoding": "event: <event.type> followed by data: <SessionStreamEvent JSON>",
+    "cancelSuccess": { "sessionId": "string", "status": "cancelled" }
+  },
+  "errorPayloads": {
+    "generalHttpError": { "error": "string" },
+    "sessionError": { "code": "SessionErrorCode", "error": "string", "details": "unknown?" },
+    "graphNdjsonError": { "type": "error", "error": "string" },
+    "webClientErrorClass": {
+      "name": "BackendError",
+      "status": "number",
+      "code": "network|server|client|not_found|timeout"
+    }
+  },
+  "goPortRules": [
+    "Go backend must preserve these payload field names and terminal SSE event names for the existing Web UI.",
+    "Generated TypeScript adapter types may be emitted for the Web UI, but runtime authority for non-Web UI behavior must move to Go.",
+    "Graph streaming must continue to support JSON and NDJSON modes, including type:error records.",
+    "General HTTP errors must keep {error:string}; session bridge errors must keep {code,error,details?}."
+  ]
+}

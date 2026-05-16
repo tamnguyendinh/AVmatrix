@@ -1,0 +1,53 @@
+{
+  "scopes": [
+    "Class:scope:service/service.py#4:0-5:8:Class",
+    "Class:scope:service/service.py#7:0-15:19:Class",
+    "Function:scope:service/service.py#10:4-11:24:Function",
+    "Function:scope:service/service.py#13:4-15:19:Function",
+    "Function:scope:service/service.py#17:0-20:18:Function",
+    "Module:scope:service/service.py#1:0-21:0:Module"
+  ],
+  "definitions": [
+    "Class:Base:::",
+    "Class:Service:::",
+    "Function:create_service:Service::",
+    "Method:Service.__init__:::def:service/service.py#7:0:Class:Service",
+    "Method:Service.save:bool::def:service/service.py#7:0:Class:Service",
+    "Property:Service.repo::AppUser:def:service/service.py#7:0:Class:Service",
+    "Variable:service::Service:"
+  ],
+  "imports": [
+    "alias:AppUser:User:AppUser:app.models.User",
+    "alias:osp:path:osp:os.path"
+  ],
+  "calls": [
+    "Service:constructor::1",
+    "save:member:service:1",
+    "write:member:self.repo:1"
+  ],
+  "accesses": [
+    "read:id:user",
+    "read:repo:self",
+    "write:repo:self"
+  ],
+  "heritage": [
+    "extends:Base"
+  ],
+  "typeReferences": [
+    "create_service:Service:return-annotation",
+    "repo:AppUser:annotation",
+    "repo:AppUser:parameter-annotation",
+    "repo:AppUser:parameter-annotation",
+    "save:bool:return-annotation",
+    "user:AppUser:parameter-annotation"
+  ],
+  "typeBindings": [
+    "repo:AppUser:annotation",
+    "repo:AppUser:parameter-annotation",
+    "repo:AppUser:parameter-annotation",
+    "self:Service:self",
+    "self:Service:self",
+    "service:Service:constructor-inferred",
+    "user:AppUser:parameter-annotation"
+  ]
+}

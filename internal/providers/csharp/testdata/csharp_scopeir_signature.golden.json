@@ -1,0 +1,76 @@
+{
+  "scopes": [
+    "Class:scope:src/Service.cs#11:0-11:20:Class",
+    "Class:scope:src/Service.cs#13:0-16:1:Class",
+    "Class:scope:src/Service.cs#18:0-21:1:Class",
+    "Class:scope:src/Service.cs#23:0-43:1:Class",
+    "Class:scope:src/Service.cs#6:0-9:1:Class",
+    "Function:scope:src/Service.cs#15:4-15:52:Function",
+    "Function:scope:src/Service.cs#20:4-20:35:Function",
+    "Function:scope:src/Service.cs#27:4-30:5:Function",
+    "Function:scope:src/Service.cs#32:4-37:5:Function",
+    "Function:scope:src/Service.cs#39:4-42:5:Function",
+    "Function:scope:src/Service.cs#8:4-8:25:Function",
+    "Module:scope:src/Service.cs#1:0-44:0:Module"
+  ],
+  "definitions": [
+    "Class:App.Service.Base:::",
+    "Class:App.Service.Repository:::",
+    "Class:App.Service.Service:::",
+    "Class:App.Service.User:::",
+    "Constructor:Service.Service:::def:src/Service.cs#23:0:Class:Service",
+    "Interface:App.Service.INamed:::",
+    "Method:INamed.Save:bool::def:src/Service.cs#6:0:Interface:INamed",
+    "Method:Repository.Write:void::def:src/Service.cs#18:0:Class:Repository",
+    "Method:Service.Normalize:string::def:src/Service.cs#23:0:Class:Service",
+    "Method:Service.Save:bool::def:src/Service.cs#23:0:Class:Service",
+    "Method:User.Id:string::def:src/Service.cs#13:0:Class:User",
+    "Package:App.Service:::",
+    "Property:Service.repo::Repository:def:src/Service.cs#23:0:Class:Service",
+    "Variable:id::string:"
+  ],
+  "imports": [
+    "named:System:System::System",
+    "named:Util:Util::App.Util"
+  ],
+  "calls": [
+    "Format:free::1",
+    "Id:member:user:0",
+    "NewGuid:member:Guid:0",
+    "Normalize:free::1",
+    "ToString:member:Guid.NewGuid():0",
+    "Write:member:this.repo:1"
+  ],
+  "accesses": [
+    "read:repo:",
+    "write:repo:"
+  ],
+  "heritage": [
+    "extends:Base",
+    "implements:INamed"
+  ],
+  "typeReferences": [
+    "id:string:annotation",
+    "id:string:parameter-annotation",
+    "repo:Repository:annotation",
+    "repo:Repository:parameter-annotation",
+    "user:User:parameter-annotation",
+    "user:User:parameter-annotation",
+    "user:User:parameter-annotation"
+  ],
+  "typeBindings": [
+    "id:string:assignment-inferred",
+    "id:string:parameter-annotation",
+    "repo:Repository:annotation",
+    "repo:Repository:parameter-annotation",
+    "this:INamed:self",
+    "this:Repository:self",
+    "this:Service:self",
+    "this:Service:self",
+    "this:Service:self",
+    "this:User:self",
+    "user:User:parameter-annotation",
+    "user:User:parameter-annotation",
+    "user:User:parameter-annotation"
+  ]
+}

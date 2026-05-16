@@ -1,0 +1,183 @@
+{
+  "observedAtLocal": "2026-05-08T20:48:28.4897561+07:00",
+  "verificationStatus": "latest_stable_inventory_recorded",
+  "sources": {
+    "goLatest": {
+      "url": "https://go.dev/VERSION?m=text",
+      "observedVersion": "go1.26.3",
+      "observedReleaseTimestamp": "time 2026-05-04T20:36:18Z"
+    },
+    "npmLatest": "npm view <package> version",
+    "goModuleLatest": "go list -m -versions <module>"
+  },
+  "localToolingObserved": {
+    "node": "v22.17.1",
+    "npm": "11.8.0",
+    "go": "go1.25.7 windows/amd64"
+  },
+  "selectedToolchain": {
+    "go": {
+      "selectedVersion": "go1.26.3",
+      "localObservedVersion": "go1.25.7",
+      "status": "selected_latest_stable_local_upgrade_required_before_go_module_work",
+      "reason": "Go implementation must start from the latest stable toolchain, not the older local toolchain."
+    }
+  },
+  "nonLatestSelectedDependencyPolicy": {
+    "status": "fallback_inventory_recorded",
+    "summary": "No Go runtime dependency is intentionally selected below its latest observed stable/tagged release in this baseline. Exceptions below capture local toolchain command availability and pre-v1 stability risk that has been proof-gated on Windows.",
+    "records": [
+      {
+        "area": "Go toolchain",
+        "testedLatestVersion": "go1.26.3",
+        "selectedVersion": "go1.26.3",
+        "fallbackVersion": "go1.25.7 local only; not approved for Go module work",
+        "failureReason": "Local machine currently exposes go1.25.7, older than the selected latest stable toolchain.",
+        "mitigation": "Install or activate go1.26.3 before creating the Go module and before running any Go proof/test."
+      },
+      {
+        "area": "LadybugDB Go integration",
+        "testedLatestVersion": "v0.13.1",
+        "selectedVersion": "v0.13.1",
+        "fallbackVersion": "none selected",
+        "failureReason": "Latest tagged Go binding is pre-v1.",
+        "mitigation": "Windows load/read proof passed in go-ladybugdb-windows-proof.json; broad analyzer persistence work may proceed from the proofed integration path."
+      },
+      {
+        "area": "tree-sitter grammar Go bindings",
+        "testedLatestVersion": "go-tree-sitter v0.25.0 and tree-sitter-go v0.25.0",
+        "selectedVersion": "v0.25.0",
+        "fallbackVersion": "none selected",
+        "failureReason": "No fallback required after the Windows parser proof.",
+        "mitigation": "Windows parser proof passed in go-tree-sitter-windows-proof.json."
+      }
+    ]
+  },
+  "selectedGoRuntimeDependencies": [
+    {
+      "area": "tree-sitter core",
+      "module": "github.com/tree-sitter/go-tree-sitter",
+      "latestStable": "v0.25.0",
+      "selectedVersion": "v0.25.0",
+      "evidence": "go list -m -versions github.com/tree-sitter/go-tree-sitter"
+    },
+    {
+      "area": "tree-sitter Go grammar",
+      "module": "github.com/tree-sitter/tree-sitter-go",
+      "latestStable": "v0.25.0",
+      "selectedVersion": "v0.25.0",
+      "import": "github.com/tree-sitter/tree-sitter-go/bindings/go",
+      "evidence": "GitHub latest release and go get github.com/tree-sitter/tree-sitter-go/bindings/go@v0.25.0"
+    },
+    {
+      "area": "LadybugDB integration",
+      "module": "github.com/LadybugDB/go-ladybug",
+      "latestTaggedRelease": "v0.13.1",
+      "selectedVersion": "v0.13.1",
+      "stabilityNote": "Latest tagged Go binding is pre-v1; Phase 1 Windows load/read proof passed in go-ladybugdb-windows-proof.json.",
+      "evidence": "go list -m -versions github.com/LadybugDB/go-ladybug"
+    },
+    {
+      "area": "MCP protocol support",
+      "module": "github.com/modelcontextprotocol/go-sdk",
+      "latestStable": "v1.6.0",
+      "selectedVersion": "v1.6.0",
+      "evidence": "go list -m -versions github.com/modelcontextprotocol/go-sdk"
+    },
+    {
+      "area": "HTTP router",
+      "module": "github.com/go-chi/chi/v5",
+      "latestStable": "v5.2.5",
+      "selectedVersion": "v5.2.5",
+      "evidence": "go list -m -versions github.com/go-chi/chi/v5"
+    },
+    {
+      "area": "SSE runtime",
+      "module": "github.com/r3labs/sse/v2",
+      "latestStable": "v2.10.0",
+      "selectedVersion": "v2.10.0",
+      "evidence": "go list -m -versions github.com/r3labs/sse/v2"
+    },
+    {
+      "area": "text search runtime",
+      "module": "github.com/blevesearch/bleve/v2",
+      "latestStable": "v2.6.0",
+      "selectedVersion": "v2.6.0",
+      "evidence": "go list -m -versions github.com/blevesearch/bleve/v2"
+    },
+    {
+      "area": "CLI runtime",
+      "module": "github.com/spf13/cobra",
+      "latestStable": "v1.10.2",
+      "selectedVersion": "v1.10.2",
+      "evidence": "go list -m -versions github.com/spf13/cobra"
+    },
+    {
+      "area": "config/session runtime",
+      "module": "github.com/spf13/viper",
+      "latestStable": "v1.21.0",
+      "selectedVersion": "v1.21.0",
+      "evidence": "go list -m -versions github.com/spf13/viper"
+    },
+    {
+      "area": "launcher/packaging",
+      "module": "github.com/goreleaser/goreleaser/v2",
+      "latestStable": "v2.15.4",
+      "selectedVersion": "v2.15.4",
+      "ignoredPrereleases": [
+        "v2.16.0-*-nightly",
+        "v2.17.0-*-nightly",
+        "v2.18.0-*-nightly",
+        "v2.19.0-*-nightly"
+      ],
+      "evidence": "go list -m -versions github.com/goreleaser/goreleaser/v2"
+    }
+  ],
+  "treeSitterGrammarLatestNpm": {
+    "tree-sitter": "0.25.0",
+    "tree-sitter-c": "0.24.1",
+    "tree-sitter-c-sharp": "0.23.5",
+    "tree-sitter-cpp": "0.23.4",
+    "tree-sitter-go": "0.25.0",
+    "tree-sitter-java": "0.23.5",
+    "tree-sitter-javascript": "0.25.0",
+    "tree-sitter-php": "0.24.2",
+    "tree-sitter-python": "0.25.0",
+    "tree-sitter-ruby": "0.23.1",
+    "tree-sitter-rust": "0.24.0",
+    "tree-sitter-typescript": "0.23.2",
+    "tree-sitter-kotlin": "0.3.8",
+    "tree-sitter-swift": "0.7.1",
+    "tree-sitter-dart": "1.0.0"
+  },
+  "typescriptRuntimeLatestNpmForReference": {
+    "@ladybugdb/core": "0.16.1",
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "express": "5.2.1",
+    "cors": "2.8.6",
+    "@huggingface/transformers": "4.2.0",
+    "onnxruntime-node": "1.25.1",
+    "graphology": "0.26.0",
+    "glob": "13.0.6",
+    "commander": "14.0.3",
+    "typescript": "6.0.3",
+    "vitest": "4.1.5"
+  },
+  "fallbacksOrExceptions": [
+    {
+      "area": "Go toolchain",
+      "issue": "Local machine currently has go1.25.7, while selected latest stable is go1.26.3.",
+      "mitigation": "Install or activate go1.26.3 before creating the Go module and before running any Go proof/test."
+    },
+    {
+      "area": "LadybugDB Go integration",
+      "issue": "Go binding latest tagged release is pre-v1.",
+      "mitigation": "Pin v0.13.1 and use the native LadybugDB v0.16.1 Windows runtime path proven by go-ladybugdb-windows-proof.json."
+    },
+    {
+      "area": "tree-sitter grammar Go bindings",
+      "issue": "Grammar modules must be pinned from proofed Go imports rather than inferred from npm package names.",
+      "mitigation": "Pin github.com/tree-sitter/go-tree-sitter v0.25.0 and github.com/tree-sitter/tree-sitter-go v0.25.0 as proven by go-tree-sitter-windows-proof.json."
+    }
+  ]
+}

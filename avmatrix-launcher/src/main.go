@@ -16,23 +16,30 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
 
 const (
-	backendHealthURL = "http://localhost:4747/api/info"
-	webURL           = "http://127.0.0.1:5173"
+	backendHealthURL = "http://127.0.0.1:4848/api/info"
+	webURL           = "http://127.0.0.1:5228"
+
+	launcherHeartbeatPath = "/__avmatrix_launcher/heartbeat"
+	launcherClosedPath    = "/__avmatrix_launcher/closed"
+	launcherUITimeout     = 15 * time.Second
+	launcherUICloseGrace  = 2 * time.Second
 )
 
 type launcherPaths struct {
-	exePath   string
-	rootDir   string
-	homeDir   string
-	logDir    string
-	webDist   string
-	serverExe string
-	stateFile string
+	exePath    string
+	rootDir    string
+	homeDir    string
+	logDir     string
+	webDist    string
+	serverExe  string
+	backendExe string
+	stateFile  string
 }
 
 type launcherState struct {
@@ -87,13 +94,14 @@ func resolvePaths() (launcherPaths, error) {
 	rootDir := filepath.Dir(homeDir)
 	stateFile := filepath.Join(os.TempDir(), "avmatrix-launcher-"+shortHash(rootDir)+".json")
 	return launcherPaths{
-		exePath:   exePath,
-		rootDir:   rootDir,
-		homeDir:   homeDir,
-		logDir:    filepath.Join(homeDir, "logs"),
-		webDist:   filepath.Join(homeDir, "web-dist"),
-		serverExe: filepath.Join(homeDir, "server-bundle", "avmatrix-server.exe"),
-		stateFile: stateFile,
+		exePath:    exePath,
+		rootDir:    rootDir,
+		homeDir:    homeDir,
+		logDir:     filepath.Join(homeDir, "logs"),
+		webDist:    filepath.Join(homeDir, "web-dist"),
+		serverExe:  filepath.Join(homeDir, "server-bundle", "avmatrix-server.exe"),
+		backendExe: filepath.Join(homeDir, "server-bundle", "avmatrix.exe"),
+		stateFile:  stateFile,
 	}, nil
 }
 
@@ -151,9 +159,10 @@ func startRuntime(paths launcherPaths) error {
 	}
 	defer stopPID(backend.pid)
 
+	lifecycle := newWebLifecycleMonitor(launcherUITimeout, launcherUICloseGrace)
 	webServer := &http.Server{
-		Addr:              "127.0.0.1:5173",
-		Handler:           staticHandler(paths.webDist),
+		Addr:              "127.0.0.1:5228",
+		Handler:           staticHandlerWithLifecycle(paths.webDist, lifecycle),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -171,6 +180,8 @@ func startRuntime(paths launcherPaths) error {
 		}()
 	}
 	if webStarted {
+		lifecycle.start()
+		defer lifecycle.stop()
 		defer shutdownWeb(webServer)
 	}
 
@@ -189,7 +200,7 @@ func startRuntime(paths launcherPaths) error {
 		return err
 	}
 
-	waitForExit(paths, backend)
+	waitForExit(paths, backend, lifecycleDone(webStarted, lifecycle))
 	return nil
 }
 
@@ -228,27 +239,223 @@ func verifyWebDist(webDist string) error {
 }
 
 func staticHandler(webDist string) http.Handler {
+	return staticHandlerWithLifecycle(webDist, nil)
+}
+
+func staticHandlerWithLifecycle(webDist string, lifecycle *webLifecycleMonitor) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if lifecycle != nil && lifecycle.handle(w, r) {
+			return
+		}
 		rel := filepath.Clean(strings.TrimPrefix(r.URL.Path, "/"))
 		if rel == "." || strings.HasPrefix(rel, "..") || filepath.IsAbs(rel) {
 			rel = "index.html"
 		}
 		target := filepath.Join(webDist, rel)
 		if stat, err := os.Stat(target); err == nil && !stat.IsDir() {
-			http.ServeFile(w, r, target)
+			serveStaticFile(w, r, target, lifecycle)
 			return
 		}
-		http.ServeFile(w, r, filepath.Join(webDist, "index.html"))
+		serveStaticFile(w, r, filepath.Join(webDist, "index.html"), lifecycle)
 	})
 }
 
-func waitForExit(paths launcherPaths, backend backendProcess) {
+func serveStaticFile(w http.ResponseWriter, r *http.Request, target string, lifecycle *webLifecycleMonitor) {
+	if lifecycle == nil || filepath.Base(target) != "index.html" {
+		http.ServeFile(w, r, target)
+		return
+	}
+	raw, err := os.ReadFile(target)
+	if err != nil {
+		http.ServeFile(w, r, target)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write(injectLauncherLifecycle(raw))
+}
+
+func injectLauncherLifecycle(raw []byte) []byte {
+	const marker = "</body>"
+	html := string(raw)
+	index := strings.LastIndex(strings.ToLower(html), marker)
+	if index < 0 {
+		return append(append([]byte{}, raw...), []byte(launcherLifecycleScript)...)
+	}
+	result := make([]byte, 0, len(raw)+len(launcherLifecycleScript))
+	result = append(result, raw[:index]...)
+	result = append(result, launcherLifecycleScript...)
+	result = append(result, raw[index:]...)
+	return result
+}
+
+const launcherLifecycleScript = `<script data-avmatrix-launcher-lifecycle>
+(() => {
+  const heartbeat = "/__avmatrix_launcher/heartbeat";
+  const closed = "/__avmatrix_launcher/closed";
+  const ping = () => fetch(heartbeat, { method: "POST", cache: "no-store", keepalive: true }).catch(() => {});
+  ping();
+  const timer = setInterval(ping, 5000);
+  window.addEventListener("pagehide", () => {
+    clearInterval(timer);
+    try {
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(closed, "");
+      } else {
+        fetch(closed, { method: "POST", cache: "no-store", keepalive: true }).catch(() => {});
+      }
+    } catch (_) {}
+  });
+})();
+</script>`
+
+type webLifecycleMonitor struct {
+	mu            sync.Mutex
+	timeout       time.Duration
+	closeGrace    time.Duration
+	checkInterval time.Duration
+	seen          bool
+	lastSeen      time.Time
+	done          chan struct{}
+	stopCh        chan struct{}
+	doneOnce      sync.Once
+	stopOnce      sync.Once
+}
+
+func newWebLifecycleMonitor(timeout time.Duration, closeGrace time.Duration) *webLifecycleMonitor {
+	if timeout <= 0 {
+		timeout = launcherUITimeout
+	}
+	if closeGrace <= 0 || closeGrace >= timeout {
+		closeGrace = timeout / 3
+	}
+	return &webLifecycleMonitor{
+		timeout:       timeout,
+		closeGrace:    closeGrace,
+		checkInterval: lifecycleCheckInterval(timeout),
+		done:          make(chan struct{}),
+		stopCh:        make(chan struct{}),
+	}
+}
+
+func lifecycleCheckInterval(timeout time.Duration) time.Duration {
+	interval := timeout / 4
+	if interval < 100*time.Millisecond {
+		return 100 * time.Millisecond
+	}
+	if interval > 2*time.Second {
+		return 2 * time.Second
+	}
+	return interval
+}
+
+func (m *webLifecycleMonitor) start() {
+	if m == nil {
+		return
+	}
+	go func() {
+		ticker := time.NewTicker(m.checkInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				if m.expired(time.Now()) {
+					m.finish()
+					return
+				}
+			case <-m.stopCh:
+				return
+			}
+		}
+	}()
+}
+
+func (m *webLifecycleMonitor) stop() {
+	if m == nil {
+		return
+	}
+	m.stopOnce.Do(func() {
+		close(m.stopCh)
+	})
+}
+
+func (m *webLifecycleMonitor) Done() <-chan struct{} {
+	if m == nil {
+		return nil
+	}
+	return m.done
+}
+
+func (m *webLifecycleMonitor) handle(w http.ResponseWriter, r *http.Request) bool {
+	switch r.URL.Path {
+	case launcherHeartbeatPath:
+		if r.Method != http.MethodGet && r.Method != http.MethodPost && r.Method != http.MethodHead {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return true
+		}
+		m.recordHeartbeat(time.Now())
+		w.Header().Set("Cache-Control", "no-store")
+		w.WriteHeader(http.StatusNoContent)
+		return true
+	case launcherClosedPath:
+		if r.Method != http.MethodGet && r.Method != http.MethodPost && r.Method != http.MethodHead {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return true
+		}
+		m.recordClosed(time.Now())
+		w.Header().Set("Cache-Control", "no-store")
+		w.WriteHeader(http.StatusNoContent)
+		return true
+	default:
+		return false
+	}
+}
+
+func (m *webLifecycleMonitor) recordHeartbeat(now time.Time) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.seen = true
+	m.lastSeen = now
+}
+
+func (m *webLifecycleMonitor) recordClosed(now time.Time) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if !m.seen {
+		return
+	}
+	m.lastSeen = now.Add(-(m.timeout - m.closeGrace))
+}
+
+func (m *webLifecycleMonitor) expired(now time.Time) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.seen && now.Sub(m.lastSeen) > m.timeout
+}
+
+func (m *webLifecycleMonitor) finish() {
+	m.doneOnce.Do(func() {
+		close(m.done)
+	})
+}
+
+func lifecycleDone(webStarted bool, lifecycle *webLifecycleMonitor) <-chan struct{} {
+	if !webStarted || lifecycle == nil {
+		return nil
+	}
+	return lifecycle.Done()
+}
+
+func waitForExit(paths launcherPaths, backend backendProcess, uiDone <-chan struct{}) {
 	sig := make(chan os.Signal, 2)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 	defer signal.Stop(sig)
 
 	if backend.done == nil {
-		<-sig
+		select {
+		case <-uiDone:
+			log.Printf("web ui session closed")
+		case <-sig:
+		}
 		_ = os.Remove(paths.stateFile)
 		return
 	}
@@ -257,6 +464,9 @@ func waitForExit(paths launcherPaths, backend backendProcess) {
 	case err := <-backend.done:
 		_ = os.Remove(paths.stateFile)
 		log.Printf("backend exited: %v", err)
+	case <-uiDone:
+		_ = os.Remove(paths.stateFile)
+		log.Printf("web ui session closed")
 	case <-sig:
 		_ = os.Remove(paths.stateFile)
 	}
@@ -295,14 +505,13 @@ func stopRuntimeProcessesByPath(paths launcherPaths) error {
 		return nil
 	}
 	bundleDir := filepath.Join(paths.homeDir, "server-bundle")
-	rootDir := paths.rootDir
 	script := fmt.Sprintf(`
 $ErrorActionPreference = 'SilentlyContinue'
 $currentPid = %d
 $launcherPath = [System.IO.Path]::GetFullPath(%s).ToLowerInvariant()
 $serverPath = [System.IO.Path]::GetFullPath(%s).ToLowerInvariant()
+$backendPath = [System.IO.Path]::GetFullPath(%s).ToLowerInvariant()
 $bundleDir = [System.IO.Path]::GetFullPath(%s).TrimEnd([char]92).ToLowerInvariant()
-$rootDir = [System.IO.Path]::GetFullPath(%s).TrimEnd([char]92).ToLowerInvariant()
 Get-CimInstance Win32_Process | Where-Object {
   if ($_.ProcessId -eq $currentPid) { return $false }
   $exe = if ($_.ExecutablePath) { $_.ExecutablePath.ToLowerInvariant() } else { '' }
@@ -310,16 +519,16 @@ Get-CimInstance Win32_Process | Where-Object {
   (
     ($_.Name -ieq 'AVmatrixLauncher.exe' -and $exe -eq $launcherPath) -or
     ($_.Name -ieq 'avmatrix-server.exe' -and $exe -eq $serverPath) -or
-    ($_.Name -ieq 'node.exe' -and (
+    ($_.Name -ieq 'avmatrix.exe' -and (
+      $exe -eq $backendPath -or
       $exe.StartsWith($bundleDir) -or
-      $cmd.Contains($bundleDir) -or
-      $cmd.Contains($rootDir)
+      $cmd.Contains($bundleDir)
     ))
   )
 } | ForEach-Object {
   Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
 }
-`, os.Getpid(), psQuote(paths.exePath), psQuote(paths.serverExe), psQuote(bundleDir), psQuote(rootDir))
+`, os.Getpid(), psQuote(paths.exePath), psQuote(paths.serverExe), psQuote(paths.backendExe), psQuote(bundleDir))
 	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script)
 	cmd.SysProcAttr = hiddenProcAttr()
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -475,6 +684,10 @@ func registerProtocol(paths launcherPaths) error {
 }
 
 func openBrowser(url string) error {
+	if os.Getenv("AVMATRIX_LAUNCHER_NO_BROWSER") == "1" {
+		log.Printf("browser open suppressed by AVMATRIX_LAUNCHER_NO_BROWSER")
+		return nil
+	}
 	if runtime.GOOS == "windows" {
 		cmd := exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
 		cmd.SysProcAttr = hiddenProcAttr()

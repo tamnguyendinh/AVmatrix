@@ -5,8 +5,8 @@ import { test, expect } from '@playwright/test';
  * Excluded from `npm run test:e2e` via testIgnore in playwright.config.ts.
  * Run directly: DEBUG_E2E=1 npx playwright test e2e/debug-issues.spec.ts
  */
-const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:4747';
-const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173';
+const BACKEND_URL = process.env.BACKEND_URL ?? 'http://127.0.0.1:4848';
+const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://127.0.0.1:5228';
 const debugTest = process.env.DEBUG_E2E ? test : test.skip;
 
 async function connectToServer(page: import('@playwright/test').Page) {

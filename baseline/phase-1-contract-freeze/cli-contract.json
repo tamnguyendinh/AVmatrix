@@ -1,0 +1,183 @@
+{
+  "observedAtLocal": "2026-05-08T21:05:00+07:00",
+  "status": "cli_contract_frozen",
+  "verification": {
+    "buildBeforeCliSnapshots": "npm run build PASS",
+    "helpSnapshotsCapturedUnderTmp": [
+      ".tmp/phase1_cli_help_root.txt",
+      ".tmp/phase1_cli_help_analyze.txt",
+      ".tmp/phase1_cli_help_serve.txt",
+      ".tmp/phase1_cli_help_query.txt",
+      ".tmp/phase1_cli_help_context.txt",
+      ".tmp/phase1_cli_help_impact.txt",
+      ".tmp/phase1_cli_help_detect_changes.txt",
+      ".tmp/phase1_cli_help_clean.txt",
+      ".tmp/phase1_cli_help_group.txt",
+      ".tmp/phase1_cli_help_group_sync.txt"
+    ]
+  },
+  "topLevelCommands": [
+    "setup",
+    "analyze [path]",
+    "benchmark-compare <before> <after>",
+    "index [path...]",
+    "serve",
+    "mcp",
+    "list",
+    "status",
+    "clean",
+    "wiki [path]",
+    "wiki-mode [mode]",
+    "augment <pattern>",
+    "query <search_query>",
+    "context [name]",
+    "impact [target]",
+    "cypher <query>",
+    "detect-changes",
+    "group"
+  ],
+  "groupCommands": [
+    "create <name>",
+    "add <group> <groupPath> <registryName>",
+    "remove <group> <path>",
+    "list [name]",
+    "status <name>",
+    "sync <name>",
+    "query <name> <query>",
+    "contracts <name>"
+  ],
+  "flagsAndDefaults": {
+    "analyze [path]": {
+      "--force": false,
+      "--embeddings": false,
+      "--skills": false,
+      "--skip-agents-md": false,
+      "--no-stats": false,
+      "--skip-git": false,
+      "--skip-compatibility-cross-file": false,
+      "--benchmark-json <file>": null,
+      "--benchmark-label <label>": null,
+      "--name <alias>": null,
+      "--allow-duplicate-name": false,
+      "--verbose": false
+    },
+    "benchmark-compare <before> <after>": {
+      "--json": false
+    },
+    "index [path...]": {
+      "--force": false,
+      "--allow-non-git": false
+    },
+    "serve": {
+      "--port <port>": "4747",
+      "--host <host>": "localhost runtime default; only localhost, 127.0.0.1, ::1, [::1] allowed"
+    },
+    "clean": {
+      "--force": false,
+      "--all": false
+    },
+    "query <search_query>": {
+      "--repo <name>": null,
+      "--context <text>": null,
+      "--goal <text>": null,
+      "--limit <n>": "backend default 5 when unset",
+      "--content": false
+    },
+    "context [name]": {
+      "--repo <name>": null,
+      "--uid <uid>": null,
+      "--file <path>": null,
+      "--content": false
+    },
+    "impact [target]": {
+      "--direction <dir>": "upstream",
+      "--repo <name>": null,
+      "--uid <uid>": null,
+      "--depth <n>": "backend default 3 when unset",
+      "--include-tests": false
+    },
+    "cypher <query>": {
+      "--repo <name>": null
+    },
+    "detect-changes": {
+      "--scope <scope>": "unstaged",
+      "--base-ref <ref>": null,
+      "--repo <name>": null
+    },
+    "group sync <name>": {
+      "--skip-embeddings": false,
+      "--exact-only": false,
+      "--allow-stale": false,
+      "--verbose": false,
+      "--json": false
+    },
+    "group query <name> <query>": {
+      "--subgroup <path>": null,
+      "--limit <n>": "5",
+      "--json": false
+    },
+    "group contracts <name>": {
+      "--type <type>": null,
+      "--repo <repo>": null,
+      "--unmatched": false,
+      "--json": false
+    }
+  },
+  "environmentContractReference": "baseline/phase-1-contract-freeze/environment-contract.json",
+  "promptsAndConfirmations": [
+    {
+      "surface": "clean",
+      "behavior": "No interactive prompt. Without --force it prints the repo index path and says to rerun with --force; exit code 0."
+    },
+    {
+      "surface": "clean --all",
+      "behavior": "No interactive prompt. Without --force it lists indexed repos and says to rerun with --force; exit code 0."
+    }
+  ],
+  "exitCodes": [
+    {
+      "case": "help output",
+      "command": "avmatrix --help and subcommand --help",
+      "exitCode": 0
+    },
+    {
+      "case": "wiki disabled",
+      "command": "avmatrix wiki",
+      "exitCode": 1,
+      "expectedOutput": "Wiki capability mode: off"
+    },
+    {
+      "case": "serve rejects non-loopback host",
+      "command": "avmatrix serve --host 0.0.0.0",
+      "exitCode": 1,
+      "expectedOutput": "Local-only mode only allows loopback hosts: localhost, 127.0.0.1, or ::1."
+    },
+    {
+      "case": "impact missing target and uid",
+      "command": "avmatrix impact",
+      "exitCode": 1,
+      "expectedOutput": "Usage: avmatrix impact [symbol_name] [--uid <uid>] [--direction upstream|downstream]"
+    },
+    {
+      "case": "clean without force",
+      "command": "avmatrix clean",
+      "exitCode": 0,
+      "expectedOutput": "Run with --force to confirm deletion."
+    },
+    {
+      "case": "direct tool command when no indexed repos exist",
+      "command": "query/context/impact/cypher/detect-changes after argument validation",
+      "exitCode": 1,
+      "expectedOutput": "AVmatrix: No indexed repositories found. Run: avmatrix analyze"
+    }
+  ],
+  "outputSnapshots": {
+    "rootHelpStartsWith": "Usage: avmatrix [options] [command]",
+    "analyzeHelpIncludesEnvironmentVariables": [
+      "AVMATRIX_NO_GITIGNORE=1  Skip .gitignore parsing (still reads the local ignore override file)",
+      "AVMATRIX_MAX_PROCESSES=700  Temporarily override maxExecutionFlows from .avmatrix/settings.json in the target repo during analyze"
+    ],
+    "serveHelpIncludes": "Port number (default: \"4747\")",
+    "groupSyncHelpIncludes": "Sync Contract Registry"
+  }
+}

@@ -12,8 +12,8 @@ import { test, expect } from '@playwright/test';
  * without depending on setOffline timing (which varies across CI environments).
  */
 
-const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:4747';
-const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173';
+const BACKEND_URL = process.env.BACKEND_URL ?? 'http://127.0.0.1:4848';
+const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://127.0.0.1:5228';
 
 let firstRepoName = '';
 
@@ -85,7 +85,11 @@ test.describe('Heartbeat Reconnect', () => {
 
   test('banner clears when heartbeat becomes available', async ({ page }) => {
     // Start with heartbeat blocked
-    await page.route('**/api/heartbeat', (route) => route.abort('connectionrefused'));
+    let blockHeartbeat = true;
+    await page.route('**/api/heartbeat', (route) => {
+      if (blockHeartbeat) return route.abort('connectionrefused');
+      return route.fallback();
+    });
 
     await page.goto(graphUrl());
 
@@ -96,7 +100,7 @@ test.describe('Heartbeat Reconnect', () => {
     await expect(banner).toBeVisible({ timeout: 15_000 });
 
     // Unblock heartbeat — the real server is running, so reconnect will succeed
-    await page.unroute('**/api/heartbeat');
+    blockHeartbeat = false;
 
     // Banner should disappear as heartbeat reconnects
     await expect(banner).not.toBeVisible({ timeout: 30_000 });

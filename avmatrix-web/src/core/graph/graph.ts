@@ -1,4 +1,4 @@
-import type { GraphNode, GraphRelationship } from 'avmatrix-shared';
+import type { GraphNode, GraphRelationship } from '@/generated/avmatrix-contracts';
 import type { KnowledgeGraph } from './types';
 
 export const createKnowledgeGraph = (): KnowledgeGraph => {

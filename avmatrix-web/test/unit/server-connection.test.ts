@@ -9,57 +9,57 @@ import {
 } from '../../src/services/backend-client';
 
 describe('normalizeServerUrl', () => {
-  it('adds http:// to localhost', () => {
-    expect(normalizeServerUrl('localhost:4747')).toBe('http://localhost:4747');
+  it('canonicalizes localhost to 127.0.0.1', () => {
+    expect(normalizeServerUrl('localhost:4848')).toBe('http://127.0.0.1:4848');
   });
 
   it('adds http:// to 127.0.0.1', () => {
-    expect(normalizeServerUrl('127.0.0.1:4747')).toBe('http://127.0.0.1:4747');
+    expect(normalizeServerUrl('127.0.0.1:4848')).toBe('http://127.0.0.1:4848');
   });
 
   it('rejects non-local hosts', () => {
     expect(() => normalizeServerUrl('example.com')).toThrow(
-      /local-only mode only supports backend URLs on localhost, 127.0.0.1, or \[::1\]/i,
+      /local-only mode only supports backend URLs on 127.0.0.1, localhost, or \[::1\]/i,
     );
   });
 
   it('strips trailing slashes', () => {
-    expect(normalizeServerUrl('http://localhost:4747/')).toBe('http://localhost:4747');
-    expect(normalizeServerUrl('http://localhost:4747///')).toBe('http://localhost:4747');
+    expect(normalizeServerUrl('http://127.0.0.1:4848/')).toBe('http://127.0.0.1:4848');
+    expect(normalizeServerUrl('http://127.0.0.1:4848///')).toBe('http://127.0.0.1:4848');
   });
 
   it('strips /api suffix (base URL only)', () => {
-    expect(normalizeServerUrl('http://localhost:4747/api')).toBe('http://localhost:4747');
+    expect(normalizeServerUrl('http://127.0.0.1:4848/api')).toBe('http://127.0.0.1:4848');
   });
 
   it('trims whitespace', () => {
-    expect(normalizeServerUrl('  localhost:4747  ')).toBe('http://localhost:4747');
+    expect(normalizeServerUrl('  127.0.0.1:4848  ')).toBe('http://127.0.0.1:4848');
   });
 
   it('supports IPv6 loopback', () => {
-    expect(normalizeServerUrl('[::1]:4747')).toBe('http://[::1]:4747');
+    expect(normalizeServerUrl('[::1]:4848')).toBe('http://[::1]:4848');
   });
 
   it('rejects non-root local paths', () => {
-    expect(() => normalizeServerUrl('http://localhost:4747/avmatrix')).toThrow(
+    expect(() => normalizeServerUrl('http://127.0.0.1:4848/avmatrix')).toThrow(
       /expects the backend URL to point at the local server root or \/api/i,
     );
   });
 
   it('rejects remote hosts with explicit protocols', () => {
     expect(() => normalizeServerUrl('https://avmatrix.example.com')).toThrow(
-      /local-only mode only supports backend URLs on localhost, 127.0.0.1, or \[::1\]/i,
+      /local-only mode only supports backend URLs on 127.0.0.1, localhost, or \[::1\]/i,
     );
   });
 
   it('normalizes backend URLs when set directly', () => {
-    setBackendUrl('http://localhost:4747/api');
-    expect(normalizeServerUrl('http://localhost:4747/api')).toBe('http://localhost:4747');
+    setBackendUrl('http://localhost:4848/api');
+    expect(normalizeServerUrl('http://localhost:4848/api')).toBe('http://127.0.0.1:4848');
   });
 
   it('rejects remote URLs when set directly', () => {
     expect(() => setBackendUrl('https://avmatrix.example.com')).toThrow(
-      /local-only mode only supports backend URLs on localhost, 127.0.0.1, or \[::1\]/i,
+      /local-only mode only supports backend URLs on 127.0.0.1, localhost, or \[::1\]/i,
     );
   });
 });
@@ -70,7 +70,7 @@ describe('connectToServer', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     await expect(connectToServer('https://avmatrix.example.com')).rejects.toThrow(
-      /local-only mode only supports backend URLs on localhost, 127.0.0.1, or \[::1\]/i,
+      /local-only mode only supports backend URLs on 127.0.0.1, localhost, or \[::1\]/i,
     );
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -104,15 +104,15 @@ describe('connectToServer', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    const result = await connectToServer('http://localhost:4747', undefined, undefined, 'demo');
+    const result = await connectToServer('http://localhost:4848', undefined, undefined, 'demo');
 
     expect(result.repoInfo.repoPath).toBe(canonicalRepoPath);
     expect(fetchMock).toHaveBeenCalledWith(
-      `http://localhost:4747/api/repo?repo=demo`,
+      `http://127.0.0.1:4848/api/repo?repo=demo`,
       expect.any(Object),
     );
     expect(fetchMock).toHaveBeenCalledWith(
-      `http://localhost:4747/api/graph?repo=${encodeURIComponent(canonicalRepoPath)}&stream=true`,
+      `http://127.0.0.1:4848/api/graph?repo=${encodeURIComponent(canonicalRepoPath)}&stream=true`,
       expect.any(Object),
     );
     expect(
@@ -130,7 +130,7 @@ afterEach(() => {
 
 describe('fetchGraph', () => {
   it('requests streamed graph responses from the backend', async () => {
-    setBackendUrl('http://localhost:4747');
+    setBackendUrl('http://127.0.0.1:4848');
 
     const fetchMock = vi.fn().mockResolvedValue(
       new Response('{"nodes":[],"relationships":[]}', {
@@ -151,7 +151,7 @@ describe('fetchGraph', () => {
   });
 
   it('parses NDJSON graph streams incrementally', async () => {
-    setBackendUrl('http://localhost:4747');
+    setBackendUrl('http://127.0.0.1:4848');
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream<Uint8Array>({
@@ -191,7 +191,7 @@ describe('fetchGraph', () => {
   });
 
   it('parses NDJSON graph lines split across chunks', async () => {
-    setBackendUrl('http://localhost:4747');
+    setBackendUrl('http://127.0.0.1:4848');
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream<Uint8Array>({
@@ -230,7 +230,7 @@ describe('fetchGraph', () => {
   });
 
   it('throws backend errors emitted in the NDJSON stream', async () => {
-    setBackendUrl('http://localhost:4747');
+    setBackendUrl('http://127.0.0.1:4848');
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream<Uint8Array>({
@@ -260,12 +260,12 @@ describe('fetchGraph', () => {
 
 describe('fetchRepoInfo', () => {
   it('sends awaitAnalysis when repo-info should hold for an active analyze job', async () => {
-    setBackendUrl('http://localhost:4747');
+    setBackendUrl('http://127.0.0.1:4848');
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
         JSON.stringify({
           name: 'AVmatrix',
-          repoPath: 'F:\\AVmatrix-main',
+          repoPath: 'F:\\AVmatrix-GO',
           indexedAt: new Date().toISOString(),
           stats: {},
         }),
@@ -277,17 +277,17 @@ describe('fetchRepoInfo', () => {
     );
     vi.stubGlobal('fetch', fetchMock);
 
-    await fetchRepoInfo('F:\\AVmatrix-main', { awaitAnalysis: true });
+    await fetchRepoInfo('F:\\AVmatrix-GO', { awaitAnalysis: true });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://localhost:4747/api/repo?repo=F%3A%5CAVmatrix-main&awaitAnalysis=true',
+      'http://127.0.0.1:4848/api/repo?repo=F%3A%5CAVmatrix-GO&awaitAnalysis=true',
       expect.any(Object),
     );
   });
 
   it('waits up to 10 minutes before timing out normal repo-info requests', async () => {
     vi.useFakeTimers();
-    setBackendUrl('http://localhost:4747');
+    setBackendUrl('http://127.0.0.1:4848');
 
     const fetchMock = vi.fn((_url: string, init?: RequestInit) => {
       return new Promise<Response>((_resolve, reject) => {

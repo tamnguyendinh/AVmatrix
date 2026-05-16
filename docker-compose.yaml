@@ -3,10 +3,10 @@ services:
     image: ${SERVER_IMAGE:?Set SERVER_IMAGE in .env or your shell environment}
     container_name: ${SERVER_CONTAINER_NAME:-avmatrix-server}
     # Map the server to the same host port the web UI expects by default
-    # (http://localhost:4747). The browser runs on the host, so the UI's
+    # (http://127.0.0.1:4848). The browser runs on the host, so the UI's
     # built-in default works without any reconfiguration.
     ports:
-      - '${SERVER_HOST_PORT:-4747}:4747'
+      - '${SERVER_HOST_PORT:-4848}:4848'
     volumes:
       # Persist the global registry, indexes, and cloned repos across runs.
       - avmatrix-data:/data/avmatrix
@@ -19,7 +19,7 @@ services:
       - ${WORKSPACE_DIR:-./workspace}:/workspace:ro
     restart: unless-stopped
     healthcheck:
-      test: ['CMD', 'curl', '-fsS', 'http://localhost:4747/api/heartbeat']
+      test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:4848/api/info']
       interval: 30s
       timeout: 5s
       retries: 3
@@ -35,7 +35,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:4173/']
+      test: ['CMD', 'curl', '-f', 'http://127.0.0.1:4173/']
       interval: 30s
       timeout: 5s
       retries: 3
